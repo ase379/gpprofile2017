@@ -1,0 +1,3 @@
+const
+  IDD_WHATSNEW = 1;
+  IDD_OPENSOURCE = 2;

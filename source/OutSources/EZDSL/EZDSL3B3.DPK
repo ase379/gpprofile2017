@@ -1,0 +1,61 @@
+{===EZDSL3B3==========================================================
+
+Part of the EZ Delphi Structures Library--the Delphi 3 package
+(revision B)
+
+EZDSL3b3 is Copyright (c) 1993-1998 by  Julian M. Bucknall
+
+VERSION HISTORY
+14May98 JMB 3.01 Initial release
+=====================================================================}
+{ Copyright (c) 1993-1998, Julian M. Bucknall. All Rights Reserved   }
+
+package EZDSL3b3;
+
+{$R *.RES}
+{$ALIGN ON}
+{$ASSERTIONS OFF}
+{$BOOLEVAL OFF}
+{$DEBUGINFO OFF}
+{$EXTENDEDSYNTAX ON}
+{$IMPORTEDDATA ON}
+{$IOCHECKS ON}
+{$LOCALSYMBOLS OFF}
+{$LONGSTRINGS ON}
+{$OPENSTRINGS ON}
+{$OPTIMIZATION ON}
+{$OVERFLOWCHECKS OFF}
+{$RANGECHECKS OFF}
+{$REFERENCEINFO OFF}
+{$SAFEDIVIDE OFF}
+{$STACKFRAMES OFF}
+{$TYPEDADDRESS OFF}
+{$VARSTRINGCHECKS OFF}
+{$WRITEABLECONST ON}
+{$MINENUMSIZE 1}
+{$IMAGEBASE $00400000}
+{$DESCRIPTION 'EZDSL package - Delphi 3, revision B'}
+{$RUNONLY}
+{$IMPLICITBUILD OFF}
+
+requires
+  VCL30;
+
+contains
+  EzdslBAr,
+  EzdslBse,
+  EzdslBtr,
+  EzdslCol,
+  EzdslCts,
+  EzdslDbl,
+  EzdslHsh,
+  EzdslLst,
+  EzdslPqu,
+  EzdslQue,
+  EzdslRnd,
+  EzdslSkp,
+  EzdslStk,
+  EzdslSup,
+  EzdslThd;
+
+end.

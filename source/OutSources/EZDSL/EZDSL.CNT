@@ -1,0 +1,19 @@
+:Base EZDSL.HLP>main
+:Title 
+1 Contents
+2 Introduction=Introduction
+2 What's New in Version 3?=What_s_New_in_Version_3_
+2 Container classes and Data objects=Container_classes_and_Data_objects
+2 Data Objects and Polymorphism=Data_Objects_and_Polymorphism
+2 Sorted Containers, Compare and Duplicate Data Objects=Sorted_Containers__Compare_and_Duplicate_Data_Objects
+2 Nodes and Node Stores=Nodes_and_Node_Stores
+2 Iterators=Iterators
+2 Thread-safe Programming in 32-bit=Thread_safe_Programming_in_32_bit
+2 Delphi 3 package=Delphi_3_package
+2 Debugging and Errors and Exceptions=Debugging_and_Errors_and_Exceptions
+2 Compiler Defines=Compiler_Defines
+2 Of Compilers and Caveats=Of_Compilers_and_Caveats
+2 Example programs=Example_programs
+2 Containers Reference=Containers_Reference
+2 The Legal Bit=The_Legal_Bit
+2 Tech Support=Tech_Support

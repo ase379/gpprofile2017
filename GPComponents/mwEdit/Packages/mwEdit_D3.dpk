@@ -1,0 +1,72 @@
+package mwEdit_D3;
+
+{$R *.RES}
+{$R mwEditReg.dcr}
+{$ALIGN ON}
+{$ASSERTIONS OFF}
+{$BOOLEVAL OFF}
+{$DEBUGINFO ON}
+{$EXTENDEDSYNTAX ON}
+{$IMPORTEDDATA ON}
+{$IOCHECKS ON}
+{$LOCALSYMBOLS ON}
+{$LONGSTRINGS ON}
+{$OPENSTRINGS ON}
+{$OPTIMIZATION OFF}
+{$OVERFLOWCHECKS OFF}
+{$RANGECHECKS ON}
+{$REFERENCEINFO OFF}
+{$SAFEDIVIDE OFF}
+{$STACKFRAMES ON}
+{$TYPEDADDRESS OFF}
+{$VARSTRINGCHECKS ON}
+{$WRITEABLECONST ON}
+{$MINENUMSIZE 1}
+{$IMAGEBASE $00400000}
+{$DESCRIPTION 'mwEdit Component Library'}
+{$DESIGNONLY}
+{$IMPLICITBUILD ON}
+
+requires
+  vcl30,
+  vcldb30;
+
+contains
+  cbHPSyn,
+  cbUtils,
+  cwCACSyn,
+  DBmwEdit,
+  DcjCppSyn,
+  DcjJavaSyn,
+  DcjPerlSyn,
+  dmBatSyn,
+  dmDfmSyn,
+  hkAWKSyn,
+  hkHTMLSyn,
+  lbVBSSyn,
+  mkGalaxySyn,
+  mwCustomEdit,
+  mwEditReg,
+  mwEditSearch,
+  mwEditStrings,
+  mwExport,
+  mwGeneralSyn,
+  mwHighlighter,
+  mwHtmlExport,
+  mwKeyCmdEditor {mwKeystrokeEditorForm},
+  mwKeyCmds,
+  mwKeyCmdsEditor {mwKeystrokesEditorForm},
+  mwLocalStr,
+  mwPasSyn,
+  mwRtfExport,
+  mwSupportClasses,
+  mwSupportProcs,
+  odPySyn,
+  odPythonBehaviour,
+  siTCLTKSyn,
+  uTextDrawer,
+  wmSQLSyn,
+  nhAsmSyn,
+  mwCompletionProposal;
+
+end.
