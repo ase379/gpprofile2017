@@ -85,16 +85,16 @@ object frmAbout: TfrmAbout
         object lblVersion: TLabel
           Left = 72
           Top = 16
-          Width = 59
+          Width = 104
           Height = 13
-          Caption = 'GpProfile %s'
+          Caption = 'GpProfile 2011 (v. %s)'
         end
         object Label3: TLabel
           Left = 72
           Top = 32
-          Width = 34
+          Width = 120
           Height = 13
-          Caption = 'Author:'
+          Caption = 'Author: Primoz Gabrijelcic'
         end
         object Bevel3: TBevel
           Left = 16
@@ -384,13 +384,6 @@ object frmAbout: TfrmAbout
           Font.Style = []
           ParentFont = False
           WordWrap = True
-        end
-        object Label4: TLabel
-          Left = 72
-          Top = 48
-          Width = 22
-          Height = 13
-          Caption = 'Visit:'
         end
         object oxGraphicButton1: TBitBtn
           Left = 267

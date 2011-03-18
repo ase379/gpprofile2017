@@ -1,7 +1,7 @@
 object frmMain: TfrmMain
   Left = 312
   Top = 179
-  Caption = 'GpProfile Reborn :)'
+  Caption = 'GpProfile 2011'
   ClientHeight = 514
   ClientWidth = 612
   Color = clBtnFace
@@ -324,6 +324,10 @@ object frmMain: TfrmMain
         object tabInstrumentation: TTabSheet
           Caption = 'Instrumentation'
           ImageIndex = 16
+          ExplicitLeft = 0
+          ExplicitTop = 0
+          ExplicitWidth = 0
+          ExplicitHeight = 0
           object Splitter1: TSplitter
             Left = 129
             Top = 25
@@ -452,6 +456,10 @@ object frmMain: TfrmMain
         object tabAnalysis: TTabSheet
           Caption = 'Analysis'
           ImageIndex = 17
+          ExplicitLeft = 0
+          ExplicitTop = 0
+          ExplicitWidth = 0
+          ExplicitHeight = 0
           object PageControl2: TPageControl
             Left = 0
             Top = 0
@@ -465,6 +473,10 @@ object frmMain: TfrmMain
             object tabProcedures: TTabSheet
               Caption = 'Procedures'
               ImageIndex = -1
+              ExplicitLeft = 0
+              ExplicitTop = 0
+              ExplicitWidth = 0
+              ExplicitHeight = 0
               object splitCallees: TSplitter
                 Left = 0
                 Top = 186
@@ -502,7 +514,7 @@ object frmMain: TfrmMain
                   Width = 145
                   Height = 21
                   Style = csDropDownList
-                  ItemHeight = 13
+                  ItemHeight = 0
                   TabOrder = 0
                   OnChange = cbxSelectThreadProcChange
                 end
@@ -836,6 +848,10 @@ object frmMain: TfrmMain
             object tabClasses: TTabSheet
               Caption = 'Classes'
               ImageIndex = -1
+              ExplicitLeft = 0
+              ExplicitTop = 0
+              ExplicitWidth = 0
+              ExplicitHeight = 0
               DesignSize = (
                 596
                 283)
@@ -853,7 +869,7 @@ object frmMain: TfrmMain
                 Width = 145
                 Height = 21
                 Style = csDropDownList
-                ItemHeight = 13
+                ItemHeight = 0
                 TabOrder = 0
                 OnChange = cbxSelectThreadClassChange
               end
@@ -862,7 +878,7 @@ object frmMain: TfrmMain
                 Left = 4
                 Top = 32
                 Width = 587
-                Height = 206
+                Height = 204
                 Anchors = [akLeft, akTop, akRight, akBottom]
                 Columns = <
                   item
@@ -904,6 +920,10 @@ object frmMain: TfrmMain
             object tabUnits: TTabSheet
               Caption = 'Units'
               ImageIndex = -1
+              ExplicitLeft = 0
+              ExplicitTop = 0
+              ExplicitWidth = 0
+              ExplicitHeight = 0
               DesignSize = (
                 596
                 283)
@@ -921,7 +941,7 @@ object frmMain: TfrmMain
                 Width = 145
                 Height = 21
                 Style = csDropDownList
-                ItemHeight = 13
+                ItemHeight = 0
                 TabOrder = 0
                 OnChange = cbxSelectThreadUnitChange
               end
@@ -929,7 +949,7 @@ object frmMain: TfrmMain
                 Left = 4
                 Top = 32
                 Width = 588
-                Height = 206
+                Height = 204
                 Anchors = [akLeft, akTop, akRight, akBottom]
                 Columns = <
                   item
@@ -972,6 +992,10 @@ object frmMain: TfrmMain
             object tabThreads: TTabSheet
               Caption = 'Threads'
               ImageIndex = -1
+              ExplicitLeft = 0
+              ExplicitTop = 0
+              ExplicitWidth = 0
+              ExplicitHeight = 0
               DesignSize = (
                 596
                 283)
@@ -979,7 +1003,7 @@ object frmMain: TfrmMain
                 Left = 4
                 Top = 32
                 Width = 589
-                Height = 209
+                Height = 207
                 Anchors = [akLeft, akTop, akRight, akBottom]
                 Columns = <
                   item
@@ -1737,7 +1761,7 @@ object frmMain: TfrmMain
     Left = 47
     Top = 134
     Bitmap = {
-      494C01011D001F00300010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
+      494C01011D001F00380010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000008000000001002000000000000080
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000
@@ -2994,7 +3018,7 @@ object frmMain: TfrmMain
     Left = 47
     Top = 164
     Bitmap = {
-      494C010103000500300010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
+      494C010103000500380010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000001000000001002000000000000010
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000

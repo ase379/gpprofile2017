@@ -25,7 +25,6 @@ type
     RichEdit1: TRichEdit;
     TabSheet5: TTabSheet;
     RichEdit2: TRichEdit;
-    Label4: TLabel;
     oxGraphicButton1: TBitBtn;
     procedure FormCreate(Sender: TObject);
     procedure FormKeyPress(Sender: TObject; var Key: Char);

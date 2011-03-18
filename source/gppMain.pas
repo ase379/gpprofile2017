@@ -2046,8 +2046,8 @@ end;
 procedure TfrmMain.SetCaption;
 begin
   if PageControl1.ActivePage = tabInstrumentation
-    then Caption := 'GpProfile Reborn'+IFF(currentProject <> '',' - '+currentProject,'')
-    else Caption := 'GpProfile Reborn'+IFF(currentProfile <> '',' - '+currentProfile,'')+IFF(loadCanceled,' (incomplete)','');
+    then Caption := 'GpProfile 2011'+IFF(currentProject <> '',' - '+currentProject,'')
+    else Caption := 'GpProfile 2011'+IFF(currentProfile <> '',' - '+currentProfile,'')+IFF(loadCanceled,' (incomplete)','');
 end;
 
 procedure TfrmMain.SetSource;
