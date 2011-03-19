@@ -1,0 +1,24 @@
+Contents of the Contribs directory:
+--------------------------------------------------------------------------------
+
+- CmntIns_D3.zip, CmntIns_unit.zip:
+        Delphi expert for commenting changes to the mwEdit sources in the
+        preferred way, sent by HANAI Tohru.
+        Should work in D3 and D4, not tested for D5 and BCB.
+
+- Hp48.zip:
+        New version of the HP48 highlighter, sent by the original author
+        Cyrille de Brebisson.
+        Unable to compile with Delphi 2 (Overloaded methods in the cbUtils
+        unit, string constants too long in the cbHPSyn unit.), that's why I had
+        to move it here the last minute and adapt the earlier version for the
+        changes in the highlighters.
+
+- raCheckBrackets.pas:
+        Sent by Alexander Reiter.
+        Should probably be integrated into mwCustomEdit with some new commands
+        with keybinding for it.
+
+
+--------------------------------------------------------------------------------
+mh 1999-09-25
