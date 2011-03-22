@@ -383,6 +383,7 @@ type
     function  GetThreadName(index: integer): string;
     procedure LoadPreferences;
     procedure SavePreferences;
+    procedure EnumUserSettings(settings: TStrings);                       
     procedure FillDelphiVer;
     function  GetSearchPath(const aProject: string): string;
     function  GetOutputDir(const aProject: string): string;
@@ -514,6 +515,23 @@ begin
   end
   else Result := true;
 end; { EnumFindMyDelphi }
+
+function DelphiVerToBDSVer(const aDelphiVer: string): string;
+begin
+  Result := '';
+  if aDelphiVer = '2005' then
+    Result := '3.0'
+  else if aDelphiVer = '2006' then
+    Result := '4.0'
+  else if aDelphiVer = '2007' then
+    Result := '5.0'
+  else if aDelphiVer = '2009' then
+    Result := '6.0'
+  else if aDelphiVer = '2010' then
+    Result := '7.0'
+  else if aDelphiVer = 'XE' then
+    Result := '8.0';
+end;
 
 {========================= TfrmMain =========================}
 
@@ -789,19 +807,19 @@ begin
   found := false;
   with popDelphiVer do begin
     for i := 0 to Items.Count-2 do Items[i].Checked := false;
-    if Items.Count > 1 then // <-- Added by Alisov A.
+    if Items.Count >= 1 then 
       Items[Items.Count-1].Checked := true;
-    for i := 0 to Items.Count-1 do begin
-      if ButFirst(Items[i].Caption,Length('Delphi &')) = selectedDelphi then begin
+    for i := 0 to Items.Count-1 do
+      if ButFirst(Items[i].Caption,Length('Delphi &')) = selectedDelphi then
+      begin
         Items[Items.Count-1].Checked := false;
         Items[i].Checked := true;
         found := true;
         system.break;
       end;
-    end;
-    if not found then
-      if Items.Count > 1 then // <-- Added by Alisov A.
-        selectedDelphi := ButFirst(Items[Items.Count-1].Caption,Length('Delphi &'));
+
+    if (not found) and (Items.Count >= 1) then
+      selectedDelphi := ButFirst(Items[Items.Count-1].Caption, Length('Delphi &'));
   end;
   tbtnRun.Hint := 'Run Delphi '+selectedDelphi;
   Run1.Caption := 'Run &Delphi '+selectedDelphi;
@@ -846,7 +864,92 @@ begin
       mwSource.Color := mwPasSyn1.SpaceAttri.Background;
     SetSource;
   end;
-end; { TfrmMain.EnablePC2 }
+end;
+
+procedure TfrmMain.EnumUserSettings(settings: TStrings);
+var
+  vTempSL: TStrings;
+  i: Integer;
+begin
+  { returns the user settings that exist in the registry }
+  with TRegistry.Create do
+  begin
+    try
+      // Enumerate Delphi 2009-XE
+      RootKey := HKEY_CURRENT_USER;
+      if OpenKeyReadOnly('\SOFTWARE\Embarcadero\BDS') then
+      begin
+        try
+          vTempSL := TStringList.Create;
+          try
+            GetKeyNames(vTempSL);
+            for i := 0 to vTempSL.Count-1 do
+            begin
+              if vTempSL[i] = '8.0' then
+                settings.Add('XE')
+              else if vTempSL[i] = '7.0' then
+                settings.Add('2010')
+              else if vTempSL[i] = '6.0' then
+                settings.Add('2009')
+              else
+                settings.Add('Embarcadero BDS ' + vTempSL[i]);
+            end;
+          finally
+            vTempSL.Free;
+          end;
+        finally
+          CloseKey;
+        end;
+      end;
+
+      // Enumerate Delphi 2005-2007
+      RootKey := HKEY_CURRENT_USER;
+      if OpenKeyReadOnly('\SOFTWARE\Borland\BDS') then
+      begin
+        try
+          vTempSL := TStringList.Create;
+          try
+            GetKeyNames(vTempSL);
+            for i := 0 to vTempSL.Count-1 do
+              if vTempSL[i] = '5.0' then
+                settings.Add('2007')
+              else if vTempSL[i] = '4.0' then
+                settings.Add('2006')
+              else if vTempSL[i] = '3.0' then
+                settings.Add('2005')
+              else
+                settings.Add('Borland BDS ' + vTempSL[i]);
+          finally
+            vTempSL.Free;
+          end;
+        finally
+          CloseKey;
+        end;
+      end;
+
+      RootKey := HKEY_LOCAL_MACHINE;
+      // Enumerate Delphi versions 2-5
+      if OpenKeyReadOnly('\SOFTWARE\Borland\Delphi') then
+      begin
+        try
+          vTempSL := TStringList.Create;
+          try
+            GetKeyNames(vTempSL);
+            settings.AddStrings(vTempSL);
+          finally
+            vTempSL.Free;
+          end;
+        finally
+          CloseKey;
+        end;
+      end;
+    finally
+      Free;
+    end;
+  end;
+end;
+
+{ TfrmMain.EnablePC2 }
 
 function TfrmMain.ParseProfileCallback(percent: integer): boolean;
 begin
@@ -1222,7 +1325,7 @@ var
 begin
   s := TStringList.Create;
   try
-    mwPasSyn1.EnumUserSettings(s);
+    EnumUserSettings(s);
     for i := 0 to s.Count-1 do begin
       mn := TMenuItem.Create(self);
       mn.Caption := 'Delphi &'+s[i];
@@ -1961,52 +2064,61 @@ begin
   with TGpRegistry.Create do
     try
       RootKey := HKEY_LOCAL_MACHINE;
-      if OpenKeyReadOnly('\SOFTWARE\Borland\Delphi\'+selectedDelphi) then
-        run := ReadString('Delphi '+FirstEl(selectedDelphi,'.',-1),'')
-      else
-        run := '';
+      if OpenKeyReadOnly('\SOFTWARE\Borland\Delphi\' + selectedDelphi) then
+        run := ReadString('Delphi ' + FirstEl(selectedDelphi,'.',-1),'')
+      else begin
+        RootKey := HKEY_CURRENT_USER;
+        if OpenKeyReadOnly('\SOFTWARE\Borland\BDS\' + DelphiVerToBDSVer(selectedDelphi)) then
+          run := ReadString('App', '')
+        else if OpenKeyReadOnly('\SOFTWARE\Embarcadero\BDS\' + DelphiVerToBDSVer(selectedDelphi)) then
+          run := ReadString('App', '')
+        else
+          run := '';
+      end;
     finally
       Free;
     end;
 
-  if run <> '' then
-  begin
-    if delphiThreadID <> 0 then
-    begin // check if Delphi is still alive
-      MapThreadToWindows(delphiThreadID,delphiAppWindow,delphiEditWindow);
-      if delphiAppWindow = 0 then
-        CloseDelphiHandles // restart Delphi
-      else begin
-        if IsIconic(delphiAppWindow) then
-          ShowWindow(delphiAppWindow,SW_RESTORE);
-        SetForegroundWindow(delphiEditWindow); // switch to Delphi
-        Exit;
-      end;
-    end;
+  if run = '' then
+    raise Exception.Create('Can''t determine Delphi executable file location from registry.');
 
-    with startupInfo do
-    begin
-      cb          := SizeOf(startupInfo);
-      lpReserved  := nil;
-      lpDesktop   := nil;
-      lpTitle     := nil;
-      dwFlags     := STARTF_USESHOWWINDOW+STARTF_FORCEONFEEDBACK;
-      wShowWindow := SW_SHOWDEFAULT;
-      cbReserved2 := 0;
-      lpReserved2 := nil;
+  if delphiThreadID <> 0 then // not first run =>
+  begin // => check if Delphi is still alive
+    MapThreadToWindows(delphiThreadID,delphiAppWindow,delphiEditWindow);
+    if delphiAppWindow = 0 then
+      CloseDelphiHandles // restart Delphi
+    else begin
+      if IsIconic(delphiAppWindow) then
+        ShowWindow(delphiAppWindow,SW_RESTORE);
+      SetForegroundWindow(delphiAppWindow); // New versions of Delphi have only app window :)
+      if delphiEditWindow <> 0 then
+        SetForegroundWindow(delphiEditWindow); // Old versions of Delphi (2-7) also have edit window
+      Exit;
     end;
-    run := '"' + run + '" "' + openProject.Name + '"';
-    if not CreateProcess(nil,PChar(run),nil,nil,false,
-             CREATE_DEFAULT_ERROR_MODE+CREATE_NEW_PROCESS_GROUP+NORMAL_PRIORITY_CLASS,
-             nil,PChar(ExtractFilePath(openProject.Name)),startupInfo,
-             delphiProcessInfo) then
-    begin
-      StatusPanel0(Format('Cannot run Delphi (%s): %s',[run,SysErrorMessage(GetLastError)]),false,true);
-      delphiThreadID := 0;
-    end
-    else
-      delphiThreadID := delphiProcessInfo.dwThreadId;
   end;
+
+  with startupInfo do
+  begin
+    cb          := SizeOf(startupInfo);
+    lpReserved  := nil;
+    lpDesktop   := nil;
+    lpTitle     := nil;
+    dwFlags     := STARTF_USESHOWWINDOW+STARTF_FORCEONFEEDBACK;
+    wShowWindow := SW_SHOWDEFAULT;
+    cbReserved2 := 0;
+    lpReserved2 := nil;
+  end;
+  run := '"' + run + '" "' + openProject.Name + '"';
+  if not CreateProcess(nil,PChar(run),nil,nil,false,
+           CREATE_DEFAULT_ERROR_MODE+CREATE_NEW_PROCESS_GROUP+NORMAL_PRIORITY_CLASS,
+           nil,PChar(ExtractFilePath(openProject.Name)),startupInfo,
+           delphiProcessInfo) then
+  begin
+    StatusPanel0(Format('Cannot run Delphi (%s): %s',[run,SysErrorMessage(GetLastError)]),false,true);
+    delphiThreadID := 0;
+  end
+  else
+    delphiThreadID := delphiProcessInfo.dwThreadId;
 end;
 
 procedure TfrmMain.actOpenProfileExecute(Sender: TObject);
@@ -2308,7 +2420,7 @@ var
 begin
   s := TStringList.Create;
   try
-    mwPasSyn1.EnumUserSettings(s);
+    EnumUserSettings(s);
     verch := Chr(delphiVer+Ord('0'));
     setting := s.Count-1;
     for i := 0 to s.Count-2 do
@@ -2674,18 +2786,28 @@ begin
   // Get settings from registry
   with TGpRegistry.Create do begin
     try
-      // Path for older versions of Delphi
+      // Path for Delphi 2009-XE
       RootKey := HKEY_CURRENT_USER;
-      if OpenKeyReadOnly('SOFTWARE\Borland\Delphi\'+selectedDelphi+'\Library') then
+      if OpenKeyReadOnly('SOFTWARE\Embarcadero\BDS\' + DelphiVerToBDSVer(selectedDelphi) + '\Library') then
       begin
-        vPath := vPath + IfThen((vPath <> '') and (vPath[Length(vPath)] <> ';'), ';') + ReadString('SearchPath','');
         vPath := vPath + IfThen((vPath <> '') and (vPath[Length(vPath)] <> ';'), ';') + ReadString('Search Path','');
         CloseKey;
       end;
 
-      // Path for Delphi XE
-      if OpenKeyReadOnly('SOFTWARE\Embarcadero\BDS\8.0\Library') then
+      // Path for Delphi 2005-2007
+      RootKey := HKEY_CURRENT_USER;
+      if OpenKeyReadOnly('SOFTWARE\Borland\BDS\' + DelphiVerToBDSVer(selectedDelphi) + '\Library') then
       begin
+        vPath := vPath + IfThen((vPath <> '') and (vPath[Length(vPath)] <> ';'), ';') + ReadString('Search Path','');
+        vPath := vPath + IfThen((vPath <> '') and (vPath[Length(vPath)] <> ';'), ';') + ReadString('SearchPath','');
+        CloseKey;
+      end;
+
+      // Path for Delphi 2-7
+      RootKey := HKEY_LOCAL_MACHINE;
+      if OpenKeyReadOnly('SOFTWARE\Borland\Delphi\'+selectedDelphi+'\Library') then
+      begin
+        vPath := vPath + IfThen((vPath <> '') and (vPath[Length(vPath)] <> ';'), ';') + ReadString('SearchPath','');
         vPath := vPath + IfThen((vPath <> '') and (vPath[Length(vPath)] <> ';'), ';') + ReadString('Search Path','');
         CloseKey;
       end;
