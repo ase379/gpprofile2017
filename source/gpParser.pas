@@ -1662,10 +1662,7 @@ uses
         if (not un.unExcluded) and (un.unProcs.Count > 0) and
            (un.unInProjectDir or (not projectDirOnly)) then
           if un.unFileDate <> FileAge(un.unFullName) then
-          begin
-            ShowMessage(IntToStr(un.unFileDate) + ' ' + IntToStr(FileAge(un.unFullName)));
             Exit;
-          end;
         cursor := Next(cursor);
       end;
     end;
