@@ -17,6 +17,8 @@ type
     function Root: IXMLNodeList;
     function SearchPath: String;
     function OutputDir: String;
+    function XE2Config: string;
+    function XE2Platform: string;
   end;
 
 function IfThen(const aCond: Boolean; const aIfTrue: String; const aIfFalse: string = ''): String;
@@ -71,6 +73,52 @@ begin
           'Output dir for exe-file differs for different configuration types release/debug etc.)');
 
       Result := Root.Nodes[i].ChildValues['DCC_ExeOutput'];
+    end;
+  end;
+end;
+
+function TDProj.XE2Config: string;
+var
+  i: Integer;
+begin
+  Result := '';
+  for i := 0 to Root.Count-1 do
+  begin
+    if Root.Nodes[i].NodeName <> 'PropertyGroup' then
+      Continue;
+
+    // NB! "Condition" attribute in PropertyGroup is not analyzed due to its complicated structure
+    // In current realization simply take first nonempty OutputDir
+    // (i.e. analysis of different config types (debug/release) is not implemented)
+    if Root.Nodes[i].ChildValues['Config'] <> Null then
+    begin
+      if (Result <> '') and (Result <> Root.Nodes[i].ChildValues['Config']) then begin
+        {do nothing}
+      end
+      else Result := Root.Nodes[i].ChildValues['Config'];
+    end;
+  end;
+end;
+
+function TDProj.XE2Platform: string;
+var
+  i: Integer;
+begin
+  Result := '';
+  for i := 0 to Root.Count-1 do
+  begin
+    if Root.Nodes[i].NodeName <> 'PropertyGroup' then
+      Continue;
+
+    // NB! "Condition" attribute in PropertyGroup is not analyzed due to its complicated structure
+    // In current realization simply take first nonempty OutputDir
+    // (i.e. analysis of different config types (debug/release) is not implemented)
+    if Root.Nodes[i].ChildValues['Platform'] <> Null then
+    begin
+      if (Result <> '') and (Result <> Root.Nodes[i].ChildValues['Platform']) then begin
+        {do nothing}
+      end
+      else Result := Root.Nodes[i].ChildValues['Platform'];
     end;
   end;
 end;

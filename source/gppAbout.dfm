@@ -48,6 +48,10 @@ object frmAbout: TfrmAbout
       TabOrder = 1
       object TabSheet1: TTabSheet
         Caption = 'About'
+        ExplicitLeft = 0
+        ExplicitTop = 0
+        ExplicitWidth = 0
+        ExplicitHeight = 0
         object Image1: TImage
           Left = 24
           Top = 16
@@ -580,6 +584,10 @@ object frmAbout: TfrmAbout
       object TabSheet4: TTabSheet
         Caption = 'What'#39's New'
         ImageIndex = 3
+        ExplicitLeft = 0
+        ExplicitTop = 0
+        ExplicitWidth = 0
+        ExplicitHeight = 0
         object RichEdit1: TRichEdit
           Left = 16
           Top = 16
@@ -594,6 +602,10 @@ object frmAbout: TfrmAbout
       object TabSheet5: TTabSheet
         Caption = 'Open Source'
         ImageIndex = 4
+        ExplicitLeft = 0
+        ExplicitTop = 0
+        ExplicitWidth = 0
+        ExplicitHeight = 0
         object RichEdit2: TRichEdit
           Left = 16
           Top = 16

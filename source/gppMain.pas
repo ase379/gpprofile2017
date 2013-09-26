@@ -75,29 +75,29 @@ type
     Panel4: TPanel;
     Panel5: TPanel;
     tbrProject: TToolBar;
-    ToolButton1: TToolButton;
-    ToolButton8: TToolButton;
-    ToolButton9: TToolButton;
-    ToolButton3: TToolButton;
-    ToolButton4: TToolButton;
+    BtnOpenProject: TToolButton;
+    btnRescanProject: TToolButton;
+    BtnInstrumentAndRun: TToolButton;
+    btnInstrument: TToolButton;
+    btnRemoveInstrumentation: TToolButton;
     tbtnRun: TToolButton;
-    ToolButton10: TToolButton;
+    btnProjectOptions: TToolButton;
     ToolBar2: TToolBar;
-    ToolButton22: TToolButton;
-    ToolButton23: TToolButton;
-    ToolButton24: TToolButton;
-    ToolButton25: TToolButton;
-    ToolButton2: TToolButton;
-    ToolButton5: TToolButton;
+    btnOpenProfile: TToolButton;
+    btnRescanProfile: TToolButton;
+    btnExportProfile: TToolButton;
+    btnProfileOptions: TToolButton;
+    btnRenameMoveProfile: TToolButton;
+    btnMakeCopyProfile: TToolButton;
     ToolButton6: TToolButton;
     ToolButton7: TToolButton;
     ToolButton11: TToolButton;
     actDelUndelProfile: TAction;
-    ToolButton13: TToolButton;
+    btnDelUndelProfile: TToolButton;
     Delete1: TMenuItem;
     pnlToolbarMain: TPanel;
     tbrMain: TToolBar;
-    ToolButton41: TToolButton;
+    btnPreferences: TToolButton;
     SaveDialog1: TSaveDialog;
     Panel0: TPanel;
     Panel1: TPanel;
@@ -137,10 +137,10 @@ type
     popLayout: TPopupMenu;
     pnlLayout: TPanel;
     inpLayoutName: TEdit;
-    Button1: TButton;
-    Button2: TButton;
-    Button3: TButton;
-    Button4: TButton;
+    BtnDeleteLayout: TButton;
+    btnActivateLayout: TButton;
+    btnRenameLayout: TButton;
+    btnAddLayout: TButton;
     SpeedButton1: TSpeedButton;
     Contents1: TMenuItem;
     N3: TMenuItem;
@@ -148,7 +148,7 @@ type
     actHelpContents: TAction;
     actHelpShortcutKeys: TAction;
     actHelpAbout: TAction;
-    ToolButton14: TToolButton;
+    btnHelpContents: TToolButton;
     imglListViews: TImageList;
     lvLayouts: TListView;
     actHelpQuickStart: TAction;
@@ -160,14 +160,14 @@ type
     ShowSourcePreview1: TMenuItem;
     pnlToolbarLayout: TPanel;
     tbrLayout: TToolBar;
-    tBtnLayout: TToolButton;
-    ToolButton15: TToolButton;
+    btnLayoutManager: TToolButton;
+    btnShowHideSourcePreview: TToolButton;
     actShowHideCallers: TAction;
     actShowHideCallees: TAction;
     HideCallers1: TMenuItem;
     HideCalled1: TMenuItem;
-    ToolButton16: TToolButton;
-    ToolButton17: TToolButton;
+    btnShowHideCallers: TToolButton;
+    btnShowHideCallees: TToolButton;
     Panel2: TPanel;
     lblSelectThreadProc: TLabel;
     cbxSelectThreadProc: TComboBox;
@@ -344,6 +344,8 @@ type
     selectedProc              : pointer;
     callersPerc               : real;
     calleesPerc               : real;
+    FXE2PlatformOverride       : string;
+    FXE2ConfigOverride         : string;
     procedure ParseProject(const aProject: string; aJustRescan: boolean);
     procedure LoadProject(fileName: string; defaultDelphi: string = '');
     procedure NotifyParse(const aUnitName: string);
@@ -434,6 +436,8 @@ type
     procedure SetPref(subkey, name: string; value: variant); overload;
     function  GetPref(subkey, name: string; defval: variant): variant; overload;
     procedure DelPref(subkey, name: string);
+    property XE2PlatformOverride: string read FXE2PlatformOverride write FXE2PlatformOverride;
+    property XE2ConfigOverride: string read FXE2ConfigOverride write FXE2ConfigOverride;
  end;
 
 var
@@ -456,7 +460,8 @@ uses
   gppLoadProgress,
   gppAbout,
   gppExport,
-  gppCallGraph;
+  gppCallGraph,
+  StrUtils; {jb}
 
 {$R *.DFM}
 
@@ -530,7 +535,11 @@ begin
   else if aDelphiVer = '2010' then
     Result := '7.0'
   else if aDelphiVer = 'XE' then
-    Result := '8.0';
+    Result := '8.0'
+  else if aDelphiVer = 'XE2' then
+    Result:= '9.0'
+  else if aDelphiVer = 'XE3' then
+    Result:= '10.0';
 end;
 
 {========================= TfrmMain =========================}
@@ -809,7 +818,7 @@ begin
     for i := 0 to Items.Count-2 do Items[i].Checked := false;
     if Items.Count >= 1 then 
       Items[Items.Count-1].Checked := true;
-    for i := 0 to Items.Count-1 do
+    for i := 0 to Items.Count-1 do begin
       if ButFirst(Items[i].Caption,Length('Delphi &')) = selectedDelphi then
       begin
         Items[Items.Count-1].Checked := false;
@@ -817,9 +826,11 @@ begin
         found := true;
         system.break;
       end;
+    end;
 
-    if (not found) and (Items.Count >= 1) then
+    if (not found) and (Items.Count >= 1) then begin
       selectedDelphi := ButFirst(Items[Items.Count-1].Caption, Length('Delphi &'));
+    end;
   end;
   tbtnRun.Hint := 'Run Delphi '+selectedDelphi;
   Run1.Caption := 'Run &Delphi '+selectedDelphi;
@@ -872,10 +883,10 @@ var
   i: Integer;
 begin
   { returns the user settings that exist in the registry }
-  with TRegistry.Create do
-  begin
-    try
-      // Enumerate Delphi 2009-XE
+  with TRegistry.Create do  begin
+  try
+
+      // Enumerate Delphi 2009-XE3
       RootKey := HKEY_CURRENT_USER;
       if OpenKeyReadOnly('\SOFTWARE\Embarcadero\BDS') then
       begin
@@ -885,7 +896,11 @@ begin
             GetKeyNames(vTempSL);
             for i := 0 to vTempSL.Count-1 do
             begin
-              if vTempSL[i] = '8.0' then
+              if vTempSL[i] = '10.0' then
+                settings.Add('XE3')
+              else if vTempSL[i] = '9.0' then
+                settings.Add('XE2')
+              else if vTempSL[i] = '8.0' then
                 settings.Add('XE')
               else if vTempSL[i] = '7.0' then
                 settings.Add('2010')
@@ -1407,19 +1422,19 @@ begin
     end;
   end;
   if inpLayoutName.Text = ''
-    then tBtnLayout.Hint := actLayoutManager.Hint
-    else tBtnLayout.Hint := actLayoutManager.Hint + ' (' + inpLayoutName.Text + ')';
+    then BtnLayoutManager.Hint := actLayoutManager.Hint
+    else BtnLayoutManager.Hint := actLayoutManager.Hint + ' (' + inpLayoutName.Text + ')';
   if CountLiveLayouts <= 1 then begin
-    tBtnLayout.Style := tbsButton;
-    tBtnLayout.Width := 23;
-    tBtnLayout.DropdownMenu := nil;
-    tbrLayout.Perform(CM_RECREATEWND, 0, 0);
+    BtnLayoutManager.Style := tbsButton;
+    BtnLayoutManager.Width := 23;
+    BtnLayoutManager.DropdownMenu := nil;
+    BtnLayoutManager.Perform(CM_RECREATEWND, 0, 0);
   end
   else begin
-    tBtnLayout.Style := tbsDropDown;
-    tBtnLayout.Width := 36;
-    tBtnLayout.DropdownMenu := popLayout;
-    tbrLayout.Perform(CM_RECREATEWND, 0, 0);
+    BtnLayoutManager.Style := tbsDropDown;
+    BtnLayoutManager.Width := 36;
+    BtnLayoutManager.DropdownMenu := popLayout;
+    BtnLayoutManager.Perform(CM_RECREATEWND, 0, 0);
   end;
 end; { TfrmMain.RebuildLayoutPopup }
 
@@ -1655,6 +1670,10 @@ begin
       Left := frmMain.Left+((frmMain.Width-Width) div 2);
       Top := frmMain.Top+((frmMain.Height-Height) div 2);
       if ShowModal = mrOK then begin
+        if (cbbXE2Platform.ItemIndex <> 0) then XE2PlatformOverride:= cbbXE2Platform.Text
+        else XE2PlatformOverride:= '';
+        if (cbbXE2Config.ItemIndex <> 0) then XE2ConfigOverride:= cbbXE2Config.Text
+        else XE2ConfigOverride:= '';
         prefMarkerStyle        := cbxMarker.ItemIndex;
         prefCompilerVersion    := cbxCompilerVersion.ItemIndex;
         prefHideNotExecuted    := cbHideNotExecuted.Checked;
@@ -2689,6 +2708,12 @@ end; { TfrmMain.ResetDefaults }
 
 function TfrmMain.ReplaceMacros(s: string): string;
 
+  function GetDelphiXE2Var(const aVarName: string): string;
+  begin
+    if lowercase(aVarName) = 'platform' then Result:= 'Win32';
+    if lowercase(aVarName) = 'config' then Result:= 'Release';
+  end;
+
   function GetEnvVar(const aVarName: String): String;
   var
     vSize: Integer;
@@ -2718,8 +2743,8 @@ begin
   vMacros := nil;
   vMacroSt := -1;
   vInMacro := False;
-  for i := 1 to Length(Result)-1 do
-    if Copy(Result, i, 2) = '$(' then
+  for i := 1 to Length(Result) do
+    if Copy((Result+' '), i, 2) = '$(' then
     begin
       vInMacro := True;
       vMacroSt := i;
@@ -2742,6 +2767,7 @@ begin
       Continue;
     
     vMacroValue := GetEnvVar(vMacros[i]);
+    if (vMacroValue = '') then vMacroValue:= GetDelphiXE2Var(vMacros[i]);
     // ToDo: Not all macros are possible to get throug environment variables
     // Neet to find out, how to resolve the rest macros
     if vMacroValue <> '' then
@@ -2786,6 +2812,13 @@ begin
   // Get settings from registry
   with TGpRegistry.Create do begin
     try
+      //Path for Delphi XE2-XE3
+      RootKey:= HKEY_CURRENT_USER;
+      if OpenKeyReadOnly('HKEY_CURRENT_USER\Software\Embarcadero\BDS\'+DelphiVerToBDSVer(selectedDelphi)+'\Library\Win32') then begin
+        vPath := vPath + IfThen((vPath <> '') and (vPath[Length(vPath)] <> ';'), ';') + ReadString('Search Path','');
+        CloseKey;
+      end;
+
       // Path for Delphi 2009-XE
       RootKey := HKEY_CURRENT_USER;
       if OpenKeyReadOnly('SOFTWARE\Embarcadero\BDS\' + DelphiVerToBDSVer(selectedDelphi) + '\Library') then
@@ -2837,11 +2870,17 @@ begin
 end; { TfrmMain.GetSearchPath }
 
 function TfrmMain.GetOutputDir(const aProject: string): string;
+const
+  cPlatform = '$(Platform)';
+  cConfig = '$(Config)';
 var
   vDProj: TDProj;
   vDProjFN: TFileName;
   vDofFN: TFileName;
   vOldCurDir: String;
+  vXE2Platform: string;
+  vXE2Config: string;
+  XE2Pos: cardinal;
 begin
   Result := '';
 
@@ -2851,6 +2890,18 @@ begin
     vDProj := TDProj.Create(vDProjFN);
     try
       Result := vDProj.OutputDir;
+      XE2Pos:= Pos(cConfig,Result);
+      if XE2Pos <> 0 then begin
+        if (XE2ConfigOverride <> '') then vXE2Config:= XE2ConfigOverride
+        else vXE2Config:= vDProj.XE2Config;
+        Result:= ReplaceStr(Result, cConfig, vXE2Config);
+      end;
+      XE2Pos:= Pos(cPlatform,Result);
+      if XE2Pos <> 0 then begin
+        if (XE2PlatformOverride <> '') then vXE2Platform:= XE2PlatformOverride
+        else vXE2Platform:= vDProj.XE2Platform;
+        Result:= ReplaceStr(Result, cPlatform, vXE2Platform);
+      end;
     finally
       vDProj.Free;
     end;
@@ -3335,7 +3386,7 @@ var
   right : integer;
   right2: integer;
 begin
-  right  := tBtnLayout.Left+pnlToolbarLayout.Left+tBtnLayout.Width+3;
+  right  := BtnLayoutManager.Left+pnlToolbarLayout.Left+BtnLayoutManager.Width+3;
   right2 := Width-9;
   if right2 < right then right := right2;
   pnlLayout.Left := right-pnlLayout.Width+1;

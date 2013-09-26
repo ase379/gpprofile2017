@@ -52,7 +52,7 @@ object frmMain: TfrmMain
       object ToolBar2: TToolBar
         Left = 0
         Top = 0
-        Width = 194
+        Width = 196
         Height = 26
         Align = alLeft
         AutoSize = True
@@ -62,56 +62,56 @@ object frmMain: TfrmMain
         ParentShowHint = False
         ShowHint = True
         TabOrder = 0
-        object ToolButton22: TToolButton
+        object btnOpenProfile: TToolButton
           Left = 0
           Top = 0
           Action = actOpenProfile
           DropdownMenu = popRecentPrf
           Style = tbsDropDown
         end
-        object ToolButton23: TToolButton
-          Left = 36
+        object btnRescanProfile: TToolButton
+          Left = 38
           Top = 0
           Action = actRescanProfile
         end
         object ToolButton11: TToolButton
-          Left = 59
+          Left = 61
           Top = 0
           Width = 8
           Caption = 'ToolButton11'
           ImageIndex = 10
           Style = tbsSeparator
         end
-        object ToolButton2: TToolButton
-          Left = 67
+        object btnRenameMoveProfile: TToolButton
+          Left = 69
           Top = 0
           Action = actRenameMoveProfile
         end
-        object ToolButton5: TToolButton
-          Left = 90
+        object btnMakeCopyProfile: TToolButton
+          Left = 92
           Top = 0
           Action = actMakeCopyProfile
         end
-        object ToolButton13: TToolButton
-          Left = 113
+        object btnDelUndelProfile: TToolButton
+          Left = 115
           Top = 0
           Action = actDelUndelProfile
         end
-        object ToolButton24: TToolButton
-          Left = 136
+        object btnExportProfile: TToolButton
+          Left = 138
           Top = 0
           Action = actExportProfile
         end
         object ToolButton21: TToolButton
-          Left = 159
+          Left = 161
           Top = 0
           Width = 8
           Caption = 'ToolButton21'
           ImageIndex = 10
           Style = tbsSeparator
         end
-        object ToolButton25: TToolButton
-          Left = 167
+        object btnProfileOptions: TToolButton
+          Left = 169
           Top = 0
           Action = actProfileOptions
           ParentShowHint = False
@@ -140,7 +140,7 @@ object frmMain: TfrmMain
         ParentShowHint = False
         ShowHint = True
         TabOrder = 0
-        object ToolButton41: TToolButton
+        object btnPreferences: TToolButton
           Left = 0
           Top = 0
           Action = actPreferences
@@ -148,7 +148,7 @@ object frmMain: TfrmMain
           ParentShowHint = False
           ShowHint = True
         end
-        object ToolButton14: TToolButton
+        object btnHelpContents: TToolButton
           Left = 23
           Top = 0
           Action = actHelpContents
@@ -166,7 +166,7 @@ object frmMain: TfrmMain
       object tbrProject: TToolBar
         Left = 0
         Top = 0
-        Width = 207
+        Width = 211
         Height = 26
         Align = alLeft
         AutoSize = True
@@ -176,7 +176,7 @@ object frmMain: TfrmMain
         ParentShowHint = False
         ShowHint = True
         TabOrder = 0
-        object ToolButton1: TToolButton
+        object BtnOpenProject: TToolButton
           Left = 0
           Top = 0
           Action = actOpen
@@ -184,38 +184,38 @@ object frmMain: TfrmMain
           DropdownMenu = popRecent
           Style = tbsDropDown
         end
-        object ToolButton8: TToolButton
-          Left = 36
+        object btnRescanProject: TToolButton
+          Left = 38
           Top = 0
           Action = actRescanProject
         end
         object ToolButton6: TToolButton
-          Left = 59
+          Left = 61
           Top = 0
           Width = 8
           Caption = 'ToolButton6'
           ImageIndex = 9
           Style = tbsSeparator
         end
-        object ToolButton9: TToolButton
-          Left = 67
+        object BtnInstrumentAndRun: TToolButton
+          Left = 69
           Top = 0
           Action = actInstrumentRun
         end
-        object ToolButton3: TToolButton
-          Left = 90
+        object btnInstrument: TToolButton
+          Left = 92
           Top = 0
           Action = actInstrument
           AllowAllUp = True
         end
-        object ToolButton4: TToolButton
-          Left = 113
+        object btnRemoveInstrumentation: TToolButton
+          Left = 115
           Top = 0
           Action = actRemoveInstrumentation
           AllowAllUp = True
         end
         object tbtnRun: TToolButton
-          Left = 136
+          Left = 138
           Top = 0
           Action = actRun
           AllowAllUp = True
@@ -223,15 +223,15 @@ object frmMain: TfrmMain
           Style = tbsDropDown
         end
         object ToolButton7: TToolButton
-          Left = 172
+          Left = 176
           Top = 0
           Width = 8
           Caption = 'ToolButton7'
           ImageIndex = 9
           Style = tbsSeparator
         end
-        object ToolButton10: TToolButton
-          Left = 180
+        object btnProjectOptions: TToolButton
+          Left = 184
           Top = 0
           Action = actProjectOptions
           ParentShowHint = False
@@ -250,7 +250,7 @@ object frmMain: TfrmMain
       object tbrLayout: TToolBar
         Left = 0
         Top = 0
-        Width = 109
+        Width = 111
         Height = 26
         Align = alLeft
         AutoSize = True
@@ -260,22 +260,22 @@ object frmMain: TfrmMain
         ParentShowHint = False
         ShowHint = True
         TabOrder = 0
-        object ToolButton15: TToolButton
+        object btnShowHideSourcePreview: TToolButton
           Left = 0
           Top = 0
           Action = actShowHideSourcePreview
         end
-        object ToolButton16: TToolButton
+        object btnShowHideCallers: TToolButton
           Left = 23
           Top = 0
           Action = actShowHideCallers
         end
-        object ToolButton17: TToolButton
+        object btnShowHideCallees: TToolButton
           Left = 46
           Top = 0
           Action = actShowHideCallees
         end
-        object tBtnLayout: TToolButton
+        object btnLayoutManager: TToolButton
           Left = 69
           Top = 0
           Action = actLayoutManager
@@ -315,7 +315,7 @@ object frmMain: TfrmMain
         Top = 0
         Width = 612
         Height = 340
-        ActivePage = tabAnalysis
+        ActivePage = tabInstrumentation
         Align = alClient
         HotTrack = True
         Images = imglButtons
@@ -452,6 +452,10 @@ object frmMain: TfrmMain
         object tabAnalysis: TTabSheet
           Caption = 'Analysis'
           ImageIndex = 17
+          ExplicitLeft = 0
+          ExplicitTop = 0
+          ExplicitWidth = 0
+          ExplicitHeight = 0
           object PageControl2: TPageControl
             Left = 0
             Top = 0
@@ -465,6 +469,10 @@ object frmMain: TfrmMain
             object tabProcedures: TTabSheet
               Caption = 'Procedures'
               ImageIndex = -1
+              ExplicitLeft = 0
+              ExplicitTop = 0
+              ExplicitWidth = 0
+              ExplicitHeight = 0
               object splitCallees: TSplitter
                 Left = 0
                 Top = 186
@@ -502,7 +510,7 @@ object frmMain: TfrmMain
                   Width = 145
                   Height = 21
                   Style = csDropDownList
-                  ItemHeight = 13
+                  ItemHeight = 0
                   TabOrder = 0
                   OnChange = cbxSelectThreadProcChange
                 end
@@ -515,9 +523,9 @@ object frmMain: TfrmMain
                   BevelOuter = bvNone
                   TabOrder = 1
                   object ToolBar3: TToolBar
-                    Left = 23
+                    Left = 19
                     Top = 0
-                    Width = 72
+                    Width = 76
                     Height = 26
                     Align = alRight
                     AutoSize = True
@@ -539,7 +547,7 @@ object frmMain: TfrmMain
                       Style = tbsDropDown
                     end
                     object ToolButton19: TToolButton
-                      Left = 36
+                      Left = 38
                       Top = 0
                       Action = actBrowseNext
                       DropdownMenu = popBrowseNext
@@ -836,6 +844,10 @@ object frmMain: TfrmMain
             object tabClasses: TTabSheet
               Caption = 'Classes'
               ImageIndex = -1
+              ExplicitLeft = 0
+              ExplicitTop = 0
+              ExplicitWidth = 0
+              ExplicitHeight = 0
               DesignSize = (
                 596
                 283)
@@ -853,7 +865,7 @@ object frmMain: TfrmMain
                 Width = 145
                 Height = 21
                 Style = csDropDownList
-                ItemHeight = 13
+                ItemHeight = 0
                 TabOrder = 0
                 OnChange = cbxSelectThreadClassChange
               end
@@ -862,7 +874,7 @@ object frmMain: TfrmMain
                 Left = 4
                 Top = 32
                 Width = 587
-                Height = 203
+                Height = 201
                 Anchors = [akLeft, akTop, akRight, akBottom]
                 Columns = <
                   item
@@ -898,11 +910,16 @@ object frmMain: TfrmMain
                 OnClick = lvProcsClick
                 OnCompare = lvClassesCompare
                 OnSelectItem = lvProcsSelectItem
+                ExplicitHeight = 202
               end
             end
             object tabUnits: TTabSheet
               Caption = 'Units'
               ImageIndex = -1
+              ExplicitLeft = 0
+              ExplicitTop = 0
+              ExplicitWidth = 0
+              ExplicitHeight = 0
               DesignSize = (
                 596
                 283)
@@ -920,7 +937,7 @@ object frmMain: TfrmMain
                 Width = 145
                 Height = 21
                 Style = csDropDownList
-                ItemHeight = 13
+                ItemHeight = 0
                 TabOrder = 0
                 OnChange = cbxSelectThreadUnitChange
               end
@@ -928,7 +945,7 @@ object frmMain: TfrmMain
                 Left = 4
                 Top = 32
                 Width = 588
-                Height = 203
+                Height = 201
                 Anchors = [akLeft, akTop, akRight, akBottom]
                 Columns = <
                   item
@@ -965,11 +982,16 @@ object frmMain: TfrmMain
                 OnClick = lvProcsClick
                 OnCompare = lvUnitsCompare
                 OnSelectItem = lvProcsSelectItem
+                ExplicitHeight = 202
               end
             end
             object tabThreads: TTabSheet
               Caption = 'Threads'
               ImageIndex = -1
+              ExplicitLeft = 0
+              ExplicitTop = 0
+              ExplicitWidth = 0
+              ExplicitHeight = 0
               DesignSize = (
                 596
                 283)
@@ -977,7 +999,7 @@ object frmMain: TfrmMain
                 Left = 4
                 Top = 32
                 Width = 589
-                Height = 206
+                Height = 204
                 Anchors = [akLeft, akTop, akRight, akBottom]
                 Columns = <
                   item
@@ -1012,6 +1034,7 @@ object frmMain: TfrmMain
                 TabOrder = 0
                 ViewStyle = vsReport
                 OnCompare = lvThreadsCompare
+                ExplicitHeight = 205
               end
             end
           end
@@ -1386,7 +1409,7 @@ object frmMain: TfrmMain
       TabOrder = 0
       OnKeyPress = inpLayoutNameKeyPress
     end
-    object Button1: TButton
+    object BtnDeleteLayout: TButton
       Left = 94
       Top = 80
       Width = 65
@@ -1394,7 +1417,7 @@ object frmMain: TfrmMain
       Action = actDelLayout
       TabOrder = 1
     end
-    object Button2: TButton
+    object btnActivateLayout: TButton
       Left = 94
       Top = 63
       Width = 65
@@ -1402,7 +1425,7 @@ object frmMain: TfrmMain
       Action = actChangeLayout
       TabOrder = 2
     end
-    object Button3: TButton
+    object btnRenameLayout: TButton
       Left = 94
       Top = 46
       Width = 65
@@ -1410,7 +1433,7 @@ object frmMain: TfrmMain
       Action = actRenameLayout
       TabOrder = 3
     end
-    object Button4: TButton
+    object btnAddLayout: TButton
       Left = 94
       Top = 29
       Width = 65
@@ -1734,7 +1757,7 @@ object frmMain: TfrmMain
     Left = 47
     Top = 134
     Bitmap = {
-      494C01011D001F003C0010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
+      494C01011D001F00440010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000008000000001002000000000000080
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000
@@ -2991,7 +3014,7 @@ object frmMain: TfrmMain
     Left = 47
     Top = 164
     Bitmap = {
-      494C0101030005003C0010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
+      494C010103000500440010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000001000000001002000000000000010
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000
@@ -3176,7 +3199,7 @@ object frmMain: TfrmMain
     Top = 314
   end
   object OpenDialog1: TOpenDialog
-    Filter = #1060#1072#1081#1083#1099' '#1087#1088#1086#1092#1080#1083#1103' (*.prf)|*.prf'
+    Filter = '????? ??????? (*.prf)|*.prf'
     Options = [ofHideReadOnly, ofNoChangeDir, ofFileMustExist, ofEnableSizing]
     Left = 168
     Top = 208

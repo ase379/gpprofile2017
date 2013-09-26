@@ -6,7 +6,7 @@ interface
 
 uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
-  StdCtrls, ComCtrls, ExtCtrls, JvBrowseFolder, Menus, ImgList, ActnList;
+  StdCtrls, ComCtrls, ExtCtrls, Menus, ImgList, ActnList, ShellAPI, ShlObj;
 
 type
   TfrmPreferences = class(TForm)
@@ -62,6 +62,11 @@ type
     cbDisableUserDefines: TCheckBox;
     btnClearAllDefines: TButton;
     cbInstrumentAssembler: TCheckBox;
+    GroupBox6: TGroupBox;
+    cbbXE2Platform: TComboBox;
+    cbbXE2Config: TComboBox;
+    Label3: TLabel;
+    Label5: TLabel;
     procedure FormKeyPress(Sender: TObject; var Key: Char);
     procedure FormCreate(Sender: TObject);
     procedure btnAddFromFolderClick(Sender: TObject);
@@ -116,6 +121,29 @@ uses
 
 {$R *.DFM}
 
+function BrowseDialog(const Title: string; const Flag: integer): string;
+var
+  lpItemID : PItemIDList;
+  BrowseInfo : TBrowseInfo;
+  DisplayName : array[0..MAX_PATH] of char;
+  TempPath : array[0..MAX_PATH] of char;
+begin
+  Result := '';
+  FillChar(BrowseInfo, sizeof(TBrowseInfo), #0);
+  with BrowseInfo do begin
+    hwndOwner := Application.Handle;
+    pszDisplayName := @DisplayName;
+    lpszTitle := PChar(Title);
+    ulFlags := Flag;
+  end;
+  lpItemID := SHBrowseForFolder(BrowseInfo);
+  if lpItemId <> nil then begin
+    SHGetPathFromIDList(lpItemID, TempPath);
+    Result := TempPath;
+    GlobalFreePtr(lpItemID);
+  end;
+end;
+
 const
   DEF_DELPHI  = 0;
   DEF_CONSOLE = 1;
@@ -166,8 +194,8 @@ begin
     sl.Sorted := true;
     sl.Assign(memoExclUnits.Lines);
 
-    vSelDir := '';
-    if BrowseForFolder('Choose folder', True, vSelDir) then
+    vSelDir := BrowseDialog('Choose folder', BIF_RETURNONLYFSDIRS or BIF_NEWDIALOGSTYLE);
+    if vSelDir <> '' then
     begin
       Iterate('*.pas');
       Iterate('*.dcu');
@@ -191,6 +219,8 @@ end;
 procedure TfrmPreferences.btnInstrumentationDefaultsClick(Sender: TObject);
 begin
   frmMain.ResetDefaults(0);
+  cbbXE2Platform.ItemIndex:= 0;
+  cbbXE2Config.ItemIndex:= 0;
 end;
 
 procedure TfrmPreferences.btnAnalysisDefaultsClick(Sender: TObject);

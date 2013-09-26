@@ -71,10 +71,6 @@ object frmPreferences: TfrmPreferences
     object tabInstrumentation: TTabSheet
       Caption = 'Instrumentation'
       ImageIndex = -1
-      ExplicitLeft = 0
-      ExplicitTop = 0
-      ExplicitWidth = 0
-      ExplicitHeight = 0
       object GroupBox1: TGroupBox
         Left = 8
         Top = 8
@@ -142,7 +138,7 @@ object frmPreferences: TfrmPreferences
           Width = 113
           Height = 21
           Style = csDropDownList
-          ItemHeight = 0
+          ItemHeight = 13
           TabOrder = 1
           OnChange = cbxCompilerVersionChange
         end
@@ -227,6 +223,58 @@ object frmPreferences: TfrmPreferences
         Caption = 'D&efaults'
         TabOrder = 2
         OnClick = btnInstrumentationDefaultsClick
+      end
+      object GroupBox6: TGroupBox
+        Left = 8
+        Top = 199
+        Width = 361
+        Height = 90
+        Caption = 'XE2 and up only'
+        TabOrder = 3
+        object Label3: TLabel
+          Left = 16
+          Top = 23
+          Width = 80
+          Height = 13
+          Caption = 'Override platform'
+        end
+        object Label5: TLabel
+          Left = 16
+          Top = 55
+          Width = 72
+          Height = 13
+          Caption = 'Override config'
+        end
+        object cbbXE2Platform: TComboBox
+          Left = 104
+          Top = 20
+          Width = 145
+          Height = 21
+          DropDownCount = 3
+          ItemHeight = 13
+          ItemIndex = 0
+          TabOrder = 0
+          Text = '(Read from .dproj file)'
+          Items.Strings = (
+            '(Read from .dproj file)'
+            'Win32'
+            'Win64')
+        end
+        object cbbXE2Config: TComboBox
+          Left = 104
+          Top = 52
+          Width = 145
+          Height = 21
+          DropDownCount = 3
+          ItemHeight = 13
+          ItemIndex = 0
+          TabOrder = 1
+          Text = 'Read from .dproj file'
+          Items.Strings = (
+            'Read from .dproj file'
+            'Release'
+            'Debug')
+        end
       end
     end
     object tabAnalysis: TTabSheet
@@ -461,10 +509,10 @@ object frmPreferences: TfrmPreferences
     end
   end
   object imgDefines: TImageList
-    Left = 44
-    Top = 280
+    Left = 396
+    Top = 224
     Bitmap = {
-      494C0101060008000C0010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
+      494C010106000800180010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000002000000001002000000000000020
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000
@@ -736,8 +784,8 @@ object frmPreferences: TfrmPreferences
       000000000000}
   end
   object ActionList1: TActionList
-    Left = 76
-    Top = 280
+    Left = 436
+    Top = 224
     object actAddDefine: TAction
       Category = 'Defines'
       Caption = '&Add'
