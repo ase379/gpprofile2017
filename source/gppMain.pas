@@ -3101,7 +3101,7 @@ procedure TfrmMain.ExportTo(fileName: string; exportProcs, exportClasses,
         with Items[j] do begin
           line := Caption;
           for i := 0 to Subitems.Count-1 do
-            line := line + delim + Subitems[i];
+            line := line + delim + StringReplace(Subitems[i], ',', '.', [rfReplaceAll]);
           Writeln(f,line);
         end;
       end;
@@ -3142,7 +3142,7 @@ begin
     AssignFile(f,fileName);
     Rewrite(f);
     try
-      if exportCSV then delim := ListSeparator else delim := #9;
+      if exportCSV then delim := ';' else delim := #9;
       if exportProcs   then ExpProcedures(f,delim);
       if exportClasses then ExpClasses(f,delim);
       if exportUnits   then ExpUnits(f,delim);
