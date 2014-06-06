@@ -450,6 +450,7 @@ uses
   uDbg,
   uDbgIntf,
 {$ENDIF}
+  BdsProjUnit,
   IniFiles,
   GpString,
   GpProfH,
@@ -2780,7 +2781,9 @@ var
   vPath: string;
   vDofFN: TFileName;
   vDProjFN: TFileName;
+  vBdsProjFN: TFileName;
   vDProj: TDProj;
+  vBdsProj: TBdsProj;
   vOldCurDir: String;
   vFullPath: String;
   i: Integer;
@@ -2806,6 +2809,18 @@ begin
       vPath := IfThen((vPath <> '') and (vPath[Length(vPath)] <> ';'), ';') + vDProj.SearchPath;
     finally
       vDProj.Free;
+    end;
+  end;
+
+  // Get settings from bdsproj-file
+  vBdsProjFN := ChangeFileExt(aProject, '.bdsproj');
+  if FileExists(vBdsProjFN) then
+  begin
+    vBdsProj := TBdsProj.Create(vBdsProjFN);
+    try
+      vPath := IfThen((vPath <> '') and (vPath[Length(vPath)] <> ';'), ';') + vBdsProj.SearchPath;
+    finally
+      vBdsProj.Free;
     end;
   end;
 
@@ -2877,6 +2892,8 @@ var
   vDProj: TDProj;
   vDProjFN: TFileName;
   vDofFN: TFileName;
+  vBdsProjFN: TFileName;
+  vBdsProj: TBdsProj;
   vOldCurDir: String;
   vXE2Platform: string;
   vXE2Config: string;
@@ -2908,13 +2925,25 @@ begin
   end
   else begin
     vDofFN := ChangeFileExt(aProject, '.dof');
-    if FileExists(vDofFN) then    
+    if FileExists(vDofFN) then
       with TIniFile.Create(vDofFN) do
       try
         Result := ReadString('Directories', 'OutputDir', '');
       finally
         Free;
+      end
+    else begin
+      vBdsProjFN := ChangeFileExt(aProject, '.bdsproj');
+      if FileExists(vBdsProjFN) then
+      begin
+        vBdsProj := TBdsProj.Create(vBdsProjFN);
+        try
+          Result := vBdsProj.OutputDir;
+        finally
+          vBdsProj.Free;
+        end
       end;
+    end;
   end;
 
   Result := ReplaceMacros(Result);

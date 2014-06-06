@@ -16,6 +16,12 @@ type
   TNotifyProc = procedure(const aUnitName: String) of object;
   TNotifyInstProc = procedure(const aFullName, aUnitName: String; aParse: boolean) of object;
 
+  // Do not change order
+  TCommentType=(
+    Ct_Arrow = 0,
+    Ct_IfDef = 1
+  );
+
   TUnitList = class;
   TProcList = class;
   TAPIList  = class;
@@ -134,9 +140,9 @@ type
     constructor Create(projName: string);
     destructor  Destroy; override;
     procedure   Parse(aExclUnits: String; const aSearchPath, aConditionals: String;
-      aNotify: TNotifyProc; aCommentType: integer; aParseAsm: boolean);
+      aNotify: TNotifyProc; aCommentType: TCommentType; aParseAsm: boolean);
     procedure   Rescan(aExclUnits: String; const aSearchPath, aConditionals: string;
-      aNotify: TNotifyProc; aCommentType: integer; aIgnoreFileDate: boolean; aParseAsm: boolean);
+      aNotify: TNotifyProc; aCommentType: TCommentType; aIgnoreFileDate: boolean; aParseAsm: boolean);
     property    Name: string read prName;
     procedure   GetUnitList(var aSL: TStringList; const aProjectDirOnly, aGetInstrumented: boolean);
     procedure   GetProcList(unitName: string; s: TStringList; getInstrumented: boolean);
@@ -149,12 +155,12 @@ type
     function    NoneInstrumented(projectDirOnly: boolean): boolean;
     function    AnyInstrumented(projectDirOnly: boolean): boolean;
     procedure   Instrument(aProjectDirOnly: boolean; aNotify: TNotifyInstProc;
-      aCommentType: integer; aKeepDate: boolean;
+      aCommentType: TCommentType; aKeepDate: boolean;
       aIncFileName, aConditionals, aSearchPath: string; aParseAsm: boolean);
     function    GetFirstLine(unitName, procName: string): integer;
     function    AnyChange(projectDirOnly: boolean): boolean;
   private
-    procedure   PrepareComments(const aCommentType: integer);
+    procedure   PrepareComments(const aCommentType: TCommentType);
   end;
 
 implementation
@@ -1270,7 +1276,7 @@ uses
   end; { TProject.Destroy }
 
   procedure TProject.Parse(aExclUnits: String; const aSearchPath, aConditionals: string;
-    aNotify: TNotifyProc; aCommentType: integer; aParseAsm: boolean);
+    aNotify: TNotifyProc; aCommentType: TCommentType; aParseAsm: boolean);
   var
     un    : TUnit;
     u1    : TUnit;
@@ -1454,7 +1460,7 @@ uses
   end; { TProject.AllInstrumented }
 
   procedure TProject.Instrument(aProjectDirOnly: boolean;
-    aNotify: TNotifyInstProc; aCommentType: integer; aKeepDate: boolean;
+    aNotify: TNotifyInstProc; aCommentType: TCommentType; aKeepDate: boolean;
     aIncFileName, aConditionals, aSearchPath: string; aParseAsm: boolean);
   var
     vOldCurDir : string;
@@ -1554,10 +1560,10 @@ uses
       Result := un.unFullName;
   end; { TProject.GetUnitPath }
 
-  procedure TProject.PrepareComments(const aCommentType: integer);
+  procedure TProject.PrepareComments(const aCommentType: TCommentType);
   begin
     case aCommentType of
-      0: begin
+      Ct_Arrow: begin
         prConditStart     := '{>>GpProfile}';
         prConditStartUses := '{>>GpProfile U}';
         prConditStartAPI  := '{>>GpProfile API}';
@@ -1565,7 +1571,7 @@ uses
         prConditEndUses   := '{GpProfile U>>}';
         prConditEndAPI    := '{GpProfile API>>}';
       end;
-      1: begin
+      Ct_IfDef: begin
         prConditStart     := '{$IFDEF GpProfile}';
         prConditStartUses := '{$IFDEF GpProfile U}';
         prConditStartAPI  := '{$IFDEF GpProfile API}';
@@ -1618,7 +1624,7 @@ uses
   end; { TProject.AnyInstrumented }
 
   procedure TProject.Rescan(aExclUnits: String; const aSearchPath, aConditionals: string;
-    aNotify: TNotifyProc; aCommentType: Integer; aIgnoreFileDate: boolean;
+    aNotify: TNotifyProc; aCommentType: TCommentType; aIgnoreFileDate: boolean;
     aParseAsm: boolean);
   var
     un    : TUnit;
