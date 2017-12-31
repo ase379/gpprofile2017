@@ -37,8 +37,8 @@ type
   protected
     procedure DrawItem(Index: Integer; Rect: TRect;
       State: TOwnerDrawState); override;
-    procedure SetItemData(Index: Integer; AData: LongInt); override;
-    function GetItemData(Index: Integer): LongInt; override;
+    procedure SetItemData(Index: Integer; AData: TListBoxItemData); override;
+    function GetItemData(Index: Integer): TListBoxItemData; override;
     procedure KeyPress(var Key: Char); override;
     procedure MouseDown(Button: TMouseButton; Shift: TShiftState;
       X, Y: Integer); override;
@@ -137,7 +137,7 @@ procedure GetCheckSize;
 begin
   with TBitmap.Create do
     try
-      Handle := LoadBitmap(0, PChar(32759));
+      Handle := LoadBitmapA(0, PAnsiChar(32759));
       FCheckWidth := Width div 4;
       FCheckHeight := Height div 3;
     finally
@@ -430,7 +430,7 @@ begin
   if Assigned(FOnClickCheck) then FOnClickCheck(Self,index);
 end;
 
-function TGpCheckListBox.GetItemData(Index: Integer): LongInt;
+function TGpCheckListBox.GetItemData(Index: Integer): TListBoxItemData;
 begin
   Result := 0;
   if HaveWrapper(Index) then
@@ -464,7 +464,7 @@ begin
   Result := ExtractWrapper(Index) <> nil;
 end;
 
-procedure TGpCheckListBox.SetItemData(Index: Integer; AData: LongInt);
+procedure TGpCheckListBox.SetItemData(Index: Integer; AData: TListBoxItemData);
 var
   Wrapper: TGpCheckListBoxDataWrapper;
 begin

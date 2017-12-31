@@ -6,11 +6,10 @@ interface
 
 uses
   Classes,
-  EZDSLBSE,
-  EZDSLDBL,
   gppIDT,
   SimpleReportUnit,
-  Dialogs;
+  Dialogs,
+  gppTree;
 
 type
   TNotifyProc = procedure(const aUnitName: String) of object;
@@ -39,8 +38,8 @@ type
   end;
 
   TUnit = class
-    unName           : string;
-    unFullName       : string;
+    unName           : AnsiString;
+    unFullName       : AnsiString;
     unUnits          : TUnitList;
     unProcs          : TProcList;
     unAPIs           : TAPIList;
@@ -68,7 +67,7 @@ type
   end;
 
   TProc = class
-    prName          : string;
+    prName          : AnsiString;
     prHeaderLineNum : integer;
     prStartOffset   : integer;
     prStartLineNum  : integer;
@@ -95,25 +94,25 @@ type
     constructor Create(apiCmd: string; apiBegin, apiEnd, apiExStart, apiExEnd: integer; apiIsMetaComment: boolean);
   end;
 
-  TUnitList = class(TDList)
+  TUnitList = class(TRootNode<TUnit>)
     constructor Create; reintroduce;
     procedure   Add(anUnit: TUnit);
   end;
 
-  TGlbUnitList = class(TDList)
+  TGlbUnitList = class(TRootNode<TUnit>)
     constructor Create; reintroduce;
     function    Locate(unitName: string): TUnit;
     function    LocateCreate(unitName, unitLocation: string; excluded: boolean): TUnit;
   end;
 
-  TProcList = class(TDList)
+  TProcList = class(TRootNode<TProc>)
     constructor Create; reintroduce;
     procedure   Add(var procName: string; pureAsm: boolean; offset, lineNum, headerLineNum: integer);
     procedure   AddEnd(procName: string; offset, linenum: integer);
     procedure   AddInstrumented(procName: string; cmtEnterBegin,cmtEnterEnd,cmtExitBegin,cmtExitEnd: integer);
   end;
 
-  TAPIList = class(TDList)
+  TAPIList = class(TRootNode<TAPi>)
     constructor Create; reintroduce;
     procedure   AddMeta(apiCmd: string; apiBegin, apiEnd: integer);
     procedure   AddExpanded(apiEnterBegin,apiEnterEnd,apiExitBegin,apiExitEnd: integer);
@@ -225,23 +224,20 @@ uses
 
 {========================= TUnitList =========================}
 
-  function CompareUnit(data1, data2: pointer): integer;
+  function CompareUnit(node1, node2: INode<TUnit>): integer;
   begin
-    Result := StrIComp(PChar(TUnit(data1).unName),PChar(TUnit(data2).unName));
+    Result := StrIComp(pAnsichar(node1.Data.unName),pAnsichar(node2.Data.unName));
   end; { CompareUnit }
 
   constructor TUnitList.Create;
   begin
     inherited Create(false);
-    Compare := @CompareUnit;
+    CompareFunc := @CompareUnit;
   end; { TUnitList.Create }
 
   procedure TUnitList.Add(anUnit: TUnit);
-  var
-    cursor: TListCursor;
   begin
-    cursor := SetAfterLast;
-    try InsertBefore(cursor,anUnit); except end;
+    AppendNode(anUnit);
   end; { TUnitList.Add }
 
 {========================= TGlbUnitList =========================}
@@ -254,39 +250,32 @@ uses
   constructor TGlbUnitList.Create;
   begin
     inherited Create(true);
-    Compare := @CompareUnit;
-    DisposeData := @DisposeUnit;
+    CompareFunc := @CompareUnit;
+    //DisposeData := @DisposeUnit;
   end; { TGlbUnitList.Create }
 
   function TGlbUnitList.Locate(unitName: string): TUnit;
   var
-    un    : TUnit;
-    cursor: TListCursor;
+    LSearchEntry    : INode<TUnit>;
+    LFoundEntry    : INode<TUnit>;
   begin
-    un := TUnit.Create(unitName);
-    try
-      if Search(cursor, un) then
-        Locate := TUnit(Examine(cursor))
-      else
-        Locate := nil;
-    finally
-      un.Destroy;
-    end;
+    LSearchEntry := TNode<TUnit>.create();
+    LSearchEntry.Data := TUnit.Create(unitName);
+    if FindNode(LSearchEntry,LFoundEntry) then
+      Locate := LFoundEntry.Data
+    else
+      Locate := nil;
   end; { TGlbUnitList.Locate }
   
   function TGlbUnitList.LocateCreate(unitName, unitLocation: string; excluded: boolean): TUnit;
   var
     un    : TUnit;
-    cursor: TListCursor;
   begin
   {$IFDEF LogParser}GpLogEvent(Format('LocateCreate(%s,%s,%s)',[unitName,unitLocation,IFF(excluded,'true','false')]),FullLogName);{$ENDIF}
-    LocateCreate := Locate(unitName);
+    result := Locate(unitName);
     if Result = nil then begin
       un := TUnit.Create(unitName,unitLocation,excluded);
-      cursor := SetAfterLast;
-      InsertBefore(cursor,un);
-      cursor := Prev(cursor);
-      LocateCreate := TUnit(Examine(cursor));
+      result := AppendNode(un).Data;
   {$IFDEF LogParser}GpLogEvent('Created',FullLogName);{$ENDIF}
     end
   {$IFDEF LogParser}else GpLogEvent('Located',FullLogName);{$ENDIF}
@@ -300,99 +289,93 @@ uses
     TProc(aData).Free;
   end; { DisposeProc }
 
-  function CompareProc(data1, data2: pointer): integer;
+  function CompareProc(node1, node2: INode<TProc>): integer;
   begin
-    Result := StrIComp(PChar(TProc(data1).prName),PChar(TProc(data2).prName));
+    Result := StrIComp(PAnsiChar(node1.Data.prName),PAnsiChar(node2.Data.prName));
   end; { CompareProc }
 
   constructor TProcList.Create;
   begin
     inherited Create(true);
-    Compare := @CompareProc;
-    DisposeData := @DisposeProc;
+    CompareFunc := @CompareProc;
+    //DisposeData := @DisposeProc;
   end; { TProcList.Create }
 
   procedure TProcList.Add(var procName: string; pureAsm: boolean; offset, lineNum,headerLineNum: integer);
   var
-    pr        : TProc;
-    pr2       : TProc;
     post      : integer;
     overloaded: boolean;
-    cursor    : TListCursor;
+    LSearchEntry : INode<TProc>;
+    lFoundEntry  : INode<TProc>;
+
   begin
     if Pos('GetThreadPriority',procName) > 0 then
-      pureAsm := pureAsm;  
-    pr := TProc.Create(procName,offset,linenum,headerLineNum);
-    if Search(cursor,pr) then begin
-      pr2 := TProc(Examine(cursor));
-      pr2.prName := pr2.prName+':1';
+      pureAsm := pureAsm;
+    LSearchEntry := TNode<TProc>.Create();
+    LSearchEntry.Data := TProc.Create(procName,offset,linenum,headerLineNum);
+    if FindNode(LSearchEntry, LFoundEntry) then begin
+      LFoundEntry.Data.prName := LFoundEntry.Data.prName+':1';
       overloaded := true;
-      pr.prName := procName+':1';
+      LSearchEntry.Data.prName := procName+':1';
     end
     else begin
-      pr.prName := procName+':1';
-      overloaded := Search(cursor,pr);
+      LSearchEntry.Data.prName := procName+':1';
+      overloaded := FindNode(LSearchEntry,LFoundEntry);
       if not overloaded then
-        pr.prName := procName;
+        LSearchEntry.Data.prName := procName;
     end;
     if overloaded then begin // fixup for overloaded procedures
       post:= 1;
-      while Search(cursor,pr) do begin
+      while FindNode(LSearchEntry,LFoundEntry) do begin
         Inc(post);
-        pr.prName := procName+':'+IntToStr(post);
+        LSearchEntry.Data.prName := procName+':'+IntToStr(post);
       end;
-      procName := pr.prName;
+      procName := LSearchEntry.Data.prName;
     end;
-    with pr do begin
+    with LSearchEntry.Data do begin
       prCmtEnterBegin := -1;
       prCmtEnterEnd   := -1;
       prCmtExitBegin  := -1;
       prCmtExitEnd    := -1;
       prPureAsm       := pureAsm;
     end;
-    cursor := SetAfterLast;
-    try
-      InsertBefore(cursor,pr);
-    except
-      pr.Free;
-    end;
+    AppendNode(LSearchEntry.Data);
+
   end; { TProcList.Add }
 
   procedure TProcList.AddEnd(procName: string; offset, linenum: integer);
   var
-    pr    : TProc;
-    cursor: TListCursor;
+    LFoundEntry,
+    LSearchEntry : INode<TProc>;
   begin
-    pr := TProc.Create(procName);
-    try
-      if Search(cursor,pr) then begin
-        with TProc(Examine(cursor)) do begin
-          prEndOffset  := offset;
-          prEndLineNum := linenum;
-          prInitial    := false;
-        end;
+    LSearchEntry := TNode<TProc>.Create();
+    LSearchEntry.Data := TProc.Create(procName);
+    if FindNode(LSearchEntry, LFoundEntry) then begin
+      with LFoundEntry.Data do begin
+        prEndOffset  := offset;
+        prEndLineNum := linenum;
+        prInitial    := false;
       end;
-    finally pr.Free; end;
+    end;
   end; { TProcList.AddEnd }
 
   procedure TProcList.AddInstrumented(procName: string; cmtEnterBegin,cmtEnterEnd,cmtExitBegin,cmtExitEnd: integer);
   var
-    pr    : TProc;
-    cursor: TListCursor;
+    LFoundEntry,
+    LSearchEntry : INode<TProc>;
   begin
-    pr := TProc.Create(procName);
-    try
-      if Search(cursor,pr) then begin
-        with TProc(Examine(cursor)) do begin
-          prCmtEnterBegin := cmtEnterBegin;
-          prCmtEnterEnd   := cmtEnterEnd;
-          prCmtExitBegin  := cmtExitBegin;
-          prCmtExitEnd    := cmtExitEnd;
-          prInstrumented  := true;
-          prInitial       := true;
-        end;
+    LSearchEntry := TNode<TProc>.Create();
+    LSearchEntry.Data := TProc.Create(procName);
+    if FindNode(LSearchEntry, LFoundEntry) then begin
+      with LFoundEntry.Data do begin
+        prCmtEnterBegin := cmtEnterBegin;
+        prCmtEnterEnd   := cmtEnterEnd;
+        prCmtExitBegin  := cmtExitBegin;
+        prCmtExitEnd    := cmtExitEnd;
+        prInstrumented  := true;
+        prInitial       := true;
       end;
-    finally pr.Free; end;
+    end;
   end; { TProcList.AddInstrumented }
 
 {========================= TProc =========================}
@@ -449,11 +432,13 @@ uses
     i: integer;
     s: string;
     vDefDir: string;
+    LExtension : string;
   begin
     aUnitFullName := '';
     Result := False;
 
-    if Pos('.',UpperCase(aUnitName)) = 0 then
+    LExtension := ExtractFileExt(aUnitName).ToLower;
+    if (LExtension <> '.pas') and (LExtension <> '.dpr')  then
       aUnitName := aUnitName + '.pas';
 
     if FileExists(aUnitName) then
@@ -599,7 +584,7 @@ uses
         raise Exception.Create('Unit not found in search path: ' + aUnitFN);
 
       parser := TmwPasLex.Create;
-      stream := TMemoryStream.Create;
+      stream := TMemoryStream.Create();
       try
         stream.LoadFromFile(vUnitFullName);
       except
@@ -610,7 +595,7 @@ uses
       stream.Position := stream.Size;
       zero := #0;
       stream.Write(zero,1);
-      parser.Origin := Stream.Memory;
+      parser.Origin := PAnsiChar(Stream.Memory);
       parser.RunPos := 0;
     end; { CreateNewParser }
 
@@ -621,7 +606,7 @@ uses
       if parserStack.Count > 0 then
       begin
         parser := TmwPasLex(parserStack[parserStack.Count-2]);
-        stream := TMemoryStream(parserStack[parserStack.Count-1]);
+        stream := TStringStream(parserStack[parserStack.Count-1]);
         parserStack.Delete(parserStack.Count-1);
         parserStack.Delete(parserStack.Count-1);
         parser.Next;
@@ -885,14 +870,14 @@ uses
                     if unName <> '' then
                     begin
                       uun := UpperCase(unName);
-                      unUnits.Add(aProject.prUnits.LocateCreate(unName, ExpandLocation(unLocation),
+                       unUnits.Add(aProject.prUnits.LocateCreate(unName, ExpandLocation(unLocation),
                                   (Pos(#13#10+uun+#13#10,aExclUnits) <> 0) or (uun = ugpprof)));
                     end;
                     unName := '';
                     unLocation := '';
                   end
                   else if tokenID = ptIdentifier then // unit name
-                     unName := unName + tokenData
+                    unName := unName + tokenData
                   else if tokenID = ptPoint then
                     unName := unName + '.'
                   else if tokenID = ptStringConst then // unit location from "in 'somepath\someunit.pas'" (dpr-file)
@@ -1076,57 +1061,57 @@ uses
 
   procedure TUnit.CheckInstrumentedProcs;
   var
-    cursor: TListCursor;
+    LCurrentEntry : INode<TProc>;
   begin
     unAllInst := true;
     unNoneInst := true;
     with unProcs do begin
-      cursor := Next(SetBeforeFirst);
-      while not IsAfterLast(cursor) do begin
-        if not TProc(Examine(cursor)).prInstrumented then
+      LCurrentEntry := FirstNode;
+      while assigned(LCurrentEntry) do begin
+        if not LCurrentEntry.Data.prInstrumented then
           unAllInst := false
         else
           unNoneInst := false;
-        cursor := Next(cursor);
+        LCurrentEntry := LCurrentEntry.NextNode;
       end;
     end;
   end; { TUnit.CheckInstrumentedProcs }
 
   function TUnit.LocateUnit(unitName: string): TUnit;
   var
-    un    : TUnit;
-    cursor: TListCursor;
+    LSearchEntry : INode<TUnit>;
+    LFoundEntry    : INode<TUnit>;
   begin
-    un := TUnit.Create(unitName);
-    try
-      if unUnits.Search(cursor,un) then LocateUnit := TUnit(unUnits.Examine(cursor))
-                                   else LocateUnit := nil;
-    finally un.Destroy; end; 
+    LSearchEntry := TNode<TUnit>.create();
+    LSearchEntry.Data := TUnit.Create(unitName);
+    if unUnits.FindNode(LSearchEntry,LFoundEntry) then
+      result := LFoundEntry.Data
+    else
+      result := nil;
   end; { TUnit.LocateUnit }
 
   function TUnit.LocateProc(procName: string): TProc;
   var
-    pr    : TProc;
-    cursor: TListCursor;
+    LSearchEntry : INode<TProc>;
+    LFoundEntry    : INode<TProc>;
   begin
-    pr := TProc.Create(procName);
-    try
-      if unProcs.Search(cursor,pr) then LocateProc := TProc(unProcs.Examine(cursor))
-                                   else LocateProc := nil;
-    finally pr.Destroy; end;
+    LSearchEntry := TNode<TProc>.create();
+    LSearchEntry.Data := TProc.Create(procName);
+    if unProcs.FindNode(LSearchEntry,LFoundEntry) then
+      result := LFoundEntry.Data
+    else
+      result := nil;
   end; { TUnit.LocateProc }
 
   procedure TUnit.ConstructNames(idt: TIDTable);
   var
-    pr    : TProc;
-    cursor: TListCursor;
+    LCurrentEntry : INode<TProc>;
   begin
-    cursor := unProcs.Next(unProcs.SetBeforeFirst);
-    while not unProcs.IsAfterLast(cursor) do begin
-      pr := TProc(unProcs.Examine(cursor));
-      if pr.prInstrumented then
-        idt.ConstructName(unName, unFullName, pr.prName, pr.prHeaderLineNum);
-      cursor := unProcs.Next(cursor);
+    LCurrentEntry := unProcs.FirstNode;
+    while assigned(LCurrentEntry) do begin
+      if LCurrentEntry.Data.prInstrumented then
+        idt.ConstructName(unName, unFullName, LCurrentEntry.Data.prName, LCurrentEntry.Data.prHeaderLineNum);
+      LCurrentEntry := LCurrentEntry.nextNode;
     end;
   end; { TUnit.ConstructNames }
 
@@ -1140,7 +1125,8 @@ uses
     name    : integer;
     justName: string;
     api     : TAPI;
-    cursor  : TListCursor;
+    LCurrentApi : INode<TAPI>;
+    LCurrentProc : INode<TProc>;
   begin { TUnit.Instrument }
     if unImplementOffset = -1 then
       raise Exception.Create('No implementation part defined in unit ' + unName + '!');
@@ -1164,10 +1150,9 @@ uses
             ed.Insert(unImplementOffset+Length('implementation'),aProject.prCreateUses);
         end;
       end;
-
-      cursor := unAPIs.Next(unAPIs.SetBeforeFirst);
-      while not unAPIs.IsAfterLast(cursor) do begin
-        api := TAPI(unAPIs.Examine(cursor));
+      LCurrentApi := unAPIs.FirstNode;
+      while assigned(LCurrentApi) do begin
+        api := LCurrentApi.Data;
         if any then begin
           if api.apiMeta then begin
             ed.Remove(api.apiBeginOffs,api.apiEndOffs);
@@ -1182,13 +1167,13 @@ uses
             ed.Insert(api.apiExitBegin,'}');
           end;
         end;
-        cursor := unAPIs.Next(cursor);
+        LCurrentApi := LCurrentApi.NextNode;
       end;
 
-      cursor := unProcs.Next(unProcs.SetBeforeFirst);
-      while not unProcs.IsAfterLast(cursor) do
+      LCurrentProc := unProcs.FirstNode;
+      while assigned(LCurrentProc) do
       begin
-        pr := TProc(unProcs.Examine(cursor));
+        pr := LCurrentProc.Data;
         haveInst := (pr.prCmtEnterBegin >= 0);
         if not pr.prInstrumented then begin
           if haveInst then begin // remove instrumentation
@@ -1215,7 +1200,7 @@ uses
           else
             ed.Insert(pr.prEndOffset, Format(aProject.prProfileExitProc, [name]));
         end;
-        cursor := unProcs.Next(cursor);
+        LCurrentProc := LCurrentProc.NextNode;
       end;
 
       ed.Execute(aKeepDate);
@@ -1226,17 +1211,17 @@ uses
 
   function TUnit.AnyInstrumented: boolean;
   var
-    cursor: TListCursor;
+    LCurrentProc : INode<TProc>;
   begin
     Result := false;
     with unProcs do begin
-      cursor := Next(SetBeforeFirst);
-      while not IsAfterLast(cursor) do begin
-        if TProc(Examine(cursor)).prInstrumented then begin
+      LCurrentProc := FirstNode;
+      while assigned(LCurrentProc) do begin
+        if LCurrentProc.Data.prInstrumented then begin
           Result := true;
           Exit;
         end;
-        cursor := Next(cursor);
+        LCurrentProc := LCurrentProc.NextNode;
       end; //while
     end; //with
   end; { TUnit.AnyInstrumented }
@@ -1244,21 +1229,21 @@ uses
   function TUnit.AnyChange: boolean;
   var
     pr    : TProc;
-    cursor: TListCursor;
+    LCurrentProc : INode<TProc>;
   begin
     Result := false;
     with unProcs do
     begin
-      cursor := Next(SetBeforeFirst);
-      while not IsAfterLast(cursor) do
+      LCurrentProc := FirstNode;
+      while assigned(LCurrentProc) do
       begin
-        pr := TProc(Examine(cursor));
+        pr := LCurrentProc.Data;
         if pr.prInstrumented <> pr.prInitial then
         begin
           Result := True;
           Exit;
         end;
-        cursor := Next(cursor);
+        LCurrentProc := LCurrentProc.NextNode;
       end; //while
     end; //with
   end; { TUnit.AnyChange }
@@ -1282,7 +1267,7 @@ uses
   var
     un    : TUnit;
     u1    : TUnit;
-    cursor: TListCursor;
+    LNode: INode<TUnit>;
     vOldCurDir: string;
     vErrList: TStringList;
   begin
@@ -1291,7 +1276,7 @@ uses
       aExclUnits := aExclUnits + #13#10;
     if First(aExclUnits, 2) <> #13#10 then
       aExclUnits := #13#10 + aExclUnits;
-    prUnits.Empty;
+    prUnits.ClearNodes;
     prUnit := prUnits.LocateCreate(prName, '', false);
     prUnit.unInProjectDir := true;
 
@@ -1311,17 +1296,17 @@ uses
             on E: Exception do
               vErrList.Add(E.Message);
           end;
-          cursor := prUnits.Next(prUnits.SetBeforeFirst);
+          LNode := prUnits.FirstNode;
           un := nil;
-          while not prUnits.IsAfterLast(cursor) do
+          while assigned(LNode) do
           begin
-            u1 := TUnit(prUnits.Examine(cursor));
+            u1 := LNode.Data;
             if not (u1.unParsed or u1.unExcluded) then
             begin
               un := u1;
               Break;
             end;
-            cursor := prUnits.Next(cursor);
+            LNode := LNode.NextNode;
           end;
         until (un = nil);
       finally
@@ -1337,16 +1322,16 @@ uses
   procedure TProject.GetUnitList(var aSL: TStringList; const aProjectDirOnly, aGetInstrumented: Boolean);
   var
     un    : TUnit;
-    cursor: TListCursor;
+    LNode : INode<TUnit>;
     s: String;
   begin
     aSL.Clear;
     with prUnits do
     begin
-      cursor := Next(SetBeforeFirst);
-      while not IsAfterLast(cursor) do
+      LNode := FirstNode;
+      while assigned(LNode) do
       begin
-        un := TUnit(Examine(cursor));
+        un := LNode.Data;
         if (not un.unExcluded) and (un.unProcs.Count > 0) and
           ((not aProjectDirOnly) or un.unInProjectDir) then
         begin
@@ -1358,7 +1343,7 @@ uses
 
           aSL.Add(s);
         end;
-        cursor := Next(cursor);
+        LNode := LNode.NextNode;
       end;
     end;
   end; { TProject.GetUnitList }
@@ -1367,18 +1352,18 @@ uses
   var
     un    : TUnit;
     pr    : TProc;
-    cursor: TListCursor;
+    LCurrentProc : INode<TProc>;
   begin
     s.Clear;
     un := prUnits.Locate(unitName);
     if un <> nil then begin
       with un.unProcs do begin
-        cursor := Next(SetBeforeFirst);
-        while not IsAfterLast(cursor) do begin
-          pr :=TProc(Examine(cursor));
+        LCurrentProc := FirstNode;
+        while assigned(LCurrentProc) do begin
+          pr :=LCurrentProc.Data;
           if getInstrumented then s.Add(pr.prName+IntToStr(Ord(pr.prInstrumented)))
-                             else s.Add(TProc(Examine(cursor)).prName);
-          cursor := Next(cursor);
+                             else s.Add(pr.prName);
+          LCurrentProc := LCurrentProc.NextNode;
         end;
       end;
     end;
@@ -1386,15 +1371,15 @@ uses
 
   procedure TProject.InstrumentTUnit(anUnit: TUnit; instrument: boolean);
   var
-    cursor: TListCursor;
+    LCurrentProc : INode<TProc>;
   begin
     anUnit.unAllInst := instrument;
     anUnit.unNoneInst := not instrument;
     with anUnit.unProcs do begin
-      cursor := Next(SetBeforeFirst);
-      while not IsAfterLast(cursor) do begin
-        TProc(Examine(cursor)).prInstrumented := instrument;
-        cursor := Next(cursor);
+      LCurrentProc := FirstNode;
+      while Assigned(LCurrentProc) do begin
+        LCurrentProc.Data.prInstrumented := instrument;
+        LCurrentProc := LCurrentProc.NextNode;
       end;
     end;
   end; { TProject.InstrumentTUnit }
@@ -1402,15 +1387,15 @@ uses
   procedure TProject.InstrumentAll(instrument, projectDirOnly: boolean);
   var
     un    : TUnit;
-    cursor: TListCursor;
+    LNode : INode<TUnit>;
   begin
     with prUnits do begin
-      cursor := Next(SetBeforeFirst);
-      while not IsAfterLast(cursor) do begin
-        un := TUnit(Examine(cursor));
+      LNode := FirstNode;
+      while assigned(LNode) do begin
+        un := LNode.Data;
         if (not un.unExcluded) and (un.unProcs.Count > 0) then
           if (not projectDirOnly) or un.unInProjectDir then InstrumentTUnit(un,instrument);
-        cursor := Next(cursor);
+        LNode := LNode.NextNode;
       end;
     end;
   end; { TProject.InstrumentAll }
@@ -1445,17 +1430,18 @@ uses
   function TProject.AllInstrumented(projectDirOnly: boolean): boolean;
   var
     un    : TUnit;
-    cursor: TListCursor;
+    LNode : INode<TUnit>;
   begin
     Result := false;
     with prUnits do begin
-      cursor := Next(SetBeforeFirst);
-      while not IsAfterLast(cursor) do begin
-        un := TUnit(Examine(cursor));
+      LNode := FirstNode;
+      while assigned(LNode) do begin
+        un := LNode.data;
         if (not un.unExcluded) and (un.unProcs.Count > 0) and
            (un.unInProjectDir or (not projectDirOnly)) then
           if not un.unAllInst then Exit;
-        cursor := Next(cursor);
+        LNode := LNode.NextNode;
+;
       end;
     end;
     Result := true;
@@ -1472,7 +1458,7 @@ uses
     i      : integer;
     unAny  : boolean;
     anyInst: boolean;
-    cursor : TListCursor;
+    LNode : INode<TUnit>;
   begin
     PrepareComments(aCommentType);
     rescan := TList.Create;
@@ -1485,10 +1471,10 @@ uses
         try
           with prUnits do begin
             anyInst := false;
-            cursor := Next(SetBeforeFirst);
-            while not IsAfterLast(cursor) do
+            LNode := FirstNode;
+            while assigned(LNode) do
             begin
-              un := TUnit(Examine(cursor));
+              un := LNode.data;
               if (not un.unExcluded) and (un.unProcs.Count > 0) then
               begin
                 if Assigned(aNotify) then
@@ -1506,7 +1492,7 @@ uses
                 else
                   un.ConstructNames(idt);
               end;
-              cursor := Next(cursor);
+              LNode := LNode.NextNode;
             end;
           end;
           idt.Dump(aIncFileName);
@@ -1535,17 +1521,17 @@ uses
   function TProject.NoneInstrumented(projectDirOnly: boolean): boolean;
   var
     un    : TUnit;
-    cursor: TListCursor;
+    LNode: INode<TUnit>;
   begin
     Result := false;
     with prUnits do begin
-      cursor := Next(SetBeforeFirst);
-      while not IsAfterLast(cursor) do begin
-        un := TUnit(Examine(cursor));
+      LNode := FirstNode;
+      while assigned(LNode) do begin
+        un := LNode.Data;
         if (not un.unExcluded) and (un.unProcs.Count > 0) and
            (un.unInProjectDir or (not projectDirOnly)) then
           if not un.unNoneInst then Exit;
-        cursor := Next(cursor);
+        LNode := LNode.NextNode;
       end;
     end;
     Result := true;
@@ -1609,17 +1595,17 @@ uses
   function TProject.AnyInstrumented(projectDirOnly: boolean): boolean;
   var
     un    : TUnit;
-    cursor: TListCursor;
+    LNode: INode<TUnit>;
   begin
     Result := true;
     with prUnits do begin
-      cursor := Next(SetBeforeFirst);
-      while not IsAfterLast(cursor) do begin
-        un := TUnit(Examine(cursor));
+      LNode := FirstNode;
+      while assigned(LNode) do begin
+        un := LNode.Data;
         if (not un.unExcluded) and (un.unProcs.Count > 0) and
            (un.unInProjectDir or (not projectDirOnly)) then
           if un.AnyInstrumented then Exit;
-        cursor := Next(cursor);
+        LNode := LNode.NextNode;
       end;
     end;
     Result := false;
@@ -1630,7 +1616,7 @@ uses
     aParseAsm: boolean);
   var
     un    : TUnit;
-    cursor: TListCursor;
+    LNode: INode<TUnit>;
     vOldCurDir: string;
   begin
     PrepareComments(aCommentType);
@@ -1642,14 +1628,14 @@ uses
         aExclUnits := aExclUnits + #13#10;
       with prUnits do
       begin
-        cursor := Next(SetBeforeFirst);
-        while not IsAfterLast(cursor) do
+         LNode := FirstNode;
+        while assigned(LNode) do
         begin
-          un := TUnit(Examine(cursor));
+          un := LNode.Data;
           if (not un.unExcluded) and (un.unProcs.Count > 0) and
              (aIgnoreFileDate or (un.unFileDate <> FileAge(un.unFullName))) then
             un.Parse(self, aExclUnits, aSearchPath, ExtractFilePath(prName), aConditionals, True, aParseAsm);
-          cursor := Next(cursor);
+          LNode := LNode.NextNode;
         end;
       end;
     finally
@@ -1660,18 +1646,18 @@ uses
   function TProject.AnyChange(projectDirOnly: boolean): boolean;
   var
     un    : TUnit;
-    cursor: TListCursor;
+    LNode: INode<TUnit>;
   begin
     Result := true;
     with prUnits do begin
-      cursor := Next(SetBeforeFirst);
-      while not IsAfterLast(cursor) do begin
-        un := TUnit(Examine(cursor));
+      LNode := FirstNode;
+      while assigned(LNode) do begin
+        un := LNode.Data;
         if (not un.unExcluded) and (un.unProcs.Count > 0) and
            (un.unInProjectDir or (not projectDirOnly)) then
           if un.unFileDate <> FileAge(un.unFullName) then
             Exit;
-        cursor := Next(cursor);
+        LNode := LNode.NextNode;
       end;
     end;
     Result := false;
@@ -1703,7 +1689,7 @@ uses
     api: TAPI;
   begin
     api := TAPI.Create('', apiEnterBegin, apiEnterEnd, apiExitBegin, apiExitEnd, false);
-    InsertBefore(SetAfterLast,api);
+    AppendNode(api);
   end; { TAPIList.AddExpanded }
 
   procedure TAPIList.AddMeta(apiCmd: string; apiBegin, apiEnd: integer);
@@ -1711,14 +1697,13 @@ uses
     api: TAPI;
   begin
     api := TAPI.Create(apiCmd, apiBegin, apiEnd, -1, -1, true);
-    InsertBefore(SetAfterLast,api);
+    AppendNode(api);
   end; { TAPIList.AddMeta }
 
 constructor TAPIList.Create;
   begin
     inherited Create(true);
-    DisposeData := @DisposeAPI;
+    //DisposeData := @DisposeAPI;
   end; { TAPIList.Create }
 
 end.
-

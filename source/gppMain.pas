@@ -391,7 +391,7 @@ type
     function  GetOutputDir(const aProject: string): string;
     procedure FindMyDelphi;
     procedure CloseDelphiHandles;
-    procedure LoadSource(fileName: string; focusOn: integer);
+    procedure LoadSource(fileName: AnsiString; focusOn: integer);
     procedure ClearSource;
     procedure ReloadSource;
     procedure ExportTo(fileName: string; exportProcs, exportClasses, exportUnits, exportThreads, exportCSV: boolean);
@@ -451,6 +451,7 @@ uses
   uDbgIntf,
 {$ENDIF}
   BdsProjUnit,
+  BdsVersions,
   IniFiles,
   GpString,
   GpProfH,
@@ -462,6 +463,7 @@ uses
   gppAbout,
   gppExport,
   gppCallGraph,
+  UITypes,
   StrUtils; {jb}
 
 {$R *.DFM}
@@ -521,27 +523,6 @@ begin
   end
   else Result := true;
 end; { EnumFindMyDelphi }
-
-function DelphiVerToBDSVer(const aDelphiVer: string): string;
-begin
-  Result := '';
-  if aDelphiVer = '2005' then
-    Result := '3.0'
-  else if aDelphiVer = '2006' then
-    Result := '4.0'
-  else if aDelphiVer = '2007' then
-    Result := '5.0'
-  else if aDelphiVer = '2009' then
-    Result := '6.0'
-  else if aDelphiVer = '2010' then
-    Result := '7.0'
-  else if aDelphiVer = 'XE' then
-    Result := '8.0'
-  else if aDelphiVer = 'XE2' then
-    Result:= '9.0'
-  else if aDelphiVer = 'XE3' then
-    Result:= '10.0';
-end;
 
 {========================= TfrmMain =========================}
 
@@ -897,18 +878,7 @@ begin
             GetKeyNames(vTempSL);
             for i := 0 to vTempSL.Count-1 do
             begin
-              if vTempSL[i] = '10.0' then
-                settings.Add('XE3')
-              else if vTempSL[i] = '9.0' then
-                settings.Add('XE2')
-              else if vTempSL[i] = '8.0' then
-                settings.Add('XE')
-              else if vTempSL[i] = '7.0' then
-                settings.Add('2010')
-              else if vTempSL[i] = '6.0' then
-                settings.Add('2009')
-              else
-                settings.Add('Embarcadero BDS ' + vTempSL[i]);
+              settings.Add(BdsVerToDephiVer(vTempSL[i]));
             end;
           finally
             vTempSL.Free;
@@ -2178,8 +2148,8 @@ end;
 procedure TfrmMain.SetCaption;
 begin
   if PageControl1.ActivePage = tabInstrumentation
-    then Caption := 'GpProfile 2011'+IFF(currentProject <> '',' - '+currentProject,'')
-    else Caption := 'GpProfile 2011'+IFF(currentProfile <> '',' - '+currentProfile,'')+IFF(loadCanceled,' (incomplete)','');
+    then Caption := 'GpProfile 2017'+IFF(currentProject <> '',' - '+currentProject,'')
+    else Caption := 'GpProfile 2017'+IFF(currentProfile <> '',' - '+currentProfile,'')+IFF(loadCanceled,' (incomplete)','');
 end;
 
 procedure TfrmMain.SetSource;
@@ -3005,7 +2975,7 @@ begin
   ReloadSource;
 end;
 
-procedure TfrmMain.LoadSource(fileName: string; focusOn: integer);
+procedure TfrmMain.LoadSource(fileName: AnsiString; focusOn: integer);
 begin
   try
     if fileName <> '' then begin

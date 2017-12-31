@@ -15,7 +15,7 @@ type
   public
     constructor Create;
     destructor  Destroy; override;
-    function    ConstructName(unitName, unitFullName, procName: string; firstLn: integer): integer;
+    function    ConstructName(unitName, unitFullName, procName: AnsiString; firstLn: integer): integer;
     procedure   Dump(fileName: string);
   end;
 
@@ -34,33 +34,33 @@ uses
 
 type
   TIDTE = class
-    eName: PChar;
+    eName: PAnsiChar;
     eID  : integer;
-    constructor Create(name: string; id: integer);
+    constructor Create(name: ansistring; id: integer);
     destructor  Destroy; override;
   end;
 
   TIDTUE = class(TIDTE)
-    eQual: PChar;
-    constructor Create(name, qual: string; id: integer); reintroduce;
+    eQual: PAnsiChar;
+    constructor Create(name, qual: ansistring; id: integer); reintroduce;
     destructor  Destroy; override;
   end;
 
   TIDTCE = class(TIDTE)
     eUID: integer;
-    constructor Create(name: string; id, uid: integer);
+    constructor Create(name: AnsiString; id, uid: integer);
   end;
 
   TIDTPE = class(TIDTE)
     eUID    : integer;
     eCID    : integer;
     eFirstLn: integer;
-    constructor Create(name: string; id, uid, cid, firstLn: integer);
+    constructor Create(name: AnsiString; id, uid, cid, firstLn: integer);
   end;
 
   TIDTU = class(TSkipList)
     constructor Create; reintroduce;
-    function    Insert(key, qual: string): integer;
+    function    Insert(key, qual: AnsiString): integer;
     procedure   Dump(var f: TGpHugeFile);
   private
     idCnt : integer;
@@ -68,7 +68,7 @@ type
 
   TIDTC = class(TSkipList)
     constructor Create; reintroduce;
-    function    Insert(key: string; uid: integer): integer;
+    function    Insert(key: AnsiString; uid: integer): integer;
     procedure   Dump(var f: TGpHugeFile);
   private
     idCnt : integer;
@@ -76,7 +76,7 @@ type
 
   TIDTP = class(TSkipList)
     constructor Create; reintroduce;
-    function    Insert(key: string; uid, cid, firstLn: integer): integer;
+    function    Insert(key: AnsiString; uid, cid, firstLn: integer): integer;
     procedure   Dump(var f: TGpHugeFile);
     procedure   WriteProcSize(fileName: string);
   private
@@ -110,7 +110,7 @@ end; { TIDTPDispose }
 
 { TIDTable }
 
-function TIDTable.ConstructName(unitName, unitFullName, procName: string; firstLn: integer): integer;
+function TIDTable.ConstructName(unitName, unitFullName, procName: AnsiString; firstLn: integer): integer;
 var
   unitID: integer;
   clasID: integer;
@@ -173,7 +173,7 @@ end;
 procedure WriteTag   (f: TGpHugeFile; tag: byte);    begin f.BlockWriteUnsafe(Tag, Sizeof(Byte)); end;
 procedure WriteInt   (f: TGpHugeFile; int: integer); begin f.BlockWriteUnsafe(Int, Sizeof(Integer)); end;
 
-procedure WriteString(f: TGpHugeFile; str: string);
+procedure WriteString(f: TGpHugeFile; str: ansistring);
 begin
   WriteInt(f,Length(str));
   if Length(str) > 0 then
@@ -197,7 +197,7 @@ begin
   end;
 end;
 
-function TIDTU.Insert(key, qual: string): integer;
+function TIDTU.Insert(key, qual: AnsiString): integer;
 var
   p     : TIDTUE;
   cursor: TListCursor;
@@ -238,7 +238,7 @@ begin
   end;
 end;
 
-function TIDTC.Insert(key: string; uid: integer): integer;
+function TIDTC.Insert(key: AnsiString; uid: integer): integer;
 var
   p     : TIDTCE;
   cursor: TListCursor;
@@ -283,7 +283,7 @@ begin
   end;
 end;
 
-function TIDTP.Insert(key: string; uid, cid, firstLn: integer): integer;
+function TIDTP.Insert(key: AnsiString; uid, cid, firstLn: integer): integer;
 var
   p     : TIDTPE;
   cursor: TListCursor;
@@ -311,7 +311,7 @@ end;
 
 { TIDTE }
 
-constructor TIDTE.Create(name: string; id: integer);
+constructor TIDTE.Create(name: ansistring; id: integer);
 begin
   inherited Create;
   GetMem(eName,Length(name)+1);
@@ -327,7 +327,7 @@ end;
 
 { TIDTPE }
 
-constructor TIDTPE.Create(name: string; id, uid, cid, firstLn: integer);
+constructor TIDTPE.Create(name: AnsiString; id, uid, cid, firstLn: integer);
 begin
   inherited Create(name,id);
   eUID     := uid;
@@ -337,7 +337,7 @@ end;
 
 { TIDTUE }
 
-constructor TIDTUE.Create(name, qual: string; id: integer);
+constructor TIDTUE.Create(name, qual: ansistring; id: integer);
 begin
   GetMem(eQual,Length(qual)+1);
   StrPCopy(eQual,qual);
@@ -352,7 +352,7 @@ end;
 
 { TIDTCE }
 
-constructor TIDTCE.Create(name: string; id, uid: integer);
+constructor TIDTCE.Create(name: AnsiString; id, uid: integer);
 begin
   eUID := uid;
   inherited Create(name, id);

@@ -54,21 +54,21 @@ type
 
   TThreadEntry = record
     teThread     : integer;
-    teName       : string; // someday will be setable by API
+    teName       : AnsiString; // someday will be setable by API
     teTotalTime  : int64;
     teTotalCnt   : integer;
     teActiveProcs: TActiveProcList; 
   end;
 
   TUnitEntry = record
-    ueName     : string;
-    ueQual     : string;
+    ueName     : AnsiString;
+    ueQual     : AnsiString;
     ueTotalTime: array {thread} of int64;   // 0 = sum
     ueTotalCnt : array {thread} of integer; // 0 = sum
   end;
 
-  TClassEntry = record                                   
-    ceName     : string;
+  TClassEntry = record
+    ceName     : AnsiString;
     ceUID      : integer;
     ceFirstLn  : integer;
     ceTotalTime: array {thread} of int64;   // 0 = sum
@@ -76,7 +76,7 @@ type
   end;
 
   TProcEntry = record
-    peName         : string;
+    peName         : AnsiString;
     peUID          : integer;
     peCID          : integer;
     peFirstLn      : integer;
@@ -103,7 +103,7 @@ type
   TResults = class
   private
     resFile           : TGpHugeFile;
-    resName           : string;
+    resName           : Ansistring;
     resProcSize       : integer;
     resOldTicks       : int64;
     resThreadBytes    : integer;
@@ -132,8 +132,8 @@ type
     procedure   LoadCalibration;
     procedure   LoadData(callback: TProgressCallback);
     procedure   LoadDigest(callback: TProgressCallback);
-    procedure   ReadString(var str: string);
-    procedure   ReadShortstring(var str: string);
+    procedure   ReadString(var str: AnsiString);
+    procedure   ReadShortstring(var str: AnsiString);
     procedure   ReadInt(var int: integer);
     procedure   ReadInt64(var i64: int64);
     procedure   ReadBool(var bool: boolean);
@@ -144,7 +144,7 @@ type
     procedure   WriteTag(tag: byte);
     procedure   WriteInt(int: integer);
     procedure   WriteInt64(i64: int64);
-    procedure   WriteString(str: string);
+    procedure   WriteString(str: ansistring);
     procedure   CheckTag(tag: byte);
     function    ReadPacket(var pkt: TResPacket): boolean;
     procedure   UpdateRunningTime(proxy,parent: TProcProxy);
@@ -161,7 +161,7 @@ type
     resProcedures: array of TProcEntry;
     resCallGraph : array {procedure} of array {procedure} of PCallGraphEntry;
     resFrequency : int64;
-    constructor Create(fileName: string; callback: TProgressCallback); overload;
+    constructor Create(fileName: AnsiString; callback: TProgressCallback); overload;
     constructor Create; overload;
     destructor  Destroy; override;
     procedure   AssignTables(tableFile: string);
@@ -172,7 +172,7 @@ type
     procedure   RecalcTimes;
     procedure   SaveDigest(fileName: string);
     procedure   Rename(fileName: string);
-    property    Name: string read resName;
+    property    Name: AnsiString read resName;
     property    Version: integer read resPrfVersion;
     property    IsDigest: boolean read resPrfDigest;
     property    DigestVer: integer read resPrfDigestVer;
@@ -211,10 +211,10 @@ begin
     resNullOverhead    := 0;
     resNullError       := 0;
     resNullErrorAcc    := 0;
-  except Fail; end;
+  except end;
 end; { TResults.Create }
 
-constructor TResults.Create(fileName: string; callback: TProgressCallback);
+constructor TResults.Create(fileName: AnsiString; callback: TProgressCallback);
 begin
   Create();
   try
@@ -231,7 +231,7 @@ begin
         RecalcTimes;
       end;
     finally resFile.Free; end;
-  except Fail; end;
+  except end;
 end; { TResults.Create }
 
 destructor TResults.Destroy;
@@ -279,7 +279,7 @@ begin
   end;
 end; { TResults.ReadThread }
 
-procedure TResults.ReadShortstring(var str: string);
+procedure TResults.ReadShortstring(var str: AnsiString);
 var
   s: shortstring;
 begin
@@ -288,7 +288,7 @@ begin
   str := s;
 end; { TResults.ReadShortstring }
 
-procedure TResults.ReadString(var str: string);
+procedure TResults.ReadString(var str: AnsiString);
 var
   len: integer;
 begin
@@ -302,7 +302,7 @@ procedure TResults.WriteTag  (tag: byte);    begin resFile.BlockWriteUnsafe(tag,
 procedure TResults.WriteInt  (int: integer); begin resFile.BlockWriteUnsafe(int,SizeOf(integer)); end;
 procedure TResults.WriteInt64(i64: int64);   begin resFile.BlockWriteUnsafe(i64,SizeOf(int64)); end;
 
-procedure TResults.WriteString(str: string);
+procedure TResults.WriteString(str: ansistring);
 begin
   WriteInt(Length(str));
   if Length(str) > 0 then

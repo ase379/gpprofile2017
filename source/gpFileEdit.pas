@@ -35,7 +35,7 @@ type
     fecCmd : (cmdInsert, cmdRemove);
     fecOfs1: integer;
     fecOfs2: integer;
-    fecTxt : string;
+    fecTxt : ansistring;
   end;
 
 { TFileEdit }
@@ -74,7 +74,7 @@ type
       stream.Position := lastp1;
     end; { Remove }
 
-    procedure Insert(position: integer; key: string);
+    procedure Insert(position: integer; key: ansistring);
     begin
       if position > stream.Position then begin
         BlockWrite(f,MakeCurP^,position-stream.Position);
