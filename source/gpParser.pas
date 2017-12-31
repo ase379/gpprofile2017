@@ -892,7 +892,9 @@ uses
                     unLocation := '';
                   end
                   else if tokenID = ptIdentifier then // unit name
-                    unName := tokenData
+                     unName := unName + tokenData
+                  else if tokenID = ptPoint then
+                    unName := unName + '.'
                   else if tokenID = ptStringConst then // unit location from "in 'somepath\someunit.pas'" (dpr-file)
                     unLocation := tokenData
                 end
