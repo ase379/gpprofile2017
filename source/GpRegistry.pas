@@ -65,12 +65,15 @@ uses
   end; { TGpRegistry.ReadDate }
 
   function TGpRegistry.ReadVariant(name: string; defval: variant): variant;
+  var LType : TVarType;
   begin
-    case VarType(defval) of
+    LType := VarType(defval);
+    case LType of
       varInteger: Result := ReadInteger(name,defval);
       varBoolean: Result := ReadBool(name,defval);
       varString : Result := ReadString(name,defval);
       varDate   : Result := ReadDate(name,defval);
+      varUString : Result := ReadString(name,defval);
       else raise Exception.Create('TGpRegistry.ReadVariant: Invalid value type!');
     end;
   end;
@@ -82,6 +85,7 @@ uses
       varBoolean: WriteBool(name,value);
       varString : WriteString(name,value);
       varDate   : WriteDate(name,value);
+      varUString : WriteString(name,value);
       else raise Exception.Create('TGpRegistry.WriteVariant: Invalid value type!');
     end;
   end;
