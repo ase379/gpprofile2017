@@ -599,7 +599,7 @@ object frmMain: TfrmMain
                     Anchors = [akLeft, akTop, akRight, akBottom]
                     Columns = <
                       item
-                        Caption = 'Procedure'
+                        Caption = 'Procedure (Callers)'
                         Width = 150
                       end
                       item
@@ -768,7 +768,7 @@ object frmMain: TfrmMain
                   Anchors = [akLeft, akTop, akRight, akBottom]
                   Columns = <
                     item
-                      Caption = 'Procedure'
+                      Caption = 'Procedure (Callee)'
                       Width = 150
                     end
                     item
