@@ -1419,83 +1419,7 @@ end;
 function TmwCustomEdit.GetSelText: String;
 {begin}                                                                         //bds 1/25/1999
 {$IFDEF MWE_SELECTION_MODE}
-(*
-  function CopyPadded(const S: string; Index, Count: integer): string;
-  var
-    Len: integer;
-  begin
-    Result := Copy(S, Index, Count);
-    Len := Length(Result);
-    if Len < Count then
-      Result := Result + StringOfChar(' ', Count - Len);
-  end;
-var
-  BB, BE: TPoint;
-  First, Last: Integer;
-  Helper: TStringList;
-  ColLen: integer;
-  s: string;                                                                    //th 1999-09-21
-begin{>>GpProfile} ProfilerEnterProc(1); try {GpProfile>>}
-  Result := '';
-  if SelAvail then
-  begin
-    Helper := TStringList.Create;
-    BB := BlockBegin;
-    BE := BlockEnd;
-    if BB.Y = BE.Y then
-    begin
-      case SelectionMode of
-        smNormal, smColumn:
-          Result := (Copy(Lines[BB.Y - 1], BB.X, BE.X - BB.X));
-        smLine:
-          Result := Lines[BB.Y - 1] + #13#10; // Line mode always has a trailing CR/LF
-      end;
-    end else begin
-      First := BB.Y - 1;
-      Last := BE.Y - 1;
-      case SelectionMode of
-        smNormal:
-          begin
-            Helper.Add(Copy(Lines[First], BB.X, Length(Lines[First])));
-            inc(First);
-            while First < Last do
-            begin
-              Helper.Add(Lines[First]);
-              inc(First);
-            end;
-            Helper.Add(Copy(Lines[First], 1, BE.X - 1));
-          end;
-        smColumn:
-          begin
-            ColLen := BE.X - BB.X;
-            while First <= Last do
-            begin
-              Helper.Add(CopyPadded(Lines[First], BB.X, ColLen));
-              inc(First);
-            end;
-          end;
-        smLine:
-          begin
-            while First <= Last do
-            begin
-              Helper.Add(Lines[First]);
-              inc(First);
-            end;
-            Helper.Add('');   // Line mode always has a trailing CR/LF          //th 1999-09-20
-          end;
-      end;
-     // Strip last CR+LF
-{begin}                                                                         //th 1999-09-21
-//     Result := Copy(Helper.Text,1,Length(Helper.Text)-2);			//tskurz 06/11/1999
-     s := Helper.Text;
-     Result := Copy(s, 1, Length(s) - 2);                                       
-     //Result := Helper.Text;
-{end}
-    end;
-    Helper.Free;
-  end;
-{end}                                                                           //bds 1/25/1999
-*)
+
   function CopyPadded(const S: string; Index, Count: integer): string;
   var
     SrcLen: Integer;
@@ -2554,7 +2478,7 @@ var bDoRightEdge: boolean; // right edge
     end;
   end;
 
-  procedure AddHighlightToken(const Token: AnsiString;
+  procedure AddHighlightToken(const Token: String;
                               CharsBefore, TokenLen: integer;
                               Foreground, Background: TColor;
                               Style: TFontStyles);
@@ -8108,4 +8032,5 @@ initialization                                                                  
   mwEditClipboardFormat := RegisterClipboardFormat(MWEDIT_CLIPBOARD_FORMAT);    //bds 1/25/1999
 {$ENDIF}
 end.
+
 
