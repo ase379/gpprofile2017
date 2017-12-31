@@ -251,6 +251,7 @@ uses
   begin
     inherited Create(true);
     CompareFunc := @CompareUnit;
+    //DisposeData := @DisposeUnit;
   end; { TGlbUnitList.Create }
 
   function TGlbUnitList.Locate(unitName: string): TUnit;
@@ -265,7 +266,7 @@ uses
     else
       Locate := nil;
   end; { TGlbUnitList.Locate }
-
+  
   function TGlbUnitList.LocateCreate(unitName, unitLocation: string; excluded: boolean): TUnit;
   var
     un    : TUnit;
@@ -297,6 +298,7 @@ uses
   begin
     inherited Create(true);
     CompareFunc := @CompareProc;
+    //DisposeData := @DisposeProc;
   end; { TProcList.Create }
 
   procedure TProcList.Add(var procName: string; pureAsm: boolean; offset, lineNum,headerLineNum: integer);
@@ -1701,6 +1703,8 @@ uses
 constructor TAPIList.Create;
   begin
     inherited Create(true);
+    //DisposeData := @DisposeAPI;
   end; { TAPIList.Create }
 
 end.
+
