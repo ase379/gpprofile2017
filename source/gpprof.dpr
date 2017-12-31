@@ -45,7 +45,9 @@ uses
   gppCallGraph in 'gppCallGraph.pas' {frmCallGraph},
   gppComCtl in 'gppComCtl.pas' {frmComCtl},
   DProjUnit in 'DProjUnit.pas',
-  BdsProjUnit in 'BdsProjUnit.pas';
+  BdsProjUnit in 'BdsProjUnit.pas',
+  bdsVersions in 'bdsVersions.pas',
+  gppTree in 'gppTree.pas';
 
 {$R *.RES}
 

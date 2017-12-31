@@ -56,6 +56,7 @@ end;
 function TDProj.OutputDir: String;
 var
   i: Integer;
+  LValue : String;
 begin
   Result := '';
   for i := 0 to Root.Count-1 do
@@ -68,10 +69,14 @@ begin
     // (i.e. analysis of different config types (debug/release) is not implemented)
     if Root.Nodes[i].ChildValues['DCC_ExeOutput'] <> Null then
     begin
-      if (Result <> '') and (Result <> Root.Nodes[i].ChildValues['DCC_ExeOutput']) then
-        raise Exception.Create('Project "' + FFileName + '" - error: ' + #13#10 +
-          'Output dir for exe-file differs for different configuration types release/debug etc.)');
-
+      if (Result <> '') then
+      begin
+        LValue := Root.Nodes[i].ChildValues['DCC_ExeOutput'];
+        if LValue <> Result then
+          raise Exception.Create('Project "' + FFileName + '" - error: ' + #13#10 +
+            'Output dir for exe-file differs for different configuration types (release/debug etc.)'+slineBreak+
+            'Result was '+Result+', new node is '+ LValue);
+      end;
       Result := Root.Nodes[i].ChildValues['DCC_ExeOutput'];
     end;
   end;
