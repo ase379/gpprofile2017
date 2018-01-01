@@ -1,0 +1,3 @@
+[submodule "lib/SynEdit"]
+	path = lib/SynEdit
+	url = https://github.com/SynEdit/SynEdit.git
