@@ -606,7 +606,7 @@ uses
       if parserStack.Count > 0 then
       begin
         parser := TmwPasLex(parserStack[parserStack.Count-2]);
-        stream := TStringStream(parserStack[parserStack.Count-1]);
+        stream := TMemoryStream(parserStack[parserStack.Count-1]);
         parserStack.Delete(parserStack.Count-1);
         parserStack.Delete(parserStack.Count-1);
         parser.Next;
