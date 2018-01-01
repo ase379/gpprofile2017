@@ -20,7 +20,7 @@
     <DCC_MapFile>3</DCC_MapFile>
     <DCC_DebugInfoInExe>True</DCC_DebugInfoInExe>
     <DCC_DebugVN>True</DCC_DebugVN>
-    <DCC_UnitSearchPath>x:\mstpl\ezdsl;$(DELPHI)\components;x:\mstpl\ddp\source;x:\mstpl\pkg\mwedit</DCC_UnitSearchPath>
+    <DCC_UnitSearchPath>..\lib\SynEdit\source;x:\mstpl\ezdsl;$(DELPHI)\components;x:\mstpl\ddp\source;x:\mstpl\pkg\mwedit</DCC_UnitSearchPath>
     <DCC_ResourcePath>x:\mstpl\ezdsl;$(DELPHI)\components;x:\mstpl\ddp\source;x:\mstpl\pkg\mwedit</DCC_ResourcePath>
     <DCC_ObjPath>x:\mstpl\ezdsl;$(DELPHI)\components;x:\mstpl\ddp\source;x:\mstpl\pkg\mwedit</DCC_ObjPath>
     <DCC_IncludePath>x:\mstpl\ezdsl;$(DELPHI)\components;x:\mstpl\ddp\source;x:\mstpl\pkg\mwedit</DCC_IncludePath>
@@ -35,7 +35,7 @@
     <DCC_MapFile>3</DCC_MapFile>
     <DCC_DebugInfoInExe>True</DCC_DebugInfoInExe>
     <DCC_DebugVN>True</DCC_DebugVN>
-    <DCC_UnitSearchPath>$(BDS)\Lib\Debug\Indy10;$(BDS)\lib\Debug;OutSources\EZDSL;OutSources\CastaliaDelphiParser;..\GPComponents\GPNative\source;..\GPComponents\mwEdit</DCC_UnitSearchPath>
+    <DCC_UnitSearchPath>..\lib\SynEdit\source;$(BDS)\Lib\Debug\Indy10;$(BDS)\lib\Debug;OutSources\EZDSL;OutSources\CastaliaDelphiParser;..\GPComponents\GPNative\source;..\GPComponents\mwEdit</DCC_UnitSearchPath>
     <DCC_ResourcePath>$(BDS)\Lib\Debug\Indy10;$(BDS)\lib\Debug;OutSources\EZDSL;OutSources\CastaliaDelphiParser;..\GPComponents\GPNative\source;..\GPComponents\mwEdit</DCC_ResourcePath>
     <DCC_ObjPath>$(BDS)\Lib\Debug\Indy10;$(BDS)\lib\Debug;OutSources\EZDSL;OutSources\CastaliaDelphiParser;..\GPComponents\GPNative\source;..\GPComponents\mwEdit</DCC_ObjPath>
     <DCC_IncludePath>$(BDS)\Lib\Debug\Indy10;$(BDS)\lib\Debug;OutSources\EZDSL;OutSources\CastaliaDelphiParser;..\GPComponents\GPNative\source;..\GPComponents\mwEdit</DCC_IncludePath>

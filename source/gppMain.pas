@@ -8,7 +8,9 @@ uses
   Registry, Messages, Classes, Forms, Windows, SysUtils, Graphics, Controls,
   Dialogs, StdCtrls, Menus, ComCtrls, GpParser, ExtCtrls, GpCheckLst, gpMRU,
   ActnList, ImgList, Buttons, ToolWin, gppResults, Grids,
-  gpArrowListView, mwPasSyn, mwCustomEdit, mwHighlighter, DProjUnit;
+  gpArrowListView, DProjUnit, SynEdit,
+  SynEditHighlighter, SynEditCodeFolding, SynHighlighterPas, System.ImageList,
+  System.Actions;
 
 const
   WM_ReloadProfile = WM_USER;
@@ -184,8 +186,7 @@ type
     Label1: TLabel;
     cbxSelectThreadClass: TComboBox;
     lvClasses: TGpArrowListView;
-    mwSource: TmwCustomEdit;
-    mwPasSyn1: TmwPasSyn;
+    sourceCodeEdit: TSynEdit;
     pnlBrowser: TPanel;
     ToolBar3: TToolBar;
     ToolButton18: TToolButton;
@@ -208,6 +209,7 @@ type
     actHelpVisitForum: TAction;
     actHelpJoinMailingList: TAction;
     OpenDialog1: TOpenDialog;
+    SynPasSyn: TSynPasSyn;
     procedure FormCreate(Sender: TObject);
     procedure MRUClick(Sender: TObject; LatestFile: String);
     procedure FormDestroy(Sender: TObject);
@@ -673,7 +675,7 @@ begin
   clbProcs.Color                     := clBtnFace;
   clbProcs.Enabled                   := false;
   if PageControl1.ActivePage = tabInstrumentation then
-    mwSource.Color := clBtnFace;
+    sourceCodeEdit.Color := clBtnFace;
 end; { TfrmMain.DisablePC }
 
 procedure TfrmMain.EnablePC;
@@ -690,7 +692,7 @@ begin
   clbProcs.Color                     := clWindow;
   clbProcs.Enabled                   := true;
   if PageControl1.ActivePage = tabInstrumentation then
-    mwSource.Color := mwPasSyn1.SpaceAttri.Background;
+    sourceCodeEdit.Color := SynPasSyn.SpaceAttri.Background;
   SetSource;
 end; { TfrmMain.EnablePC }
 
@@ -835,7 +837,7 @@ begin
   cbxSelectThreadClass.Color         := clBtnFace;
   cbxSelectThreadUnit.Color          := clBtnFace;
   if PageControl1.ActivePage = tabAnalysis then
-    mwSource.Color := clBtnFace;
+    sourceCodeEdit.Color := clBtnFace;
 end; { TfrmMain.DisablePC2 }
 
 procedure TfrmMain.EnablePC2;
@@ -854,7 +856,7 @@ begin
     cbxSelectThreadClass.Color := clWindow;
     cbxSelectThreadUnit.Color  := clWindow;
     if PageControl1.ActivePage = tabAnalysis then
-      mwSource.Color := mwPasSyn1.SpaceAttri.Background;
+      sourceCodeEdit.Color := SynPasSyn.SpaceAttri.Background;
     SetSource;
   end;
 end;
@@ -2160,13 +2162,13 @@ begin
     then enabled := (currentProject <> '')
     else enabled := (currentProfile <> '');
   if enabled then begin
-    mwSource.Enabled := true;
-    mwSource.Color   := mwPasSyn1.SpaceAttri.Background;
+    sourceCodeEdit.Enabled := true;
+    sourceCodeEdit.Color   := SynPasSyn.SpaceAttri.Background;
   end
   else begin
     ClearSource;
-    mwSource.Enabled := false;
-    mwSource.Color   := clBtnFace;
+    sourceCodeEdit.Enabled := false;
+    sourceCodeEdit.Color   := clBtnFace;
   end;
 end;
 
@@ -2418,9 +2420,9 @@ begin
         setting := i;
         break;
       end;
-    mwPasSyn1.UseUserSettings(setting);
+    SynPasSyn.UseUserSettings(setting);
     SetSource;
-    mwSource.Invalidate;
+    sourceCodeEdit.Invalidate;
   finally s.Free; end;
 end; { TfrmMain.UseDelphiSettings }
 
@@ -2980,20 +2982,20 @@ begin
   try
     if fileName <> '' then begin
       if fileName <> loadedSource then begin
-        mwSource.Lines.LoadFromFile(fileName);
+        sourceCodeEdit.Lines.LoadFromFile(fileName);
         loadedSource := fileName;
       end;
       if focusOn < 0 then focusOn := 0;
-      if focusOn >= mwSource.Lines.Count then focusOn := mwSource.Lines.Count-1;
-      mwSource.TopLine := focusOn+1;
+      if focusOn >= sourceCodeEdit.Lines.Count then focusOn := sourceCodeEdit.Lines.Count-1;
+      sourceCodeEdit.TopLine := focusOn+1;
       StatusPanel0(fileName,true);
     end;
-  except mwSource.Lines.Clear; end;
+  except sourceCodeEdit.Lines.Clear; end;
 end; { TfrmMain.LoadSource }
 
 procedure TfrmMain.ClearSource;
 begin
-  mwSource.Lines.Clear;
+  sourceCodeEdit.Lines.Clear;
   loadedSource := '';
   StatusPanel0('',true);
 end; { TfrmMain.ClearSource }
