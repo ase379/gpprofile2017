@@ -1,7 +1,7 @@
 object frmMain: TfrmMain
   Left = 312
   Top = 179
-  Caption = 'GpProfile 2011'
+  Caption = 'GpProfile 2017'
   ClientHeight = 514
   ClientWidth = 612
   Color = clBtnFace
@@ -1048,6 +1048,7 @@ object frmMain: TfrmMain
         Gutter.Font.Height = -11
         Gutter.Font.Name = 'Courier New'
         Gutter.Font.Style = []
+        Gutter.ShowLineNumbers = True
         Highlighter = SynPasSyn
         Lines.Strings = (
           'sourceCodeEdit')
