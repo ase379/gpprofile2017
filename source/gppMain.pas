@@ -3175,6 +3175,8 @@ begin
 end;
 
 procedure TfrmMain.actMakeCopyProfileExecute(Sender: TObject);
+var
+  LLastError : cardinal;
 begin
   with SaveDialog1 do begin
     FileName := ButLast(openProfile.Name,Length(ExtractFileExt(openProfile.Name)))+
@@ -3183,8 +3185,16 @@ begin
     if Execute then begin
       if ExtractFileExt(FileName) = '' then FileName := FileName + '.prf';
       CopyFile(PChar(openProfile.Name),PChar(FileName),false);
-      MRUPrf.LatestFile := FileName;
-      MRUPrf.LatestFile := openProfile.Name;
+      LLastError := GetLastError();
+      if LLastError <> 0 then
+      begin
+        StatusPanel0(Format('Cannot copy file: %s',[SysErrorMessage(LLastError)]),false,true);
+        ShowMessage(Format('Cannot copy file: %s',[SysErrorMessage(LLastError)]));
+      else
+      begin
+        MRUPrf.LatestFile := FileName;
+        MRUPrf.LatestFile := openProfile.Name;
+      end
     end;
   end;
 end;
