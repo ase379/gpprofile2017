@@ -48,7 +48,7 @@ type
       procedure ReleaseAccess;
         {-Unlock the generator in a multithreaded process}
 
-      procedure SetSeed(const aSeed : longint);
+      procedure SetSeed(const aSeed : cardinal);
         {-Reseed the generator, if aSeed is zero the generator reseeds
           from the system clock}
 
@@ -109,11 +109,11 @@ type
   TrgTable = packed record
     tFrmOfs : integer;
     tToOfs  : integer;
-    tEntries: array [0..pred(TableEntries)] of longint;
+    tEntries: array [0..pred(TableEntries)] of Cardinal;
   end;
 
 {===Helper routines==================================================}
-function Random32Bit(aSeed : longint) : longint;
+function Random32Bit(aSeed : Cardinal) : Cardinal;
 {$IFDEF Win32}
 {Input:  EAX = current seed
  Output: EAX = 32-bit random value & new seed}
@@ -176,7 +176,7 @@ asm
 end;
 {$ENDIF}
 {--------}
-procedure InitTable(aTable : PrgTable; aSeed : longint);
+procedure InitTable(aTable : PrgTable; aSeed : Cardinal);
 var
   i : integer;
 begin
@@ -373,9 +373,9 @@ begin
   Result := word(GetNextRandomDWORD(PrgTable(rgList)));
 end;
 {--------}
-procedure TEZRandomGenerator.SetSeed(const aSeed : longint);
+procedure TEZRandomGenerator.SetSeed(const aSeed : cardinal);
 var
-  SeedValue : longint;
+  SeedValue : Cardinal;
 begin
   if (aSeed <> 0) then
     SeedValue := aSeed
