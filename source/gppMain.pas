@@ -399,6 +399,8 @@ type
     procedure ExportTo(fileName: string; exportProcs, exportClasses, exportUnits, exportThreads, exportCSV: boolean);
     procedure QueryExport;
     procedure StatusPanel0(msg: string; isSourcePos: boolean; beep: boolean = false);
+    procedure ShowError(const Msg : string);
+
     procedure SwitchDelMode(delete: boolean);
     procedure NoProfile;
     procedure DoOnUnitCheck(index: integer; instrument: boolean);
@@ -466,7 +468,8 @@ uses
   gppExport,
   gppCallGraph,
   UITypes,
-  StrUtils; {jb}
+  StrUtils,
+  ioUtils;
 
 {$R *.DFM}
 
@@ -3174,27 +3177,30 @@ begin
   end;
 end;
 
-procedure TfrmMain.actMakeCopyProfileExecute(Sender: TObject);
-var
-  LLastError : cardinal;
+procedure TfrmMain.ShowError(const Msg : string);
 begin
-  with SaveDialog1 do begin
-    FileName := ButLast(openProfile.Name,Length(ExtractFileExt(openProfile.Name)))+
+  StatusPanel0(msg,true,true);
+  MessageDlg(msg,TMsgDlgType.mtError,[mbOK],0,mbOk);
+end;
+
+procedure TfrmMain.actMakeCopyProfileExecute(Sender: TObject);
+var LSrc : string;
+begin
+  try
+    SaveDialog1.FileName := ButLast(openProfile.Name,Length(ExtractFileExt(openProfile.Name)))+
                 FormatDateTime('_ddmmyy',Now)+'.prf';
-    Title := 'Make copy of '+openProfile.Name;
-    if Execute then begin
-      if ExtractFileExt(FileName) = '' then FileName := FileName + '.prf';
-      CopyFile(PChar(openProfile.Name),PChar(FileName),false);
-      LLastError := GetLastError();
-      if LLastError <> 0 then
-      begin
-        StatusPanel0(Format('Cannot copy file: %s',[SysErrorMessage(LLastError)]),false,true);
-        ShowMessage(Format('Cannot copy file: %s',[SysErrorMessage(LLastError)]));
-      else
-      begin
-        MRUPrf.LatestFile := FileName;
-        MRUPrf.LatestFile := openProfile.Name;
-      end
+    SaveDialog1.Title := 'Make copy of '+openProfile.Name;
+    if SaveDialog1.Execute then begin
+      if ExtractFileExt(SaveDialog1.FileName) = '' then 
+        SaveDialog1.FileName := SaveDialog1.FileName + '.prf';
+    LSrc := openProfile.Name;
+    TFile.Copy(LSrc,SaveDialog1.FileName,true);
+    MRUPrf.LatestFile := SaveDialog1.FileName;
+    MRUPrf.LatestFile := openProfile.Name;
+  end;
+  except on e: Exception do
+    begin
+      ShowError(e.Message);
     end;
   end;
 end;
@@ -3203,16 +3209,22 @@ procedure TfrmMain.actDelUndelProfileExecute(Sender: TObject);
 var
   newProj: string;
 begin
-  if undelProject = '' then begin // delete
-    undelProject := ChangeFileExt(openProfile.Name,'.~pr');
-    RenameFile(openProfile.Name,undelProject);
-    NoProfile;
-    SwitchDelMode(false);
-  end
-  else begin
-    newProj := ChangeFileExt(undelProject,'.prf');
-    RenameFile(undelProject,newProj);
-    LoadProfile(newProj);
+  try
+    if undelProject = '' then begin // delete
+      undelProject := ChangeFileExt(openProfile.Name,'.~pr');
+      TFile.Move(openProfile.Name,undelProject);
+      NoProfile;
+      SwitchDelMode(false);
+    end
+    else begin
+      newProj := ChangeFileExt(undelProject,'.prf');
+      TFile.Move(undelProject,newProj);
+      LoadProfile(newProj);
+    end;
+  except on e: Exception do
+    begin
+      ShowError(e.Message);
+    end;
   end;
 end;
 
@@ -3241,18 +3253,23 @@ end;
 
 procedure TfrmMain.actRenameMoveProfileExecute(Sender: TObject);
 begin
-  with SaveDialog1 do begin
-    FileName := ButLast(openProfile.Name,Length(ExtractFileExt(openProfile.Name)))+
+  try
+    SaveDialog1.FileName := ButLast(openProfile.Name,Length(ExtractFileExt(openProfile.Name)))+
                 FormatDateTime('_ddmmyy',Now)+'.prf';
-    Title := 'Rename/Move '+openProfile.Name;
-    if Execute then begin
-      if ExtractFileExt(FileName) = '' then FileName := FileName + '.prf';
-      RenameFile(openProfile.Name,FileName);
-      openProfile.Rename(FileName);
-      currentProfile := ExtractFileName(FileName);
+    SaveDialog1.Title := 'Rename/Move '+openProfile.Name;
+    if SaveDialog1.Execute then begin
+      if ExtractFileExt(SaveDialog1.FileName) = '' then
+        SaveDialog1.FileName := SaveDialog1.FileName + '.prf';
+      TFile.Move(openProfile.Name,SaveDialog1.FileName);
+      openProfile.Rename(SaveDialog1.FileName);
+      currentProfile := ExtractFileName(SaveDialog1.FileName);
       SetCaption;
-      MRUPrf.LatestFile := FileName;
+      MRUPrf.LatestFile := SaveDialog1.FileName;
     end;
+  except on e: Exception do
+    begin
+      ShowError(e.Message);
+    end
   end;
 end;
 
