@@ -31,7 +31,7 @@ uses
   GpString,
   gpArrowListView,
   gppMain in 'gppMain.pas' {frmMain},
-  gppPreferences in 'gppPreferences.pas' {frmPreferences},
+  gpPreferencesDlg in 'gpPreferencesDlg.pas' {frmPreferences},
   gpParser in 'gpParser.pas',
   gppIDT in 'gppIDT.pas',
   GpIFF in 'GpIFF.pas',
@@ -47,7 +47,10 @@ uses
   DProjUnit in 'DProjUnit.pas',
   BdsProjUnit in 'BdsProjUnit.pas',
   bdsVersions in 'bdsVersions.pas',
-  gppTree in 'gppTree.pas';
+  gppTree in 'gppTree.pas',
+  gpPrfPlaceholders in 'gpPrfPlaceholders.pas',
+  gpPrfPlaceholderDlg in 'gpPrfPlaceholderDlg.pas' {frmPreferenceMacros},
+  gppCurrentPrefs in 'gppCurrentPrefs.pas';
 
 {$R *.RES}
 
@@ -124,6 +127,7 @@ begin
   Application.CreateForm(TfrmAbout, frmAbout);
   Application.CreateForm(TfrmExport, frmExport);
   Application.CreateForm(TfrmCallGraph, frmCallGraph);
+  Application.CreateForm(TfrmPreferenceMacros, frmPreferenceMacros);
   Application.Run;
   end;
 end.
