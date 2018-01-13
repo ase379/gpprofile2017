@@ -1,4 +1,4 @@
-unit gppreferences.tools;
+unit gpPrfTools;
 
 interface
 
@@ -16,12 +16,17 @@ type
   end;
 
   TPrfPlaceholders = (undefined,ProjectFilename, ProcessName, ProcessID);
+  TPrfPlaceholdersSet =set of TPrfPlaceholders;
   TPrfPlaceholderValueDict = TDictionary<TPrfPlaceholders, string>;
   TPrfOutputPlaceholders = class
     class function PrfPlaceholderToMacro(const aPlaceholder : TPrfPlaceholders) : string;
     class function MacroToPrfPlaceholder(const aMacro : string): TPrfPlaceholders;
     class function IsPrfPlaceholderAProjectMacro(const aPlaceholder : TPrfPlaceholders): boolean;
     class function IsPrfPlaceholderARuntimeMacro(const aPlaceholder : TPrfPlaceholders): boolean;
+
+    class function GetPrfPlaceholderProjectMacros(): TPrfPlaceholdersSet;
+    class function GetPrfPlaceholderRuntimeMacros(): TPrfPlaceholdersSet;
+
 
     class function ReplaceProjectMacros(const aFilenameWithMacros: string;const aSubstitutes :TPrfPlaceholderValueDict) : string;
     class function ReplaceRuntimeMacros(const aFilenameWithMacros: string;const aSubstitutes :TPrfPlaceholderValueDict): string;
@@ -80,7 +85,7 @@ end; { TGPPrefTools.DelPref }
 class function TPrfOutputPlaceholders.PrfPlaceholderToMacro(const aPlaceholder : TPrfPlaceholders): string;
 begin
   case aPlaceholder of
-    TPrfPlaceholders.ProjectFilename: result := '$(ProjectFilename)';
+    TPrfPlaceholders.ProjectFilename: result := '$(ProjectOutputName)';
     TPrfPlaceholders.ProcessName: result := '$(ProcessName)';
     TPrfPlaceholders.ProcessID: result := '$(ProcessID)';
     else
@@ -107,6 +112,35 @@ begin
       result := false;
   end;
 end;
+
+
+class function TPrfOutputPlaceholders.GetPrfPlaceholderProjectMacros(): TPrfPlaceholdersSet;
+var lPrf : TPrfPlaceholders;
+    LOldLength : integer;
+begin
+  result := [];
+  for lPrf := low(TPrfPlaceholders) to high(TPrfPlaceholders) do
+  begin
+    if IsPrfPlaceholderAProjectMacro(lPrf) then
+      include(result, lprf);
+  end;
+end;
+
+
+
+class function TPrfOutputPlaceholders.GetPrfPlaceholderRuntimeMacros(): TPrfPlaceholdersSet;
+var lPrf : TPrfPlaceholders;
+    LOldLength : integer;
+begin
+  result := [];
+  for lPrf := low(TPrfPlaceholders) to high(TPrfPlaceholders) do
+  begin
+    if IsPrfPlaceholderARuntimeMacro(lPrf) then
+      include(result, lprf);
+   end;
+end;
+
+
 
 
 class function TPrfOutputPlaceholders.MacroToPrfPlaceholder(const aMacro : string): TPrfPlaceholders;
