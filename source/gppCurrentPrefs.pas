@@ -17,15 +17,22 @@ var
   prefKeepFileDate          : boolean;
   prefUseFileDate           : boolean;
   prefPrfFilenameMakro      : string;
+  prefPrfFilenameResolvedMakro : string;
   prefProfilingAutostart    : boolean;
   prefInstrumentAssembler   : boolean;
 
   // the selected compiler version
   selectedDelphi            : string;
+  // the output dir as defined in the project
+  ProjectOutputDir          : string;
   // the selected platform in the project
+  XE2Platform               : string;
   XE2PlatformOverride       : string;
   // the selected config in the project
+  XE2Config                 : string;
   XE2ConfigOverride         : string;
+
+
 
 
 function GetDOFSettingBool(const section, key: string;  defval: boolean): boolean;
@@ -81,8 +88,7 @@ begin
         prefInstrumentAssembler:= ReadBool   ('InstrumentAssembler',false);
         prefKeepFileDate       := ReadBool   ('KeepFileDate',false);
         prefUseFileDate        := ReadBool   ('UseFileDate',true);
-        prefPrfFilenameMakro   := ReadString ('PrfFilenameMakro',TPrfPlaceholder.PrfPlaceholderToMacro(ProjectFilename));
-
+        prefPrfFilenameMakro   := ReadString ('PrfFilenameMakro',TPrfPlaceholder.PrfPlaceholderToMacro(TPrfPlaceholderType.ModulePath));
       finally
         CloseKey;
       end;
