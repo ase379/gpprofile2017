@@ -318,7 +318,7 @@ object frmPreferences: TfrmPreferences
           AlignWithMargins = True
           Left = 10
           Top = 23
-          Width = 449
+          Width = 232
           Height = 13
           Margins.Left = 8
           Margins.Top = 8
@@ -354,7 +354,7 @@ object frmPreferences: TfrmPreferences
             Align = alClient
             TabOrder = 0
           end
-          object Button1: TButton
+          object btnPrfPlaceholderSelection: TButton
             Left = 423
             Top = 0
             Width = 26
@@ -362,7 +362,7 @@ object frmPreferences: TfrmPreferences
             Align = alRight
             Caption = '...'
             TabOrder = 1
-            OnClick = Button1Click
+            OnClick = btnPrfPlaceholderSelectionClick
           end
         end
       end
@@ -440,7 +440,6 @@ object frmPreferences: TfrmPreferences
               Width = 192
             end>
           HideSelection = False
-          Items.ItemData = {}
           ReadOnly = True
           RowSelect = True
           ShowColumnHeaders = False

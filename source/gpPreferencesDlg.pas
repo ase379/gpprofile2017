@@ -73,7 +73,7 @@ type
     Label6: TLabel;
     Panel2: TPanel;
     edtPerformanceOutputFilename: TEdit;
-    Button1: TButton;
+    btnPrfPlaceholderSelection: TButton;
     procedure FormKeyPress(Sender: TObject; var Key: Char);
     procedure FormCreate(Sender: TObject);
     procedure btnAddFromFolderClick(Sender: TObject);
@@ -101,7 +101,7 @@ type
     procedure btnDefinesDefaultsClick(Sender: TObject);
     procedure cbDisableUserDefinesClick(Sender: TObject);
     procedure btnClearUserDefinesClick(Sender: TObject);
-    procedure Button1Click(Sender: TObject);
+    procedure btnPrfPlaceholderSelectionClick(Sender: TObject);
   private
     fIsGlobalPreferenceDialog : boolean;
     procedure AddDefine(symbol: string; tag: integer);
@@ -140,6 +140,17 @@ uses
   gpPrfPlaceholderDlg;
 
 {$R *.DFM}
+
+function ResolvePrfProjectPlaceholders(const aFilenameWithPh: string): string;
+var LSubstitutes : TPrfPlaceholderValueDict;
+begin
+  // resolve the global or saved settings...
+  LSubstitutes := TPrfPlaceholderValueDict.create();
+  LSubstitutes.add(ProjectFilename, ChangeFileExt(CurrentProjectName, ''));
+  result := TPrfPlaceholder.ReplaceProjectMacros(aFilenameWithPh, LSubstitutes);
+  LSubstitutes.free;
+end;
+
 
 function BrowseDialog(const Title: string; const Flag: integer): string;
 var
@@ -524,6 +535,22 @@ begin
   RemoveTag(DEF_USER);
 end;
 
+
+procedure TfrmPreferences.btnPrfPlaceholderSelectionClick(Sender: TObject);
+begin
+  with frmPreferenceMacros do
+  begin
+    IsGlobalPreferenceDialog := self.IsGlobalPreferenceDialog;
+    if Execute then
+    begin
+      edtPerformanceOutputFilename.Text := edtPerformanceOutputFilename.Text + GetSelectedMacro();
+      if not IsGlobalPreferenceDialog then
+        edtPerformanceOutputFilename.Text := ResolvePrfProjectPlaceholders(edtPerformanceOutputFilename.Text);
+    end;
+  end;
+end;
+
+
 procedure TfrmPreferences.ReselectCompilerVersion(
   var selectedDelphi: string);
 var
@@ -542,10 +569,6 @@ begin
     end;
 end; { TfrmPreferences.ReselectCompilerVersion }
 
-function TfrmPreferences.ExecuteGlobalSettings: boolean;
-begin
-  result := false;
-end;
 
 procedure TfrmPreferences.ResetDefaults(tabIndex: integer);
 begin
@@ -569,7 +592,10 @@ begin
       end; // Instrumentation
       1: begin
         cbHideNotExecuted.Checked := prefHideNotExecuted;
-        edtPerformanceOutputFilename.text := TPrfPlaceholder.PrfPlaceholderToMacro(ProjectFilename);
+        edtPerformanceOutputFilename.text := prefPrfFilenameMakro;
+        if not IsGlobalPreferenceDialog then
+          edtPerformanceOutputFilename.text := ResolvePrfProjectPlaceholders(edtPerformanceOutputFilename.text);
+
       end; // Analysis
       2: begin
         memoExclUnits.Text := prefExcludedUnits;
@@ -587,17 +613,73 @@ end;
 
 
 
-procedure TfrmPreferences.Button1Click(Sender: TObject);
+function TfrmPreferences.ExecuteGlobalSettings: boolean;
 begin
-  with frmPreferenceMacros do
-  begin
-    IsGlobalPreferenceDialog := self.IsGlobalPreferenceDialog;
-    if Execute then
-    begin
-      edtPerformanceOutputFilename.Text := edtPerformanceOutputFilename.Text + GetSelectedMacro();
-    end;
+  result := false;
+  IsGlobalPreferenceDialog := true;
+  cbHideNotExecuted.Checked    := prefHideNotExecuted;
+  memoExclUnits.Text           := prefExcludedUnits;
+  Caption                      := 'GpProfile - Preferences';
+  if (prefMarkerStyle < 0) or (prefMarkerStyle >= cbxMarker.Items.Count) then prefMarkerStyle := 0;
+  cbxMarker.ItemIndex := prefMarkerStyle;
+  if (prefCompilerVersion < 0) or (prefCompilerVersion >= cbxCompilerVersion.Items.Count)
+    then prefCompilerVersion := cbxCompilerVersion.Items.Count-1;
+  cbxCompilerVersion.ItemIndex := prefCompilerVersion;
+  cbxDelphiDefines.ItemIndex   := prefCompilerVersion;
+  if prefSpeedSize < tbSpeedSize.Min then prefSpeedSize := tbSpeedSize.Min
+  else if prefSpeedSize > tbSpeedSize.Max then prefSpeedSize := tbSpeedSize.Max;
+  cbShowAllFolders.Checked     := prefShowAllFolders;
+  cbKeepFileDate.Checked       := prefKeepFileDate;
+  cbUseFileDate.Checked        := prefUseFileDate;
+  edtPerformanceOutputFilename.text := prefPrfFilenameMakro;
+  cbStandardDefines.Checked    := prefStandardDefines;
+  cbDisableUserDefines.Checked := prefDisableUserDefines;
+  cbConsoleDefines.Enabled     := false;
+  cbProjectDefines.Checked     := prefProjectDefines;
+  RebuildDefines(prefUserDefines);
+  cbProfilingAutostart.Checked  := prefProfilingAutostart;
+  cbInstrumentAssembler.Checked := prefInstrumentAssembler;
+  tbSpeedSize.Position := prefSpeedSize;
+  tabInstrumentation.Enabled         := true;
+  tabInstrumentation.TabVisible      := true;
+  tabAnalysis.Enabled                := true;
+  tabAnalysis.TabVisible             := true;
+  tabExcluded.Enabled                := true;
+  tabExcluded.TabVisible             := true;
+  tabDefines.Enabled                 := true;
+  tabDefines.TabVisible              := true;
+  btnInstrumentationDefaults.Visible := false;
+  btnAnalysisDefaults.Visible        := false;
+  btnUnitsDefaults.Visible           := false;
+  btnDefinesDefaults.Visible         := false;
+  Left := frmMain.Left+((frmMain.Width-Width) div 2);
+  Top := frmMain.Top+((frmMain.Height-Height) div 2);
+  if ShowModal = mrOK then begin
+    if (cbbXE2Platform.ItemIndex <> 0) then XE2PlatformOverride:= cbbXE2Platform.Text
+    else XE2PlatformOverride:= '';
+    if (cbbXE2Config.ItemIndex <> 0) then XE2ConfigOverride:= cbbXE2Config.Text
+    else XE2ConfigOverride:= '';
+    prefMarkerStyle        := cbxMarker.ItemIndex;
+    prefCompilerVersion    := cbxCompilerVersion.ItemIndex;
+    prefHideNotExecuted    := cbHideNotExecuted.Checked;
+    prefExcludedUnits      := memoExclUnits.Text;
+    prefSpeedSize          := tbSpeedSize.Position;
+    prefShowAllFolders     := cbShowAllFolders.Checked;
+    prefKeepFileDate       := cbKeepFileDate.Checked;
+    prefUseFileDate        := cbUseFileDate.Checked;
+    prefPrfFilenameMakro   := edtPerformanceOutputFilename.text;
+
+    prefStandardDefines    := cbStandardDefines.Checked;
+    prefDisableUserDefines := cbDisableUserDefines.Checked;
+    prefProjectDefines     := cbProjectDefines.Checked;
+    prefUserDefines        := ExtractUserDefines;
+    prefProfilingAutostart := cbProfilingAutostart.Checked;
+    prefInstrumentAssembler:= cbInstrumentAssembler.Checked;
+    SavePreferences;
+    selectedDelphi := ButFirst(cbxCompilerVersion.Items[prefCompilerVersion],Length('Delphi '));
   end;
 end;
+
 
 function TfrmPreferences.ExecuteProfileSettings(const aHideNotExecute: boolean): boolean;
 begin
@@ -618,7 +700,9 @@ begin
   btnDefinesDefaults.Visible         := true;
   Left := frmMain.Left+((frmMain.Width-Width) div 2);
   Top := frmMain.Top+((frmMain.Height-Height) div 2);
-  result :=  ShowModal = mrOK;
+  edtPerformanceOutputFilename.text := TPrfPlaceholder.PrfPlaceholderToMacro(ProjectFilename);
+  edtPerformanceOutputFilename.text := ResolvePrfProjectPlaceholders(edtPerformanceOutputFilename.text);
+  result := ShowModal = mrOK;
 end;
 
 end.
