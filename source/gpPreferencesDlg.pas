@@ -128,6 +128,10 @@ type
 var
   frmPreferences: TfrmPreferences;
 
+
+function ResolvePrfProjectPlaceholders(const aFilenameWithPh: string): string;
+
+
 implementation
 
 uses
@@ -143,10 +147,13 @@ uses
 
 function ResolvePrfProjectPlaceholders(const aFilenameWithPh: string): string;
 var LSubstitutes : TPrfPlaceholderValueDict;
+    LValue : string;
+    LPlatform : string;
+    LConfig : string;
 begin
   // resolve the global or saved settings...
   LSubstitutes := TPrfPlaceholderValueDict.create();
-  LSubstitutes.add(ProjectFilename, ChangeFileExt(CurrentProjectName, ''));
+  LSubstitutes.add(ProjectFilename, ProjectOutputDir);
   result := TPrfPlaceholder.ReplaceProjectMacros(aFilenameWithPh, LSubstitutes);
   LSubstitutes.free;
 end;
