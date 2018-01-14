@@ -20,14 +20,33 @@ var
   prefProfilingAutostart    : boolean;
   prefInstrumentAssembler   : boolean;
 
+  // the selected compiler version
+  selectedDelphi            : string;
+  // the selected platform in the project
+  XE2PlatformOverride       : string;
+  // the selected config in the project
+  XE2ConfigOverride         : string;
+
+
 function GetDOFSettingBool(const section, key: string;  defval: boolean): boolean;
+
+
+procedure LoadPreferences;
+
+/// saves the (global) preferences in the registry
+procedure SavePreferences;
 
 
 implementation
 
 uses
+  winapi.windows,
   System.SysUtils,
-  System.IniFiles;
+  System.IniFiles,
+  gppCommon,
+  gpiff,
+  gpregistry,
+  gpPrfPlaceholders;
 
 function GetDOFSettingBool(const section, key: string;  defval: boolean): boolean;
 begin
@@ -40,5 +59,61 @@ begin
         Free;
       end;
 end;
+
+procedure LoadPreferences;
+begin
+  with TGpRegistry.Create do
+    try
+      RootKey := HKEY_CURRENT_USER;
+      OpenKey(cRegistryRoot+'\Preferences', True);
+      try
+        prefExcludedUnits      := ReadString ('ExcludedUnits',defaultExcludedUnits);
+        prefMarkerStyle        := ReadInteger('MarkerStyle',0);
+        prefSpeedSize          := ReadInteger('SpeedSize',1);
+        prefCompilerVersion    := ReadInteger('CompilerVersion',-1);
+        prefHideNotExecuted    := ReadBool   ('HideNotExecuted',true);
+        prefShowAllFolders     := ReadBool   ('ShowAllFolders',false);
+        prefStandardDefines    := ReadBool   ('StandardDefines',true);
+        prefProjectDefines     := ReadBool   ('ProjectDefines',true);
+        prefDisableUserDefines := ReadBool   ('DisableUserDefines',false);
+        prefUserDefines        := ReadString ('UserDefines','');
+        prefProfilingAutostart := ReadBool   ('ProfilingAutostart',true);
+        prefInstrumentAssembler:= ReadBool   ('InstrumentAssembler',false);
+        prefKeepFileDate       := ReadBool   ('KeepFileDate',false);
+        prefUseFileDate        := ReadBool   ('UseFileDate',true);
+        prefPrfFilenameMakro   := ReadString ('PrfFilenameMakro',TPrfPlaceholder.PrfPlaceholderToMacro(ProjectFilename));
+
+      finally
+        CloseKey;
+      end;
+    finally
+      Free;
+    end;
+end; { TfrmMain.LoadPreferences }
+
+procedure SavePreferences;
+begin
+  with TGpRegistry.Create do begin
+    RootKey := HKEY_CURRENT_USER;
+    OpenKey(cRegistryRoot+'\Preferences',true);
+    WriteString ('ExcludedUnits',      prefExcludedUnits);
+    WriteInteger('MarkerStyle',        prefMarkerStyle);
+    WriteInteger('SpeedSize',          prefSpeedSize);
+    WriteInteger('CompilerVersion',    prefCompilerVersion);
+    WriteBool   ('HideNotExecuted',    prefHideNotExecuted);
+    WriteBool   ('ShowAllFolders',     prefShowAllFolders);
+    WriteBool   ('StandardDefines',    prefStandardDefines);
+    WriteBool   ('ProjectDefines',     prefProjectDefines);
+    WriteBool   ('DisableUserDefines', prefDisableUserDefines);
+    WriteString ('UserDefines',        prefUserDefines);
+    WriteBool   ('ProfilingAutostart', prefProfilingAutostart);
+    WriteBool   ('InstrumentAssembler',prefInstrumentAssembler);
+    WriteBool   ('KeepFileDate',       prefKeepFileDate);
+    WriteBool   ('UseFileDate',        prefUseFileDate);
+    WriteString ('PrfFilenameMakro',   prefPrfFilenameMakro);
+    Free;
+  end;
+end; { TfrmMain.SavePreferences }
+
 
 end.
