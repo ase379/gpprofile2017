@@ -701,7 +701,7 @@ begin
                            GetProjectPref('UseFileDate', prefUseFileDate),
                            GetProjectPref('InstrumentAssembler', prefInstrumentAssembler));
       end;
-
+      GetOutputDir(openProject.Name);
       StatusPanel0('Parsed', True);
     finally
       EnablePC;
@@ -1634,6 +1634,7 @@ begin
         WriteBool('Performance','ProfilingAutostart',GetProjectPref('ProfilingAutostart',prefProfilingAutostart));
         WriteBool('Performance','CompressTicks',GetProjectPref('SpeedSize',prefSpeedSize)>1);
         WriteBool('Performance','CompressThreads',GetProjectPref('SpeedSize',prefSpeedSize)>2);
+        WriteString('Output','PrfOutputFilename',ResolvePrfProjectPlaceholders(prefPrfFilenameMakro));
       finally
         Free;
       end;
@@ -2409,11 +2410,6 @@ begin
     cbShowAllFolders.Checked           := chkShowAll.Checked;
     cbKeepFileDate.Checked             := GetProjectPref('KeepFileDate',prefKeepFileDate);
     cbUseFileDate.Checked              := GetProjectPref('UseFileDate',prefUseFileDate);
-
-    LSettingsDict := TPrfPlaceholderValueDict.Create();
-    LSettingsDict.add(ProjectFilename, MakeSmartBackslash(GetOutputDir(openProject.Name))+ChangeFileExt(ExtractFileName(openProject.Name),''));
-    edtPerformanceOutputFilename.text  := TPrfPlaceholder.ReplaceProjectMacros(GetProjectPref('PrfFilenameMakro',prefPrfFilenameMakro),LSettingsDict);
-    LSettingsDict.free;
     cbProfilingAutostart.Checked       := GetProjectPref('ProfilingAutostart',prefProfilingAutostart);
     cbInstrumentAssembler.Checked      := GetProjectPref('InstrumentAssembler',prefInstrumentAssembler);
     cbConsoleDefines.Enabled           := true;
@@ -2659,7 +2655,6 @@ var
   vBdsProj: TBdsProj;
   vOldCurDir: String;
   vXE2Platform: string;
-  vXE2Config: string;
   XE2Pos: cardinal;
 begin
   Result := '';
@@ -2672,15 +2667,19 @@ begin
       Result := vDProj.OutputDir;
       XE2Pos:= Pos(cConfig,Result);
       if XE2Pos <> 0 then begin
-        if (XE2ConfigOverride <> '') then vXE2Config:= XE2ConfigOverride
-        else vXE2Config:= vDProj.XE2Config;
-        Result:= ReplaceStr(Result, cConfig, vXE2Config);
+        if (XE2ConfigOverride <> '') then
+          XE2Config:= XE2ConfigOverride
+        else
+          XE2Config:= vDProj.XE2Config;
+        Result:= ReplaceStr(Result, cConfig, XE2Config);
       end;
       XE2Pos:= Pos(cPlatform,Result);
       if XE2Pos <> 0 then begin
-        if (XE2PlatformOverride <> '') then vXE2Platform:= XE2PlatformOverride
-        else vXE2Platform:= vDProj.XE2Platform;
-        Result:= ReplaceStr(Result, cPlatform, vXE2Platform);
+        if (XE2PlatformOverride <> '') then
+          XE2Platform:= XE2PlatformOverride
+        else
+          XE2Platform:= vDProj.XE2Platform;
+        Result:= ReplaceStr(Result, cPlatform, XE2Platform);
       end;
     finally
       vDProj.Free;
@@ -2727,6 +2726,7 @@ begin
       SetCurrentDir(vOldCurDir)
     end;
   end;
+  ProjectOutputDir := result;
 end; { TfrmMain.GetOutputDir }
 
 procedure TfrmMain.actRescanProfileExecute(Sender: TObject);
