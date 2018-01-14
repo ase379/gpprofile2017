@@ -9,10 +9,13 @@ type
 
 
 
-
-  TPrfPlaceholderType = (undefined,ProjectFilename, ProcessName, ProcessID);
+  // the different placeholder types currently supported
+  TPrfPlaceholderType = (undefined,ProjectFilename,ModuleName,ModulePath,ProcessName, ProcessID);
+  // a set of placeholders
   TPrfPlaceholderTypeSet =set of TPrfPlaceholderType;
+  // a table for the key value pair storing a placeholder and its substitute
   TPrfPlaceholderValueDict = TDictionary<TPrfPlaceholderType, string>;
+  // a class for providing the placeholder functionalities
   TPrfPlaceholder = class
     class function PrfPlaceholderToMacro(const aPlaceholder : TPrfPlaceholderType) : string;
     class function MacroToPrfPlaceholder(const aMacro : string): TPrfPlaceholderType;
@@ -25,8 +28,6 @@ type
 
     class function ReplaceProjectMacros(const aFilenameWithMacros: string;const aSubstitutes :TPrfPlaceholderValueDict) : string;
     class function ReplaceRuntimeMacros(const aFilenameWithMacros: string;const aSubstitutes :TPrfPlaceholderValueDict): string;
-
-
   end;
 
 implementation
@@ -42,6 +43,8 @@ begin
     TPrfPlaceholderType.ProjectFilename: result := '$(ProjectOutputName)';
     TPrfPlaceholderType.ProcessName: result := '$(ProcessName)';
     TPrfPlaceholderType.ProcessID: result := '$(ProcessID)';
+    TPrfPlaceholderType.ModuleName : result := '$(ModuleName)';
+    TPrfPlaceholderType.ModulePath : result := '$(ModulePath)';
     else
       result := '';
   end;
@@ -61,7 +64,9 @@ class function TPrfPlaceholder.IsPrfPlaceholderARuntimeMacro(const aPlaceholder 
 begin
   case aPlaceholder of
     TPrfPlaceholderType.ProcessName,
-    TPrfPlaceholderType.ProcessID: result := true;
+    TPrfPlaceholderType.ProcessID,
+    TPrfPlaceholderType.ModuleName,
+    TPrfPlaceholderType.ModulePath : result := true;
     else
       result := false;
   end;
@@ -157,5 +162,6 @@ begin
     end;
   end;
 end;
+
 
 end.
