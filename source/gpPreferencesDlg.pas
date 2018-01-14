@@ -113,6 +113,7 @@ type
     function  HasTag(tag: integer): boolean;
     procedure ResetDefaults(tabIndex: integer);
 
+
   public
     procedure ReselectCompilerVersion(var selectedDelphi: string);
     procedure RebuildDefines(userDefines: string);
@@ -120,6 +121,7 @@ type
     function  ExtractDefines: string;
 
     function ExecuteGlobalSettings(): boolean;
+    function ExecuteProfileSettings(const aHideNotExecute: boolean): boolean;
     property IsGlobalPreferenceDialog : boolean read fIsGlobalPreferenceDialog write fIsGlobalPreferenceDialog;
   end;
 
@@ -595,6 +597,28 @@ begin
       edtPerformanceOutputFilename.Text := edtPerformanceOutputFilename.Text + GetSelectedMacro();
     end;
   end;
+end;
+
+function TfrmPreferences.ExecuteProfileSettings(const aHideNotExecute: boolean): boolean;
+begin
+  IsGlobalPreferenceDialog := false;
+  cbHideNotExecuted.Checked := aHideNotExecute;
+  Caption := 'GpProfile - Analysis options for '+CurrentProjectName;
+  tabInstrumentation.Enabled         := false;
+  tabInstrumentation.TabVisible      := false;
+  tabAnalysis.Enabled                := true;
+  tabAnalysis.TabVisible             := true;
+  tabExcluded.Enabled                := false;
+  tabExcluded.TabVisible             := false;
+  tabDefines.Enabled                 := false;
+  tabDefines.TabVisible              := false;
+  btnInstrumentationDefaults.Visible := true;
+  btnAnalysisDefaults.Visible        := true;
+  btnUnitsDefaults.Visible           := true;
+  btnDefinesDefaults.Visible         := true;
+  Left := frmMain.Left+((frmMain.Width-Width) div 2);
+  Top := frmMain.Top+((frmMain.Height-Height) div 2);
+  result :=  ShowModal = mrOK;
 end;
 
 end.

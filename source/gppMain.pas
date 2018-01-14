@@ -2587,29 +2587,10 @@ end; { TfrmMain.SavePreferences }
 
 procedure TfrmMain.actProfileOptionsExecute(Sender: TObject);
 begin
-  with frmPreferences do begin
-    IsGlobalPreferenceDialog := false;
-    cbHideNotExecuted.Checked := mnuHideNotExecuted.Checked;
-    Caption := 'GpProfile - Analysis options for '+openProfile.Name;
-    tabInstrumentation.Enabled         := false;
-    tabInstrumentation.TabVisible      := false;
-    tabAnalysis.Enabled                := true;
-    tabAnalysis.TabVisible             := true;
-    tabExcluded.Enabled                := false;
-    tabExcluded.TabVisible             := false;
-    tabDefines.Enabled                 := false;
-    tabDefines.TabVisible              := false;
-    btnInstrumentationDefaults.Visible := true;
-    btnAnalysisDefaults.Visible        := true;
-    btnUnitsDefaults.Visible           := true;
-    btnDefinesDefaults.Visible         := true;
-    Left := frmMain.Left+((frmMain.Width-Width) div 2);
-    Top := frmMain.Top+((frmMain.Height-Height) div 2);
-    if ShowModal = mrOK then begin
-      if mnuHideNotExecuted.Checked <> cbHideNotExecuted.Checked
-        then actHideNotExecuted.Execute;
-    end;
-  end;
+  with frmPreferences do
+    if frmPreferences.ExecuteProfileSettings(mnuHideNotExecuted.Checked) then
+      if mnuHideNotExecuted.Checked <> cbHideNotExecuted.Checked then
+        actHideNotExecuted.Execute;
 end;
 
 
