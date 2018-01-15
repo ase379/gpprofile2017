@@ -12,15 +12,15 @@ uses
 
 type
   TFileEdit = class
-    constructor Create(fileName: string);
+    constructor Create(const fileName: string);
     destructor  Destroy; override;
-    procedure   Insert(atOffset: integer; what: string);
-    procedure   Remove(fromOffset, toOffset: integer);
-    procedure   Execute(keepDate: boolean);
+    procedure   Insert(const atOffset: integer; what: ansistring);
+    procedure   Remove(const fromOffset, toOffset: integer);
+    procedure   Execute(const keepDate: boolean);
   private
     editFile: string;
     editList: TStringList;
-    procedure   Schedule(cmd: pointer);
+    procedure   Schedule(const cmd: pointer);
   end;
 
 implementation
@@ -40,7 +40,7 @@ type
 
 { TFileEdit }
 
-  constructor TFileEdit.Create(fileName: string);
+  constructor TFileEdit.Create(const fileName: string);
   begin
     editFile := fileName;
     editList := TStringList.Create;
@@ -56,7 +56,7 @@ type
     editList.Free;
   end; { TFileEdit.Destroy }
 
-  procedure TFileEdit.Execute(keepDate: boolean);
+  procedure TFileEdit.Execute(const keepDate: boolean);
   var
     stream  : TMemoryStream;
     f       : file;
@@ -126,7 +126,7 @@ type
   end; { TFileEdit.Execute }
   {$WARNINGS ON}
 
-  procedure TFileEdit.Insert(atOffset: integer; what: string);
+  procedure TFileEdit.Insert(const atOffset: integer; what: ansistring);
   var
     cmd: PFECmd;
   begin
@@ -139,7 +139,7 @@ type
     Schedule(cmd);
   end; { TFileEdit.Insert }
 
-  procedure TFileEdit.Remove(fromOffset, toOffset: integer);
+  procedure TFileEdit.Remove(const fromOffset, toOffset: integer);
   var
     cmd: PFECmd;
   begin
@@ -152,7 +152,7 @@ type
     Schedule(cmd);
   end; { TFileEdit.Remove }
 
-  procedure TFileEdit.Schedule(cmd: pointer);
+  procedure TFileEdit.Schedule(const cmd: pointer);
   begin
     with PFECmd(cmd)^ do begin
       editList.AddObject(Format('%10d%1d',[fecOfs1,Ord(fecCmd = cmdInsert)]),cmd);

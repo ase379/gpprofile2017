@@ -30,7 +30,8 @@ uses
   SysUtils,
   IniFiles,
   Classes,
-  GpProfH;
+  GpProfH,
+  gpprofCommon;
 
 const
   BUF_SIZE = 64 * 1024; //64*1024;
@@ -94,6 +95,7 @@ var
   profCompressTicks     : boolean;
   profCompressThreads   : boolean;
   profProfilingAutostart: boolean;
+  profPrfOutputFile     : string;
   profTableName         : string;
 
 {$IFDEF VER90}
@@ -411,6 +413,8 @@ begin
           profCompressTicks      := ReadBool('Performance','CompressTicks',false);
           profCompressThreads    := ReadBool('Performance','CompressThreads',false);
           profProfilingAutostart := ReadBool('Performance','ProfilingAutostart',true);
+          profPrfOutputFile := ReadString('Output','PrfOutputFilename','$(ModulePath)');
+          profPrfOutputFile := ResolvePrfRuntimePlaceholders(profPrfOutputFile);
           prfDisabled            := false;
         end;
       end;
@@ -432,6 +436,8 @@ begin
     prfLastTick         := -1;
     prfDoneMsg          := RegisterWindowMessage(CMD_MESSAGE);
     prfName             := CombineNames(prfModuleName, 'prf');
+    if profPrfOutputFile <> '' then
+      prfName := profPrfOutputFile + '.prf';
     prfBuf              := VirtualAlloc(nil, BUF_SIZE, MEM_RESERVE + MEM_COMMIT, PAGE_READWRITE);
     prfBufOffs          := 0;
     Win32Check(VirtualLock(prfBuf, BUF_SIZE));

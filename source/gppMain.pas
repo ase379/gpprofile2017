@@ -10,7 +10,7 @@ uses
   ActnList, ImgList, Buttons, ToolWin, gppResults, Grids,
   gpArrowListView, DProjUnit, SynEdit,
   SynEditHighlighter, SynEditCodeFolding, SynHighlighterPas, System.ImageList,
-  System.Actions;
+  System.Actions,gppCurrentPrefs;
 
 const
   WM_ReloadProfile = WM_USER;
@@ -248,7 +248,6 @@ type
     procedure actHideNotExecutedExecute(Sender: TObject);
     procedure actProjectOptionsExecute(Sender: TObject);
     procedure actProfileOptionsExecute(Sender: TObject);
-    procedure ResetDefaults(tabIndex: integer);
     procedure actRescanProfileExecute(Sender: TObject);
     procedure clbProcsClick(Sender: TObject);
     procedure lvProcsClick(Sender: TObject);
@@ -313,25 +312,10 @@ type
     openProfile               : TResults;
     currentProject            : string;               
     currentProfile            : string;
-    selectedDelphi            : string;
     cmdMsg                    : cardinal;
     cancelLoading             : boolean;
     loadCanceled              : boolean;
     storedPanel1Width         : integer;
-    prefExcludedUnits         : string;
-    prefMarkerStyle           : integer;
-    prefCompilerVersion       : integer;
-    prefHideNotExecuted       : boolean;
-    prefSpeedSize             : integer;
-    prefShowAllFolders        : boolean;
-    prefStandardDefines       : boolean;
-    prefProjectDefines        : boolean;
-    prefDisableUserDefines    : boolean;
-    prefUserDefines           : string;
-    prefKeepFileDate          : boolean;
-    prefUseFileDate           : boolean;
-    prefProfilingAutostart    : boolean;
-    prefInstrumentAssembler   : boolean;
     delphiProcessInfo         : TProcessInformation;
     delphiAppWindow           : HWND;
     delphiEditWindow          : HWND;
@@ -346,8 +330,6 @@ type
     selectedProc              : pointer;
     callersPerc               : real;
     calleesPerc               : real;
-    FXE2PlatformOverride       : string;
-    FXE2ConfigOverride         : string;
     procedure ParseProject(const aProject: string; aJustRescan: boolean);
     procedure LoadProject(fileName: string; defaultDelphi: string = '');
     procedure NotifyParse(const aUnitName: string);
@@ -385,9 +367,7 @@ type
     procedure FillUnitView(resortOn: integer = -1);
     procedure FillThreadView(resortOn: integer = -1);
     function  GetThreadName(index: integer): string;
-    procedure LoadPreferences;
-    procedure SavePreferences;
-    procedure EnumUserSettings(settings: TStrings);                       
+    procedure EnumUserSettings(settings: TStrings);
     procedure FillDelphiVer;
     function  GetSearchPath(const aProject: string): string;
     function  GetOutputDir(const aProject: string): string;
@@ -436,12 +416,6 @@ type
  public
     procedure ZoomOnProcedure(procedureID, threadID: integer);
     function  GetDOFSetting(section,key,defval: string): string;
-    function  GetDOFSettingBool(section,key: string; defval: boolean): boolean;
-    procedure SetPref(subkey, name: string; value: variant); overload;
-    function  GetPref(subkey, name: string; defval: variant): variant; overload;
-    procedure DelPref(subkey, name: string);
-    property XE2PlatformOverride: string read FXE2PlatformOverride write FXE2PlatformOverride;
-    property XE2ConfigOverride: string read FXE2ConfigOverride write FXE2ConfigOverride;
  end;
 
 var
@@ -462,11 +436,12 @@ uses
   GpIFF,
   GpRegistry,
   gppCommon,
-  gppPreferences,
+  gpPreferencesDlg,
   gppLoadProgress,
   gppAbout,
   gppExport,
   gppCallGraph,
+  gpPrfPlaceholders,
   UITypes,
   StrUtils,
   ioUtils;
@@ -709,6 +684,7 @@ begin
         FreeAndNil(openProject);
         FillUnitTree(true); // clear all listboxes
         openProject := TProject.Create(aProject);
+        CurrentProjectName := aProject;
         RebuildDefines;
         openProject.Parse(GetProjectPref('ExcludedUnits',prefExcludedUnits),
                           GetSearchPath(aProject),
@@ -725,7 +701,7 @@ begin
                            GetProjectPref('UseFileDate', prefUseFileDate),
                            GetProjectPref('InstrumentAssembler', prefInstrumentAssembler));
       end;
-
+      GetOutputDir(openProject.Name);
       StatusPanel0('Parsed', True);
     finally
       EnablePC;
@@ -1225,71 +1201,33 @@ begin
   end;
 end; { TfrmMain.WMReLoadProfile }
 
-procedure TfrmMain.SetPref(subkey, name: string; value: variant);
-begin
-  with TGpRegistry.Create do
-    try
-      RootKey := HKEY_CURRENT_USER;
-      OpenKey(cRegistryRoot+IFF(First(subkey,1)='\','','\')+subkey,true);
-      WriteVariant(name,value);
-    finally
-      Free;
-    end;
-end; { TfrmMain.SetPref }
-
-function TfrmMain.GetPref(subkey, name: string; defval: variant): variant;
-begin
-  with TGpRegistry.Create do
-    try
-      RootKey := HKEY_CURRENT_USER;
-      if OpenKey(cRegistryRoot+IFF(First(subkey,1)='\','','\')+subkey,false) then
-        Result := ReadVariant(name, defval)
-      else
-        Result := defval;
-    finally
-      Free;
-    end;
-end; { TfrmMain.GetPref }
-
-procedure TfrmMain.DelPref(subkey, name: string);
-begin
-  with TGpRegistry.Create do
-    try
-      RootKey := HKEY_CURRENT_USER;
-      if OpenKey(cRegistryRoot + IFF(First(subkey, 1)='\', '', '\') + subkey, False) then
-        DeleteValue(name);
-    finally
-      Free;
-    end;
-end; { TfrmMain.DelPref }
-
 procedure TfrmMain.SetProjectPref(name: string; value: variant);
 begin
-  SetPref('\Projects\'+ReplaceAll(openProject.Name,'\','/'),name,value);
+  TGpRegistryTools.SetPref('\Projects\'+ReplaceAll(openProject.Name,'\','/'),name,value);
 end; { TfrmMain.SetProjectPref }
 
 function TfrmMain.GetProjectPref(name: string; defval: variant): variant;
 begin
   if openProject = nil
     then Result := defval
-    else Result := GetPref('\Projects\'+ReplaceAll(openProject.Name,'\','/'),name,defval);
+    else Result := TGpRegistryTools.GetPref('\Projects\'+ReplaceAll(openProject.Name,'\','/'),name,defval);
 end; { TfrmMain.GetProjectPref }
 
 procedure TfrmMain.DelProjectPref(name: string);
 begin
-  if openProject <> nil then DelPref('\Projects\'+ReplaceAll(openProject.Name,'\','/'),name);
+  if openProject <> nil then TGpRegistryTools.DelPref('\Projects\'+ReplaceAll(openProject.Name,'\','/'),name);
 end; { TfrmMain.DelProjectPref }
 
 procedure TfrmMain.SetProfilePref(name: string; value: variant);
 begin
-  SetPref('\Profiles\'+ReplaceAll(openProfile.Name,'\','/'),name,value);
+  TGpRegistryTools.SetPref('\Profiles\'+ReplaceAll(openProfile.Name,'\','/'),name,value);
 end; { TfrmMain.SetProfilePref }
 
 function TfrmMain.GetProfilePref(name: string; defval: variant): variant;
 begin
   if openProject = nil
     then Result := defval
-    else Result := GetPref('\Profiles\'+ReplaceAll(openProfile.Name,'\','/'),name,defval);
+    else Result := TGpRegistryTools.GetPref('\Profiles\'+ReplaceAll(openProfile.Name,'\','/'),name,defval);
 end; { TfrmMain.GetProfilePref }
 
 procedure TfrmMain.DelphiVerClick(Sender: TObject);
@@ -1449,7 +1387,7 @@ begin
           with lvLayouts.Items.Add do
             Caption := cDefLayout;
 
-        layout := GetPref(cRegistryUIsub, 'Layout', cDefLayout);
+        layout := TGpRegistryTools.GetPref(cRegistryUIsub, 'Layout', cDefLayout);
         if IsLayout(layout) then
           inpLayoutName.Text := layout
         else
@@ -1501,6 +1439,8 @@ begin
   cmdMsg := RegisterWindowMessage(CMD_MESSAGE);
   openProject := nil;
   openProfile := nil;
+  CurrentProjectName := '';
+
   MRU.RegistryKey := cRegistryRoot+'\MRU\DPR';
   MRU.LoadFromRegistry;
   MRUPrf.RegistryKey := cRegistryRoot+'\MRU\PRF';
@@ -1586,7 +1526,7 @@ begin
   CloseDelphiHandles;
   if activeLayout <> '' then begin
     SaveMetrics(activeLayout);
-    SetPref(cRegistryUIsub,'Layout',activeLayout)
+    TGpRegistryTools.SetPref(cRegistryUIsub,'Layout',activeLayout)
   end;
   MRU.SaveToRegistry;
   MRUPrf.SaveToRegistry;
@@ -1609,65 +1549,8 @@ begin
   openProject := nil;
   try
     with frmPreferences do begin
-      cbHideNotExecuted.Checked    := prefHideNotExecuted;
-      memoExclUnits.Text           := prefExcludedUnits;
-      Caption                      := 'GpProfile - Preferences';
-      if (prefMarkerStyle < 0) or (prefMarkerStyle >= cbxMarker.Items.Count) then prefMarkerStyle := 0;
-      cbxMarker.ItemIndex := prefMarkerStyle;
-      if (prefCompilerVersion < 0) or (prefCompilerVersion >= cbxCompilerVersion.Items.Count)
-        then prefCompilerVersion := cbxCompilerVersion.Items.Count-1;
-      cbxCompilerVersion.ItemIndex := prefCompilerVersion;
-      cbxDelphiDefines.ItemIndex   := prefCompilerVersion;
-      if prefSpeedSize < tbSpeedSize.Min then prefSpeedSize := tbSpeedSize.Min
-      else if prefSpeedSize > tbSpeedSize.Max then prefSpeedSize := tbSpeedSize.Max;
-      cbShowAllFolders.Checked     := prefShowAllFolders;
-      cbKeepFileDate.Checked       := prefKeepFileDate;
-      cbUseFileDate.Checked        := prefUseFileDate;
-      cbStandardDefines.Checked    := prefStandardDefines;
-      cbDisableUserDefines.Checked := prefDisableUserDefines;
-      cbConsoleDefines.Enabled     := false;
-      cbProjectDefines.Checked     := prefProjectDefines;
-      RebuildDefines(prefUserDefines);
-      cbProfilingAutostart.Checked  := prefProfilingAutostart;
-      cbInstrumentAssembler.Checked := prefInstrumentAssembler;
-      tbSpeedSize.Position := prefSpeedSize;
-      tabInstrumentation.Enabled         := true;
-      tabInstrumentation.TabVisible      := true;
-      tabAnalysis.Enabled                := true;
-      tabAnalysis.TabVisible             := true;
-      tabExcluded.Enabled                := true;
-      tabExcluded.TabVisible             := true;
-      tabDefines.Enabled                 := true;
-      tabDefines.TabVisible              := true;
-      btnInstrumentationDefaults.Visible := false;
-      btnAnalysisDefaults.Visible        := false;
-      btnUnitsDefaults.Visible           := false;
-      btnDefinesDefaults.Visible         := false;
-      Left := frmMain.Left+((frmMain.Width-Width) div 2);
-      Top := frmMain.Top+((frmMain.Height-Height) div 2);
-      if ShowModal = mrOK then begin
-        if (cbbXE2Platform.ItemIndex <> 0) then XE2PlatformOverride:= cbbXE2Platform.Text
-        else XE2PlatformOverride:= '';
-        if (cbbXE2Config.ItemIndex <> 0) then XE2ConfigOverride:= cbbXE2Config.Text
-        else XE2ConfigOverride:= '';
-        prefMarkerStyle        := cbxMarker.ItemIndex;
-        prefCompilerVersion    := cbxCompilerVersion.ItemIndex;
-        prefHideNotExecuted    := cbHideNotExecuted.Checked;
-        prefExcludedUnits      := memoExclUnits.Text;
-        prefSpeedSize          := tbSpeedSize.Position;
-        prefShowAllFolders     := cbShowAllFolders.Checked;
-        prefKeepFileDate       := cbKeepFileDate.Checked;
-        prefUseFileDate        := cbUseFileDate.Checked;
-        prefStandardDefines    := cbStandardDefines.Checked;
-        prefDisableUserDefines := cbDisableUserDefines.Checked;
-        prefProjectDefines     := cbProjectDefines.Checked;
-        prefUserDefines        := ExtractUserDefines;
-        prefProfilingAutostart := cbProfilingAutostart.Checked;
-        prefInstrumentAssembler:= cbInstrumentAssembler.Checked;
-        SavePreferences;
-        selectedDelphi := ButFirst(cbxCompilerVersion.Items[prefCompilerVersion],Length('Delphi '));
+      if ExecuteGlobalSettings then
         RebuildDelphiVer;
-      end;
     end;
   finally openProject := oldProject; end;
 end;
@@ -1751,6 +1634,7 @@ begin
         WriteBool('Performance','ProfilingAutostart',GetProjectPref('ProfilingAutostart',prefProfilingAutostart));
         WriteBool('Performance','CompressTicks',GetProjectPref('SpeedSize',prefSpeedSize)>1);
         WriteBool('Performance','CompressThreads',GetProjectPref('SpeedSize',prefSpeedSize)>2);
+        WriteString('Output','PrfOutputFilename',ResolvePrfProjectPlaceholders(prefPrfFilenameMakro));
       finally
         Free;
       end;
@@ -2402,7 +2286,7 @@ begin
   finally EnableAlign; end;
   Application.ProcessMessages;
   SlidersMoved;
-  SetPref(cRegistryUIsub,'Layout',layoutName);
+  TGpRegistryTools.SetPref(cRegistryUIsub,'Layout',layoutName);
   activeLayout := layoutName;
 end; { TfrmMain.LoadMetrics }
 
@@ -2508,8 +2392,10 @@ var
   projMarker   : integer;
   projSpeedSize: integer;
   oldDefines   : string;
+  LSettingsDict : TPrfPlaceholderValueDict;
 begin
   with frmPreferences do begin
+    IsGlobalPreferenceDialog := false;
     Caption := 'GpProfile - Instrumentation options for '+openProject.Name;
     memoExclUnits.Text := GetProjectPref('ExcludedUnits',prefExcludedUnits);
     projMarker := GetProjectPref('MarkerStyle',prefMarkerStyle);
@@ -2530,8 +2416,10 @@ begin
     RebuildDefines(GetProjectPref('UserDefines',prefUserDefines));
     tabInstrumentation.Enabled         := true;
     tabInstrumentation.TabVisible      := true;
-    tabAnalysis.Enabled                := false;
-    tabAnalysis.TabVisible             := false;
+    tabAnalysis.Enabled                := true;
+    tabAnalysis.TabVisible             := true;
+    grpAnalysisSettings.Enabled        := false;
+    grpAnalysisSettings.Visible        := false;
     tabExcluded.Enabled                := true;
     tabExcluded.TabVisible             := true;
     tabDefines.Enabled                 := true;
@@ -2550,6 +2438,7 @@ begin
       SetProjectPref('ShowAllFolders',cbShowAllFolders.Checked);
       SetProjectPref('KeepFileDate',cbKeepFileDate.Checked);
       SetProjectPref('UseFileDate',cbUseFileDate.Checked);
+      SetProjectPref('PrfFilenameMakro',edtPerformanceOutputFilename.text);
       SetProjectPref('StandardDefines',cbStandardDefines.Checked);
       SetProjectPref('DisableUserDefines',cbDisableUserDefines.Checked);
       SetProjectPref('ConsoleDefines',cbConsoleDefines.Checked);
@@ -2557,6 +2446,7 @@ begin
       SetProjectPref('UserDefines',ExtractUserDefines);
       SetProjectPref('ProfilingAutostart',cbProfilingAutostart.Checked);
       SetProjectPref('InstrumentAssembler',cbInstrumentAssembler.Checked);
+      SetProjectPref('PerformanceFileOutputPattern',edtPerformanceOutputFilename.Text);
       selectedDelphi := ButFirst(cbxCompilerVersion.Items[cbxCompilerVersion.ItemIndex],Length('Delphi '));
       if memoExclUnits.Text = prefExcludedUnits
         then DelProjectPref('ExcludedUnits')
@@ -2567,120 +2457,14 @@ begin
   end;
 end;
 
-procedure TfrmMain.LoadPreferences;
-begin
-  with TGpRegistry.Create do
-    try
-      RootKey := HKEY_CURRENT_USER;
-      OpenKey(cRegistryRoot+'\Preferences', True);
-      try
-        prefExcludedUnits      := ReadString ('ExcludedUnits',defaultExcludedUnits);
-        prefMarkerStyle        := ReadInteger('MarkerStyle',0);
-        prefSpeedSize          := ReadInteger('SpeedSize',1);
-        prefCompilerVersion    := ReadInteger('CompilerVersion',-1);
-        prefHideNotExecuted    := ReadBool   ('HideNotExecuted',true);
-        prefShowAllFolders     := ReadBool   ('ShowAllFolders',false);
-        prefStandardDefines    := ReadBool   ('StandardDefines',true);
-        prefProjectDefines     := ReadBool   ('ProjectDefines',true);
-        prefDisableUserDefines := ReadBool   ('DisableUserDefines',false);
-        prefUserDefines        := ReadString ('UserDefines','');
-        prefProfilingAutostart := ReadBool   ('ProfilingAutostart',true);
-        prefInstrumentAssembler:= ReadBool   ('InstrumentAssembler',false);
-        prefKeepFileDate       := ReadBool   ('KeepFileDate',false);
-        prefUseFileDate        := ReadBool   ('UseFileDate',true);
-      finally
-        CloseKey;
-      end;
-    finally
-      Free;
-    end;
-end; { TfrmMain.LoadPreferences }
-
-procedure TfrmMain.SavePreferences;
-begin
-  with TGpRegistry.Create do begin
-    RootKey := HKEY_CURRENT_USER;
-    OpenKey(cRegistryRoot+'\Preferences',true);
-    WriteString ('ExcludedUnits',      prefExcludedUnits);
-    WriteInteger('MarkerStyle',        prefMarkerStyle);
-    WriteInteger('SpeedSize',          prefSpeedSize);
-    WriteInteger('CompilerVersion',    prefCompilerVersion);
-    WriteBool   ('HideNotExecuted',    prefHideNotExecuted);
-    WriteBool   ('ShowAllFolders',     prefShowAllFolders);
-    WriteBool   ('StandardDefines',    prefStandardDefines);
-    WriteBool   ('ProjectDefines',     prefProjectDefines);
-    WriteBool   ('DisableUserDefines', prefDisableUserDefines);
-    WriteString ('UserDefines',        prefUserDefines);
-    WriteBool   ('ProfilingAutostart', prefProfilingAutostart);
-    WriteBool   ('InstrumentAssembler',prefInstrumentAssembler);
-    WriteBool   ('KeepFileDate',       prefKeepFileDate);
-    WriteBool   ('UseFileDate',        prefUseFileDate);
-    Free;
-  end;
-end; { TfrmMain.SavePreferences }
-
 procedure TfrmMain.actProfileOptionsExecute(Sender: TObject);
 begin
-  with frmPreferences do begin
-    cbHideNotExecuted.Checked := mnuHideNotExecuted.Checked;
-    Caption := 'GpProfile - Analysis options for '+openProfile.Name;
-    tabInstrumentation.Enabled         := false;
-    tabInstrumentation.TabVisible      := false;
-    tabAnalysis.Enabled                := true;
-    tabAnalysis.TabVisible             := true;
-    tabExcluded.Enabled                := false;
-    tabExcluded.TabVisible             := false;
-    tabDefines.Enabled                 := false;
-    tabDefines.TabVisible              := false;
-    btnInstrumentationDefaults.Visible := true;
-    btnAnalysisDefaults.Visible        := true;
-    btnUnitsDefaults.Visible           := true;
-    btnDefinesDefaults.Visible         := true;
-    Left := frmMain.Left+((frmMain.Width-Width) div 2);
-    Top := frmMain.Top+((frmMain.Height-Height) div 2);
-    if ShowModal = mrOK then begin
-      if mnuHideNotExecuted.Checked <> cbHideNotExecuted.Checked
-        then actHideNotExecuted.Execute;
-    end;
-  end;
+  with frmPreferences do
+    if frmPreferences.ExecuteProfileSettings(mnuHideNotExecuted.Checked) then
+      if mnuHideNotExecuted.Checked <> cbHideNotExecuted.Checked then
+        actHideNotExecuted.Execute;
 end;
 
-procedure TfrmMain.ResetDefaults(tabIndex: integer);
-begin
-  with frmPreferences do begin
-    case tabIndex of
-      0: begin
-        if (prefCompilerVersion < 0) or (prefCompilerVersion >= cbxCompilerVersion.Items.Count)
-          then prefCompilerVersion := cbxCompilerVersion.Items.Count-1;
-        cbxCompilerVersion.ItemIndex := prefCompilerVersion;
-        cbxDelphiDefines.ItemIndex   := prefCompilerVersion;
-        if (prefMarkerStyle < 0) or (prefMarkerStyle >= cbxMarker.Items.Count) then prefMarkerStyle := 0;
-        cbxMarker.ItemIndex := prefMarkerStyle;
-        if prefSpeedSize < tbSpeedSize.Min then prefSpeedSize := tbSpeedSize.Min
-        else if prefSpeedSize > tbSpeedSize.Max then prefSpeedSize := tbSpeedSize.Max;
-        tbSpeedSize.Position          := prefSpeedSize;
-        cbShowAllFolders.Checked      := prefShowAllFolders;
-        cbKeepFileDate.Checked        := prefKeepFileDate;
-        cbUseFileDate.Checked         := prefUseFileDate;
-        cbProfilingAutostart.Checked  := prefProfilingAutostart;
-        cbInstrumentAssembler.Checked := prefInstrumentAssembler;
-      end; // Instrumentation
-      1: begin
-        cbHideNotExecuted.Checked := prefHideNotExecuted;
-      end; // Analysis
-      2: begin
-        memoExclUnits.Text := prefExcludedUnits;
-      end; // Excluded units
-      3: begin
-        cbStandardDefines.Checked    := prefStandardDefines;
-        cbConsoleDefines.Checked     := GetDOFSettingBool('Linker','ConsoleApp',false);
-        cbProjectDefines.Checked     := prefProjectDefines;
-        cbDisableUserDefines.Checked := prefDisableUserDefines;
-        RebuildDefines(prefUserDefines);
-      end; // Conditional defines
-    end; // case
-  end; // with
-end; { TfrmMain.ResetDefaults }
 
 function TfrmMain.ReplaceMacros(s: string): string;
 
@@ -2871,7 +2655,6 @@ var
   vBdsProj: TBdsProj;
   vOldCurDir: String;
   vXE2Platform: string;
-  vXE2Config: string;
   XE2Pos: cardinal;
 begin
   Result := '';
@@ -2884,15 +2667,19 @@ begin
       Result := vDProj.OutputDir;
       XE2Pos:= Pos(cConfig,Result);
       if XE2Pos <> 0 then begin
-        if (XE2ConfigOverride <> '') then vXE2Config:= XE2ConfigOverride
-        else vXE2Config:= vDProj.XE2Config;
-        Result:= ReplaceStr(Result, cConfig, vXE2Config);
+        if (XE2ConfigOverride <> '') then
+          XE2Config:= XE2ConfigOverride
+        else
+          XE2Config:= vDProj.XE2Config;
+        Result:= ReplaceStr(Result, cConfig, XE2Config);
       end;
       XE2Pos:= Pos(cPlatform,Result);
       if XE2Pos <> 0 then begin
-        if (XE2PlatformOverride <> '') then vXE2Platform:= XE2PlatformOverride
-        else vXE2Platform:= vDProj.XE2Platform;
-        Result:= ReplaceStr(Result, cPlatform, vXE2Platform);
+        if (XE2PlatformOverride <> '') then
+          XE2Platform:= XE2PlatformOverride
+        else
+          XE2Platform:= vDProj.XE2Platform;
+        Result:= ReplaceStr(Result, cPlatform, XE2Platform);
       end;
     finally
       vDProj.Free;
@@ -2939,6 +2726,7 @@ begin
       SetCurrentDir(vOldCurDir)
     end;
   end;
+  ProjectOutputDir := result;
 end; { TfrmMain.GetOutputDir }
 
 procedure TfrmMain.actRescanProfileExecute(Sender: TObject);
@@ -4063,17 +3851,5 @@ begin
   SlidersMoved;
 end;
 
-function TfrmMain.GetDOFSettingBool(section, key: string;
-  defval: boolean): boolean;
-begin
-  Result := False;
-  if Assigned(openProject) then
-    with TIniFile.Create(ChangeFileExt(openProject.Name,'.dof')) do
-      try
-        Result := ReadBool(section, key, defval);
-      finally
-        Free;
-      end;
-end;
 
 end.

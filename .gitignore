@@ -1,1 +1,5 @@
 DCU/*.dcu
+BIN/gpprof.drc
+BIN/gpprof.exe
+BIN/gpprof.map
+*.~dsk

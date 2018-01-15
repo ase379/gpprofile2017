@@ -31,6 +31,7 @@ uses
   IniFiles,
   Classes,
   GpProfH,
+  gpprofCommon,
   gppResults;
 
 const
@@ -83,6 +84,7 @@ var
   profCompressTicks     : boolean;
   profCompressThreads   : boolean;
   profProfilingAutostart: boolean;
+  profPrfOutputFile     : string;
   profTableName         : string;
 
 function OffsetPtr(ptr: pointer; offset: DWORD): pointer;
@@ -286,6 +288,9 @@ begin
           profCompressTicks      := ReadBool('Performance','CompressTicks',false);
           profCompressThreads    := ReadBool('Performance','CompressThreads',false);
           profProfilingAutostart := ReadBool('Performance','ProfilingAutostart',true);
+          profPrfOutputFile := ReadString('Output','PrfOutputFilename','$(ModulePath)');
+          profPrfOutputFile := ResolvePrfRuntimePlaceholders(profPrfOutputFile);
+
           prfDisabled            := false;
         end;
       end;
@@ -307,6 +312,8 @@ begin
     prfLastTick     := -1;
     prfDoneMsg      := RegisterWindowMessage(CMD_MESSAGE);
     prfName         := CombineNames(prfModuleName, 'prf');
+    if profPrfOutputFile <> '' then
+      prfName := profPrfOutputFile + '.prf';
     prfResults      := TResults.Create;
     InitializeCriticalSection(prfLock);
     QueryPerformanceFrequency(prfFreq);
