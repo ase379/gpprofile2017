@@ -19,10 +19,21 @@ type
     procedure WriteVariant(name: string; value: variant);
   end;
 
+  TGpRegistryTools = class
+    class procedure SetPref(subkey, name: string; value: variant); overload;
+    class function  GetPref(subkey, name: string; defval: variant): variant; overload;
+    class procedure DelPref(subkey, name: string);
+  end;
+
+
 implementation
 
 uses
-  SysUtils;
+  winapi.windows,
+  System.SysUtils,
+  gppCommon,
+  gpiff,
+  GpString;
 
   function TGpRegistry.ReadString (name,defval: string): string;
   begin
@@ -105,5 +116,48 @@ uses
   begin
     WriteString(name,IntToStr(value));
   end; { TGpRegistry.WriteInt64 }
+
+{ TGpRegistryTools }
+
+class function TGpRegistryTools.GetPref(subkey, name: string; defval: variant): variant;
+begin
+  with TGpRegistry.Create do
+    try
+      RootKey := HKEY_CURRENT_USER;
+      if OpenKey(cRegistryRoot+IFF(First(subkey,1)='\','','\')+subkey,false) then
+        Result := ReadVariant(name, defval)
+      else
+        Result := defval;
+    finally
+      Free;
+    end;
+end; { TGpRegistryTools.GetPref }
+
+
+class procedure TGpRegistryTools.SetPref(subkey, name: string; value: variant);
+begin
+  with TGpRegistry.Create do
+    try
+      RootKey := HKEY_CURRENT_USER;
+      OpenKey(cRegistryRoot+IFF(First(subkey,1)='\','','\')+subkey,true);
+      WriteVariant(name,value);
+    finally
+      Free;
+    end;
+end; { TGpRegistryTools.SetPref }
+
+
+class procedure TGpRegistryTools.DelPref(subkey, name: string);
+begin
+  with TGpRegistry.Create do
+    try
+      RootKey := HKEY_CURRENT_USER;
+      if OpenKey(cRegistryRoot + IFF(First(subkey, 1)='\', '', '\') + subkey, False) then
+        DeleteValue(name);
+    finally
+      Free;
+    end;
+end; { TGpRegistryTools.DelPref }
+
 
 end.
