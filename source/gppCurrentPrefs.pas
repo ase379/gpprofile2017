@@ -20,6 +20,7 @@ var
   prefPrfFilenameResolvedMakro : string;
   prefProfilingAutostart    : boolean;
   prefInstrumentAssembler   : boolean;
+  prefMakeBackupOfInstrumentedFile : boolean;
 
   // the selected compiler version
   selectedDelphi            : string;

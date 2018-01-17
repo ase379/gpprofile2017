@@ -74,6 +74,7 @@ type
     Panel2: TPanel;
     edtPerformanceOutputFilename: TEdit;
     btnPrfPlaceholderSelection: TButton;
+    cbMakeBackupOfInstrumentedFile: TCheckBox;
     procedure FormKeyPress(Sender: TObject; var Key: Char);
     procedure FormCreate(Sender: TObject);
     procedure btnAddFromFolderClick(Sender: TObject);
@@ -596,6 +597,7 @@ begin
         cbUseFileDate.Checked         := prefUseFileDate;
         cbProfilingAutostart.Checked  := prefProfilingAutostart;
         cbInstrumentAssembler.Checked := prefInstrumentAssembler;
+        cbMakeBackupOfInstrumentedFile.Checked := prefMakeBackupOfInstrumentedFile;
       end; // Instrumentation
       1: begin
         cbHideNotExecuted.Checked := prefHideNotExecuted;
@@ -646,6 +648,7 @@ begin
   RebuildDefines(prefUserDefines);
   cbProfilingAutostart.Checked  := prefProfilingAutostart;
   cbInstrumentAssembler.Checked := prefInstrumentAssembler;
+  cbMakeBackupOfInstrumentedFile.Checked := prefMakeBackupOfInstrumentedFile;
   tbSpeedSize.Position := prefSpeedSize;
   tabInstrumentation.Enabled         := true;
   tabInstrumentation.TabVisible      := true;
@@ -682,6 +685,7 @@ begin
     prefUserDefines        := ExtractUserDefines;
     prefProfilingAutostart := cbProfilingAutostart.Checked;
     prefInstrumentAssembler:= cbInstrumentAssembler.Checked;
+    prefMakeBackupOfInstrumentedFile := cbMakeBackupOfInstrumentedFile.Checked;
     SavePreferences;
     selectedDelphi := ButFirst(cbxCompilerVersion.Items[prefCompilerVersion],Length('Delphi '));
   end;

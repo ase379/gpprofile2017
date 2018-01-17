@@ -167,6 +167,7 @@ implementation
 uses
   Windows,
   SysUtils,
+  IoUtils,
 {$IFDEF LogParser}
   GpIFF,
 {$ENDIF}
@@ -178,6 +179,7 @@ uses
   CastaliaPasLex,
   CastaliaPasLexTypes,
   gppCommon,
+  gppCurrentPrefs,
   gpFileEdit;
 
 {========================= TDefineList =========================}
@@ -1115,6 +1117,16 @@ uses
     end;
   end; { TUnit.ConstructNames }
 
+  procedure BackupInstrumentedFile(const aSrc : string);
+  var
+    justName: string;
+  begin
+    justName := ButLastEl(aSrc, '.', Ord(-1));
+    DeleteFile(justName + '.bk2');
+    RenameFile(justName + '.bk1', justName + '.bk2');
+    TFile.Copy(aSrc,justName + '.bk1',true);
+  end;
+
   procedure TUnit.Instrument(aProject: TProject; aIDT: TIDTable; aKeepDate: boolean);
   var
     pr      : TProc;
@@ -1123,17 +1135,16 @@ uses
     haveInst: boolean;
     ed      : TFileEdit;
     name    : integer;
-    justName: string;
     api     : TAPI;
     LCurrentApi : INode<TAPI>;
     LCurrentProc : INode<TProc>;
   begin { TUnit.Instrument }
     if unImplementOffset = -1 then
       raise Exception.Create('No implementation part defined in unit ' + unName + '!');
-    justName := ButLastEl(unFullName, '.', Ord(-1));
-    DeleteFile(justName + '.bk2');
-    RenameFile(justName + '.bk1', justName + '.bk2');
-    CopyFile(PChar(unFullName), PChar(justName + '.bk1'), False);
+
+
+    if prefMakeBackupOfInstrumentedFile then
+      BackupInstrumentedFile(unFullName);
     ed := TFileEdit.Create(unFullName);
     try
       any := AnyInstrumented;

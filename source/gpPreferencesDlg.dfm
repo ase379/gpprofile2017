@@ -64,7 +64,7 @@ object frmPreferences: TfrmPreferences
     Top = 0
     Width = 483
     Height = 327
-    ActivePage = tabAnalysis
+    ActivePage = tabInstrumentation
     Align = alClient
     HotTrack = True
     TabOrder = 1
@@ -212,6 +212,14 @@ object frmPreferences: TfrmPreferences
           Caption = '&Instrument pure assembler procedures'
           TabOrder = 2
         end
+        object cbMakeBackupOfInstrumentedFile: TCheckBox
+          Left = 234
+          Top = 20
+          Width = 220
+          Height = 17
+          Caption = 'Backup Instrumented Files'
+          TabOrder = 5
+        end
       end
       object btnInstrumentationDefaults: TButton
         Left = 392
@@ -318,7 +326,7 @@ object frmPreferences: TfrmPreferences
           AlignWithMargins = True
           Left = 10
           Top = 23
-          Width = 232
+          Width = 449
           Height = 13
           Margins.Left = 8
           Margins.Top = 8
