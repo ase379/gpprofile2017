@@ -60,7 +60,7 @@ type
     procedure   CheckInstrumentedProcs;
     function    LocateUnit(unitName: string): TUnit;
     function    LocateProc(procName: string): TProc;
-    procedure   Instrument(aProject: TProject; aIDT: TIDTable; aKeepDate: boolean);
+    procedure   Instrument(aProject: TProject; aIDT: TIDTable; aKeepDate,aBackupFile: boolean);
     procedure   ConstructNames(idt: TIDTable);
     function    AnyInstrumented: boolean;
     function    AnyChange: boolean;
@@ -154,7 +154,7 @@ type
     function    NoneInstrumented(projectDirOnly: boolean): boolean;
     function    AnyInstrumented(projectDirOnly: boolean): boolean;
     procedure   Instrument(aProjectDirOnly: boolean; aNotify: TNotifyInstProc;
-      aCommentType: TCommentType; aKeepDate: boolean;
+      aCommentType: TCommentType; aKeepDate,aBackupFile: boolean;
       aIncFileName, aConditionals, aSearchPath: string; aParseAsm: boolean);
     function    GetFirstLine(unitName, procName: string): integer;
     function    AnyChange(projectDirOnly: boolean): boolean;
@@ -167,6 +167,7 @@ implementation
 uses
   Windows,
   SysUtils,
+  IoUtils,
 {$IFDEF LogParser}
   GpIFF,
 {$ENDIF}
@@ -178,6 +179,7 @@ uses
   CastaliaPasLex,
   CastaliaPasLexTypes,
   gppCommon,
+  gppCurrentPrefs,
   gpFileEdit;
 
 {========================= TDefineList =========================}
@@ -1115,7 +1117,17 @@ uses
     end;
   end; { TUnit.ConstructNames }
 
-  procedure TUnit.Instrument(aProject: TProject; aIDT: TIDTable; aKeepDate: boolean);
+  procedure BackupInstrumentedFile(const aSrc : string);
+  var
+    justName: string;
+  begin
+    justName := ButLastEl(aSrc, '.', Ord(-1));
+    DeleteFile(justName + '.bk2');
+    RenameFile(justName + '.bk1', justName + '.bk2');
+    TFile.Copy(aSrc,justName + '.bk1',true);
+  end;
+
+  procedure TUnit.Instrument(aProject: TProject; aIDT: TIDTable; aKeepDate,aBackupFile: boolean);
   var
     pr      : TProc;
     any     : boolean;
@@ -1123,17 +1135,16 @@ uses
     haveInst: boolean;
     ed      : TFileEdit;
     name    : integer;
-    justName: string;
     api     : TAPI;
     LCurrentApi : INode<TAPI>;
     LCurrentProc : INode<TProc>;
   begin { TUnit.Instrument }
     if unImplementOffset = -1 then
       raise Exception.Create('No implementation part defined in unit ' + unName + '!');
-    justName := ButLastEl(unFullName, '.', Ord(-1));
-    DeleteFile(justName + '.bk2');
-    RenameFile(justName + '.bk1', justName + '.bk2');
-    CopyFile(PChar(unFullName), PChar(justName + '.bk1'), False);
+
+
+    if aBackupFile then
+      BackupInstrumentedFile(unFullName);
     ed := TFileEdit.Create(unFullName);
     try
       any := AnyInstrumented;
@@ -1448,7 +1459,7 @@ uses
   end; { TProject.AllInstrumented }
 
   procedure TProject.Instrument(aProjectDirOnly: boolean;
-    aNotify: TNotifyInstProc; aCommentType: TCommentType; aKeepDate: boolean;
+    aNotify: TNotifyInstProc; aCommentType: TCommentType; aKeepDate, aBackupFile: boolean;
     aIncFileName, aConditionals, aSearchPath: string; aParseAsm: boolean);
   var
     vOldCurDir : string;
@@ -1486,7 +1497,7 @@ uses
 
                 if un.AnyChange or unAny then
                 begin
-                  un.Instrument(self,idt,aKeepDate);
+                  un.Instrument(self,idt,aKeepDate,aBackupFile);
                   rescan.Add(un);
                 end
                 else

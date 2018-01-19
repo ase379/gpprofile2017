@@ -17,9 +17,9 @@ var
   prefKeepFileDate          : boolean;
   prefUseFileDate           : boolean;
   prefPrfFilenameMakro      : string;
-  prefPrfFilenameResolvedMakro : string;
   prefProfilingAutostart    : boolean;
   prefInstrumentAssembler   : boolean;
+  prefMakeBackupOfInstrumentedFile : boolean;
 
   // the selected compiler version
   selectedDelphi            : string;
@@ -32,6 +32,12 @@ var
   XE2Config                 : string;
   XE2ConfigOverride         : string;
 
+procedure SetProjectPref(name: string; value: variant); overload;
+function  GetProjectPref(name: string; defval: variant): variant; overload;
+procedure DelProjectPref(name: string);
+procedure SetProfilePref(name: string; value: variant); overload;
+function  GetProfilePref(name: string; defval: variant): variant; overload;
+function HasOpenProject: boolean;
 
 
 
@@ -53,7 +59,8 @@ uses
   gppCommon,
   gpiff,
   gpregistry,
-  gpPrfPlaceholders;
+  gpPrfPlaceholders, 
+  GpString;
 
 function GetDOFSettingBool(const section, key: string;  defval: boolean): boolean;
 begin
@@ -86,6 +93,7 @@ begin
         prefUserDefines        := ReadString ('UserDefines','');
         prefProfilingAutostart := ReadBool   ('ProfilingAutostart',true);
         prefInstrumentAssembler:= ReadBool   ('InstrumentAssembler',false);
+        prefMakeBackupOfInstrumentedFile := ReadBool('MakeBackupOfInstrumentedFile', true);
         prefKeepFileDate       := ReadBool   ('KeepFileDate',false);
         prefUseFileDate        := ReadBool   ('UseFileDate',true);
         prefPrfFilenameMakro   := ReadString ('PrfFilenameMakro',TPrfPlaceholder.PrfPlaceholderToMacro(TPrfPlaceholderType.ModulePath));
@@ -95,7 +103,7 @@ begin
     finally
       Free;
     end;
-end; { TfrmMain.LoadPreferences }
+end; { LoadPreferences }
 
 procedure SavePreferences;
 begin
@@ -114,12 +122,49 @@ begin
     WriteString ('UserDefines',        prefUserDefines);
     WriteBool   ('ProfilingAutostart', prefProfilingAutostart);
     WriteBool   ('InstrumentAssembler',prefInstrumentAssembler);
+    WriteBool   ('MakeBackupOfInstrumentedFile', prefMakeBackupOfInstrumentedFile);
+
     WriteBool   ('KeepFileDate',       prefKeepFileDate);
     WriteBool   ('UseFileDate',        prefUseFileDate);
     WriteString ('PrfFilenameMakro',   prefPrfFilenameMakro);
     Free;
   end;
-end; { TfrmMain.SavePreferences }
+end; { SavePreferences }
 
+procedure SetProjectPref(name: string; value: variant);
+begin
+  TGpRegistryTools.SetPref('\Projects\'+ReplaceAll(CurrentProjectName,'\','/'),name,value);
+end; { SetProjectPref }
+
+function GetProjectPref(name: string; defval: variant): variant;
+begin
+  if not HasOpenProject then 
+    Result := defval
+  else 
+    Result := TGpRegistryTools.GetPref('\Projects\'+ReplaceAll(CurrentProjectName,'\','/'),name,defval);
+end; { GetProjectPref }
+
+procedure DelProjectPref(name: string);
+begin
+  if HasOpenProject then TGpRegistryTools.DelPref('\Projects\'+ReplaceAll(CurrentProjectName,'\','/'),name);
+end; { DelProjectPref }
+
+procedure SetProfilePref(name: string; value: variant);
+begin
+  TGpRegistryTools.SetPref('\Profiles\'+ReplaceAll(CurrentProjectName,'\','/'),name,value);
+end; { SetProfilePref }
+
+function GetProfilePref(name: string; defval: variant): variant;
+begin
+  if not HasOpenProject then 
+    Result := defval
+  else 
+    Result := TGpRegistryTools.GetPref('\Profiles\'+ReplaceAll(CurrentProjectName,'\','/'),name,defval);
+end; { GetProfilePref }
+
+function HasOpenProject: boolean;
+begin
+  result := Length(Trim(CurrentProjectName)) <> 0;
+end; { HasOpenProject }
 
 end.
