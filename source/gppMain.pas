@@ -349,11 +349,6 @@ type
     procedure EnablePC2;
     function  ParseProfile(profile: string): boolean;
     procedure LoadProfile(fileName: string);
-    procedure SetProjectPref(name: string; value: variant); overload;
-    function  GetProjectPref(name: string; defval: variant): variant; overload;
-    procedure DelProjectPref(name: string);
-    procedure SetProfilePref(name: string; value: variant); overload;
-    function  GetProfilePref(name: string; defval: variant): variant; overload;
     procedure SetCaption;
     procedure SetSource;
     function  ParseProfileCallback(percent: integer): boolean;
@@ -1201,34 +1196,6 @@ begin
   end;
 end; { TfrmMain.WMReLoadProfile }
 
-procedure TfrmMain.SetProjectPref(name: string; value: variant);
-begin
-  TGpRegistryTools.SetPref('\Projects\'+ReplaceAll(openProject.Name,'\','/'),name,value);
-end; { TfrmMain.SetProjectPref }
-
-function TfrmMain.GetProjectPref(name: string; defval: variant): variant;
-begin
-  if openProject = nil
-    then Result := defval
-    else Result := TGpRegistryTools.GetPref('\Projects\'+ReplaceAll(openProject.Name,'\','/'),name,defval);
-end; { TfrmMain.GetProjectPref }
-
-procedure TfrmMain.DelProjectPref(name: string);
-begin
-  if openProject <> nil then TGpRegistryTools.DelPref('\Projects\'+ReplaceAll(openProject.Name,'\','/'),name);
-end; { TfrmMain.DelProjectPref }
-
-procedure TfrmMain.SetProfilePref(name: string; value: variant);
-begin
-  TGpRegistryTools.SetPref('\Profiles\'+ReplaceAll(openProfile.Name,'\','/'),name,value);
-end; { TfrmMain.SetProfilePref }
-
-function TfrmMain.GetProfilePref(name: string; defval: variant): variant;
-begin
-  if openProject = nil
-    then Result := defval
-    else Result := TGpRegistryTools.GetPref('\Profiles\'+ReplaceAll(openProfile.Name,'\','/'),name,defval);
-end; { TfrmMain.GetProfilePref }
 
 procedure TfrmMain.DelphiVerClick(Sender: TObject);
 begin
@@ -1624,6 +1591,7 @@ begin
   openProject.Instrument(not chkShowAll.Checked,NotifyInstrument,
                          GetProjectPref('MarkerStyle',prefMarkerStyle),
                          GetProjectPref('KeepFileDate',prefKeepFileDate),
+                         GetProjectPref('MakeBackupOfInstrumentedFile',prefKeepFileDate),
                          fnm,frmPreferences.ExtractDefines,
                          GetSearchPath(openProject.Name),
                          GetProjectPref('InstrumentAssembler',prefInstrumentAssembler));
@@ -2394,65 +2362,14 @@ var
   oldDefines   : string;
   LSettingsDict : TPrfPlaceholderValueDict;
 begin
-  with frmPreferences do begin
-    IsGlobalPreferenceDialog := false;
-    Caption := 'GpProfile - Instrumentation options for '+openProject.Name;
-    memoExclUnits.Text := GetProjectPref('ExcludedUnits',prefExcludedUnits);
-    projMarker := GetProjectPref('MarkerStyle',prefMarkerStyle);
-    if (projMarker >= 0) and (projMarker < cbxMarker.Items.Count)
-      then cbxMarker.ItemIndex := projMarker
-      else cbxMarker.ItemIndex := 0;
-    projSpeedSize := GetProjectPref('SpeedSize',prefSpeedSize);
-    if projSpeedSize < tbSpeedSize.Min then projSpeedSize := tbSpeedSize.Min
-    else if projSpeedSize > tbSpeedSize.Max then projSpeedSize := tbSpeedSize.Max;
-    tbSpeedSize.Position := projSpeedSize;
-    ReselectCompilerVersion(selectedDelphi);
-    cbShowAllFolders.Checked           := chkShowAll.Checked;
-    cbKeepFileDate.Checked             := GetProjectPref('KeepFileDate',prefKeepFileDate);
-    cbUseFileDate.Checked              := GetProjectPref('UseFileDate',prefUseFileDate);
-    cbProfilingAutostart.Checked       := GetProjectPref('ProfilingAutostart',prefProfilingAutostart);
-    cbInstrumentAssembler.Checked      := GetProjectPref('InstrumentAssembler',prefInstrumentAssembler);
-    cbConsoleDefines.Enabled           := true;
-    RebuildDefines(GetProjectPref('UserDefines',prefUserDefines));
-    tabInstrumentation.Enabled         := true;
-    tabInstrumentation.TabVisible      := true;
-    tabAnalysis.Enabled                := true;
-    tabAnalysis.TabVisible             := true;
-    grpAnalysisSettings.Enabled        := false;
-    grpAnalysisSettings.Visible        := false;
-    tabExcluded.Enabled                := true;
-    tabExcluded.TabVisible             := true;
-    tabDefines.Enabled                 := true;
-    tabDefines.TabVisible              := true;
-    btnInstrumentationDefaults.Visible := true;
-    btnAnalysisDefaults.Visible        := true;
-    btnUnitsDefaults.Visible           := true;
-    btnDefinesDefaults.Visible         := true;
-    Left := frmMain.Left+((frmMain.Width-Width) div 2);
-    Top := frmMain.Top+((frmMain.Height-Height) div 2);
-    oldDefines := ExtractDefines;
-    if ShowModal = mrOK then begin
-      SetProjectPref('MarkerStyle',cbxMarker.ItemIndex);
-      SetProjectPref('SpeedSize',tbSpeedSize.Position);
+  with frmPreferences do 
+  begin
+    if ExecuteProjectSettings(chkShowAll.Checked) then 
+    begin
       chkShowAll.Checked := cbShowAllFolders.Checked;
-      SetProjectPref('ShowAllFolders',cbShowAllFolders.Checked);
-      SetProjectPref('KeepFileDate',cbKeepFileDate.Checked);
-      SetProjectPref('UseFileDate',cbUseFileDate.Checked);
-      SetProjectPref('PrfFilenameMakro',edtPerformanceOutputFilename.text);
-      SetProjectPref('StandardDefines',cbStandardDefines.Checked);
-      SetProjectPref('DisableUserDefines',cbDisableUserDefines.Checked);
-      SetProjectPref('ConsoleDefines',cbConsoleDefines.Checked);
-      SetProjectPref('ProjectDefines',cbProjectDefines.Checked);
-      SetProjectPref('UserDefines',ExtractUserDefines);
-      SetProjectPref('ProfilingAutostart',cbProfilingAutostart.Checked);
-      SetProjectPref('InstrumentAssembler',cbInstrumentAssembler.Checked);
-      SetProjectPref('PerformanceFileOutputPattern',edtPerformanceOutputFilename.Text);
-      selectedDelphi := ButFirst(cbxCompilerVersion.Items[cbxCompilerVersion.ItemIndex],Length('Delphi '));
-      if memoExclUnits.Text = prefExcludedUnits
-        then DelProjectPref('ExcludedUnits')
-        else SetProjectPref('ExcludedUnits',memoExclUnits.Text);
       RebuildDelphiVer;
-      if oldDefines <> ExtractDefines then actRescanProject.Execute;
+      if DefinesChanged then 
+        actRescanProject.Execute;
     end;
   end;
 end;
