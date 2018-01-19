@@ -105,6 +105,7 @@ type
     procedure btnPrfPlaceholderSelectionClick(Sender: TObject);
   private
     fIsGlobalPreferenceDialog : boolean;
+    fDefinesChanged : boolean;
     procedure AddDefine(symbol: string; tag: integer);
     procedure RemoveDefine(symbol: string);
     procedure RemoveTag(tag: integer);
@@ -122,8 +123,10 @@ type
     function  ExtractDefines: string;
 
     function ExecuteGlobalSettings(): boolean;
+    function ExecuteProjectSettings(const aShowAll: boolean): boolean;
     function ExecuteProfileSettings(const aHideNotExecute: boolean): boolean;
     property IsGlobalPreferenceDialog : boolean read fIsGlobalPreferenceDialog write fIsGlobalPreferenceDialog;
+    property DefinesChanged : boolean read fDefinesChanged write fDefinesChanged;
   end;
 
 var
@@ -691,6 +694,79 @@ begin
   end;
 end;
 
+function TfrmPreferences.ExecuteProjectSettings(const aShowAll: boolean): boolean;
+var
+  projMarker   : integer;
+  projSpeedSize: integer;
+  oldDefines   : string;
+  LSettingsDict : TPrfPlaceholderValueDict;
+begin
+  with frmPreferences do begin
+    IsGlobalPreferenceDialog := false;
+    Caption := 'GpProfile - Instrumentation options for '+CurrentProjectName;
+    memoExclUnits.Text := GetProjectPref('ExcludedUnits',prefExcludedUnits);
+    projMarker := GetProjectPref('MarkerStyle',prefMarkerStyle);
+    if (projMarker >= 0) and (projMarker < cbxMarker.Items.Count)
+      then cbxMarker.ItemIndex := projMarker
+      else cbxMarker.ItemIndex := 0;
+    projSpeedSize := GetProjectPref('SpeedSize',prefSpeedSize);
+    if projSpeedSize < tbSpeedSize.Min then projSpeedSize := tbSpeedSize.Min
+    else if projSpeedSize > tbSpeedSize.Max then projSpeedSize := tbSpeedSize.Max;
+    tbSpeedSize.Position := projSpeedSize;
+    ReselectCompilerVersion(selectedDelphi);
+    cbShowAllFolders.Checked           := aShowAll;
+    cbKeepFileDate.Checked             := GetProjectPref('KeepFileDate',prefKeepFileDate);
+    cbUseFileDate.Checked              := GetProjectPref('UseFileDate',prefUseFileDate);
+    cbProfilingAutostart.Checked       := GetProjectPref('ProfilingAutostart',prefProfilingAutostart);
+    cbInstrumentAssembler.Checked      := GetProjectPref('InstrumentAssembler',prefInstrumentAssembler);
+    cbMakeBackupOfInstrumentedFile.Checked := GetProjectPref('MakeBackupOfInstrumentedFile',prefMakeBackupOfInstrumentedFile);
+    cbConsoleDefines.Enabled           := true;
+    RebuildDefines(GetProjectPref('UserDefines',prefUserDefines));
+    tabInstrumentation.Enabled         := true;
+    tabInstrumentation.TabVisible      := true;
+    tabAnalysis.Enabled                := true;
+    tabAnalysis.TabVisible             := true;
+    grpAnalysisSettings.Enabled        := false;
+    grpAnalysisSettings.Visible        := false;
+    tabExcluded.Enabled                := true;
+    tabExcluded.TabVisible             := true;
+    tabDefines.Enabled                 := true;
+    tabDefines.TabVisible              := true;
+    btnInstrumentationDefaults.Visible := true;
+    btnAnalysisDefaults.Visible        := true;
+    btnUnitsDefaults.Visible           := true;
+    btnDefinesDefaults.Visible         := true;
+    Left := frmMain.Left+((frmMain.Width-Width) div 2);
+    Top := frmMain.Top+((frmMain.Height-Height) div 2);
+    oldDefines := ExtractDefines;
+    result := ShowModal = mrOK; 
+    if result then 
+    begin
+      SetProjectPref('MarkerStyle',cbxMarker.ItemIndex);
+      SetProjectPref('SpeedSize',tbSpeedSize.Position);
+      SetProjectPref('ShowAllFolders',cbShowAllFolders.Checked);
+      SetProjectPref('KeepFileDate',cbKeepFileDate.Checked);
+      SetProjectPref('UseFileDate',cbUseFileDate.Checked);
+      SetProjectPref('PrfFilenameMakro',edtPerformanceOutputFilename.text);
+      SetProjectPref('StandardDefines',cbStandardDefines.Checked);
+      SetProjectPref('DisableUserDefines',cbDisableUserDefines.Checked);
+      SetProjectPref('ConsoleDefines',cbConsoleDefines.Checked);
+      SetProjectPref('ProjectDefines',cbProjectDefines.Checked);
+      SetProjectPref('UserDefines',ExtractUserDefines);
+      SetProjectPref('ProfilingAutostart',cbProfilingAutostart.Checked);
+      SetProjectPref('InstrumentAssembler',cbInstrumentAssembler.Checked);
+      SetProjectPref('MakeBackupOfInstrumentedFile',cbMakeBackupOfInstrumentedFile.Checked);
+      SetProjectPref('PerformanceFileOutputPattern',edtPerformanceOutputFilename.Text);
+      selectedDelphi := ButFirst(cbxCompilerVersion.Items[cbxCompilerVersion.ItemIndex],Length('Delphi '));
+      if memoExclUnits.Text = prefExcludedUnits
+        then DelProjectPref('ExcludedUnits')
+        else SetProjectPref('ExcludedUnits',memoExclUnits.Text);
+      fDefinesChanged := oldDefines <> ExtractDefines;
+    end;
+  end;
+end;
+
+
 
 function TfrmPreferences.ExecuteProfileSettings(const aHideNotExecute: boolean): boolean;
 begin
@@ -715,5 +791,6 @@ begin
   edtPerformanceOutputFilename.text := ResolvePrfProjectPlaceholders(edtPerformanceOutputFilename.text);
   result := ShowModal = mrOK;
 end;
+
 
 end.
