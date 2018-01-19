@@ -60,7 +60,7 @@ type
     procedure   CheckInstrumentedProcs;
     function    LocateUnit(unitName: string): TUnit;
     function    LocateProc(procName: string): TProc;
-    procedure   Instrument(aProject: TProject; aIDT: TIDTable; aKeepDate: boolean);
+    procedure   Instrument(aProject: TProject; aIDT: TIDTable; aKeepDate,aBackupFile: boolean);
     procedure   ConstructNames(idt: TIDTable);
     function    AnyInstrumented: boolean;
     function    AnyChange: boolean;
@@ -154,7 +154,7 @@ type
     function    NoneInstrumented(projectDirOnly: boolean): boolean;
     function    AnyInstrumented(projectDirOnly: boolean): boolean;
     procedure   Instrument(aProjectDirOnly: boolean; aNotify: TNotifyInstProc;
-      aCommentType: TCommentType; aKeepDate: boolean;
+      aCommentType: TCommentType; aKeepDate,aBackupFile: boolean;
       aIncFileName, aConditionals, aSearchPath: string; aParseAsm: boolean);
     function    GetFirstLine(unitName, procName: string): integer;
     function    AnyChange(projectDirOnly: boolean): boolean;
@@ -1127,7 +1127,7 @@ uses
     TFile.Copy(aSrc,justName + '.bk1',true);
   end;
 
-  procedure TUnit.Instrument(aProject: TProject; aIDT: TIDTable; aKeepDate: boolean);
+  procedure TUnit.Instrument(aProject: TProject; aIDT: TIDTable; aKeepDate,aBackupFile: boolean);
   var
     pr      : TProc;
     any     : boolean;
@@ -1143,7 +1143,7 @@ uses
       raise Exception.Create('No implementation part defined in unit ' + unName + '!');
 
 
-    if prefMakeBackupOfInstrumentedFile then
+    if aBackupFile then
       BackupInstrumentedFile(unFullName);
     ed := TFileEdit.Create(unFullName);
     try
@@ -1459,7 +1459,7 @@ uses
   end; { TProject.AllInstrumented }
 
   procedure TProject.Instrument(aProjectDirOnly: boolean;
-    aNotify: TNotifyInstProc; aCommentType: TCommentType; aKeepDate: boolean;
+    aNotify: TNotifyInstProc; aCommentType: TCommentType; aKeepDate, aBackupFile: boolean;
     aIncFileName, aConditionals, aSearchPath: string; aParseAsm: boolean);
   var
     vOldCurDir : string;
@@ -1497,7 +1497,7 @@ uses
 
                 if un.AnyChange or unAny then
                 begin
-                  un.Instrument(self,idt,aKeepDate);
+                  un.Instrument(self,idt,aKeepDate,aBackupFile);
                   rescan.Add(un);
                 end
                 else
