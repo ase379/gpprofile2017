@@ -17,7 +17,6 @@ var
   prefKeepFileDate          : boolean;
   prefUseFileDate           : boolean;
   prefPrfFilenameMakro      : string;
-  prefPrfFilenameResolvedMakro : string;
   prefProfilingAutostart    : boolean;
   prefInstrumentAssembler   : boolean;
   prefMakeBackupOfInstrumentedFile : boolean;
