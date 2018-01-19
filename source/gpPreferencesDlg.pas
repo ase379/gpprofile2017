@@ -717,6 +717,9 @@ begin
     cbShowAllFolders.Checked           := aShowAll;
     cbKeepFileDate.Checked             := GetProjectPref('KeepFileDate',prefKeepFileDate);
     cbUseFileDate.Checked              := GetProjectPref('UseFileDate',prefUseFileDate);
+    edtPerformanceOutputFilename.text  := GetProjectPref('PrfFilenameMakro',prefPrfFilenameMakro);
+    edtPerformanceOutputFilename.text := ResolvePrfProjectPlaceholders(edtPerformanceOutputFilename.text);
+  
     cbProfilingAutostart.Checked       := GetProjectPref('ProfilingAutostart',prefProfilingAutostart);
     cbInstrumentAssembler.Checked      := GetProjectPref('InstrumentAssembler',prefInstrumentAssembler);
     cbMakeBackupOfInstrumentedFile.Checked := GetProjectPref('MakeBackupOfInstrumentedFile',prefMakeBackupOfInstrumentedFile);
@@ -756,7 +759,6 @@ begin
       SetProjectPref('ProfilingAutostart',cbProfilingAutostart.Checked);
       SetProjectPref('InstrumentAssembler',cbInstrumentAssembler.Checked);
       SetProjectPref('MakeBackupOfInstrumentedFile',cbMakeBackupOfInstrumentedFile.Checked);
-      SetProjectPref('PerformanceFileOutputPattern',edtPerformanceOutputFilename.Text);
       selectedDelphi := ButFirst(cbxCompilerVersion.Items[cbxCompilerVersion.ItemIndex],Length('Delphi '));
       if memoExclUnits.Text = prefExcludedUnits
         then DelProjectPref('ExcludedUnits')
@@ -775,8 +777,8 @@ begin
   Caption := 'GpProfile - Analysis options for '+CurrentProjectName;
   tabInstrumentation.Enabled         := false;
   tabInstrumentation.TabVisible      := false;
-  tabAnalysis.Enabled                := true;
-  tabAnalysis.TabVisible             := true;
+  tabAnalysis.Enabled                := false;
+  tabAnalysis.TabVisible             := false;
   tabExcluded.Enabled                := false;
   tabExcluded.TabVisible             := false;
   tabDefines.Enabled                 := false;
@@ -787,7 +789,7 @@ begin
   btnDefinesDefaults.Visible         := true;
   Left := frmMain.Left+((frmMain.Width-Width) div 2);
   Top := frmMain.Top+((frmMain.Height-Height) div 2);
-  edtPerformanceOutputFilename.text := TPrfPlaceholder.PrfPlaceholderToMacro(ProjectFilename);
+  edtPerformanceOutputFilename.text  := GetProjectPref('PrfFilenameMakro',prefPrfFilenameMakro);
   edtPerformanceOutputFilename.text := ResolvePrfProjectPlaceholders(edtPerformanceOutputFilename.text);
   result := ShowModal = mrOK;
 end;
