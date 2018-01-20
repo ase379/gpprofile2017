@@ -1,0 +1,41 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" Content="text/html; charset=Windows-1252">
+<TITLE>Using GpProfile - Preferences - Instrumentation</TITLE>
+</HEAD>
+
+<BODY BGCOLOR="#FFFFFF" TEXT="#000000">
+
+<OBJECT TYPE="application/x-oleobject" CLASSID="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e">
+	<PARAM NAME="Keyword" VALUE="Instrumentation:">
+</OBJECT>
+
+<P><A NAME="instrumentation2"></A><B>Instrumentation</B></P>
+
+<P>On <A HREF="gppr3a5s.htm">Instrumentation</A> page you set defaults for various items relevant to the instrumentation process.</P>
+
+<P><IMG SRC="../images/bm14.gif" ALT="" BORDER=0></P>
+
+<P><B>Marker style</B></P>
+
+<P>GpProfile uses markers to mark instrumented code in the program so it can be safely uninstrumented later. Default marker style is <I>{&gt;&gt;GpProfile}</I>, which you can change to <I>{$IFDEF GpProfile}</I>. If you use the second option don't forget to manually $DEFINE GpProfile in all units you want to <A HREF="gppr1inj.htm">profile</A>.</P>
+
+<P><B>Compiler version</B></P>
+
+<P>Here you can select default Delphi environment if you have more than one Delphi installed.</P>
+
+<P><B>Speed/Size</B></P>
+
+<P>Profile files get pretty big (you'll reach gigabyte sizes without a problem) and sometimes you'll want to keep them smaller at the expense of <A HREF="gppr7foq.htm">target</A> program speed. Beside uncompressed data, GpProfile supports two levels of compression.</P>
+
+<P><B>Show all folders</B></P>
+
+<P>Check if you want every new project to show all used units, not only units in the project folder.</P>
+
+<P><B>Start </B><A HREF="gppr1sz8.htm">profiling</A><B> on target startup</B></P>
+
+<P>When you want to measure just some part of the program, you must disable profiling autostart with this option and start/stop profiling manually by using <A HREF="gppr8o6h.htm">API</A> calls.</P>
+
+</BODY>
+</HTML>

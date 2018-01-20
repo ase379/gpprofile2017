@@ -1,0 +1,25 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" Content="text/html; charset=Windows-1252">
+<TITLE>Known problems</TITLE>
+</HEAD>
+
+<BODY BGCOLOR="#FFFFFF" TEXT="#000000">
+
+<OBJECT TYPE="application/x-oleobject" CLASSID="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e">
+	<PARAM NAME="Keyword" VALUE="Known problems:">
+</OBJECT>
+
+<P><A NAME="knownproblems"></A><B>Known problems</B></P>
+
+<P>·Instrumenting the program with one comment type and then uninstrumenting with another type is a sure way to trash the program!</P>
+
+<P>·GpProfile may display error Unable to replace image on startup and then terminate. This is caused by outdated comctl32 library. Get a new one from Microsoft ( http://www.microsoft.com/msdownload/ieplatform/ie/comctrlx86.asp <IMG SRC="../images/bm0.gif" ALT="" BORDER=0>).</P>
+
+<P>·Because of a bug in an installation script GpProfile may not get correctly registered with Delphi when installed on Windows 95/98. If you can't find GpProfile entry in Tools menu, exit Delphi, run <I>GPPROF /REGISTER</I> and restart Delphi.</P>
+
+<P>·$INCLUDE is only partially supported - included files are processed but procedures in included files cannot be instrumented.</P>
+
+</BODY>
+</HTML>

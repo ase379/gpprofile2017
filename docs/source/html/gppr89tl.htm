@@ -1,0 +1,99 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" Content="text/html; charset=Windows-1252">
+<TITLE>What's new in this version?</TITLE>
+</HEAD>
+
+<BODY BGCOLOR="#FFFFFF" TEXT="#000000">
+
+<OBJECT TYPE="application/x-oleobject" CLASSID="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e">
+	<PARAM NAME="Keyword" VALUE="What's new in this version?:">
+</OBJECT>
+
+<P><A NAME="vgd3_y"></A><B>What's new in this version?</B></P>
+
+<P>From version 1.2.1 to 1.3, following changes were made:</P>
+
+<P>·Support for DLL <A HREF="gppr1sz8.htm">profiling</A> added.Profiling starts when DLL is loaded and stops when DLL is unloaded.</P>
+
+<P>·Support for package profiling added. Profiling starts when package is loaded and stops when package is unloaded.</P>
+
+<P>·Parser bug fixed. Code, instrumented with {$IFDEF GpProfile} markers could not be uninstrumented. </P>
+
+<P>·Parser bug fixed. Sometimes GpProfile could not find all files, included in the parsed project.</P>
+
+<P>·Parser bug fixed. Named used units were not found if path started with '\' character (example: test in '\dev\test.pas').</P>
+
+<P>·Small command line parser bug fixed.</P>
+
+<P>·Fixed several bugs related to output directory processing.</P>
+
+<P>·Better handling of ComCtl32 version problems.</P>
+
+<P>·Better error handling in file access procedures.</P>
+
+<P>·Better error handling in client module (gpprof.pas).</P>
+
+<P>·Source preview window is refreshed after <A HREF="gppr3a5s.htm">instrumentation</A>.</P>
+
+<P>·Included are few fixes, contributed by Frédéric Libaud, flibaud@club-internet.fr.</P>
+
+<P>·Fixed incorrect behaviour when output directory was a relative path.</P>
+
+<P>·Slight parser speedup.</P>
+
+<P>From version 1.2 to 1.2.1, following changes were made:</P>
+
+<P>·Parser bug fixed. $IFOPT compiler directive was not recognised and could cause wrongly instrumented source that couldn't be automatically uninstrumented.</P>
+
+<P>·Parser bug fixed. Sometimes units were excluded even if they were not listed in <I>Excluded units</I> list.</P>
+
+<P>·<I>Park</I> button added to title bar.</P>
+
+<P>From version 1.1 to 1.2, following changes were made:</P>
+
+<P>·Conditional compilation is fully supported!</P>
+
+<P>·GpProfile now ignores all text following final end.</P>
+
+<P>·New menu entry in Delphi's Tools menu: GpProfile - Remove instrumentation</P>
+
+<P>·Fixed bug in TGpArrowListView (arrows were not drawn correctly)</P>
+
+<P>·Fixed bug in Instrument&amp;Run and Run (sometimes GpProfile crashed instead of running Delphi)</P>
+
+<P>·Fixed bug when fetching library search path from registry.</P>
+
+<P>·Exporting slightly polished</P>
+
+<P>·Color of background in source preview window is now shown correctly</P>
+
+<P>·Small bugs in layout manager fixed</P>
+
+<P>·Caller/Called views are resized proportionally when form is resized</P>
+
+<P>·Fixed bug when GpProfile would select wrong version of Delphi for a new project</P>
+
+<P>From version 1.0 to 1.1, following changes were made:</P>
+
+<P>·Added <B>limited</B> support for $INCLUDE directive; included files are parsed but procedures in them cannot be instrumented</P>
+
+<P>·Ability to display and <A HREF="gppr2kj7.htm">browse</A> <A HREF="gppr1yyf.htm">caller</A>/<A HREF="gppr7tx3.htm">called</A> statistics </P>
+
+<P>·Added ability to <A HREF="gppr43zt.htm">show/hide Source Preview</A> window</P>
+
+<P>·Source preview is now <A HREF="gppr8po3.htm">syntax highlighted</A> </P>
+
+<P>·Context sensitive help, accessible with F1 key</P>
+
+<P>·Full source package includes help, generated with <A HREF="gppr8po3.htm">Time2HELP</A></P>
+
+<P>·Program history included in About box</P>
+
+<P>·Fixed two stupid bugs that made profiling almost impossible</P>
+
+<P>·Executable renamed to GPPROF.EXE due to occasional installation problems</P>
+
+</BODY>
+</HTML>
