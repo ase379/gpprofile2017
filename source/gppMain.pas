@@ -1386,7 +1386,7 @@ begin
   Application.OnActivate := AppActivate;
   Application.OnMessage  := AppMessage;
   Application.OnShortCut := AppShortcut;
-  Application.HelpFile := ChangeFileExt(ParamStr(0),'.hlp');
+  Application.HelpFile := ChangeFileExt(ParamStr(0),'.Chm');
   if not FileExists(Application.HelpFile) then Application.HelpFile := '';
   LoadLayouts;
   StatusBar.Font.Size := 10;
