@@ -1,0 +1,123 @@
+[OPTIONS]
+TITLE=GpProfile User's Guide
+CONTENTS=HelpContentS1
+COPYRIGHT=© Primož Gabrijelèiè
+LCID=0x409 0x0 0x0
+DEFFONT=Arial,10,0
+COMPRESS=10
+
+[WINDOWS]
+main="GpProfile User's Guide",(50,60,611,964),29188,(255,255,226),(192,192,192)
+proc="How to...",(303,59,720,964),20736,(255,255,226),(192,192,192),f2
+
+[CONFIG]
+BrowseButtons()
+CB("jump_glossary","&Glossary","JI(`gpprof.hlp>Main',`GlossaryOfTerms.D2H')")
+
+[FILES]
+GPPROF.RTF
+
+[MAP]
+API 25
+RemoveInstrumentation 100
+Open1 178
+DelphiIDEintegration 169
+Procedures1 168
+License 15
+2OLV8_ 201
+2QK8C4P 106
+Makeabackup. 66
+33PS0H 58
+Actions1 137
+Actions2 146
+Undeletingalayout 129
+RunDelphi 101
+LayoutManager 91
+MakeaCopy 107
+LayoutManagement 188
+Credits 16
+Selectthread 143
+Systemrequirements 57
+DLLandPackageProfiling 203
+Conditionaldefines1 197
+Conditionaldefines2 198
+Startingup 81
+Syntaxerrors 62
+Options1 102
+Options2 110
+UHDJ5V 70
+Classes1 176
+Units1 177
+Callersview 193
+VGD3_Y 56
+9SB1PF 190
+Knownproblems 204
+FullSourceCodeIncluded 31
+ProfilerTerminate 161
+1KEOGW4 37
+Improvingthemeasurement 87
+Instrument 99
+.BW0NU 71
+Warning. 55
+MoreDetails 187
+Commonfunctions 182
+31JJ9O3 72
+Addingalayout 125
+Browserbuttons 195
+ProfilerStart 158
+Backupcopies 65
+Calledview 194
+56O7_HJ 191
+General 41
+13XLEQR 69
+Browsingthetarget 83
+Deletingalayout 128
+Analysingtheresults 85
+Excludedunits1 151
+Excludedunits2 153
+Formerehumans 154
+InstrumentandRun 98
+Instrumentation1 59
+Instrumentation2 147
+Instrumentation3 48
+Instrumentation4 152
+Preferences 90
+Renamingalayout 126
+Delete 108
+Smallandsimple 157
+RunningThreadsdemo 84
+ProfilerStop 160
+EB28O_ 67
+Showallfolders 149
+Metacomments 88
+Instrumentingthetarget 82
+Export 109
+SourceprevieW1 184
+Elements1 131
+Elements2 138
+Removinginstrumentation 86
+Reopen1 179
+Rescan1 180
+Shortcutkeys 111
+GPPROFandGPPROFH 10
+Support 8
+HowGpProfileworks. 54
+Threads 142
+3YR2_VG 68
+Features 3
+Userinterface 89
+ProfilerStartThread 159
+Execution 155
+RemoteProfiling 202
+JXV0WY 189
+HelpContentS1 1
+Restoringdefaultsettings 130
+Analysis1 61
+Analysis2 148
+Analysis3 50
+Analysis4 199
+Activatingalayout 127
+WhatisGpProfile. 2
+L__MF8 80
+Alternatives 17
+

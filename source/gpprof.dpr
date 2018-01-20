@@ -28,6 +28,7 @@ uses
   Forms,
   SysUtils,
   Windows,
+  Vcl.HtmlHelpViewer,
   GpString,
   gpArrowListView,
   gppMain in 'gppMain.pas' {frmMain},
