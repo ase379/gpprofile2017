@@ -16,6 +16,8 @@ unit gpprof;
 
 interface
 
+uses System.Classes;
+
 procedure ProfilerStart;
 procedure ProfilerStop;
 procedure ProfilerStartThread;
@@ -24,14 +26,14 @@ procedure ProfilerExitProc(procID: integer);
 procedure ProfilerTerminate;
 procedure NameThreadForDebugging(AThreadName: string; AThreadID: TThreadID); overload;
 procedure NameThreadForDebugging(AThreadName: ansistring; AThreadID: TThreadID); overload;
-  
+
 implementation
 
 uses
+  System.Generics.Collections,
   Windows,
   SysUtils,
   IniFiles,
-  Classes,
   GpProfH,
   gpprofCommon;
 
@@ -74,19 +76,18 @@ type
     property    Count: integer read tlCount;
   end;
 
-  PThreadInformation = ^TThreadInformation;
-  TThreadInformation = record 
+  TThreadInformation = class
     ID : cardinal;
     Name : ansistring;
   end;
 
   TThreadInformationList = class
   private   
-    FList : TList;
+    FList : TList<TThreadInformation>;
   public
     constructor Create();
     destructor Destroy;override;
-    procedure AddthreadInfo(const aThreadID : cardinal; const aThreadName : string);
+    procedure AddthreadInfo(const AThreadName: ansistring; const AThreadID: TThreadID);
   end;
   
 
@@ -444,12 +445,13 @@ end; { ReadIncSettings }
 
 procedure NameThreadForDebugging(AThreadName: string; AThreadID: TThreadID);
 begin
-//  prfThreadsInfo.FList;
+  prfThreadsInfo.AddthreadInfo(aThreadName, aThreadID);
   TThread.NameThreadForDebugging(AThreadName, aThreadID);
 end;
 
 procedure NameThreadForDebugging(AThreadName: ansistring; AThreadID: TThreadID);
 begin
+  prfThreadsInfo.AddthreadInfo(aThreadName, aThreadID);
   TThread.NameThreadForDebugging(AThreadName, aThreadID);
 end;
 
@@ -563,7 +565,7 @@ end; { ProfilerTerminate }
 
 constructor TThreadInformationList.Create();
 begin
-  FList := TList.Create();
+  FList := TObjectList<TThreadInformation>.Create();
 end;
 
 
@@ -572,7 +574,7 @@ begin
   fList.free;
 end;
 
-procedure TThreadInformationList.AddthreadInfo(const aThreadID : cardinal; const aThreadName : string);
+procedure TThreadInformationList.AddthreadInfo(const AThreadName: ansistring; const AThreadID: TThreadID);
 var LEntry : TThreadInformation;
 begin
   LEntry := Default(TThreadInformation);
