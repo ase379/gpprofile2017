@@ -22,7 +22,9 @@ procedure ProfilerStartThread;
 procedure ProfilerEnterProc(procID: integer);
 procedure ProfilerExitProc(procID: integer);
 procedure ProfilerTerminate;
-
+procedure NameThreadForDebugging(AThreadName: string; AThreadID: TThreadID); overload;
+procedure NameThreadForDebugging(AThreadName: ansistring; AThreadID: TThreadID); overload;
+  
 implementation
 
 uses
@@ -72,6 +74,22 @@ type
     property    Count: integer read tlCount;
   end;
 
+  PThreadInformation = ^TThreadInformation;
+  TThreadInformation = record 
+    ID : cardinal;
+    Name : ansistring;
+  end;
+
+  TThreadInformationList = class
+  private   
+    FList : TList;
+  public
+    constructor Create();
+    destructor Destroy;override;
+    procedure AddthreadInfo(const aThreadID : cardinal; const aThreadName : string);
+  end;
+  
+
 var
   prfFile        : THandle;
   prfBuf         : pointer;
@@ -86,6 +104,7 @@ var
   prfLastTick    : Comp;
   prfOnlyThread  : integer;
   prfThreads     : TThreadList;
+  prfThreadsInfo : TThreadInformationList;
   prfThreadBytes : integer;
   prfMaxThreadNum: integer;
   prfInitialized : boolean;
@@ -423,6 +442,18 @@ begin
   end;
 end; { ReadIncSettings }
 
+procedure NameThreadForDebugging(AThreadName: string; AThreadID: TThreadID);
+begin
+//  prfThreadsInfo.FList;
+  TThread.NameThreadForDebugging(AThreadName, aThreadID);
+end;
+
+procedure NameThreadForDebugging(AThreadName: ansistring; AThreadID: TThreadID);
+begin
+  TThread.NameThreadForDebugging(AThreadName, aThreadID);
+end;
+
+
 procedure Initialize;
 begin
   ReadIncSettings;
@@ -431,6 +462,7 @@ begin
     prfCounter.QuadPart := 0;
     prfOnlyThread       := 0;
     prfThreads          := TThreadList.Create;
+    prfThreadsInfo      := TThreadInformationList.Create();
     prfMaxThreadNum     := 256;
     prfThreadBytes      := 1;
     prfLastTick         := -1;
@@ -511,6 +543,7 @@ begin
   Win32Check(VirtualUnlock(prfBuf, BUF_SIZE));
   Win32Check(VirtualFree(prfBuf, 0, MEM_RELEASE));
   prfThreads.Free;
+  prfThreadsInfo.free;
   DeleteCriticalSection(prfLock);
   PostMessage(HWND_BROADCAST, prfDoneMsg, CMD_DONE, 0);
 end; { Finalize }
@@ -524,6 +557,31 @@ begin
   WriteTag(PR_ENDDATA);
   Finalize;
 end; { ProfilerTerminate }
+
+
+{ ProfilerTerminate }
+
+constructor TThreadInformationList.Create();
+begin
+  FList := TList.Create();
+end;
+
+
+destructor TThreadInformationList.Destroy;
+begin
+  fList.free;
+end;
+
+procedure TThreadInformationList.AddthreadInfo(const aThreadID : cardinal; const aThreadName : string);
+var LEntry : TThreadInformation;
+begin
+  LEntry := Default(TThreadInformation);
+  LEntry.ID := AThreadId;
+  LEntry.Name := AThreadName;
+  fList.Add(@LEntry);
+end;
+
+
 
 initialization
   prfInitialized := false;
