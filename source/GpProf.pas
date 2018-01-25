@@ -24,8 +24,8 @@ procedure ProfilerStartThread;
 procedure ProfilerEnterProc(procID: integer);
 procedure ProfilerExitProc(procID: integer);
 procedure ProfilerTerminate;
-procedure NameThreadForDebugging(AThreadName: string; AThreadID: TThreadID); overload;
-procedure NameThreadForDebugging(AThreadName: ansistring; AThreadID: TThreadID); overload;
+procedure NameThreadForDebugging(AThreadName: AnsiString; AThreadID: TThreadID = TThreadID(-1)); overload;
+procedure NameThreadForDebugging(AThreadName: string; AThreadID: TThreadID = TThreadID(-1)); overload;
 
 implementation
 
@@ -81,15 +81,7 @@ type
     Name : ansistring;
   end;
 
-  TThreadInformationList = class
-  private   
-    FList : TList<TThreadInformation>;
-  public
-    constructor Create();
-    destructor Destroy;override;
-    procedure AddthreadInfo(const AThreadName: ansistring; const AThreadID: TThreadID);
-  end;
-  
+  TThreadInformationList = TObjectList<TThreadInformation>;
 
 var
   prfFile        : THandle;
@@ -197,9 +189,16 @@ begin
 end; { Transmit }
 
 procedure WriteInt   (int: integer);  begin Transmit(int, SizeOf(integer)); end;
+procedure WriteCardinal   (value: Cardinal);  begin Transmit(value, SizeOf(Cardinal)); end;
 procedure WriteTag   (tag: byte);     begin Transmit(tag, SizeOf(byte)); end;
 procedure WriteID    (id: integer);   begin Transmit(id, profProcSize); end;
 procedure WriteBool  (bool: boolean); begin Transmit(bool, 1); end;
+procedure WriteAnsiString  (value: ansistring);
+begin
+  WriteCardinal(Length(value));
+  if Length(Value)>0 then
+    Transmit(value[1], Length(value));
+end;
 
 procedure WriteTicks(ticks: Comp);
 type
@@ -324,6 +323,26 @@ begin
   Result := Copy(fName,1,Length(fName)-Length(ExtractFileExt(fName)))+'.'+newExt;
 end; { CombineNames }
 
+procedure NameThreadForDebugging(AThreadName: AnsiString; AThreadID: TThreadID = TThreadID(-1)); overload;
+begin
+  NameThreadForDebugging(string(aThreadName), aThreadID);
+end; { NameThreadForDebugging }
+
+
+procedure NameThreadForDebugging(AThreadName: string; AThreadID: TThreadID = TThreadID(-1)); overload;
+var LEntry : TThreadInformation;
+begin
+  TThread.NameThreadForDebugging(aThreadName, aThreadId);
+  if not prfDisabled then
+  begin
+    LEntry := TThreadInformation.Create;
+    LEntry.ID := AThreadId;
+    LEntry.Name := AThreadName;
+    prfThreadsInfo.Add(LEntry);
+  end;
+end; { NameThreadForDebugging }
+
+
 { TThreadList }
 
 constructor TThreadList.Create;
@@ -443,19 +462,6 @@ begin
   end;
 end; { ReadIncSettings }
 
-procedure NameThreadForDebugging(AThreadName: string; AThreadID: TThreadID);
-begin
-  prfThreadsInfo.AddthreadInfo(aThreadName, aThreadID);
-  TThread.NameThreadForDebugging(AThreadName, aThreadID);
-end;
-
-procedure NameThreadForDebugging(AThreadName: ansistring; AThreadID: TThreadID);
-begin
-  prfThreadsInfo.AddthreadInfo(aThreadName, aThreadID);
-  TThread.NameThreadForDebugging(AThreadName, aThreadID);
-end;
-
-
 procedure Initialize;
 begin
   ReadIncSettings;
@@ -551,38 +557,24 @@ begin
 end; { Finalize }
 
 procedure ProfilerTerminate;
+var i : integer;
 begin
   if not prfInitialized then Exit;
   ProfilerStop;
   prfInitialized := False;
   FlushCounter;
   WriteTag(PR_ENDDATA);
+
+  WriteTag(PR_START_THREADINFO);
+  for i := 0 to prfThreadsInfo.count-1 do
+  begin
+    WriteCardinal(prfThreadsInfo[i].ID);
+    WriteAnsiString(prfThreadsInfo[i].Name);
+  end;
+  WriteInt(PR_END_THREADINFO);
   Finalize;
+
 end; { ProfilerTerminate }
-
-
-{ ProfilerTerminate }
-
-constructor TThreadInformationList.Create();
-begin
-  FList := TObjectList<TThreadInformation>.Create();
-end;
-
-
-destructor TThreadInformationList.Destroy;
-begin
-  fList.free;
-end;
-
-procedure TThreadInformationList.AddthreadInfo(const AThreadName: ansistring; const AThreadID: TThreadID);
-var LEntry : TThreadInformation;
-begin
-  LEntry := Default(TThreadInformation);
-  LEntry.ID := AThreadId;
-  LEntry.Name := AThreadName;
-  fList.Add(@LEntry);
-end;
-
 
 
 initialization
