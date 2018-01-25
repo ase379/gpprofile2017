@@ -68,6 +68,7 @@ type
     destructor Destroy; override;
 
     function FirstNode : INode<T>;
+    function LastNode : INode<T>;
     function FindNode(const aSearchNode : INode<T>; out aResultNode: INode<T>) : boolean;
 
     function AppendNode(const aValue:T) : INode<T>;
@@ -194,6 +195,19 @@ begin
   result := fFirstNode;
 end;
 
+
+function TRootNode<T>.LastNode: INode<T>;
+var
+  LCurrent : INode<T>;
+begin
+  Result := nil;
+  LCurrent := fFirstNode;
+  while (assigned(LCurrent)) do
+  begin
+    Result := LCurrent;
+    LCurrent := Result.NextNode;
+  end;
+end;
 
 procedure TRootNode<T>.SortNodes;
 var
