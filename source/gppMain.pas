@@ -932,7 +932,13 @@ begin
         Items.Add('All threads');
         with openProfile do begin
           for i := Low(resThreads)+1 to High(resThreads) do
-            Items.Add('Thread '+IntToStr(i));
+          begin
+            // first entries is handle 0 for unknown procs, skip it...
+            if resThreads[i].teName = '' then
+              Items.Add('Thread '+IntToStr(i))
+            else
+              Items.Add(resThreads[i].teName)
+          end;
         end;
       end;
       Enabled := (Items.Count > 2);
