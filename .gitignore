@@ -3,3 +3,4 @@ BIN/gpprof.drc
 BIN/gpprof.exe
 BIN/gpprof.map
 *.~dsk
+tests/Win32/Debug/*.*
