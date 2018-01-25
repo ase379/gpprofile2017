@@ -103,7 +103,7 @@ type
   TResults = class
   private
     resFile           : TGpHugeFile;
-    resName           : Ansistring;
+    resName           : String;
     resProcSize       : integer;
     resOldTicks       : int64;
     resThreadBytes    : integer;
@@ -164,7 +164,7 @@ type
     resProcedures: array of TProcEntry;
     resCallGraph : array {procedure} of array {procedure} of PCallGraphEntry;
     resFrequency : int64;
-    constructor Create(fileName: AnsiString; callback: TProgressCallback); overload;
+    constructor Create(fileName: string; callback: TProgressCallback); overload;
     constructor Create; overload;
     destructor  Destroy; override;
     procedure   AssignTables(tableFile: string);
@@ -175,7 +175,7 @@ type
     procedure   RecalcTimes;
     procedure   SaveDigest(fileName: string);
     procedure   Rename(fileName: string);
-    property    Name: AnsiString read resName;
+    property    Name: String read resName;
     property    Version: integer read resPrfVersion;
     property    IsDigest: boolean read resPrfDigest;
     property    DigestVer: integer read resPrfDigestVer;
@@ -217,7 +217,7 @@ begin
   except end;
 end; { TResults.Create }
 
-constructor TResults.Create(fileName: AnsiString; callback: TProgressCallback);
+constructor TResults.Create(fileName: String; callback: TProgressCallback);
 begin
   Create();
   try
@@ -470,8 +470,7 @@ begin
     begin
       if Length(resThreads[k].teName) > 0 then
         resThreads[k].teName := resThreads[k].teName + '; ';
-      resThreads[k].teName := resThreads[k].teName + LThreadName + '('+UIntToStr(LThreadID)+')'
-      ;
+      resThreads[k].teName := resThreads[k].teName + LThreadName;
     end;
   end;
   ReadTag(LTag);
