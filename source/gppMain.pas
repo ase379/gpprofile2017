@@ -923,6 +923,7 @@ end; { TfrmMain.ParseProfileCallback }
 procedure TfrmMain.FillThreadCombos;
 var
   i: integer;
+  LCaption : String;
 begin
   with cbxSelectThreadProc do begin
     Items.BeginUpdate;
@@ -934,10 +935,12 @@ begin
           for i := Low(resThreads)+1 to High(resThreads) do
           begin
             // first entries is handle 0 for unknown procs, skip it...
+            LCaption := uintToStr(resThreads[i].teThread) + ' - ';
             if resThreads[i].teName = '' then
-              Items.Add('Thread '+IntToStr(i))
+              LCaption := LCaption + 'Thread '+IntToStr(i)
             else
-              Items.Add(resThreads[i].teName)
+              LCaption := LCaption + resThreads[i].teName;
+            Items.Add(LCaption)
           end;
         end;
       end;
@@ -1122,7 +1125,8 @@ begin
           with resThreads[i] do begin
             if (not actHideNotExecuted.Checked) or (teTotalCnt > 0) then begin
               li := Items.Add;
-              li.Caption := GetThreadName(i);
+              li.Caption := UIntToStr(teThread);
+              li.Subitems.Add(GetThreadName(i));
               if totalTime = 0
                 then li.Subitems.Add(FormatPerc(0))
                 else
@@ -2160,13 +2164,15 @@ var
 begin
   with openProfile do begin
     case Data of
-      0: cmp := StrIComp(PChar(GetThreadName(integer(item1.Data))),
+      0: cmp := resThreads[integer(item1.Data)].teThread-
+                resThreads[integer(item2.Data)].teThread;
+      1: cmp := StrIComp(PChar(GetThreadName(integer(item1.Data))),
                          PChar(GetThreadName(integer(item2.Data))));
-      1: cmp := resThreads[integer(item1.Data)].teTotalTime-
-                resThreads[integer(item2.Data)].teTotalTime;
       2: cmp := resThreads[integer(item1.Data)].teTotalTime-
                 resThreads[integer(item2.Data)].teTotalTime;
-      3: cmp := resThreads[integer(item1.Data)].teTotalCnt-
+      3: cmp := resThreads[integer(item1.Data)].teTotalTime-
+                resThreads[integer(item2.Data)].teTotalTime;
+      4: cmp := resThreads[integer(item1.Data)].teTotalCnt-
                 resThreads[integer(item2.Data)].teTotalCnt;
       else cmp := 0;
     end;
