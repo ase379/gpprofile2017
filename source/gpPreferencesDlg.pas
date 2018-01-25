@@ -151,9 +151,6 @@ uses
 
 function ResolvePrfProjectPlaceholders(const aFilenameWithPh: string): string;
 var LSubstitutes : TPrfPlaceholderValueDict;
-    LValue : string;
-    LPlatform : string;
-    LConfig : string;
 begin
   // resolve the global or saved settings...
   LSubstitutes := TPrfPlaceholderValueDict.create();
@@ -699,7 +696,6 @@ var
   projMarker   : integer;
   projSpeedSize: integer;
   oldDefines   : string;
-  LSettingsDict : TPrfPlaceholderValueDict;
 begin
   with frmPreferences do begin
     IsGlobalPreferenceDialog := false;
