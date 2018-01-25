@@ -461,16 +461,19 @@ begin
     exit;
   end;
   ReadCardinal(LElementCount);
-  for i := 0 to LElementCount-1 do
+  if LElementCount > 0 then
   begin
-    ReadCardinal(LThreadID);
-    ReadAnsiString(LThreadName);
-    k := ThLocate(LThreadID);
-    if k <> -1 then
+    for i := 0 to LElementCount-1 do
     begin
-      if Length(resThreads[k].teName) > 0 then
-        resThreads[k].teName := resThreads[k].teName + '; ';
-      resThreads[k].teName := resThreads[k].teName + LThreadName;
+      ReadCardinal(LThreadID);
+      ReadAnsiString(LThreadName);
+      k := ThLocate(LThreadID);
+      if k <> -1 then
+      begin
+        if Length(resThreads[k].teName) > 0 then
+          resThreads[k].teName := resThreads[k].teName + '; ';
+        resThreads[k].teName := resThreads[k].teName + LThreadName;
+      end;
     end;
   end;
   ReadTag(LTag);
