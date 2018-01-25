@@ -566,6 +566,7 @@ begin
   WriteTag(PR_ENDDATA);
 
   WriteTag(PR_START_THREADINFO);
+  WriteCardinal(prfThreadsInfo.count);
   for i := 0 to prfThreadsInfo.count-1 do
   begin
     WriteCardinal(prfThreadsInfo[i].ID);
@@ -586,6 +587,7 @@ initialization
     WriteCalibration;
     WriteTag(PR_STARTDATA);
     prfInitialized := true;
+    gpprof.NameThreadForDebugging('Main Application Thread', MainThreadID);
   end;
 finalization
   ProfilerTerminate;
