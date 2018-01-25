@@ -35,6 +35,7 @@ var lThread : TTestThread;
 begin
   lThread := TTestThread.Create;
   //FreeOnTerminate is true
+  lThread.WaitFor;
 end;
 
 
