@@ -16,20 +16,24 @@ unit gpprof;
 
 interface
 
+uses System.Classes;
+
 procedure ProfilerStart;
 procedure ProfilerStop;
 procedure ProfilerStartThread;
 procedure ProfilerEnterProc(procID: integer);
 procedure ProfilerExitProc(procID: integer);
 procedure ProfilerTerminate;
+procedure NameThreadForDebugging(AThreadName: AnsiString; AThreadID: TThreadID = TThreadID(-1)); overload;
+procedure NameThreadForDebugging(AThreadName: string; AThreadID: TThreadID = TThreadID(-1)); overload;
 
 implementation
 
 uses
+  System.Generics.Collections,
   Windows,
   SysUtils,
   IniFiles,
-  Classes,
   GpProfH,
   gpprofCommon;
 
@@ -72,6 +76,13 @@ type
     property    Count: integer read tlCount;
   end;
 
+  TThreadInformation = class
+    ID : cardinal;
+    Name : ansistring;
+  end;
+
+  TThreadInformationList = TObjectList<TThreadInformation>;
+
 var
   prfFile        : THandle;
   prfBuf         : pointer;
@@ -86,6 +97,7 @@ var
   prfLastTick    : Comp;
   prfOnlyThread  : integer;
   prfThreads     : TThreadList;
+  prfThreadsInfo : TThreadInformationList;
   prfThreadBytes : integer;
   prfMaxThreadNum: integer;
   prfInitialized : boolean;
@@ -177,9 +189,16 @@ begin
 end; { Transmit }
 
 procedure WriteInt   (int: integer);  begin Transmit(int, SizeOf(integer)); end;
+procedure WriteCardinal   (value: Cardinal);  begin Transmit(value, SizeOf(Cardinal)); end;
 procedure WriteTag   (tag: byte);     begin Transmit(tag, SizeOf(byte)); end;
 procedure WriteID    (id: integer);   begin Transmit(id, profProcSize); end;
 procedure WriteBool  (bool: boolean); begin Transmit(bool, 1); end;
+procedure WriteAnsiString  (value: ansistring);
+begin
+  WriteCardinal(Length(value));
+  if Length(Value)>0 then
+    Transmit(value[1], Length(value));
+end;
 
 procedure WriteTicks(ticks: Comp);
 type
@@ -303,6 +322,26 @@ function CombineNames(fName, newExt: string): string;
 begin
   Result := Copy(fName,1,Length(fName)-Length(ExtractFileExt(fName)))+'.'+newExt;
 end; { CombineNames }
+
+procedure NameThreadForDebugging(AThreadName: AnsiString; AThreadID: TThreadID = TThreadID(-1)); overload;
+begin
+  NameThreadForDebugging(string(aThreadName), aThreadID);
+end; { NameThreadForDebugging }
+
+
+procedure NameThreadForDebugging(AThreadName: string; AThreadID: TThreadID = TThreadID(-1)); overload;
+var LEntry : TThreadInformation;
+begin
+  TThread.NameThreadForDebugging(aThreadName, aThreadId);
+  if not prfDisabled then
+  begin
+    LEntry := TThreadInformation.Create;
+    LEntry.ID := AThreadId;
+    LEntry.Name := AThreadName;
+    prfThreadsInfo.Add(LEntry);
+  end;
+end; { NameThreadForDebugging }
+
 
 { TThreadList }
 
@@ -431,6 +470,7 @@ begin
     prfCounter.QuadPart := 0;
     prfOnlyThread       := 0;
     prfThreads          := TThreadList.Create;
+    prfThreadsInfo      := TThreadInformationList.Create();
     prfMaxThreadNum     := 256;
     prfThreadBytes      := 1;
     prfLastTick         := -1;
@@ -511,19 +551,32 @@ begin
   Win32Check(VirtualUnlock(prfBuf, BUF_SIZE));
   Win32Check(VirtualFree(prfBuf, 0, MEM_RELEASE));
   prfThreads.Free;
+  prfThreadsInfo.free;
   DeleteCriticalSection(prfLock);
   PostMessage(HWND_BROADCAST, prfDoneMsg, CMD_DONE, 0);
 end; { Finalize }
 
 procedure ProfilerTerminate;
+var i : integer;
 begin
   if not prfInitialized then Exit;
   ProfilerStop;
   prfInitialized := False;
   FlushCounter;
   WriteTag(PR_ENDDATA);
+
+  WriteTag(PR_START_THREADINFO);
+  WriteCardinal(prfThreadsInfo.count);
+  for i := 0 to prfThreadsInfo.count-1 do
+  begin
+    WriteCardinal(prfThreadsInfo[i].ID);
+    WriteAnsiString(prfThreadsInfo[i].Name);
+  end;
+  WriteInt(PR_END_THREADINFO);
   Finalize;
+
 end; { ProfilerTerminate }
+
 
 initialization
   prfInitialized := false;
@@ -534,6 +587,7 @@ initialization
     WriteCalibration;
     WriteTag(PR_STARTDATA);
     prfInitialized := true;
+    gpprof.NameThreadForDebugging('Main Application Thread', MainThreadID);
   end;
 finalization
   ProfilerTerminate;

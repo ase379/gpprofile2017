@@ -315,7 +315,7 @@ object frmMain: TfrmMain
         Top = 0
         Width = 612
         Height = 340
-        ActivePage = tabInstrumentation
+        ActivePage = tabAnalysis
         Align = alClient
         HotTrack = True
         Images = imglButtons
@@ -457,7 +457,7 @@ object frmMain: TfrmMain
             Top = 0
             Width = 604
             Height = 311
-            ActivePage = tabProcedures
+            ActivePage = tabThreads
             Align = alClient
             HotTrack = True
             TabOrder = 0
@@ -499,7 +499,7 @@ object frmMain: TfrmMain
                 object cbxSelectThreadProc: TComboBox
                   Left = 78
                   Top = 4
-                  Width = 145
+                  Width = 191
                   Height = 21
                   Style = csDropDownList
                   TabOrder = 0
@@ -849,7 +849,7 @@ object frmMain: TfrmMain
               object cbxSelectThreadClass: TComboBox
                 Left = 78
                 Top = 4
-                Width = 145
+                Width = 199
                 Height = 21
                 Style = csDropDownList
                 TabOrder = 0
@@ -915,7 +915,7 @@ object frmMain: TfrmMain
               object cbxSelectThreadUnit: TComboBox
                 Left = 78
                 Top = 4
-                Width = 145
+                Width = 199
                 Height = 21
                 Style = csDropDownList
                 TabOrder = 0
@@ -977,6 +977,11 @@ object frmMain: TfrmMain
                 Height = 202
                 Anchors = [akLeft, akTop, akRight, akBottom]
                 Columns = <
+                  item
+                    Caption = 'ThreadID'
+                    MinWidth = 90
+                    Width = 90
+                  end
                   item
                     Caption = 'Thread'
                     Width = 275
@@ -1057,8 +1062,8 @@ object frmMain: TfrmMain
     end
   end
   object pnlLayout: TPanel
-    Left = 358
-    Top = 24
+    Left = 442
+    Top = 0
     Width = 162
     Height = 100
     Hint = 'Layout Manager'
@@ -1443,7 +1448,7 @@ object frmMain: TfrmMain
     Left = 47
     Top = 134
     Bitmap = {
-      494C01011D002100040010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
+      494C01011D002100100010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000008000000001002000000000000080
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000
@@ -2700,7 +2705,7 @@ object frmMain: TfrmMain
     Left = 47
     Top = 164
     Bitmap = {
-      494C010103000500040010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
+      494C010103000500100010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000001000000001002000000000000010
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000

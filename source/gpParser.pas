@@ -24,6 +24,7 @@ type
   TUnitList = class;
   TProcList = class;
   TAPIList  = class;
+  TProcSetThreadNameList = class;
   TProject  = class;
   TProc     = class;
 
@@ -66,6 +67,17 @@ type
     function    AnyChange: boolean;
   end;
 
+  TProcSetThreadName = class
+  const
+  public
+    tpstnPos : Cardinal;
+  end;
+
+  TProcSetThreadNameList = class(TRootNode<TProcSetThreadName>)
+    constructor Create; reintroduce;
+    procedure AddPosition(const aPos : Cardinal);
+  end;
+
   TProc = class
     prName          : AnsiString;
     prHeaderLineNum : integer;
@@ -80,6 +92,7 @@ type
     prCmtExitBegin  : integer;
     prCmtExitEnd    : integer;
     prPureAsm       : boolean;
+    unSetThreadNames  : TProcSetThreadNameList;
     constructor Create(procName: string; offset: integer = 0; lineNum: integer = 0; headerLineNum: integer = 0);
     destructor  Destroy; override;
   end;
@@ -118,6 +131,7 @@ type
     procedure   AddExpanded(apiEnterBegin,apiEnterEnd,apiExitBegin,apiExitEnd: integer);
   end;
 
+
   TProject = class
     prName            : string;
     prUnit            : TUnit;
@@ -136,6 +150,8 @@ type
     prProfileExitAsm  : string;
     prProfileAPI      : string;
     prAPIIntro        : string;
+    prNameThreadForDebugging : string;
+    prGpprofDot : string;
     constructor Create(projName: string);
     destructor  Destroy; override;
     procedure   Parse(aExclUnits: String; const aSearchPath, aConditionals: String;
@@ -389,10 +405,12 @@ uses
     prStartOffset   := offset;
     prStartLineNum  := linenum;
     prInstrumented  := false;
+    unSetThreadNames := TProcSetThreadNameList.Create();
   end; { TProc.Create }
 
   destructor TProc.Destroy;
   begin
+    unSetThreadNames.free;
   end; { TProc.Destroy }
 
 {========================= TUnit =========================}
@@ -716,6 +734,7 @@ uses
       end;
       unAPIs.Free;
       unAPIs := TAPIList.Create;
+      
       parser := nil;
       CreateNewParser(unFullName, '');
 {$IFDEF LogParser}GpLogEvent(Format('Parsing: %s', [unFullName]), FullLogName);{$ENDIF}
@@ -985,6 +1004,14 @@ uses
                         cmtExitEnd := tokenPos;
                         stateComment := stWaitExitBegin2;
                       end;
+                    end
+
+                  end
+                  else if (tokenID = ptIdentifier) then
+                  begin
+                    if TokenData = aProject.prNameThreadForDebugging then
+                    begin
+                      unProcs.LastNode.Data.unSetThreadNames.AddPosition(tokenPos);
                     end;
                   end;
 
@@ -1138,6 +1165,7 @@ uses
     api     : TAPI;
     LCurrentApi : INode<TAPI>;
     LCurrentProc : INode<TProc>;
+    LCurrentSetTName : INode<TProcSetThreadName>;
   begin { TUnit.Instrument }
     if unImplementOffset = -1 then
       raise Exception.Create('No implementation part defined in unit ' + unName + '!');
@@ -1190,6 +1218,14 @@ uses
           if haveInst then begin // remove instrumentation
             ed.Remove(pr.prCmtEnterBegin, pr.prCmtEnterEnd + Length(aProject.prConditEnd) - 1);
             ed.Remove(pr.prCmtExitBegin, pr.prCmtExitEnd + Length(aProject.prConditEnd) - 1);
+
+            // remove gpprof in from of NameThreadForDebugging interceptor
+            LCurrentSetTName := pr.unSetThreadNames.FirstNode;
+            while assigned(LCurrentSetTName) do
+            begin
+              ed.Remove(LCurrentSetTName.Data.tpstnPos-Length(aProject.prGpprofDot),LCurrentSetTName.Data.tpstnPos-1);
+              LCurrentSetTName := LCurrentSetTName.NextNode;
+            end;
           end;
         end
         else begin
@@ -1202,6 +1238,23 @@ uses
             ed.Insert(pr.prStartOffset + Length('asm'),Format(aProject.prProfileEnterAsm, [name]))
           else
             ed.Insert(pr.prStartOffset + Length('begin'),Format(aProject.prProfileEnterProc, [name]));
+
+          if haveInst then
+          begin
+            LCurrentSetTName := pr.unSetThreadNames.FirstNode;
+            while assigned(LCurrentSetTName) do
+            begin
+              ed.Remove(LCurrentSetTName.Data.tpstnPos-Length(aProject.prGpprofDot),LCurrentSetTName.Data.tpstnPos-1);
+              LCurrentSetTName := LCurrentSetTName.NextNode;
+            end;
+          end;
+          // add gpprof in from of NameThreadForDebugging interceptor
+          LCurrentSetTName := pr.unSetThreadNames.FirstNode;
+          while assigned(LCurrentSetTName) do
+          begin
+            ed.Insert(LCurrentSetTName.Data.tpstnPos, aProject.prGpprofDot);
+            LCurrentSetTName := LCurrentSetTName.NextNode;
+          end;
 
           if haveInst then
             ed.Remove(pr.prCmtExitBegin,pr.prCmtExitEnd + Length(aProject.prConditEnd) - 1);
@@ -1587,6 +1640,8 @@ uses
     prProfileExitAsm  := prConditStart + ' push eax; mov eax, %d; call ProfilerExitProc; pop eax ' + prConditEnd;
     prProfileAPI      := prConditStartAPI + '%s' + prConditEndAPI;
     prAPIIntro        := 'GPP:';
+    prNameThreadForDebugging := 'NameThreadForDebugging';
+    prGpprofDot := 'gpprof.';
   end; { TProject.PrepareComments }
 
   function TProject.GetFirstLine(unitName, procName: string): integer;
@@ -1714,8 +1769,22 @@ uses
 constructor TAPIList.Create;
   begin
     inherited Create(true);
-    //DisposeData := @DisposeAPI;
   end; { TAPIList.Create }
+
+{ TProcSetThreadNameList }
+
+procedure TProcSetThreadNameList.AddPosition(const aPos: Cardinal);
+var LThreadName : TProcSetThreadName;
+begin
+  LThreadName := TProcSetThreadName.Create();
+  LThreadName.tpstnPos := aPos;
+  self.AppendNode(LThreadName);
+end;
+
+constructor TProcSetThreadNameList.Create;
+begin
+    inherited Create(true);
+end;
 
 end.
 

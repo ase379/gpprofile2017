@@ -54,7 +54,7 @@ type
 
   TThreadEntry = record
     teThread     : integer;
-    teName       : AnsiString; // someday will be setable by API
+    teName       : AnsiString; 
     teTotalTime  : int64;
     teTotalCnt   : integer;
     teActiveProcs: TActiveProcList; 
@@ -103,7 +103,7 @@ type
   TResults = class
   private
     resFile           : TGpHugeFile;
-    resName           : Ansistring;
+    resName           : String;
     resProcSize       : integer;
     resOldTicks       : int64;
     resThreadBytes    : integer;
@@ -131,10 +131,13 @@ type
     procedure   LoadTables;
     procedure   LoadCalibration;
     procedure   LoadData(callback: TProgressCallback);
+    procedure   LoadThreadInformation();
     procedure   LoadDigest(callback: TProgressCallback);
     procedure   ReadString(var str: AnsiString);
     procedure   ReadShortstring(var str: AnsiString);
     procedure   ReadInt(var int: integer);
+    procedure   ReadCardinal(var value: Cardinal);
+    procedure   ReadAnsiString(var avalue : AnsiString);
     procedure   ReadInt64(var i64: int64);
     procedure   ReadBool(var bool: boolean);
     procedure   ReadTag(var tag: byte);
@@ -161,7 +164,7 @@ type
     resProcedures: array of TProcEntry;
     resCallGraph : array {procedure} of array {procedure} of PCallGraphEntry;
     resFrequency : int64;
-    constructor Create(fileName: AnsiString; callback: TProgressCallback); overload;
+    constructor Create(fileName: string; callback: TProgressCallback); overload;
     constructor Create; overload;
     destructor  Destroy; override;
     procedure   AssignTables(tableFile: string);
@@ -172,7 +175,7 @@ type
     procedure   RecalcTimes;
     procedure   SaveDigest(fileName: string);
     procedure   Rename(fileName: string);
-    property    Name: AnsiString read resName;
+    property    Name: String read resName;
     property    Version: integer read resPrfVersion;
     property    IsDigest: boolean read resPrfDigest;
     property    DigestVer: integer read resPrfDigestVer;
@@ -214,7 +217,7 @@ begin
   except end;
 end; { TResults.Create }
 
-constructor TResults.Create(fileName: AnsiString; callback: TProgressCallback);
+constructor TResults.Create(fileName: String; callback: TProgressCallback);
 begin
   Create();
   try
@@ -228,6 +231,7 @@ begin
         LoadTables;
         if Version > 2 then LoadCalibration;
         LoadData(callback);
+        LoadThreadInformation();
         RecalcTimes;
       end;
     finally resFile.Free; end;
@@ -246,9 +250,20 @@ begin
 end; { TResults.Destroy }
 
 procedure TResults.ReadInt  (var int: integer);  begin resFile.BlockReadUnsafe(int,SizeOf(integer)); end;
+procedure TResults.ReadCardinal(var value: Cardinal);  begin resFile.BlockReadUnsafe(value,SizeOf(Cardinal)); end;
 procedure TResults.ReadInt64(var i64: int64);    begin resFile.BlockReadUnsafe(i64,SizeOf(int64)); end;
 procedure TResults.ReadTag  (var tag: byte);     begin resFile.BlockReadUnsafe(tag,SizeOf(byte)); end;
 procedure TResults.ReadID   (var id: integer);   begin id := 0; resFile.BlockReadUnsafe(id,resProcSize); end;
+procedure TResults.ReadAnsiString(var avalue: AnsiString);
+var LLength : Cardinal;
+begin
+  ReadCardinal(LLength);
+  SetLength(AValue, LLength);
+  if LLength > 0 then
+    resFile.BlockReadUnsafe(AValue[1],LLength);
+end;
+
+
 procedure TResults.ReadBool (var bool: boolean); begin resFile.BlockReadUnsafe(bool,1); end;
 
 procedure TResults.ReadTicks(var ticks: int64);
@@ -381,7 +396,9 @@ begin
   for i := 1 to High(resClasses) do
     with resClasses[i] do
       if ceFirstLn = MaxLongint then ceFirstLn := -1;
-end; { TResult.LoadTables }
+end; 
+
+{ TResult.LoadTables }
 
 procedure TResults.LoadData(callback: TProgressCallback);
 var
@@ -424,6 +441,46 @@ begin
     end;
   end;
 end; { TResults.LoadData }
+
+procedure TResults.LoadThreadInformation;
+var LTag : byte;
+    LPos : HugeInt;
+    LElementCount : Cardinal;
+    LThreadID : Cardinal;
+    LThreadName : AnsiString;
+    i : cardinal;
+    k : integer;
+begin
+  LPos := resFile.FilePos;
+  if LPos = resFile.FileSize then
+    exit;
+  ReadTag(LTag);
+  if LTag <> PR_START_THREADINFO then
+  begin
+    resFile.Seek(LPos);
+    exit;
+  end;
+  ReadCardinal(LElementCount);
+  if LElementCount > 0 then
+  begin
+    for i := 0 to LElementCount-1 do
+    begin
+      ReadCardinal(LThreadID);
+      ReadAnsiString(LThreadName);
+      k := ThLocate(LThreadID);
+      if k <> -1 then
+      begin
+        if Length(resThreads[k].teName) > 0 then
+          resThreads[k].teName := resThreads[k].teName + '; ';
+        resThreads[k].teName := resThreads[k].teName + LThreadName;
+      end;
+    end;
+  end;
+  ReadTag(LTag);
+  if lTag <> PR_END_THREADINFO then
+    raise Exception.Create('Found PR_START_THREADINFO without PR_END_THREADINFO');
+end; { TResults.LoadThreadInformation }
+
 
 procedure TResults.EnterProcPkt(pkt: TResPacket);
 var
