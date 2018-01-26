@@ -1559,6 +1559,8 @@ uses
               LNode := LNode.NextNode;
             end;
           end;
+          if not ForceDirectories(ExtractFileDir(aIncFileName)) then
+            raise Exception.Create('Could not create output folder '+ExtractFileDir(aIncFileName)+': '+SysErrorMessage(GetLastError));
           idt.Dump(aIncFileName);
         finally
           SetCurrentDir(vOldCurDir);
