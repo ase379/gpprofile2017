@@ -11,7 +11,7 @@ Tested with Delphi Seattle.
 
 Additional features are:
 
-- Using NameThreadForDebuggin()g for tracing the thread names in the result files.
+- Using NameThreadForDebugging() for tracing the thread names in the result files.
 - The PRF output filename can be now be configured using several placeholders, e.g. the ModuleName or the ProcessName and ID.
 - The help system now uses CHM instead of HLP. HLP is not supported anymore by modern OSes.
 
