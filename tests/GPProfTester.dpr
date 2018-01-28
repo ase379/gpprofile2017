@@ -8,7 +8,8 @@ program GPProfTester;
 uses
   System.SysUtils,
   testUnit in 'testUnit.pas',
-  testThreads in 'testThreads.pas';
+  testThreads in 'testThreads.pas',
+  testMultiDefines in 'testMultiDefines.pas';
 
 begin
   try

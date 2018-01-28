@@ -5,11 +5,12 @@ unit gpParser;
 interface
 
 uses
-  Classes,
+  System.Classes,
   gppIDT,
   SimpleReportUnit,
   Dialogs,
-  gppTree;
+  gppTree,
+  gpFileEdit;
 
 type
   TNotifyProc = procedure(const aUnitName: String) of object;
@@ -39,6 +40,12 @@ type
   end;
 
   TUnit = class
+  private
+    procedure AddToIntArray(var anArray: TArray<Integer>;const aValue: integer);
+    procedure InstrumentUses(const aProject: TProject;const ed : TFileEdit;const anIndex : integer);
+    procedure BackupInstrumentedFile(const aSrc : string);
+
+  public
     unName           : AnsiString;
     unFullName       : AnsiString;
     unUnits          : TUnitList;
@@ -49,10 +56,10 @@ type
     unInProjectDir   : boolean;
     unAllInst        : boolean;
     unNoneInst       : boolean;
-    unUsesOffset     : integer;
-    unImplementOffset: integer;
-    unStartUses      : integer;
-    unEndUses        : integer;
+    unUsesOffset     : TArray<Integer>;
+    unImplementOffset: TArray<Integer>;
+    unStartUses      : TArray<Integer>;
+    unEndUses        : TArray<Integer>;
     unFileDate       : integer;
     constructor Create(const aUnitName: String; const aUnitLocation: String = ''; aExcluded: Boolean = False);
     destructor  Destroy; override;
@@ -183,7 +190,7 @@ implementation
 
 uses
   Windows,
-  SysUtils,
+  System.SysUtils,
   IoUtils,
 {$IFDEF LogParser}
   GpIFF,
@@ -196,8 +203,7 @@ uses
   CastaliaPasLex,
   CastaliaPasLexTypes,
   gppCommon,
-  gppCurrentPrefs,
-  gpFileEdit;
+  gppCurrentPrefs;
 
 {========================= TDefineList =========================}
 
@@ -430,10 +436,10 @@ uses
     unExcluded        := aExcluded;
     unAllInst         := False;
     unNoneInst        := True;
-    unUsesOffset      := -1;
-    unImplementOffset := -1;
-    unStartUses       := -1;
-    unEndUses         := -1;
+    SetLength(unUsesOffset,0);
+    SetLength(unImplementOffset,0);
+    SetLength(unStartUses,0);
+    SetLength(unEndUses,0);
     unFileDate        := -1;
   end; { TUnit.Create }
 
@@ -755,14 +761,12 @@ uses
       cmtEnterEnd       := -1;
       cmtExitBegin      := -1;
       cmtExitEnd        := -1;
-      unStartUses       := -1;
-      unEndUses         := -1;
       unName            := '';
       unLocation        := '';
-      unUsesOffset      := -1;
-      unImplementOffset := -1;
-      unStartUses       := -1;
-      unEndUses         := -1;
+      SetLength(unUsesOffset,0);
+      SetLength(unImplementOffset,0);
+      SetLength(unStartUses,0);
+      SetLength(unEndUses,0);
       inAsmBlock        := false;
       inRecordDef       := false;
       prevTokenID       := ptNull;
@@ -853,9 +857,9 @@ uses
                    (tokenID = ptCompDirect) then
                 begin
                   if tokenData = aProject.prConditStartUses then
-                    unStartUses := tokenPos
+                    AddToIntArray(unStartUses, tokenPos)
                   else if tokenData = aProject.prConditEndUses then
-                    unEndUses := tokenPos
+                    AddToIntArray(unEndUses,tokenPos)
                   else if ((tokenID = ptBorComment) and (Copy(tokenData,1,1+Length(aProject.prAPIIntro))='{'+aProject.prAPIIntro)) or
                           ((tokenID = ptAnsiComment) and (Copy(tokenData,1,2+Length(aProject.prAPIIntro))='(*'+aProject.prAPIIntro)) then
                   begin
@@ -881,7 +885,7 @@ uses
                 begin
                   if tokenID = ptSemicolon then
                   begin
-                    unImplementOffset := tokenPos+1;
+                    AddToIntArray(unImplementOffset,tokenPos+1);
                     state := stScan;
                   end;
                 end
@@ -1053,12 +1057,12 @@ uses
                 begin
                   state := stParseUses;
                   if implement then
-                    unUsesOffset := tokenPos;
+                    AddToIntArray(unUsesOffset,tokenPos);
                 end
                 else if tokenID = ptImplementation then
                 begin
                   implement := true;
-                  unImplementOffset := tokenPos;
+                  AddToIntArray(unImplementOffset, tokenPos);
                 end
                 else if tokenID = ptProgram then
                 begin
@@ -1151,22 +1155,72 @@ uses
     end;
   end; { TUnit.ConstructNames }
 
-  procedure BackupInstrumentedFile(const aSrc : string);
+  procedure TUnit.BackupInstrumentedFile(const aSrc : string);
   var
     justName: string;
   begin
     justName := ButLastEl(aSrc, '.', Ord(-1));
-    DeleteFile(justName + '.bk2');
+    System.SysUtils.DeleteFile(justName + '.bk2');
     RenameFile(justName + '.bk1', justName + '.bk2');
     TFile.Copy(aSrc,justName + '.bk1',true);
   end;
 
+  procedure TUnit.InstrumentUses(const aProject: TProject;const ed : TFileEdit;const anIndex : integer);
+
+    function LGetValueOrZero(const anArray: TArray<Integer>; const anIndex : integer): integer;
+    begin
+      if anIndex<Length(anArray) then
+        result := anArray[anIndex]
+      else
+        result := 0;
+    end;
+  var
+    any     : boolean;
+    haveUses : boolean;
+    LStartUses : integer;
+    LEndUses : integer;
+    LUsesOffset : integer;
+    LImplementationOffset: integer;
+    LUnit : TUnit;
+  begin
+    any := AnyInstrumented;
+    LStartUses := LGetValueOrZero(unStartUses,anIndex);
+    LEndUses := LGetValueOrZero(unEndUses,anIndex);
+    LUsesOffset := LGetValueOrZero(unUsesOffset,anIndex);
+    LImplementationOffset := LGetValueOrZero(unImplementOffset,anIndex);
+    haveUses := (LStartUses > 0) and (LEndUses > LStartUses);
+    if haveUses and (not any) then
+      ed.Remove(LStartUses, LEndUses + Length(aProject.prConditEndUses) - 1)
+    else if (not haveUses) and any then
+    begin
+      LUnit := LocateUnit(cProfUnitName);
+      if (LUnit = nil) then
+      begin
+        if LUsesOffset > 0 then
+          ed.Insert(LUsesOffset+Length('uses'),aProject.prAppendUses)
+        else
+          ed.Insert(LImplementationOffset+Length('implementation'),aProject.prCreateUses);
+      end;
+    end;
+  end;
+
   procedure TUnit.Instrument(aProject: TProject; aIDT: TIDTable; aKeepDate,aBackupFile: boolean);
+
+    function LAdjustUsesCount : integer;
+    begin
+      result := Length(unStartUses);
+      if Length(unEndUses) > result then
+        result := Length(unEndUses);
+      if Length(unUsesOffset) > result then
+        result := Length(unUsesOffset);
+      if Length(unImplementOffset) > result then
+        result := Length(unImplementOffset);
+    end;
+
   var
     pr      : TProc;
     any     : boolean;
-    haveUses: boolean;
-    haveInst: boolean;
+    haveInst : boolean;
     ed      : TFileEdit;
     name    : integer;
     api     : TAPI;
@@ -1176,28 +1230,19 @@ uses
     i : integer;
     LPosition : integer;
   begin { TUnit.Instrument }
-    if unImplementOffset = -1 then
+    if Length(unImplementOffset) = 0 then
       raise Exception.Create('No implementation part defined in unit ' + unName + '!');
-
 
     if aBackupFile then
       BackupInstrumentedFile(unFullName);
+
     ed := TFileEdit.Create(unFullName);
     try
+      // update uses...
+      for i := 0 to LAdjustUsesCount-1 do
+        InstrumentUses(aProject, ed, i);
+
       any := AnyInstrumented;
-      haveUses := (unStartUses >= 0) and (unEndUses > unStartUses);
-      if haveUses and (not any) then
-        ed.Remove(unStartUses, unEndUses + Length(aProject.prConditEndUses) - 1)
-      else if (not haveUses) and any then
-      begin
-        if LocateUnit(cProfUnitName) = nil then
-        begin
-          if unUsesOffset <> -1 then
-            ed.Insert(unUsesOffset+Length('uses'),aProject.prAppendUses)
-          else
-            ed.Insert(unImplementOffset+Length('implementation'),aProject.prCreateUses);
-        end;
-      end;
       LCurrentApi := unAPIs.FirstNode;
       while assigned(LCurrentApi) do begin
         api := LCurrentApi.Data;
@@ -1315,6 +1360,16 @@ uses
       end; //while
     end; //with
   end; { TUnit.AnyInstrumented }
+
+
+  procedure TUnit.AddToIntArray(var anArray: TArray<Integer>;const aValue: integer);
+  var LCount : integer;
+  begin
+    LCount := Length(anArray);
+    SetLength(anArray,LCount+1);
+    anArray[LCount] := aValue;
+  end; { TUnit.AddToIntArray }
+
 
   function TUnit.AnyChange: boolean;
   var
@@ -1596,8 +1651,8 @@ uses
       end;
       if not anyInst then
       begin
-        DeleteFile(aIncFileName);
-        DeleteFile(ChangeFileExt(aIncFileName,'.gpd'));
+        System.Sysutils.DeleteFile(aIncFileName);
+        System.Sysutils.DeleteFile(ChangeFileExt(aIncFileName,'.gpd'));
       end;
       for i := 0 to rescan.Count-1 do
       begin
