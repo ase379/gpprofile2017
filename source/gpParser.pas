@@ -1231,7 +1231,7 @@ uses
     ed := TFileEdit.Create(unFullName);
     try
       // update uses...
-      for i := 0 to LAdjustUsesCount do
+      for i := 0 to LAdjustUsesCount-1 do
         InstrumentUses(aProject, ed, i);
 
       any := AnyInstrumented;
