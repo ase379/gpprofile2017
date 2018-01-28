@@ -27,6 +27,7 @@ end;
 procedure TTestThread.Execute;
 begin
   NameThreadForDebugging('AwesomeThread', self.ThreadID);
+  self.namethreadfordebugging('AwesomeThread2', self.ThreadID);
   Sleep(1000);
   inherited;
 end;

@@ -71,11 +71,12 @@ type
   const
   public
     tpstnPos : Cardinal;
+    tpstnWithSelf : string;
   end;
 
   TProcSetThreadNameList = class(TRootNode<TProcSetThreadName>)
     constructor Create; reintroduce;
-    procedure AddPosition(const aPos : Cardinal);
+    procedure AddPosition(const aPos: Cardinal; const aSelfBuffer: string);
   end;
 
   TProc = class
@@ -711,6 +712,8 @@ uses
 
   var
     vUnitFullName: TFileName;
+    LSelfBuffer : string;
+    LDataLowerCase : string;
   begin
     unParsed := true;
     parserStack := TList.Create;
@@ -1009,10 +1012,14 @@ uses
                   end
                   else if (tokenID = ptIdentifier) then
                   begin
-                    if TokenData = aProject.prNameThreadForDebugging then
+                    LDataLowerCase := TokenData.ToLowerInvariant;
+                    if LDataLowerCase = aProject.prNameThreadForDebugging then
                     begin
-                      unProcs.LastNode.Data.unSetThreadNames.AddPosition(tokenPos);
-                    end;
+                      unProcs.LastNode.Data.unSetThreadNames.AddPosition(tokenPos, LSelfBuffer);
+                      LSelfBuffer := '';
+                    end
+                    else if LDataLowerCase = 'self' then
+                      LSelfBuffer := TokenData;
                   end;
 
                   if block = 0 then
@@ -1166,6 +1173,8 @@ uses
     LCurrentApi : INode<TAPI>;
     LCurrentProc : INode<TProc>;
     LCurrentSetTName : INode<TProcSetThreadName>;
+    i : integer;
+    LPosition : integer;
   begin { TUnit.Instrument }
     if unImplementOffset = -1 then
       raise Exception.Create('No implementation part defined in unit ' + unName + '!');
@@ -1223,7 +1232,16 @@ uses
             LCurrentSetTName := pr.unSetThreadNames.FirstNode;
             while assigned(LCurrentSetTName) do
             begin
-              ed.Remove(LCurrentSetTName.Data.tpstnPos-Length(aProject.prGpprofDot),LCurrentSetTName.Data.tpstnPos-1);
+              LPosition := LCurrentSetTName.Data.tpstnPos-Length(aProject.prGpprofDot);
+              if LCurrentSetTName.Data.tpstnWithSelf <> '' then
+                LPosition := LPosition -1 ; // remove } as well
+              ed.Remove(LPosition,LCurrentSetTName.Data.tpstnPos-1);
+              if LCurrentSetTName.Data.tpstnWithSelf <> '' then
+              begin
+                LPosition := LPosition-2-Length(LCurrentSetTName.Data.tpstnWithSelf);
+                ed.Remove(LPosition,LPosition);
+              end;
+
               LCurrentSetTName := LCurrentSetTName.NextNode;
             end;
           end;
@@ -1244,7 +1262,8 @@ uses
             LCurrentSetTName := pr.unSetThreadNames.FirstNode;
             while assigned(LCurrentSetTName) do
             begin
-              ed.Remove(LCurrentSetTName.Data.tpstnPos-Length(aProject.prGpprofDot),LCurrentSetTName.Data.tpstnPos-1);
+              LPosition := LCurrentSetTName.Data.tpstnPos-Length(aProject.prGpprofDot);
+              ed.Remove(LPosition,LCurrentSetTName.Data.tpstnPos-1);
               LCurrentSetTName := LCurrentSetTName.NextNode;
             end;
           end;
@@ -1252,7 +1271,14 @@ uses
           LCurrentSetTName := pr.unSetThreadNames.FirstNode;
           while assigned(LCurrentSetTName) do
           begin
-            ed.Insert(LCurrentSetTName.Data.tpstnPos, aProject.prGpprofDot);
+            LPosition := LCurrentSetTName.Data.tpstnPos;
+            if LCurrentSetTName.Data.tpstnWithSelf <> '' then
+            begin
+              ed.Insert(LPosition-Length('self')-1, '{');
+              ed.Insert(LPosition, '}'+aProject.prGpprofDot);
+            end
+            else
+              ed.Insert(LPosition, aProject.prGpprofDot);
             LCurrentSetTName := LCurrentSetTName.NextNode;
           end;
 
@@ -1775,11 +1801,12 @@ constructor TAPIList.Create;
 
 { TProcSetThreadNameList }
 
-procedure TProcSetThreadNameList.AddPosition(const aPos: Cardinal);
+procedure TProcSetThreadNameList.AddPosition(const aPos: Cardinal; const aSelfBuffer: string);
 var LThreadName : TProcSetThreadName;
 begin
   LThreadName := TProcSetThreadName.Create();
   LThreadName.tpstnPos := aPos;
+  LThreadName.tpstnWithSelf := aSelfBuffer;
   self.AppendNode(LThreadName);
 end;
 
