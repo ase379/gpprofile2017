@@ -16,6 +16,9 @@ unit gpprof;
 
 interface
 
+{$WARN SYMBOL_PLATFORM OFF}
+{$WARN SYMBOL_DEPRECATED OFF}
+
 uses System.Classes;
 
 procedure ProfilerStart;
