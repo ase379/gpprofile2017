@@ -51,7 +51,7 @@
     <PropertyGroup Condition="'$(Base)'!=''">
         <DCC_DcuOutput>..\DCU</DCC_DcuOutput>
         <DCC_ExeOutput>..\bin</DCC_ExeOutput>
-        <DCC_UnitSearchPath>..\lib\SynEdit\source;OutSources\EZDSL;OutSources\CastaliaDelphiParser;..\GPComponents\GPNative\source;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
+        <DCC_UnitSearchPath>..\include;..\lib\SynEdit\source;OutSources\EZDSL;OutSources\CastaliaDelphiParser;..\GPComponents\GPNative\source;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
         <VerInfo_Locale>1033</VerInfo_Locale>
         <DCC_Namespace>Vcl;Vcl.Imaging;Vcl.Touch;Vcl.Samples;Vcl.Shell;System;Xml;Data;Datasnap;Web;Soap;Winapi;System.Win;$(DCC_Namespace)</DCC_Namespace>
         <VerInfo_Build>5</VerInfo_Build>
