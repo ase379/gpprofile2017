@@ -1723,7 +1723,7 @@ uses
     prProfileExitAsm  := prConditStart + ' push eax; mov eax, %d; call ProfilerExitProc; pop eax ' + prConditEnd;
     prProfileAPI      := prConditStartAPI + '%s' + prConditEndAPI;
     prAPIIntro        := 'GPP:';
-    prNameThreadForDebugging := 'NameThreadForDebugging';
+    prNameThreadForDebugging := 'namethreadfordebugging';
     prGpprofDot := 'gpprof.';
   end; { TProject.PrepareComments }
 
