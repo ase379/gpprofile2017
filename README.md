@@ -2,7 +2,7 @@
 
 Automatically exported from code.google.com/p/gpprofile2011.
 
-Fork with proper support for Delphi unicode versions (Delphi 2010 and higher). The fork starts with version 1.4.0.
+Fork with proper support for Delphi unicode versions (Delphi XE and higher). The fork starts with version 1.4.0.
 
 Unit names with namespaces are supported now.
 
@@ -14,7 +14,7 @@ Additional features are:
 - The PRF output filename can be now be configured using several placeholders, e.g. the ModuleName or the ProcessName and ID.
 - The help system now uses CHM instead of HLP. HLP is not supported anymore by modern OSes.
 
-# Project Home Info
+# Credits #
 
 GpProfile allows easily find bottlenecks and significantly improve perfomance of your Delphi applications. It is a must-have tool for any Delphi developer.
 
@@ -25,14 +25,6 @@ Small changes to make it work with Delphi 2009, 2010, XE: Anton Alisov (alan008@
 Small changes to make it work with Delphi XE2, XE3: Johan Bontes (johan@digitsolutions.nl)
 
 Note: source code must be compiled with Delphi XE or higher, as generics are used.
-
-You can support the project by [Donating](http://emorio.com).
-
-You may also like:
-
-[OmniThreadLibrary](https://code.google.com/p/omnithreadlibrary) - incredible multithreading library for Delphi
-
-[SapMM](https://code.google.com/p/sapmm) - outstanding and mega-fast scalable memory manager for multithreaded Delphi applications.
 
 # Introduction #
 
