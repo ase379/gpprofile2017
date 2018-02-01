@@ -9,9 +9,9 @@ uses GpString;
 type
   TIDTable = class
   private
-    idUnits: pointer;
-    idClass: pointer;
-    idProcs: pointer;
+    idUnits: TObject;
+    idClass: TObject;
+    idProcs: TObject;
   public
     constructor Create;
     destructor  Destroy; override;
@@ -25,25 +25,21 @@ uses
   Windows,
   SysUtils,
   IniFiles,
-  EZDSLBSE,
-  EZDSLSUP,
-  EZDSLSKP,
+  GppTree,
   GpProfH,
   GpHugeF,
   gppCommon;
 
 type
   TIDTE = class
-    eName: PAnsiChar;
+    eName: AnsiString;
     eID  : integer;
     constructor Create(name: ansistring; id: integer);
-    destructor  Destroy; override;
   end;
 
   TIDTUE = class(TIDTE)
-    eQual: PAnsiChar;
+    eQual: AnsiString;
     constructor Create(name, qual: ansistring; id: integer); reintroduce;
-    destructor  Destroy; override;
   end;
 
   TIDTCE = class(TIDTE)
@@ -58,7 +54,7 @@ type
     constructor Create(name: AnsiString; id, uid, cid, firstLn: integer);
   end;
 
-  TIDTU = class(TSkipList)
+  TIDTU = class(TRootNode<TIDTUE>)
     constructor Create; reintroduce;
     function    Insert(key, qual: AnsiString): integer;
     procedure   Dump(var f: TGpHugeFile);
@@ -66,7 +62,7 @@ type
     idCnt : integer;
   end;
 
-  TIDTC = class(TSkipList)
+  TIDTC = class(TRootNode<TIDTCE>)
     constructor Create; reintroduce;
     function    Insert(key: AnsiString; uid: integer): integer;
     procedure   Dump(var f: TGpHugeFile);
@@ -74,7 +70,7 @@ type
     idCnt : integer;
   end;
 
-  TIDTP = class(TSkipList)
+  TIDTP = class(TRootNode<TIDTPE>)
     constructor Create; reintroduce;
     function    Insert(key: AnsiString; uid, cid, firstLn: integer): integer;
     procedure   Dump(var f: TGpHugeFile);
@@ -83,30 +79,36 @@ type
     idCnt: integer;
   end;
 
-function TIDTCompare(data1, data2: pointer): integer;
+function TIDTCompare(data1,data2: INode<TIDTUE>): integer; overload;
 begin
-  Result := StrIComp(TIDTE(data1).eName,TIDTE(data2).eName);
+  Result := StrIComp(pAnsiChar(data1.Data.eName),pAnsiChar(data2.data.eName));
 end; { TIDTCompare }
 
-function TIDTIDCompare(data1, data2: pointer): integer;
+function TIDTCompare(data1,data2: INode<TIDTCE>): integer; overload;
+begin
+  Result := StrIComp(pAnsiChar(data1.Data.eName),pAnsiChar(data2.data.eName));
+end; { TIDTCompare }
+
+function TIDTCompare(data1,data2: INode<TIDTPE>): integer; overload;
+begin
+  Result := StrIComp(pAnsiChar(data1.Data.eName),pAnsiChar(data2.data.eName));
+end; { TIDTCompare }
+
+
+function TIDTIDCompare(data1,data2: INode<TIDTUE>): integer;  overload;
 begin
   Result := TIDTE(data1).eID - TIDTE(data2).eID;
 end; { TIDTCompare }
 
-procedure TIDTUDispose(data: pointer);
+function TIDTIDCompare(data1,data2: INode<TIDTCE>): integer;  overload;
 begin
-  TIDTUE(data).Destroy;
-end; { TIDTUDispose }
+  Result := TIDTE(data1).eID - TIDTE(data2).eID;
+end; { TIDTCompare }
 
-procedure TIDTCDispose(data: pointer);
+function TIDTIDCompare(data1,data2: INode<TIDTPE>): integer;  overload;
 begin
-  TIDTCE(data).Destroy;
-end; { TIDTCDispose }
-
-procedure TIDTPDispose(data: pointer);
-begin
-  TIDTPE(data).Destroy;
-end; { TIDTPDispose }
+  Result := TIDTE(data1).eID - TIDTE(data2).eID;
+end; { TIDTCompare }
 
 { TIDTable }
 
@@ -125,18 +127,18 @@ end;
 
 constructor TIDTable.Create;
 begin
-  idUnits := pointer(TIDTU.Create);
-  idClass := pointer(TIDTC.Create);
-  idProcs := pointer(TIDTP.Create);
+  idUnits := TIDTU.Create;
+  idClass := TIDTC.Create;
+  idProcs := TIDTP.Create;
   inherited Create;
 end;
 
 destructor TIDTable.Destroy;
 begin
   inherited Destroy;
-  TIDTU(idUnits).Free;
-  TIDTC(idClass).Free;
-  TIDTP(idProcs).Free;
+  idUnits.Free;
+  idClass.Free;
+  idProcs.Free;
 end;
 
 procedure TIDTable.Dump(fileName: string);
@@ -165,8 +167,7 @@ end;
 constructor TIDTU.Create;
 begin
   inherited Create(true);
-  Compare     := TIDTCompare;
-  DisposeData := TIDTUDispose;
+  CompareFunc := TIDTCompare;
   idCnt       := 1;
 end;
 
@@ -182,33 +183,36 @@ end; { WriteString }
 
 procedure TIDTU.Dump(var f: TGpHugeFile);
 var
-  cursor: TListCursor;
+  LEntry: INode<TIDTUE>;
 begin
-  Compare := TIDTIDCompare;
+  CompareFunc := TIDTIDCompare;
   WriteTag(f,PR_UNITTABLE);
   WriteInt(f,Count);
-  cursor := Next(SetBeforeFirst);
-  while not IsAfterLast(cursor) do begin
-    with TIDTUE(Examine(cursor)) do begin
+  LEntry := FirstNode;
+  while assigned(LEntry) do begin
+    with LEntry.data do begin
       WriteString(f,eName);
       WriteString(f,eQual);
     end;
-    cursor := Next(cursor);
+    LEntry := LEntry.NextNode;
   end;
 end;
 
 function TIDTU.Insert(key, qual: AnsiString): integer;
 var
-  p     : TIDTUE;
-  cursor: TListCursor;
+  LSearchNode,
+  LResultNode : INode<TIDTUE>;
 begin
-  p := TIDTUE.Create(key,qual,idCnt);
-  if not Search(cursor,p) then begin
-    inherited Insert(cursor,p);
+  LSearchNode := TNode<TIDTUE>.Create();
+  LSearchNode.Data := TIDTUE.Create(key,qual,idCnt);
+  if not FindNode(LSearchNode, LResultNode) then
+  begin
+    AppendNode(LSearchNode.data);
+    result := LSearchNode.Data.eID;
     Inc(idCnt);
   end
-  else p.Destroy;
-  Result := TIDTUE(Examine(cursor)).eID;
+  else
+    result := LResultNode.Data.eID;
 end;
 
 { TIDTC }
@@ -216,40 +220,44 @@ end;
 constructor TIDTC.Create;
 begin
   inherited Create(true);
-  Compare     := TIDTCompare;
-  DisposeData := TIDTCDispose;
+  CompareFunc     := TIDTCompare;
   idCnt       := 1;
 end;
 
 procedure TIDTC.Dump(var f: TGpHugeFile);
 var
-  cursor: TListCursor;
+  LCurrentNode: INode<TIDTCE>;
 begin
-  Compare := TIDTIDCompare;
+  CompareFunc := TIDTIDCompare;
   WriteTag(f,PR_CLASSTABLE);
   WriteInt(f,Count);
-  cursor := Next(SetBeforeFirst);
-  while not IsAfterLast(cursor) do begin
-    with TIDTCE(Examine(cursor)) do begin
+  LCurrentNode := FirstNode;
+  while assigned(LCurrentNode) do
+  begin
+    with LCurrentNode.Data do
+    begin
       WriteString(f,eName);
       WriteInt(f,eUID);
     end;
-    cursor := Next(cursor);
+    LCurrentNode := LCurrentNode.NextNode;
   end;
 end;
 
 function TIDTC.Insert(key: AnsiString; uid: integer): integer;
 var
-  p     : TIDTCE;
-  cursor: TListCursor;
+  LSearchNode,
+  LResultNode : INode<TIDTCE>;
 begin
-  p := TIDTCE.Create(key,idCnt,uid);
-  if not Search(cursor,p) then begin
-    inherited Insert(cursor,p);
+  LSearchNode := TNode<TIDTCE>.Create();
+  LSearchNode.Data := TIDTCE.Create(key,idCnt,uid);
+  if not FindNode(LSearchNode, LResultNode) then
+  begin
+    AppendNode(LSearchNode.data);
+    result := LSearchNode.Data.eID;
     Inc(idCnt);
   end
-  else p.Destroy;
-  Result := TIDTCE(Examine(cursor)).eID;
+  else
+    result := LResultNode.Data.eID;
 end;
 
 { TIDTP }
@@ -257,44 +265,44 @@ end;
 constructor TIDTP.Create;
 begin
   inherited Create(true);
-  Compare     := TIDTCompare;
-  DisposeData := TIDTPDispose;
+  CompareFunc := TIDTCompare;
   idCnt       := 1;
 end;
 
 procedure TIDTP.Dump(var f: TGpHugeFile);
 var
-  cursor: TListCursor;
-  p: TIDTPE;
+  LCurrentNode: INode<TIDTPE>;
 begin
-  Compare := TIDTIDCompare;
+  CompareFunc := TIDTIDCompare;
   WriteTag(f,PR_PROCTABLE);
   WriteInt(f,Count);
-  cursor := Next(SetBeforeFirst);
-  while not IsAfterLast(cursor) do begin
-    p := TIDTPE(Examine(cursor));
-    with p do begin
+  LCurrentNode := FirstNode;
+  while assigned(LCurrentNode) do begin
+    with LCurrentNode.data do begin
       WriteString(f,eName);
       WriteInt(f,eUID);
       WriteInt(f,eCID);
       WriteInt(f,eFirstLn);
     end;
-    cursor := Next(cursor);
+    LCurrentNode := LCurrentNode.NextNode;
   end;
 end;
 
 function TIDTP.Insert(key: AnsiString; uid, cid, firstLn: integer): integer;
 var
-  p     : TIDTPE;
-  cursor: TListCursor;
+  LSearchNode,
+  LResultNode : INode<TIDTPE>;
 begin
-  p := TIDTPE.Create(key,idCnt,uid,cid,firstLn);
-  if not Search(cursor,p) then begin
-    inherited Insert(cursor,p);
+  LSearchNode := TNode<TIDTPE>.Create();
+  LSearchNode.Data := TIDTPE.Create(key,idCnt,uid,cid,firstLn);
+  if not FindNode(LSearchNode, LResultNode) then
+  begin
+    AppendNode(LSearchNode.data);
+    result := LSearchNode.Data.eID;
     Inc(idCnt);
   end
-  else p.Destroy;
-  Result := TIDTE(Examine(cursor)).eID;
+  else
+    result := LResultNode.Data.eID;
 end;
 
 procedure TIDTP.WriteProcSize(fileName: string);
@@ -314,16 +322,10 @@ end;
 constructor TIDTE.Create(name: ansistring; id: integer);
 begin
   inherited Create;
-  GetMem(eName,Length(name)+1);
-  StrPCopy(eName,name);
+  eName := name;
   eID := id;
 end;
 
-destructor TIDTE.Destroy;
-begin
-  FreeMem(eName);
-  inherited Destroy;
-end;
 
 { TIDTPE }
 
@@ -339,16 +341,10 @@ end;
 
 constructor TIDTUE.Create(name, qual: ansistring; id: integer);
 begin
-  GetMem(eQual,Length(qual)+1);
-  StrPCopy(eQual,qual);
+  eQual := qual;
   inherited Create(name, id);
 end;
 
-destructor TIDTUE.Destroy;
-begin
-  inherited Destroy;
-  FreeMem(eQual);
-end;
 
 { TIDTCE }
 

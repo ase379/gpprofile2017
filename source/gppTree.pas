@@ -165,7 +165,6 @@ begin
 end;
 
 destructor TRootNode<T>.Destroy;
-
 begin
   ClearNodes;
   inherited;

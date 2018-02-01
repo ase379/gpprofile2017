@@ -6,7 +6,6 @@ interface
 
 uses
   Windows,
-  EZDSLDBL,
   GpHugeF;
 
 type
@@ -185,8 +184,7 @@ implementation
 
 uses
   Forms,
-  EZDSLBSE,
-  SysUtils,
+  System.SysUtils,
   GpProfH,
   gppCommon;
 
