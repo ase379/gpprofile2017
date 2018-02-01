@@ -307,6 +307,8 @@ type
     procedure actJumpToCallGraphUpdate(Sender: TObject);
     procedure lvCalleesClick(Sender: TObject);
     procedure splitCallersMoved(Sender: TObject);
+    procedure clbUnitsKeyPress(Sender: TObject; var Key: Char);
+    procedure clbClassesKeyPress(Sender: TObject; var Key: Char);
   private
     openProject               : TProject;
     openProfile               : TResults;
@@ -1586,6 +1588,13 @@ begin
   end;
 end;
 
+procedure TfrmMain.clbUnitsKeyPress(Sender: TObject; var Key: Char);
+begin
+  if Key = #32 then
+    clbUnitsClick(Sender);
+  inherited;
+end;
+
 procedure TfrmMain.clbProcsClickCheck(Sender: TObject; index: Integer);
 begin
   ClickProcs(index,true);
@@ -1859,6 +1868,13 @@ begin
     finally un.Free; end;
     RecheckTopClass;
   end;
+end;
+
+procedure TfrmMain.clbClassesKeyPress(Sender: TObject; var Key: Char);
+begin
+  if Key = #32 then
+    clbClassesClick(Sender);
+  inherited;
 end;
 
 procedure TfrmMain.ClickProcs(index: integer; recreateCl: boolean);

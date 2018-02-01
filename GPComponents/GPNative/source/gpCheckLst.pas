@@ -382,8 +382,9 @@ end;
 
 procedure TGpCheckListBox.KeyPress(var Key: Char);
 begin
+  if (Key = #32) then
+    ToggleClickCheck(ItemIndex);
   inherited;
-  if (Key = ' ') then ToggleClickCheck(ItemIndex);
 end;
     
 procedure TGpCheckListBox.MouseDown(Button: TMouseButton; Shift: TShiftState;
