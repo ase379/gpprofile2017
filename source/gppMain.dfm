@@ -375,6 +375,7 @@ object frmMain: TfrmMain
               ItemHeight = 13
               TabOrder = 0
               OnClick = clbUnitsClick
+              OnKeyPress = clbUnitsKeyPress
             end
             object lblUnits: TStaticText
               Left = 4
@@ -407,6 +408,7 @@ object frmMain: TfrmMain
               ItemHeight = 13
               TabOrder = 0
               OnClick = clbClassesClick
+              OnKeyPress = clbClassesKeyPress
             end
             object lblClasses: TStaticText
               Left = 3
