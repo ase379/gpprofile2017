@@ -32,9 +32,9 @@ GpProfile is a source code instrumenting profiler for Delphi.
 
 Source codes for gpprofile2017 can be compiled using Delphi XE and higher.
 
-Executable file (gpprof.exe) is able to work and profile sources for Delphi and higher.
+Executable file (gpprof.exe) is able to work and profile sources for Delphi XE and higher.
 
-# Details #
+# How-To #
 
 Easy as 1-2-3:
 
