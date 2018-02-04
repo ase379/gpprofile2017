@@ -42,6 +42,6 @@ Easy as 1-2-3:
 
 2) Check procedures, for which you want to measure execution time. Click "Instrument" button. Special calls will be added in each chosen procedure.
 
-3) Copy gpprof.pas and gpprofh.pas into your application sources folder or add the include dir to the search path. Build your application in Delphi, run it, do some tasks and close.
+3) Copy the content of the include dir into your application sources folder or add the include dir to the search path. Build your application in Delphi, run it, do some tasks and close.
 
 After that return to GpProfile window and enjoy the results! :)
