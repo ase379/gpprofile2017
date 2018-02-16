@@ -57,7 +57,7 @@ begin
   PageControl1.ActivePage := TabSheet1;
   verInfo := TGpVersionInfo.Create(ParamStr(0));
   try
-    lblVersion.Caption := Format(lblVersion.Caption,[verInfo.GetVersion(IFF(verInfo.IsDebug,verFullDotted,verShort2to3))]);
+    lblVersion.Caption := Format(lblVersion.Caption,[verInfo.GetVersion(verFullDotted)]);
     if verInfo.IsPrivateBuild then lblVersion.Caption := lblVersion.Caption + ' internal';
     if verInfo.IsPrerelease then lblVersion.Caption := lblVersion.Caption + ' beta';
   finally verInfo.Free; end;

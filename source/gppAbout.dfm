@@ -48,10 +48,6 @@ object frmAbout: TfrmAbout
       TabOrder = 1
       object TabSheet1: TTabSheet
         Caption = 'About'
-        ExplicitLeft = 0
-        ExplicitTop = 0
-        ExplicitWidth = 0
-        ExplicitHeight = 0
         object Image1: TImage
           Left = 24
           Top = 16
@@ -91,7 +87,7 @@ object frmAbout: TfrmAbout
           Top = 16
           Width = 104
           Height = 13
-          Caption = 'GpProfile 2011 (v. %s)'
+          Caption = 'GpProfile 2017 (v. %s)'
         end
         object Label3: TLabel
           Left = 72
@@ -394,7 +390,6 @@ object frmAbout: TfrmAbout
           Top = 1
           Width = 120
           Height = 47
-          TabOrder = 0
           Glyph.Data = {
             CA160000424DCA16000000000000360400002800000072000000290000000100
             0800000000009412000000000000000000000001000000010000000000000000
@@ -579,42 +574,49 @@ object frmAbout: TfrmAbout
             6B6B6B6B6B6B6B6B6B6B6B6B6B6B6B6B6B6B6B6B6B6B6B6B6B6B6B6B6B6B6B6B
             6B6B6B6B6B6B6B6B6B6B6B6B6B6B6B6B6B6B6B6B6B6B6B6B6B6B6B6B6B6B6B6B
             6B6B6B6B6B6B6B6B6B6B6B4C0000}
+          TabOrder = 0
         end
       end
       object TabSheet4: TTabSheet
         Caption = 'What'#39's New'
         ImageIndex = 3
-        ExplicitLeft = 0
-        ExplicitTop = 0
-        ExplicitWidth = 0
-        ExplicitHeight = 0
         object RichEdit1: TRichEdit
           Left = 16
           Top = 16
           Width = 353
           Height = 257
           Color = clBtnFace
+          Font.Charset = ANSI_CHARSET
+          Font.Color = clWindowText
+          Font.Height = -11
+          Font.Name = 'MS Sans Serif'
+          Font.Style = []
+          ParentFont = False
           ReadOnly = True
           ScrollBars = ssVertical
           TabOrder = 0
+          Zoom = 100
         end
       end
       object TabSheet5: TTabSheet
         Caption = 'Open Source'
         ImageIndex = 4
-        ExplicitLeft = 0
-        ExplicitTop = 0
-        ExplicitWidth = 0
-        ExplicitHeight = 0
         object RichEdit2: TRichEdit
           Left = 16
           Top = 16
           Width = 353
           Height = 257
           Color = clBtnFace
+          Font.Charset = ANSI_CHARSET
+          Font.Color = clWindowText
+          Font.Height = -11
+          Font.Name = 'MS Sans Serif'
+          Font.Style = []
+          ParentFont = False
           ReadOnly = True
           ScrollBars = ssVertical
           TabOrder = 0
+          Zoom = 100
         end
       end
     end
