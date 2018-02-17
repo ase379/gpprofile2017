@@ -1,3 +1,9 @@
 [submodule "lib/SynEdit"]
 	path = lib/SynEdit
 	url = https://github.com/SynEdit/SynEdit.git
+[submodule "lib/VirtualTreeView"]
+	path = lib/VirtualTreeView
+	url = https://github.com/Virtual-TreeView/Virtual-TreeView.git
+
+	
+	
