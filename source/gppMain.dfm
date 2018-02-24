@@ -459,7 +459,7 @@ object frmMain: TfrmMain
             Top = 0
             Width = 604
             Height = 311
-            ActivePage = tabThreads
+            ActivePage = tabProcedures
             Align = alClient
             HotTrack = True
             TabOrder = 0
@@ -580,16 +580,13 @@ object frmMain: TfrmMain
                   BevelOuter = bvNone
                   TabOrder = 0
                   Visible = False
-                  DesignSize = (
-                    596
-                    82)
                   object lvCallers: TGpArrowListView
                     Tag = 79
-                    Left = 18
-                    Top = 1
-                    Width = 574
-                    Height = 79
-                    Anchors = [akLeft, akTop, akRight, akBottom]
+                    Left = 0
+                    Top = 0
+                    Width = 596
+                    Height = 82
+                    Align = alClient
                     Columns = <
                       item
                         Caption = 'Procedure (Callers)'
@@ -653,6 +650,10 @@ object frmMain: TfrmMain
                     OnDblClick = lvCallersDblClick
                     OnColumnResize = lvProcsColumnResize
                     OnColumnTrack = lvCalleesColumnTrack
+                    ExplicitLeft = 18
+                    ExplicitTop = 1
+                    ExplicitWidth = 574
+                    ExplicitHeight = 79
                   end
                 end
                 object pnlCurrent: TPanel
@@ -663,16 +664,13 @@ object frmMain: TfrmMain
                   Align = alClient
                   BevelOuter = bvNone
                   TabOrder = 1
-                  DesignSize = (
-                    596
-                    70)
                   object lvProcs: TGpArrowListView
                     Tag = 68
-                    Left = 17
-                    Top = 1
-                    Width = 575
-                    Height = 65
-                    Anchors = [akLeft, akTop, akRight, akBottom]
+                    Left = 0
+                    Top = 0
+                    Width = 596
+                    Height = 70
+                    Align = alClient
                     Columns = <
                       item
                         Caption = 'Procedure'
@@ -737,6 +735,10 @@ object frmMain: TfrmMain
                     OnSelectItem = lvProcsSelectItem
                     OnColumnResize = lvProcsColumnResize
                     OnColumnTrack = lvCalleesColumnTrack
+                    ExplicitLeft = 17
+                    ExplicitTop = 1
+                    ExplicitWidth = 575
+                    ExplicitHeight = 65
                   end
                 end
               end
@@ -749,16 +751,13 @@ object frmMain: TfrmMain
                 BevelOuter = bvNone
                 TabOrder = 2
                 Visible = False
-                DesignSize = (
-                  596
-                  91)
                 object lvCallees: TGpArrowListView
                   Tag = 89
-                  Left = 17
-                  Top = 1
-                  Width = 575
-                  Height = 89
-                  Anchors = [akLeft, akTop, akRight, akBottom]
+                  Left = 0
+                  Top = 0
+                  Width = 596
+                  Height = 91
+                  Align = alClient
                   Columns = <
                     item
                       Caption = 'Procedure (Callee)'
@@ -822,6 +821,10 @@ object frmMain: TfrmMain
                   OnDblClick = lvCallersDblClick
                   OnColumnResize = lvProcsColumnResize
                   OnColumnTrack = lvCalleesColumnTrack
+                  ExplicitLeft = 17
+                  ExplicitTop = 1
+                  ExplicitWidth = 575
+                  ExplicitHeight = 89
                 end
               end
               object pnlBottom: TPanel
@@ -969,15 +972,12 @@ object frmMain: TfrmMain
             object tabThreads: TTabSheet
               Caption = 'Threads'
               ImageIndex = -1
-              DesignSize = (
-                596
-                283)
               object lvThreads: TGpArrowListView
-                Left = 4
-                Top = 32
-                Width = 589
-                Height = 202
-                Anchors = [akLeft, akTop, akRight, akBottom]
+                Left = 0
+                Top = 0
+                Width = 596
+                Height = 283
+                Align = alClient
                 Columns = <
                   item
                     Caption = 'ThreadID'
@@ -1016,6 +1016,10 @@ object frmMain: TfrmMain
                 TabOrder = 0
                 ViewStyle = vsReport
                 OnCompare = lvThreadsCompare
+                ExplicitLeft = 4
+                ExplicitTop = 32
+                ExplicitWidth = 589
+                ExplicitHeight = 202
               end
             end
           end
@@ -1450,7 +1454,7 @@ object frmMain: TfrmMain
     Left = 47
     Top = 134
     Bitmap = {
-      494C01011D002100100010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
+      494C01011D002100040010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000008000000001002000000000000080
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000
@@ -2707,7 +2711,7 @@ object frmMain: TfrmMain
     Left = 47
     Top = 164
     Bitmap = {
-      494C010103000500100010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
+      494C010103000500040010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000001000000001002000000000000010
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000
