@@ -459,7 +459,7 @@ object frmMain: TfrmMain
             Top = 0
             Width = 604
             Height = 311
-            ActivePage = tabProcedures
+            ActivePage = TabSheet1
             Align = alClient
             HotTrack = True
             TabOrder = 0
@@ -650,10 +650,6 @@ object frmMain: TfrmMain
                     OnDblClick = lvCallersDblClick
                     OnColumnResize = lvProcsColumnResize
                     OnColumnTrack = lvCalleesColumnTrack
-                    ExplicitLeft = 18
-                    ExplicitTop = 1
-                    ExplicitWidth = 574
-                    ExplicitHeight = 79
                   end
                 end
                 object pnlCurrent: TPanel
@@ -735,10 +731,6 @@ object frmMain: TfrmMain
                     OnSelectItem = lvProcsSelectItem
                     OnColumnResize = lvProcsColumnResize
                     OnColumnTrack = lvCalleesColumnTrack
-                    ExplicitLeft = 17
-                    ExplicitTop = 1
-                    ExplicitWidth = 575
-                    ExplicitHeight = 65
                   end
                 end
               end
@@ -821,10 +813,6 @@ object frmMain: TfrmMain
                   OnDblClick = lvCallersDblClick
                   OnColumnResize = lvProcsColumnResize
                   OnColumnTrack = lvCalleesColumnTrack
-                  ExplicitLeft = 17
-                  ExplicitTop = 1
-                  ExplicitWidth = 575
-                  ExplicitHeight = 89
                 end
               end
               object pnlBottom: TPanel
@@ -924,7 +912,7 @@ object frmMain: TfrmMain
                 Height = 21
                 Style = csDropDownList
                 TabOrder = 0
-                OnChange = cbxSelectThreadUnitChange
+                OnChange = cbxOverallThreadChange
               end
               object lvUnits: TGpArrowListView
                 Left = 4
@@ -1016,10 +1004,79 @@ object frmMain: TfrmMain
                 TabOrder = 0
                 ViewStyle = vsReport
                 OnCompare = lvThreadsCompare
-                ExplicitLeft = 4
-                ExplicitTop = 32
-                ExplicitWidth = 589
-                ExplicitHeight = 202
+              end
+            end
+            object TabSheet1: TTabSheet
+              Caption = 'tabOverall'
+              ImageIndex = 4
+              object vstUnits: TVirtualStringTree
+                Left = 0
+                Top = 41
+                Width = 596
+                Height = 242
+                Align = alClient
+                Header.AutoSizeIndex = 0
+                Header.Options = [hoColumnResize, hoDrag, hoShowSortGlyphs, hoVisible]
+                TabOrder = 0
+                OnFreeNode = vstUnitsFreeNode
+                OnGetText = vstUnitsGetText
+                Columns = <
+                  item
+                    Position = 0
+                    Width = 250
+                    WideText = 'Name'
+                  end
+                  item
+                    Position = 1
+                    Width = 150
+                    WideText = '% Time'
+                  end
+                  item
+                    Position = 2
+                    Width = 150
+                    WideText = 'Time'
+                  end
+                  item
+                    Position = 4
+                    Width = 150
+                    WideText = 'Time with children'
+                  end
+                  item
+                    Position = 3
+                    Width = 150
+                    WideText = 'Calls'
+                  end
+                  item
+                    Position = 5
+                    WideText = 'Time min'
+                  end
+                  item
+                    Position = 6
+                    WideText = 'Time max'
+                  end
+                  item
+                    Position = 7
+                    WideText = 'Time avg.'
+                  end>
+              end
+              object Panel6: TPanel
+                Left = 0
+                Top = 0
+                Width = 596
+                Height = 41
+                Align = alTop
+                BevelOuter = bvNone
+                Caption = 'Panel6'
+                TabOrder = 1
+                object cbxOverallThread: TComboBox
+                  Left = 86
+                  Top = 12
+                  Width = 199
+                  Height = 21
+                  Style = csDropDownList
+                  TabOrder = 0
+                  OnChange = cbxOverallThreadChange
+                end
               end
             end
           end

@@ -10,13 +10,14 @@ uses
   ActnList, ImgList, Buttons, ToolWin, gppResults, Grids,
   gpArrowListView, DProjUnit, SynEdit,
   SynEditHighlighter, SynEditCodeFolding, SynHighlighterPas, System.ImageList,
-  System.Actions,gppCurrentPrefs;
+  System.Actions,gppCurrentPrefs, VirtualTrees;
 
 const
   WM_ReloadProfile = WM_USER;
   WM_FormShow      = WM_USER+1;
 
 type
+
   TfrmMain = class(TForm)
     Project1: TMenuItem;
     OpenDialog: TOpenDialog;
@@ -210,6 +211,10 @@ type
     actHelpJoinMailingList: TAction;
     OpenDialog1: TOpenDialog;
     SynPasSyn: TSynPasSyn;
+    TabSheet1: TTabSheet;
+    vstUnits: TVirtualStringTree;
+    Panel6: TPanel;
+    cbxOverallThread: TComboBox;
     procedure FormCreate(Sender: TObject);
     procedure MRUClick(Sender: TObject; LatestFile: String);
     procedure FormDestroy(Sender: TObject);
@@ -240,7 +245,7 @@ type
     procedure cbxSelectThreadClassChange(Sender: TObject);
     procedure lvUnitsCompare(Sender: TObject; Item1, Item2: TListItem;
       Data: Integer; var Compare: Integer);
-    procedure cbxSelectThreadUnitChange(Sender: TObject);
+    procedure cbxOverallThreadChange(Sender: TObject);
     procedure lvThreadsCompare(Sender: TObject; Item1, Item2: TListItem;
       Data: Integer; var Compare: Integer);
     procedure FormShow(Sender: TObject);
@@ -309,6 +314,9 @@ type
     procedure splitCallersMoved(Sender: TObject);
     procedure clbUnitsKeyPress(Sender: TObject; var Key: Char);
     procedure clbClassesKeyPress(Sender: TObject; var Key: Char);
+    procedure vstUnitsGetText(Sender: TBaseVirtualTree; Node: PVirtualNode;
+      Column: TColumnIndex; TextType: TVSTTextType; var CellText: string);
+    procedure vstUnitsFreeNode(Sender: TBaseVirtualTree; Node: PVirtualNode);
   private
     openProject               : TProject;
     openProfile               : TResults;
@@ -363,6 +371,8 @@ type
     procedure FillClassView(resortOn: integer = -1);
     procedure FillUnitView(resortOn: integer = -1);
     procedure FillThreadView(resortOn: integer = -1);
+    procedure FillOverallView();
+
     function  GetThreadName(index: integer): string;
     procedure EnumUserSettings(settings: TStrings);
     procedure FillDelphiVer;
@@ -428,6 +438,7 @@ uses
   BdsProjUnit,
   BdsVersions,
   IniFiles,
+  gppmain.tree.types,
   GpString,
   GpProfH,
   GpIFF,
@@ -956,6 +967,9 @@ begin
   cbxSelectThreadUnit.Items.Assign(cbxSelectThreadProc.Items);
   cbxSelectThreadUnit.Enabled   := cbxSelectThreadProc.Enabled;
   cbxSelectThreadUnit.ItemIndex := cbxSelectThreadProc.ItemIndex;
+  cbxOverallThread.Items.Assign(cbxSelectThreadProc.Items);
+  cbxOverallThread.Enabled   := cbxSelectThreadProc.Enabled;
+  cbxOverallThread.ItemIndex := cbxSelectThreadProc.ItemIndex;
   frmExport.expSelectThreadProc.Items.Assign(cbxSelectThreadProc.Items);
   frmExport.expSelectThreadProc.Items.Add('Summary');
   frmExport.expSelectThreadProc.Enabled := (frmExport.expSelectThreadProc.Items.Count > 3);
@@ -1076,6 +1090,85 @@ begin
   end;
 end; { TfrmMain.FillClassView }
 
+
+procedure TfrmMain.FillOverallView();
+
+  Procedure AddProc(const aParent : PVirtualNode; const ACID : integer);
+  var
+    i        : integer;
+    LData : PProfilingInfoRec;
+    LNode : PVirtualNode;
+  begin
+    for i := Low(openProfile.resProcedures)+1 to High(openProfile.resProcedures) do begin
+      with openProfile.resProcedures[i] do begin
+        if (not actHideNotExecuted.Checked) or (peProcCnt[cbxSelectThreadProc.ItemIndex] > 0) then begin
+          LNode := vstUnits.AddChild(aParent);
+          LData := PProfilingInfoRec(LNode.GetData);
+          LData.ProfilingType := pit_proc;
+          LData.ParentClassId := aCid;
+          LData.ProcId := i;
+          LData.ThreadProcId := cbxSelectThreadProc.ItemIndex;
+        end;
+      end;
+    end;
+  end;
+
+  procedure AddClass(const aParent : PVirtualNode; const aUID : integer);
+  var
+    i        : integer;
+    LData : PProfilingInfoRec;
+    LNode : PVirtualNode;
+  begin
+    for i := Low(openProfile.resClasses)+1 to High(openProfile.resClasses) do begin
+      with openProfile.resClasses[i] do begin
+        if (not actHideNotExecuted.Checked) or (ceTotalCnt[cbxSelectThreadClass.ItemIndex] > 0) then
+          if openProfile.resClasses[i].ceUID = aUID then
+          begin
+            LNode := vstUnits.AddChild(aParent);
+            LData := PProfilingInfoRec(LNode.GetData);
+            LData.ProfilingType := pit_class;
+            LData.ParentUnitId := aUid;
+            LData.ClassId := i;
+            LData.ThreadClassId := cbxSelectThreadUnit.ItemIndex;
+            AddProc(LNode, i);
+          end;
+      end;
+   end;
+  end;
+
+
+
+var
+  LData : PProfilingInfoRec;
+  LNode : PVirtualNode;
+  i        : integer;
+
+begin
+  vstUnits.BeginUpdate;
+  try
+    vstUnits.Clear;
+    if cbxSelectThreadUnit.ItemIndex >= 0 then begin
+      for i := Low(openProfile.resUnits)+1 to High(openProfile.resUnits) do begin
+        with openProfile.resUnits[i] do begin
+          if (not actHideNotExecuted.Checked) or (ueTotalCnt[cbxSelectThreadUnit.ItemIndex] > 0) then
+          begin
+            LNode := vstUnits.AddChild(nil);
+            LData := PProfilingInfoRec(LNode.GetData);
+            LData.ProfilingType := pit_unit;
+            LData.UnitId := i;
+            LData.ThreadUnitId := cbxSelectThreadUnit.ItemIndex;
+            AddClass(LNode, i);
+          end;
+        end;
+      end;
+//      if resortOn >= 0 then lvUnits.SortOn(resortOn,false)
+//                       else lvUnits.Resort;
+    end;
+  finally
+    vstUnits.Endupdate;
+  end;
+end;
+
 procedure TfrmMain.FillUnitView(resortOn: integer = -1);
 var
   i        : integer;
@@ -1109,6 +1202,90 @@ begin
     finally Items.EndUpdate; end;
   end;
 end; { TfrmMain.FillUnitView }
+
+
+procedure TfrmMain.vstUnitsFreeNode(Sender: TBaseVirtualTree;
+  Node: PVirtualNode);
+var
+  Data: Pointer;
+begin
+  Data := Node.GetData();
+  if data <> nil then
+    Finalize(Data^);
+end;
+
+
+procedure TfrmMain.vstUnitsGetText(Sender: TBaseVirtualTree; Node: PVirtualNode;
+  Column: TColumnIndex; TextType: TVSTTextType; var CellText: string);
+var
+  LData : PProfilingInfoRec;
+  totalTime: int64;
+begin
+  LData := node.GetData;
+  if LData.ThreadUnitId < 0 then
+    exit;
+  if LData.ProfilingType = pit_unit then
+  begin
+    totalTime := openProfile.resUnits[0].ueTotalTime[LData.ThreadUnitId];
+    case Column of
+      0: CellText := openProfile.resUnits[LData.UnitId].ueName;
+      1: CellText := FormatPerc(openProfile.resUnits[LData.UnitId].ueTotalTime[LData.ThreadUnitId]/totalTime);
+      2: CellText := FormatTime(openProfile.resUnits[LData.UnitId].ueTotalTime[LData.ThreadUnitId]);
+      3: CellText := '-';
+      4: CellText := FormatCnt(openProfile.resUnits[LData.UnitId].ueTotalCnt[LData.ThreadUnitId]);
+      5: CellText := '-';
+      6: CellText := '-';
+      7: CellText := '-';
+    end;
+
+  end
+  else if LData.ProfilingType = pit_class then
+  begin
+    totalTime := openProfile.resClasses[0].ceTotalTime[cbxSelectThreadClass.ItemIndex];
+    case Column of
+      0:
+      begin
+        CellText :=IFF(Last(openProfile.resClasses[LData.UnitId].ceName,2)='<>',ButLast(openProfile.resClasses[LData.UnitId].ceName,1)+'classless procedures>',openProfile.resClasses[LData.UnitId].ceName);
+      end;
+      1:
+      begin
+        if totalTime = 0  then
+          CellText := FormatPerc(0)
+        else
+          CellText := FormatPerc(openProfile.resClasses[LData.UnitId].ceTotalTime[LData.ThreadClassId]/totalTime);
+      end;
+      2: CellText := FormatTime(openProfile.resClasses[LData.UnitId].ceTotalTime[LData.ThreadClassId]);
+      3: CellText := '-';
+      4: CellText := FormatCnt(openProfile.resClasses[LData.UnitId].ceTotalCnt[LData.ThreadClassId]);
+      5: CellText := '-';
+      6: CellText := '-';
+      7: CellText := '-';
+    end;
+  end
+  else if LData.ProfilingType = pit_proc then
+  begin
+    totalTime := openProfile.resProcedures[0].peProcTime[cbxSelectThreadProc.ItemIndex];
+    case Column of
+      0:
+      begin
+        CellText := openProfile.resProcedures[LData.ProcId].peName;
+      end;
+      1:
+      begin
+        if totalTime = 0  then
+          CellText := FormatPerc(0)
+        else
+          CellText := FormatPerc(openProfile.resProcedures[LData.ProcId].peProcTime[LData.ThreadProcId]/totalTime);
+      end;
+      2: CellText := FormatTime(openProfile.resProcedures[LData.ProcId].peProcTime[LData.ThreadProcId]);
+      3: CellText := FormatTime(openProfile.resProcedures[LData.ProcId].peProcChildTime[LData.ThreadProcId]);
+      4: CellText := FormatTime(openProfile.resProcedures[LData.ProcId].peProcCnt[LData.ThreadProcId]);
+      5: CellText := FormatTime(openProfile.resProcedures[LData.ProcId].peProcTimeMin[LData.ThreadProcId]);
+      6: CellText := FormatTime(openProfile.resProcedures[LData.ProcId].peProcTimeMax[LData.ThreadProcId]);
+      7: CellText := FormatTime(openProfile.resProcedures[LData.ProcId].peProcTimeAvg[LData.ThreadProcId]);
+    end;
+  end;
+end;
 
 procedure TfrmMain.FillThreadView(resortOn: integer = -1);
 var
@@ -1152,6 +1329,7 @@ begin
   FillClassView(resortOn);
   FillUnitView(resortOn);
   FillThreadView(resortOn);
+  FillOverallView();
 end; { TfrmMain.FillViews }
 
 procedure TfrmMain.LoadProfile(fileName: string);
@@ -1426,6 +1604,7 @@ begin
   MRUPrf.LoadFromRegistry;
   undelProject := '';
   SlidersMoved;
+  vstUnits.NodeDataSize := SizeOf(TProfilingInfoRec);
 end;
 
 procedure TfrmMain.MRUClick(Sender: TObject; LatestFile: String);
@@ -2161,9 +2340,9 @@ begin
   if not lvUnits.AtoZOrder then Compare := -Compare;
 end;
 
-procedure TfrmMain.cbxSelectThreadUnitChange(Sender: TObject);
+procedure TfrmMain.cbxOverallThreadChange(Sender: TObject);
 begin
-  FillUnitView;
+  FillOverallView;
 end;
 
 function TfrmMain.GetThreadName(index: integer): string;
@@ -2307,7 +2486,9 @@ begin
     SetSource;
     sourceCodeEdit.Invalidate;
   finally s.Free; end;
-end; { TfrmMain.UseDelphiSettings }
+end;
+
+{ TfrmMain.UseDelphiSettings }
 
 procedure TfrmMain.FormShow(Sender: TObject);
 
