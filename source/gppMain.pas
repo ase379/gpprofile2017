@@ -377,6 +377,7 @@ type
     procedure QueryExport;
     procedure StatusPanel0(msg: string; isSourcePos: boolean; beep: boolean = false);
     procedure ShowError(const Msg : string);
+    function  ShowErrorYesNo(const Msg : string): integer;
 
     procedure SwitchDelMode(delete: boolean);
     procedure NoProfile;
@@ -2056,7 +2057,18 @@ end;
 procedure TfrmMain.MRUPrfClick(Sender: TObject; LatestFile: String);
 begin
   if (openProfile = nil) or (openProfile.Name <> LatestFile) or loadCanceled then
+  try
+    if not FileExists(LatestFile) then
+      raise Exception.Create('File '+LatestFile+ ' not found.');
     LoadProfile(LatestFile);
+  except on e:Exception do
+    if ShowErrorYesNo('Error while loading file "'+LatestFile+'"'+slinebreak+'Delete it from the MRU list ?') = mrYes then
+    begin
+      MRUPrf.DeleteFromMenu(LatestFile);
+      MRUPrf.SaveToRegistry();
+      MRUPrf.LoadFromRegistry();
+    end;
+  end;
 end;
 
 procedure TfrmMain.actInstrumentRunExecute(Sender: TObject);
@@ -2914,6 +2926,12 @@ procedure TfrmMain.ShowError(const Msg : string);
 begin
   StatusPanel0(msg,true,true);
   MessageDlg(msg,TMsgDlgType.mtError,[mbOK],0,mbOk);
+end;
+
+
+function TfrmMain.ShowErrorYesNo(const Msg : string): integer;
+begin
+  result := MessageDlg(msg,TMsgDlgType.mtConfirmation,[TMsgDlgBtn.mbYes ,TMsgDlgBtn.mbNo],0,mbYes);
 end;
 
 procedure TfrmMain.actMakeCopyProfileExecute(Sender: TObject);
