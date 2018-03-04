@@ -31,11 +31,12 @@ type
     procedure SetAlone(value: boolean);
     function DividerPlace: integer;
   protected
-    procedure Click(RecentFile: string);
+    procedure Click(const aRecentFile: string);
   public
     constructor Create(AOwner: TComponent); override;
     procedure SaveToRegistry;
     procedure LoadFromRegistry;
+    procedure DeleteFromMenu(const aRecentFile: string);
     property LatestFile: string read FLatestFile write SetLatestFile;
   published
     property Menu           : TMenuItem read FMenu write FMenu;
@@ -185,9 +186,9 @@ begin
   end;
 end;
 
-procedure TGPMRUFiles.Click(RecentFile: string);
+procedure TGPMRUFiles.Click(const aRecentFile: string);
 begin
-  if Assigned(FOnClick) then FOnClick(Self,RecentFile);
+  if Assigned(FOnClick) then FOnClick(Self,aRecentFile);
 end;
 
 procedure TGPMRUFiles.SaveToRegistry;
@@ -223,7 +224,12 @@ var
   n       : integer;
   Name,S  : String;
 begin
-  if (Menu<>nil) or (PopupMenu <> nil) then begin
+  if (Menu<>nil) or (PopupMenu <> nil) then
+  begin
+    if assigned(Menu) then
+      Menu.Clear();
+    if assigned(PopupMenu) then
+      PopupMenu.Items.Clear();
     if (RegistryKey='') then
       RegistryKey:='\Software\'+Application.Title;
     Registry:=TRegistry.Create;
@@ -249,6 +255,29 @@ begin
       Menu.Enabled:=Menu.Count>0;
   end;
 end;
+
+procedure TGPMRUFiles.DeleteFromMenu(const aRecentFile: string);
+var
+  LRegistry : TRegistry;
+  n         : integer;
+  LDividerPos: integer;
+  S : string;
+begin
+  if (Menu <> nil) then
+  begin
+    LDividerPos:=DividerPlace;
+    for n:=LDividerPos+1 to Menu.Count-1 do
+    begin
+      if Menu.Items[n].Caption.EndsWith(aRecentFile) then
+      begin
+        Menu.remove(Menu.Items[n]);
+        Break;
+      end;
+    end;
+  end;
+
+end;
+
 
 constructor TGPMRUFiles.Create(AOwner: TComponent);
 begin
