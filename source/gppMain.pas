@@ -10,7 +10,8 @@ uses
   ActnList, ImgList, Buttons, ToolWin, gppResults, Grids,
   gpArrowListView, DProjUnit, SynEdit,
   SynEditHighlighter, SynEditCodeFolding, SynHighlighterPas, System.ImageList,
-  System.Actions,gppCurrentPrefs, VirtualTrees;
+  System.Actions,gppCurrentPrefs, VirtualTrees,
+  gppmain.tree;
 
 const
   WM_ReloadProfile = WM_USER;
@@ -215,6 +216,7 @@ type
     vstUnits: TVirtualStringTree;
     Panel6: TPanel;
     cbxOverallThread: TComboBox;
+    vstClasses: TVirtualStringTree;
     procedure FormCreate(Sender: TObject);
     procedure MRUClick(Sender: TObject; LatestFile: String);
     procedure FormDestroy(Sender: TObject);
@@ -314,9 +316,6 @@ type
     procedure splitCallersMoved(Sender: TObject);
     procedure clbUnitsKeyPress(Sender: TObject; var Key: Char);
     procedure clbClassesKeyPress(Sender: TObject; var Key: Char);
-    procedure vstUnitsGetText(Sender: TBaseVirtualTree; Node: PVirtualNode;
-      Column: TColumnIndex; TextType: TVSTTextType; var CellText: string);
-    procedure vstUnitsFreeNode(Sender: TBaseVirtualTree; Node: PVirtualNode);
   private
     openProject               : TProject;
     openProfile               : TResults;
@@ -340,6 +339,7 @@ type
     selectedProc              : pointer;
     callersPerc               : real;
     calleesPerc               : real;
+    fvstClassesTools          : TSimpleStatsListTools;
     procedure ParseProject(const aProject: string; aJustRescan: boolean);
     procedure LoadProject(fileName: string; defaultDelphi: string = '');
     procedure NotifyParse(const aUnitName: string);
@@ -362,9 +362,6 @@ type
     procedure SetCaption;
     procedure SetSource;
     function  ParseProfileCallback(percent: integer): boolean;
-    function  FormatTime(ticks: int64): string;
-    function  FormatCnt(cnt: integer): string;
-    function  FormatPerc(per: real): string;
     procedure FillThreadCombos;
     procedure FillViews(resortOn: integer = -1);
     procedure FillProcView(resortOn: integer = -1);
@@ -553,20 +550,6 @@ begin
   end;
 end; { TfrmMain.FindMyDelphi }
 
-function TfrmMain.FormatTime(ticks: int64): string;
-begin
-  Result := Format('%.6n',[(ticks/openProfile.resFrequency)]);
-end; { TfrmMain.FormatTime }
-
-function TfrmMain.FormatCnt(cnt: integer): string;
-begin
-  Result := Format('%.0n',[int(cnt)]);
-end; { TfrmMain.FormatCnt }
-
-function TfrmMain.FormatPerc(per: real): string;
-begin
-  Result := Format('%2.1f %%',[per*100]);
-end; { TfrmMain.FormatPerc }
 
 procedure TfrmMain.NotifyParse(const aUnitName: string);
 begin
@@ -1038,14 +1021,14 @@ begin
               li := Items.Add;
               li.Caption := peName;
               if totalTime = 0
-                then li.Subitems.Add(FormatPerc(0))
-                else li.Subitems.Add(FormatPerc(peProcTime[cbxSelectThreadProc.ItemIndex]/totalTime));
-              li.Subitems.Add(FormatTime(peProcTime[cbxSelectThreadProc.ItemIndex]));
-              li.Subitems.Add(FormatTime(peProcChildTime[cbxSelectThreadProc.ItemIndex]));
-              li.Subitems.Add(FormatCnt(peProcCnt[cbxSelectThreadProc.ItemIndex]));
-              li.Subitems.Add(FormatTime(peProcTimeMin[cbxSelectThreadProc.ItemIndex]));
-              li.Subitems.Add(FormatTime(peProcTimeMax[cbxSelectThreadProc.ItemIndex]));
-              li.Subitems.Add(FormatTime(peProcTimeAvg[cbxSelectThreadProc.ItemIndex]));
+                then li.Subitems.Add(TSimpleStatsListTools.FormatPerc(0))
+                else li.Subitems.Add(TSimpleStatsListTools.FormatPerc(peProcTime[cbxSelectThreadProc.ItemIndex]/totalTime));
+              li.Subitems.Add(TSimpleStatsListTools.FormatTime(peProcTime[cbxSelectThreadProc.ItemIndex],resFrequency));
+              li.Subitems.Add(TSimpleStatsListTools.FormatTime(peProcChildTime[cbxSelectThreadProc.ItemIndex],resFrequency));
+              li.Subitems.Add(TSimpleStatsListTools.FormatCnt(peProcCnt[cbxSelectThreadProc.ItemIndex]));
+              li.Subitems.Add(TSimpleStatsListTools.FormatTime(peProcTimeMin[cbxSelectThreadProc.ItemIndex],resFrequency));
+              li.Subitems.Add(TSimpleStatsListTools.FormatTime(peProcTimeMax[cbxSelectThreadProc.ItemIndex],resFrequency));
+              li.Subitems.Add(TSimpleStatsListTools.FormatTime(peProcTimeAvg[cbxSelectThreadProc.ItemIndex],resFrequency));
               li.Data := pointer(i);
             end;
           end;
@@ -1063,6 +1046,10 @@ var
   li       : TListItem;
   totalTime: int64;
 begin
+  fvstClassesTools.BeginUpdate;
+  fvstClassesTools.Clear();
+  fvstClassesTools.ThreadIndex := cbxSelectThreadClass.ItemIndex;
+  fvstClassesTools.ProfileResults := openProfile;
   with lvClasses, openProfile do begin
     Items.BeginUpdate;
     try
@@ -1073,13 +1060,14 @@ begin
         for i := Low(resClasses)+1 to High(resClasses) do begin
           with resClasses[i] do begin
             if (not actHideNotExecuted.Checked) or (ceTotalCnt[cbxSelectThreadClass.ItemIndex] > 0) then begin
+              fvstClassesTools.AddEntry(ceUID,i);
               li := Items.Add;
               li.Caption := IFF(Last(ceName,2)='<>',ButLast(ceName,1)+'classless procedures>',ceName);
               if totalTime = 0
-                then li.Subitems.Add(FormatPerc(0))
-                else li.Subitems.Add(FormatPerc(ceTotalTime[cbxSelectThreadClass.ItemIndex]/totalTime));
-              li.Subitems.Add(FormatTime(ceTotalTime[cbxSelectThreadClass.ItemIndex]));
-              li.Subitems.Add(FormatCnt(ceTotalCnt[cbxSelectThreadClass.ItemIndex]));
+                then li.Subitems.Add(TSimpleStatsListTools.FormatPerc(0))
+                else li.Subitems.Add(TSimpleStatsListTools.FormatPerc(ceTotalTime[cbxSelectThreadClass.ItemIndex]/totalTime));
+              li.Subitems.Add(TSimpleStatsListTools.FormatTime(ceTotalTime[cbxSelectThreadClass.ItemIndex],resFrequency));
+              li.Subitems.Add(TSimpleStatsListTools.FormatCnt(ceTotalCnt[cbxSelectThreadClass.ItemIndex]));
               li.Data := pointer(i);
             end;
           end;
@@ -1087,7 +1075,10 @@ begin
         if resortOn >= 0 then lvClasses.SortOn(resortOn,false)
                          else lvClasses.Resort;
       end;
-    finally Items.EndUpdate; end;
+    finally
+      Items.EndUpdate;
+      fvstClassesTools.BeginUpdate;
+    end;
   end;
 end; { TfrmMain.FillClassView }
 
@@ -1189,10 +1180,10 @@ begin
               li := Items.Add;
               li.Caption := ueName;
               if totalTime = 0
-                then li.Subitems.Add(FormatPerc(0))
-                else li.Subitems.Add(FormatPerc(ueTotalTime[cbxSelectThreadUnit.ItemIndex]/totalTime));
-              li.Subitems.Add(FormatTime(ueTotalTime[cbxSelectThreadUnit.ItemIndex]));
-              li.Subitems.Add(FormatCnt(ueTotalCnt[cbxSelectThreadUnit.ItemIndex]));
+                then li.Subitems.Add(TSimpleStatsListTools.FormatPerc(0))
+                else li.Subitems.Add(TSimpleStatsListTools.FormatPerc(ueTotalTime[cbxSelectThreadUnit.ItemIndex]/totalTime));
+              li.Subitems.Add(TSimpleStatsListTools.FormatTime(ueTotalTime[cbxSelectThreadUnit.ItemIndex],resFrequency));
+              li.Subitems.Add(TSimpleStatsListTools.FormatCnt(ueTotalCnt[cbxSelectThreadUnit.ItemIndex]));
               li.Data := pointer(i);
             end;
           end;
@@ -1204,89 +1195,6 @@ begin
   end;
 end; { TfrmMain.FillUnitView }
 
-
-procedure TfrmMain.vstUnitsFreeNode(Sender: TBaseVirtualTree;
-  Node: PVirtualNode);
-var
-  Data: Pointer;
-begin
-  Data := Node.GetData();
-  if data <> nil then
-    Finalize(Data^);
-end;
-
-
-procedure TfrmMain.vstUnitsGetText(Sender: TBaseVirtualTree; Node: PVirtualNode;
-  Column: TColumnIndex; TextType: TVSTTextType; var CellText: string);
-var
-  LData : PProfilingInfoRec;
-  totalTime: int64;
-begin
-  LData := node.GetData;
-  if LData.ThreadUnitId < 0 then
-    exit;
-  if LData.ProfilingType = pit_unit then
-  begin
-    totalTime := openProfile.resUnits[0].ueTotalTime[LData.ThreadUnitId];
-    case Column of
-      0: CellText := openProfile.resUnits[LData.UnitId].ueName;
-      1: CellText := FormatPerc(openProfile.resUnits[LData.UnitId].ueTotalTime[LData.ThreadUnitId]/totalTime);
-      2: CellText := FormatTime(openProfile.resUnits[LData.UnitId].ueTotalTime[LData.ThreadUnitId]);
-      3: CellText := '-';
-      4: CellText := FormatCnt(openProfile.resUnits[LData.UnitId].ueTotalCnt[LData.ThreadUnitId]);
-      5: CellText := '-';
-      6: CellText := '-';
-      7: CellText := '-';
-    end;
-
-  end
-  else if LData.ProfilingType = pit_class then
-  begin
-    totalTime := openProfile.resClasses[0].ceTotalTime[cbxSelectThreadClass.ItemIndex];
-    case Column of
-      0:
-      begin
-        CellText :=IFF(Last(openProfile.resClasses[LData.UnitId].ceName,2)='<>',ButLast(openProfile.resClasses[LData.UnitId].ceName,1)+'classless procedures>',openProfile.resClasses[LData.UnitId].ceName);
-      end;
-      1:
-      begin
-        if totalTime = 0  then
-          CellText := FormatPerc(0)
-        else
-          CellText := FormatPerc(openProfile.resClasses[LData.UnitId].ceTotalTime[LData.ThreadClassId]/totalTime);
-      end;
-      2: CellText := FormatTime(openProfile.resClasses[LData.UnitId].ceTotalTime[LData.ThreadClassId]);
-      3: CellText := '-';
-      4: CellText := FormatCnt(openProfile.resClasses[LData.UnitId].ceTotalCnt[LData.ThreadClassId]);
-      5: CellText := '-';
-      6: CellText := '-';
-      7: CellText := '-';
-    end;
-  end
-  else if LData.ProfilingType = pit_proc then
-  begin
-    totalTime := openProfile.resProcedures[0].peProcTime[cbxSelectThreadProc.ItemIndex];
-    case Column of
-      0:
-      begin
-        CellText := openProfile.resProcedures[LData.ProcId].peName;
-      end;
-      1:
-      begin
-        if totalTime = 0  then
-          CellText := FormatPerc(0)
-        else
-          CellText := FormatPerc(openProfile.resProcedures[LData.ProcId].peProcTime[LData.ThreadProcId]/totalTime);
-      end;
-      2: CellText := FormatTime(openProfile.resProcedures[LData.ProcId].peProcTime[LData.ThreadProcId]);
-      3: CellText := FormatTime(openProfile.resProcedures[LData.ProcId].peProcChildTime[LData.ThreadProcId]);
-      4: CellText := FormatTime(openProfile.resProcedures[LData.ProcId].peProcCnt[LData.ThreadProcId]);
-      5: CellText := FormatTime(openProfile.resProcedures[LData.ProcId].peProcTimeMin[LData.ThreadProcId]);
-      6: CellText := FormatTime(openProfile.resProcedures[LData.ProcId].peProcTimeMax[LData.ThreadProcId]);
-      7: CellText := FormatTime(openProfile.resProcedures[LData.ProcId].peProcTimeAvg[LData.ThreadProcId]);
-    end;
-  end;
-end;
 
 procedure TfrmMain.FillThreadView(resortOn: integer = -1);
 var
@@ -1308,11 +1216,11 @@ begin
               li.Caption := UIntToStr(teThread);
               li.Subitems.Add(GetThreadName(i));
               if totalTime = 0
-                then li.Subitems.Add(FormatPerc(0))
+                then li.Subitems.Add(TSimpleStatsListTools.FormatPerc(0))
                 else
-                li.Subitems.Add(FormatPerc(teTotalTime/totalTime));
-              li.Subitems.Add(FormatTime(teTotalTime));
-              li.Subitems.Add(FormatCnt(teTotalCnt));
+                li.Subitems.Add(TSimpleStatsListTools.FormatPerc(teTotalTime/totalTime));
+              li.Subitems.Add(TSimpleStatsListTools.FormatTime(teTotalTime,resFrequency));
+              li.Subitems.Add(TSimpleStatsListTools.FormatCnt(teTotalCnt));
               li.Data := pointer(i);
             end;
           end;
@@ -1606,6 +1514,8 @@ begin
   undelProject := '';
   SlidersMoved;
   vstUnits.NodeDataSize := SizeOf(TProfilingInfoRec);
+  fvstClassesTools := TSimpleStatsListTools.Create(vstClasses,TProfilingInfoTypeEnum.pit_class);
+
 end;
 
 procedure TfrmMain.MRUClick(Sender: TObject; LatestFile: String);
@@ -1689,11 +1599,11 @@ begin
   end;
   MRU.SaveToRegistry;
   MRUPrf.SaveToRegistry;
-  openProject.Free;
-  openProject := nil;
-  openProfile.Free;
-  openProfile := nil;
+  FreeAndNil(openProject);
+  FreeAndNil(openProfile);
+  FreeAndNil(fvstClassesTools);
 end;
+
 
 procedure TfrmMain.actExitExecute(Sender: TObject);
 begin
@@ -3676,14 +3586,14 @@ begin
                     li := Items.Add;
                     li.Caption := resProcedures[i].peName;
                     if totalTime = 0
-                      then li.Subitems.Add(FormatPerc(0))
-                      else li.Subitems.Add(FormatPerc(cgeProcTime[cbxSelectThreadProc.ItemIndex]/totalTime));
-                    li.Subitems.Add(FormatTime(cgeProcTime[cbxSelectThreadProc.ItemIndex]));
-                    li.Subitems.Add(FormatTime(cgeProcChildTime[cbxSelectThreadProc.ItemIndex]));
-                    li.Subitems.Add(FormatCnt(cgeProcCnt[cbxSelectThreadProc.ItemIndex]));
-                    li.Subitems.Add(FormatTime(cgeProcTimeMin[cbxSelectThreadProc.ItemIndex]));
-                    li.Subitems.Add(FormatTime(cgeProcTimeMax[cbxSelectThreadProc.ItemIndex]));
-                    li.Subitems.Add(FormatTime(cgeProcTimeAvg[cbxSelectThreadProc.ItemIndex]));
+                      then li.Subitems.Add(TSimpleStatsListTools.FormatPerc(0))
+                      else li.Subitems.Add(TSimpleStatsListTools.FormatPerc(cgeProcTime[cbxSelectThreadProc.ItemIndex]/totalTime));
+                    li.Subitems.Add(TSimpleStatsListTools.FormatTime(cgeProcTime[cbxSelectThreadProc.ItemIndex],resFrequency));
+                    li.Subitems.Add(TSimpleStatsListTools.FormatTime(cgeProcChildTime[cbxSelectThreadProc.ItemIndex],resFrequency));
+                    li.Subitems.Add(TSimpleStatsListTools.FormatCnt(cgeProcCnt[cbxSelectThreadProc.ItemIndex]));
+                    li.Subitems.Add(TSimpleStatsListTools.FormatTime(cgeProcTimeMin[cbxSelectThreadProc.ItemIndex],resFrequency));
+                    li.Subitems.Add(TSimpleStatsListTools.FormatTime(cgeProcTimeMax[cbxSelectThreadProc.ItemIndex],resFrequency));
+                    li.Subitems.Add(TSimpleStatsListTools.FormatTime(cgeProcTimeAvg[cbxSelectThreadProc.ItemIndex],resFrequency));
                     li.Data := pointer(i);
                   end;
                 end; // with
@@ -3724,14 +3634,14 @@ begin
                     li := Items.Add;
                     li.Caption := resProcedures[i].peName;
                     if totalTime = 0
-                      then li.Subitems.Add(FormatPerc(0))
-                      else li.Subitems.Add(FormatPerc(cgeProcTime[cbxSelectThreadProc.ItemIndex]/totalTime));
-                    li.Subitems.Add(FormatTime(cgeProcTime[cbxSelectThreadProc.ItemIndex]));
-                    li.Subitems.Add(FormatTime(cgeProcChildTime[cbxSelectThreadProc.ItemIndex]));
-                    li.Subitems.Add(FormatCnt(cgeProcCnt[cbxSelectThreadProc.ItemIndex]));
-                    li.Subitems.Add(FormatTime(cgeProcTimeMin[cbxSelectThreadProc.ItemIndex]));
-                    li.Subitems.Add(FormatTime(cgeProcTimeMax[cbxSelectThreadProc.ItemIndex]));
-                    li.Subitems.Add(FormatTime(cgeProcTimeAvg[cbxSelectThreadProc.ItemIndex]));
+                      then li.Subitems.Add(TSimpleStatsListTools.FormatPerc(0))
+                      else li.Subitems.Add(TSimpleStatsListTools.FormatPerc(cgeProcTime[cbxSelectThreadProc.ItemIndex]/totalTime));
+                    li.Subitems.Add(TSimpleStatsListTools.FormatTime(cgeProcTime[cbxSelectThreadProc.ItemIndex],resFrequency));
+                    li.Subitems.Add(TSimpleStatsListTools.FormatTime(cgeProcChildTime[cbxSelectThreadProc.ItemIndex],resFrequency));
+                    li.Subitems.Add(TSimpleStatsListTools.FormatCnt(cgeProcCnt[cbxSelectThreadProc.ItemIndex]));
+                    li.Subitems.Add(TSimpleStatsListTools.FormatTime(cgeProcTimeMin[cbxSelectThreadProc.ItemIndex],resFrequency));
+                    li.Subitems.Add(TSimpleStatsListTools.FormatTime(cgeProcTimeMax[cbxSelectThreadProc.ItemIndex],resFrequency));
+                    li.Subitems.Add(TSimpleStatsListTools.FormatTime(cgeProcTimeAvg[cbxSelectThreadProc.ItemIndex],resFrequency));
                     li.Data := pointer(i);
                   end;
                 end; // with

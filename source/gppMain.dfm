@@ -2,8 +2,8 @@ object frmMain: TfrmMain
   Left = 312
   Top = 179
   Caption = 'GpProfile 2017'
-  ClientHeight = 514
-  ClientWidth = 612
+  ClientHeight = 640
+  ClientWidth = 1056
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -21,8 +21,8 @@ object frmMain: TfrmMain
   TextHeight = 13
   object StatusBar: TStatusBar
     Left = 0
-    Top = 490
-    Width = 612
+    Top = 616
+    Width = 1056
     Height = 24
     Panels = <
       item
@@ -36,7 +36,7 @@ object frmMain: TfrmMain
   object Panel3: TPanel
     Left = 0
     Top = 0
-    Width = 612
+    Width = 1056
     Height = 26
     Align = alTop
     BevelOuter = bvNone
@@ -242,7 +242,7 @@ object frmMain: TfrmMain
     object pnlToolbarLayout: TPanel
       Left = 471
       Top = 0
-      Width = 141
+      Width = 585
       Height = 26
       Align = alClient
       BevelOuter = bvNone
@@ -288,33 +288,35 @@ object frmMain: TfrmMain
   object Panel0: TPanel
     Left = 0
     Top = 26
-    Width = 612
-    Height = 464
+    Width = 1056
+    Height = 590
     Align = alClient
     BevelOuter = bvNone
     TabOrder = 2
     object splitSourcePreview: TSplitter
       Left = 0
-      Top = 340
-      Width = 612
+      Top = 466
+      Width = 1056
       Height = 3
       Cursor = crVSplit
       Align = alBottom
       OnMoved = splitCallersMoved
+      ExplicitTop = 340
+      ExplicitWidth = 612
     end
     object Panel1: TPanel
       Left = 0
       Top = 0
-      Width = 612
-      Height = 340
+      Width = 1056
+      Height = 466
       Align = alClient
       BevelOuter = bvNone
       TabOrder = 0
       object PageControl1: TPageControl
         Left = 0
         Top = 0
-        Width = 612
-        Height = 340
+        Width = 1056
+        Height = 466
         ActivePage = tabAnalysis
         Align = alClient
         HotTrack = True
@@ -327,17 +329,19 @@ object frmMain: TfrmMain
           object Splitter1: TSplitter
             Left = 129
             Top = 25
-            Height = 286
+            Height = 412
+            ExplicitHeight = 286
           end
           object Splitter2: TSplitter
             Left = 269
             Top = 25
-            Height = 286
+            Height = 412
+            ExplicitHeight = 286
           end
           object pnlTop: TPanel
             Left = 0
             Top = 0
-            Width = 604
+            Width = 1048
             Height = 25
             Align = alTop
             BevelOuter = bvNone
@@ -356,19 +360,19 @@ object frmMain: TfrmMain
             Left = 0
             Top = 25
             Width = 129
-            Height = 286
+            Height = 412
             Align = alLeft
             BevelOuter = bvNone
             TabOrder = 1
             DesignSize = (
               129
-              286)
+              412)
             object clbUnits: TGpCheckListBox
               Tag = 258
               Left = 4
               Top = 24
               Width = 123
-              Height = 258
+              Height = 384
               OnClickCheck = clbUnitsClickCheck
               AllowGrayed = True
               Anchors = [akLeft, akTop, akRight, akBottom]
@@ -390,18 +394,18 @@ object frmMain: TfrmMain
             Left = 132
             Top = 25
             Width = 137
-            Height = 286
+            Height = 412
             Align = alLeft
             BevelOuter = bvNone
             TabOrder = 2
             DesignSize = (
               137
-              286)
+              412)
             object clbClasses: TGpCheckListBox
               Left = 2
               Top = 24
               Width = 133
-              Height = 258
+              Height = 384
               OnClickCheck = clbClassesClickCheck
               AllowGrayed = True
               Anchors = [akLeft, akTop, akRight, akBottom]
@@ -422,19 +426,19 @@ object frmMain: TfrmMain
           object pnlProcs: TPanel
             Left = 272
             Top = 25
-            Width = 332
-            Height = 286
+            Width = 776
+            Height = 412
             Align = alClient
             BevelOuter = bvNone
             TabOrder = 3
             DesignSize = (
-              332
-              286)
+              776
+              412)
             object clbProcs: TGpCheckListBox
               Left = 2
               Top = 24
-              Width = 326
-              Height = 258
+              Width = 770
+              Height = 384
               OnClickCheck = clbProcsClickCheck
               Anchors = [akLeft, akTop, akRight, akBottom]
               ItemHeight = 13
@@ -457,9 +461,9 @@ object frmMain: TfrmMain
           object PageControl2: TPageControl
             Left = 0
             Top = 0
-            Width = 604
-            Height = 311
-            ActivePage = TabSheet1
+            Width = 1048
+            Height = 437
+            ActivePage = tabClasses
             Align = alClient
             HotTrack = True
             TabOrder = 0
@@ -469,8 +473,8 @@ object frmMain: TfrmMain
               ImageIndex = -1
               object splitCallees: TSplitter
                 Left = 0
-                Top = 186
-                Width = 596
+                Top = 312
+                Width = 1040
                 Height = 3
                 Cursor = crVSplit
                 Align = alBottom
@@ -478,17 +482,19 @@ object frmMain: TfrmMain
                 ParentColor = False
                 Visible = False
                 OnMoved = splitCallersMoved
+                ExplicitTop = 186
+                ExplicitWidth = 596
               end
               object Panel2: TPanel
                 Left = 0
                 Top = 0
-                Width = 596
+                Width = 1040
                 Height = 31
                 Align = alTop
                 BevelOuter = bvNone
                 TabOrder = 0
                 DesignSize = (
-                  596
+                  1040
                   31)
                 object lblSelectThreadProc: TLabel
                   Left = 6
@@ -508,7 +514,7 @@ object frmMain: TfrmMain
                   OnChange = cbxSelectThreadProcChange
                 end
                 object pnlBrowser: TPanel
-                  Left = 496
+                  Left = 940
                   Top = 4
                   Width = 95
                   Height = 26
@@ -554,15 +560,15 @@ object frmMain: TfrmMain
               object pnlTopTwo: TPanel
                 Left = 0
                 Top = 31
-                Width = 596
-                Height = 155
+                Width = 1040
+                Height = 281
                 Align = alClient
                 BevelOuter = bvNone
                 TabOrder = 3
                 object splitCallers: TSplitter
                   Left = 0
                   Top = 82
-                  Width = 596
+                  Width = 1040
                   Height = 3
                   Cursor = crVSplit
                   Align = alTop
@@ -570,11 +576,12 @@ object frmMain: TfrmMain
                   ParentColor = False
                   Visible = False
                   OnMoved = splitCallersMoved
+                  ExplicitWidth = 596
                 end
                 object pnlCallers: TPanel
                   Left = 0
                   Top = 0
-                  Width = 596
+                  Width = 1040
                   Height = 82
                   Align = alTop
                   BevelOuter = bvNone
@@ -584,7 +591,7 @@ object frmMain: TfrmMain
                     Tag = 79
                     Left = 0
                     Top = 0
-                    Width = 596
+                    Width = 1040
                     Height = 82
                     Align = alClient
                     Columns = <
@@ -655,8 +662,8 @@ object frmMain: TfrmMain
                 object pnlCurrent: TPanel
                   Left = 0
                   Top = 85
-                  Width = 596
-                  Height = 70
+                  Width = 1040
+                  Height = 196
                   Align = alClient
                   BevelOuter = bvNone
                   TabOrder = 1
@@ -664,8 +671,8 @@ object frmMain: TfrmMain
                     Tag = 68
                     Left = 0
                     Top = 0
-                    Width = 596
-                    Height = 70
+                    Width = 1040
+                    Height = 196
                     Align = alClient
                     Columns = <
                       item
@@ -736,8 +743,8 @@ object frmMain: TfrmMain
               end
               object pnlCallees: TPanel
                 Left = 0
-                Top = 189
-                Width = 596
+                Top = 315
+                Width = 1040
                 Height = 91
                 Align = alBottom
                 BevelOuter = bvNone
@@ -747,7 +754,7 @@ object frmMain: TfrmMain
                   Tag = 89
                   Left = 0
                   Top = 0
-                  Width = 596
+                  Width = 1040
                   Height = 91
                   Align = alClient
                   Columns = <
@@ -817,8 +824,8 @@ object frmMain: TfrmMain
               end
               object pnlBottom: TPanel
                 Left = 0
-                Top = 280
-                Width = 596
+                Top = 406
+                Width = 1040
                 Height = 3
                 Align = alBottom
                 BevelOuter = bvNone
@@ -829,8 +836,8 @@ object frmMain: TfrmMain
               Caption = 'Classes'
               ImageIndex = -1
               DesignSize = (
-                596
-                283)
+                1040
+                409)
               object Label1: TLabel
                 Left = 6
                 Top = 8
@@ -852,8 +859,8 @@ object frmMain: TfrmMain
                 Tag = 248
                 Left = 4
                 Top = 32
-                Width = 587
-                Height = 199
+                Width = 1031
+                Height = 325
                 Anchors = [akLeft, akTop, akRight, akBottom]
                 Columns = <
                   item
@@ -890,13 +897,51 @@ object frmMain: TfrmMain
                 OnCompare = lvClassesCompare
                 OnSelectItem = lvProcsSelectItem
               end
+              object vstClasses: TVirtualStringTree
+                Left = 3
+                Top = 264
+                Width = 1017
+                Height = 147
+                Header.AutoSizeIndex = 0
+                Header.Height = 20
+                Header.MinHeight = 20
+                Header.Options = [hoColumnResize, hoDrag, hoShowSortGlyphs, hoVisible]
+                TabOrder = 2
+                TreeOptions.PaintOptions = [toShowButtons, toShowDropmark, toThemeAware, toUseBlendedImages]
+                Visible = False
+                Columns = <
+                  item
+                    MinWidth = 200
+                    Position = 0
+                    Width = 200
+                    WideText = 'Class'
+                  end
+                  item
+                    MinWidth = 150
+                    Position = 1
+                    Width = 150
+                    WideText = '% Time'
+                  end
+                  item
+                    MinWidth = 150
+                    Position = 2
+                    Width = 150
+                    WideText = 'Time'
+                  end
+                  item
+                    MinWidth = 150
+                    Position = 3
+                    Width = 150
+                    WideText = 'Calls'
+                  end>
+              end
             end
             object tabUnits: TTabSheet
               Caption = 'Units'
               ImageIndex = -1
               DesignSize = (
-                596
-                283)
+                1040
+                409)
               object Label2: TLabel
                 Left = 6
                 Top = 8
@@ -917,8 +962,8 @@ object frmMain: TfrmMain
               object lvUnits: TGpArrowListView
                 Left = 4
                 Top = 32
-                Width = 588
-                Height = 199
+                Width = 1032
+                Height = 325
                 Anchors = [akLeft, akTop, akRight, akBottom]
                 Columns = <
                   item
@@ -963,8 +1008,8 @@ object frmMain: TfrmMain
               object lvThreads: TGpArrowListView
                 Left = 0
                 Top = 0
-                Width = 596
-                Height = 283
+                Width = 1040
+                Height = 409
                 Align = alClient
                 Columns = <
                   item
@@ -1012,14 +1057,12 @@ object frmMain: TfrmMain
               object vstUnits: TVirtualStringTree
                 Left = 0
                 Top = 41
-                Width = 596
-                Height = 242
+                Width = 1040
+                Height = 368
                 Align = alClient
                 Header.AutoSizeIndex = 0
                 Header.Options = [hoColumnResize, hoDrag, hoShowSortGlyphs, hoVisible]
                 TabOrder = 0
-                OnFreeNode = vstUnitsFreeNode
-                OnGetText = vstUnitsGetText
                 Columns = <
                   item
                     Position = 0
@@ -1062,7 +1105,7 @@ object frmMain: TfrmMain
               object Panel6: TPanel
                 Left = 0
                 Top = 0
-                Width = 596
+                Width = 1040
                 Height = 41
                 Align = alTop
                 BevelOuter = bvNone
@@ -1085,8 +1128,8 @@ object frmMain: TfrmMain
     end
     object pnlSourcePreview: TPanel
       Left = 0
-      Top = 343
-      Width = 612
+      Top = 469
+      Width = 1056
       Height = 121
       Align = alBottom
       BevelOuter = bvNone
@@ -1094,7 +1137,7 @@ object frmMain: TfrmMain
       object sourceCodeEdit: TSynEdit
         Left = 0
         Top = 0
-        Width = 612
+        Width = 1056
         Height = 121
         Align = alClient
         Font.Charset = DEFAULT_CHARSET
@@ -1121,6 +1164,8 @@ object frmMain: TfrmMain
         Lines.Strings = (
           'sourceCodeEdit')
         FontSmoothing = fsmNone
+        ExplicitLeft = 2
+        ExplicitTop = -1
       end
     end
   end
