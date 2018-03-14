@@ -369,8 +369,8 @@ object frmMain: TfrmMain
               412)
             object clbUnits: TGpCheckListBox
               Tag = 258
-              Left = 4
-              Top = 24
+              Left = 5
+              Top = 26
               Width = 123
               Height = 384
               OnClickCheck = clbUnitsClickCheck
@@ -402,8 +402,8 @@ object frmMain: TfrmMain
               137
               412)
             object clbClasses: TGpCheckListBox
-              Left = 2
-              Top = 24
+              Left = 3
+              Top = 26
               Width = 133
               Height = 384
               OnClickCheck = clbClassesClickCheck
@@ -835,80 +835,20 @@ object frmMain: TfrmMain
             object tabClasses: TTabSheet
               Caption = 'Classes'
               ImageIndex = -1
-              DesignSize = (
-                1040
-                409)
-              object Label1: TLabel
-                Left = 6
-                Top = 8
-                Width = 66
-                Height = 13
-                Caption = '&Select thread:'
-                FocusControl = cbxSelectThreadClass
-              end
-              object cbxSelectThreadClass: TComboBox
-                Left = 78
-                Top = 4
-                Width = 199
-                Height = 21
-                Style = csDropDownList
-                TabOrder = 0
-                OnChange = cbxSelectThreadClassChange
-              end
-              object lvClasses: TGpArrowListView
-                Tag = 248
-                Left = 4
-                Top = 32
-                Width = 1031
-                Height = 325
-                Anchors = [akLeft, akTop, akRight, akBottom]
-                Columns = <
-                  item
-                    Caption = 'Class'
-                    Width = 275
-                  end
-                  item
-                    Alignment = taRightJustify
-                    Caption = '% Time'
-                    MaxWidth = 75
-                    MinWidth = 75
-                    Width = 75
-                  end
-                  item
-                    Alignment = taRightJustify
-                    Caption = 'Time'
-                    MaxWidth = 75
-                    MinWidth = 75
-                    Width = 75
-                  end
-                  item
-                    Alignment = taRightJustify
-                    Caption = 'Calls'
-                    MaxWidth = 75
-                    MinWidth = 75
-                    Width = 75
-                  end>
-                ReadOnly = True
-                RowSelect = True
-                PopupMenu = popAnalysisListview
-                TabOrder = 1
-                ViewStyle = vsReport
-                OnClick = lvProcsClick
-                OnCompare = lvClassesCompare
-                OnSelectItem = lvProcsSelectItem
-              end
               object vstClasses: TVirtualStringTree
-                Left = 3
-                Top = 264
-                Width = 1017
-                Height = 147
+                Left = 0
+                Top = 33
+                Width = 1040
+                Height = 376
+                Align = alClient
                 Header.AutoSizeIndex = 0
                 Header.Height = 20
                 Header.MinHeight = 20
                 Header.Options = [hoColumnResize, hoDrag, hoShowSortGlyphs, hoVisible]
-                TabOrder = 2
+                PopupMenu = popAnalysisListview
+                TabOrder = 0
                 TreeOptions.PaintOptions = [toShowButtons, toShowDropmark, toThemeAware, toUseBlendedImages]
-                Visible = False
+                ExplicitTop = 34
                 Columns = <
                   item
                     MinWidth = 200
@@ -935,6 +875,33 @@ object frmMain: TfrmMain
                     WideText = 'Calls'
                   end>
               end
+              object Panel7: TPanel
+                Left = 0
+                Top = 0
+                Width = 1040
+                Height = 33
+                Align = alTop
+                BevelOuter = bvNone
+                Caption = 'Panel7'
+                TabOrder = 1
+                object Label1: TLabel
+                  Left = 0
+                  Top = 10
+                  Width = 66
+                  Height = 13
+                  Caption = '&Select thread:'
+                  FocusControl = cbxSelectThreadClass
+                end
+                object cbxSelectThreadClass: TComboBox
+                  Left = 74
+                  Top = 7
+                  Width = 199
+                  Height = 21
+                  Style = csDropDownList
+                  TabOrder = 0
+                  OnChange = cbxSelectThreadClassChange
+                end
+              end
             end
             object tabUnits: TTabSheet
               Caption = 'Units'
@@ -957,7 +924,6 @@ object frmMain: TfrmMain
                 Height = 21
                 Style = csDropDownList
                 TabOrder = 0
-                OnChange = cbxOverallThreadChange
               end
               object lvUnits: TGpArrowListView
                 Left = 4
@@ -1051,77 +1017,6 @@ object frmMain: TfrmMain
                 OnCompare = lvThreadsCompare
               end
             end
-            object TabSheet1: TTabSheet
-              Caption = 'tabOverall'
-              ImageIndex = 4
-              object vstUnits: TVirtualStringTree
-                Left = 0
-                Top = 41
-                Width = 1040
-                Height = 368
-                Align = alClient
-                Header.AutoSizeIndex = 0
-                Header.Options = [hoColumnResize, hoDrag, hoShowSortGlyphs, hoVisible]
-                TabOrder = 0
-                Columns = <
-                  item
-                    Position = 0
-                    Width = 250
-                    WideText = 'Name'
-                  end
-                  item
-                    Position = 1
-                    Width = 150
-                    WideText = '% Time'
-                  end
-                  item
-                    Position = 2
-                    Width = 150
-                    WideText = 'Time'
-                  end
-                  item
-                    Position = 4
-                    Width = 150
-                    WideText = 'Time with children'
-                  end
-                  item
-                    Position = 3
-                    Width = 150
-                    WideText = 'Calls'
-                  end
-                  item
-                    Position = 5
-                    WideText = 'Time min'
-                  end
-                  item
-                    Position = 6
-                    WideText = 'Time max'
-                  end
-                  item
-                    Position = 7
-                    WideText = 'Time avg.'
-                  end>
-              end
-              object Panel6: TPanel
-                Left = 0
-                Top = 0
-                Width = 1040
-                Height = 41
-                Align = alTop
-                BevelOuter = bvNone
-                Caption = 'Panel6'
-                TabOrder = 1
-                object cbxOverallThread: TComboBox
-                  Left = 86
-                  Top = 12
-                  Width = 199
-                  Height = 21
-                  Style = csDropDownList
-                  TabOrder = 0
-                  OnChange = cbxOverallThreadChange
-                end
-              end
-            end
           end
         end
       end
@@ -1164,8 +1059,6 @@ object frmMain: TfrmMain
         Lines.Strings = (
           'sourceCodeEdit')
         FontSmoothing = fsmNone
-        ExplicitLeft = 2
-        ExplicitTop = -1
       end
     end
   end

@@ -185,9 +185,6 @@ type
     lvCallees: TGpArrowListView;
     lvCallers: TGpArrowListView;
     pnlBottom: TPanel;
-    Label1: TLabel;
-    cbxSelectThreadClass: TComboBox;
-    lvClasses: TGpArrowListView;
     sourceCodeEdit: TSynEdit;
     pnlBrowser: TPanel;
     ToolBar3: TToolBar;
@@ -212,11 +209,10 @@ type
     actHelpJoinMailingList: TAction;
     OpenDialog1: TOpenDialog;
     SynPasSyn: TSynPasSyn;
-    TabSheet1: TTabSheet;
-    vstUnits: TVirtualStringTree;
-    Panel6: TPanel;
-    cbxOverallThread: TComboBox;
     vstClasses: TVirtualStringTree;
+    Panel7: TPanel;
+    Label1: TLabel;
+    cbxSelectThreadClass: TComboBox;
     procedure FormCreate(Sender: TObject);
     procedure MRUClick(Sender: TObject; LatestFile: String);
     procedure FormDestroy(Sender: TObject);
@@ -247,7 +243,6 @@ type
     procedure cbxSelectThreadClassChange(Sender: TObject);
     procedure lvUnitsCompare(Sender: TObject; Item1, Item2: TListItem;
       Data: Integer; var Compare: Integer);
-    procedure cbxOverallThreadChange(Sender: TObject);
     procedure lvThreadsCompare(Sender: TObject; Item1, Item2: TListItem;
       Data: Integer; var Compare: Integer);
     procedure FormShow(Sender: TObject);
@@ -368,7 +363,6 @@ type
     procedure FillClassView(resortOn: integer = -1);
     procedure FillUnitView(resortOn: integer = -1);
     procedure FillThreadView(resortOn: integer = -1);
-    procedure FillOverallView();
 
     function  GetThreadName(index: integer): string;
     procedure EnumUserSettings(settings: TStrings);
@@ -801,7 +795,6 @@ begin
   lvProcs.Color                      := clBtnFace;
   lvCallers.Color                    := clBtnFace;
   lvCallees.Color                    := clBtnFace;
-  lvClasses.Color                    := clBtnFace;
   lvUnits.Color                      := clBtnFace;
   lvThreads.Color                    := clBtnFace;
   cbxSelectThreadProc.Color          := clBtnFace;
@@ -818,7 +811,6 @@ begin
   lvProcs.Color                      := clWindow;
   lvCallers.Color                    := clWindow;
   lvCallees.Color                    := clWindow;
-  lvClasses.Color                    := clWindow;
   lvUnits.Color                      := clWindow;
   lvThreads.Color                    := clWindow;
   StatusPanel0('',false);
@@ -951,9 +943,6 @@ begin
   cbxSelectThreadUnit.Items.Assign(cbxSelectThreadProc.Items);
   cbxSelectThreadUnit.Enabled   := cbxSelectThreadProc.Enabled;
   cbxSelectThreadUnit.ItemIndex := cbxSelectThreadProc.ItemIndex;
-  cbxOverallThread.Items.Assign(cbxSelectThreadProc.Items);
-  cbxOverallThread.Enabled   := cbxSelectThreadProc.Enabled;
-  cbxOverallThread.ItemIndex := cbxSelectThreadProc.ItemIndex;
   frmExport.expSelectThreadProc.Items.Assign(cbxSelectThreadProc.Items);
   frmExport.expSelectThreadProc.Items.Add('Summary');
   frmExport.expSelectThreadProc.Enabled := (frmExport.expSelectThreadProc.Items.Count > 3);
@@ -1050,116 +1039,28 @@ begin
   fvstClassesTools.Clear();
   fvstClassesTools.ThreadIndex := cbxSelectThreadClass.ItemIndex;
   fvstClassesTools.ProfileResults := openProfile;
-  with lvClasses, openProfile do begin
-    Items.BeginUpdate;
+  with openProfile do begin
     try
-      Items.Clear;
       if cbxSelectThreadClass.ItemIndex >= 0 then begin
         totalTime := resClasses[0].ceTotalTime[cbxSelectThreadClass.ItemIndex];
-        AllocBy := High(resClasses)-Low(resClasses)+1;
         for i := Low(resClasses)+1 to High(resClasses) do begin
           with resClasses[i] do begin
-            if (not actHideNotExecuted.Checked) or (ceTotalCnt[cbxSelectThreadClass.ItemIndex] > 0) then begin
+            if (not actHideNotExecuted.Checked) or (ceTotalCnt[cbxSelectThreadClass.ItemIndex] > 0) then
+            begin
               fvstClassesTools.AddEntry(ceUID,i);
-              li := Items.Add;
-              li.Caption := IFF(Last(ceName,2)='<>',ButLast(ceName,1)+'classless procedures>',ceName);
-              if totalTime = 0
-                then li.Subitems.Add(TSimpleStatsListTools.FormatPerc(0))
-                else li.Subitems.Add(TSimpleStatsListTools.FormatPerc(ceTotalTime[cbxSelectThreadClass.ItemIndex]/totalTime));
-              li.Subitems.Add(TSimpleStatsListTools.FormatTime(ceTotalTime[cbxSelectThreadClass.ItemIndex],resFrequency));
-              li.Subitems.Add(TSimpleStatsListTools.FormatCnt(ceTotalCnt[cbxSelectThreadClass.ItemIndex]));
-              li.Data := pointer(i);
             end;
           end;
         end;
-        if resortOn >= 0 then lvClasses.SortOn(resortOn,false)
-                         else lvClasses.Resort;
+(*        if resortOn >= 0 then lvClasses.SortOn(resortOn,false)
+                         else lvClasses.Resort;*)
       end;
     finally
-      Items.EndUpdate;
-      fvstClassesTools.BeginUpdate;
+      fvstClassesTools.EndUpdate;
     end;
   end;
 end; { TfrmMain.FillClassView }
 
 
-procedure TfrmMain.FillOverallView();
-
-  Procedure AddProc(const aParent : PVirtualNode; const ACID : integer);
-  var
-    i        : integer;
-    LData : PProfilingInfoRec;
-    LNode : PVirtualNode;
-  begin
-    for i := Low(openProfile.resProcedures)+1 to High(openProfile.resProcedures) do begin
-      with openProfile.resProcedures[i] do begin
-        if (not actHideNotExecuted.Checked) or (peProcCnt[cbxSelectThreadProc.ItemIndex] > 0) then begin
-          LNode := vstUnits.AddChild(aParent);
-          LData := PProfilingInfoRec(LNode.GetData);
-          LData.ProfilingType := pit_proc;
-          LData.ParentClassId := aCid;
-          LData.ProcId := i;
-          LData.ThreadProcId := cbxSelectThreadProc.ItemIndex;
-        end;
-      end;
-    end;
-  end;
-
-  procedure AddClass(const aParent : PVirtualNode; const aUID : integer);
-  var
-    i        : integer;
-    LData : PProfilingInfoRec;
-    LNode : PVirtualNode;
-  begin
-    for i := Low(openProfile.resClasses)+1 to High(openProfile.resClasses) do begin
-      with openProfile.resClasses[i] do begin
-        if (not actHideNotExecuted.Checked) or (ceTotalCnt[cbxSelectThreadClass.ItemIndex] > 0) then
-          if openProfile.resClasses[i].ceUID = aUID then
-          begin
-            LNode := vstUnits.AddChild(aParent);
-            LData := PProfilingInfoRec(LNode.GetData);
-            LData.ProfilingType := pit_class;
-            LData.ParentUnitId := aUid;
-            LData.ClassId := i;
-            LData.ThreadClassId := cbxSelectThreadUnit.ItemIndex;
-            AddProc(LNode, i);
-          end;
-      end;
-   end;
-  end;
-
-
-
-var
-  LData : PProfilingInfoRec;
-  LNode : PVirtualNode;
-  i        : integer;
-
-begin
-  vstUnits.BeginUpdate;
-  try
-    vstUnits.Clear;
-    if cbxSelectThreadUnit.ItemIndex >= 0 then begin
-      for i := Low(openProfile.resUnits)+1 to High(openProfile.resUnits) do begin
-        with openProfile.resUnits[i] do begin
-          if (not actHideNotExecuted.Checked) or (ueTotalCnt[cbxSelectThreadUnit.ItemIndex] > 0) then
-          begin
-            LNode := vstUnits.AddChild(nil);
-            LData := PProfilingInfoRec(LNode.GetData);
-            LData.ProfilingType := pit_unit;
-            LData.UnitId := i;
-            LData.ThreadUnitId := cbxSelectThreadUnit.ItemIndex;
-            AddClass(LNode, i);
-          end;
-        end;
-      end;
-//      if resortOn >= 0 then lvUnits.SortOn(resortOn,false)
-//                       else lvUnits.Resort;
-    end;
-  finally
-    vstUnits.Endupdate;
-  end;
-end;
 
 procedure TfrmMain.FillUnitView(resortOn: integer = -1);
 var
@@ -1238,7 +1139,6 @@ begin
   FillClassView(resortOn);
   FillUnitView(resortOn);
   FillThreadView(resortOn);
-  FillOverallView();
 end; { TfrmMain.FillViews }
 
 procedure TfrmMain.LoadProfile(fileName: string);
@@ -1513,9 +1413,7 @@ begin
   MRUPrf.LoadFromRegistry;
   undelProject := '';
   SlidersMoved;
-  vstUnits.NodeDataSize := SizeOf(TProfilingInfoRec);
   fvstClassesTools := TSimpleStatsListTools.Create(vstClasses,TProfilingInfoTypeEnum.pit_class);
-
 end;
 
 procedure TfrmMain.MRUClick(Sender: TObject; LatestFile: String);
@@ -1527,6 +1425,15 @@ begin
 end;
 
 procedure TfrmMain.SaveMetrics(layoutName: string);
+
+  procedure PutHeader(reg: TGpRegistry; aVST: TVirtualStringTree; prefix: string);
+  var
+    i: integer;
+  begin
+    for i := 0 to aVST.Header.Columns.Count-1 do
+      reg.WriteInteger(prefix+'Column'+IntToStr(i)+'Width',aVST.Header.Columns[i].Width);
+  end; { PutColumns }
+
 
   procedure PutColumns(reg: TGpRegistry; lv: TGpArrowListView; prefix: string);
   var
@@ -1568,7 +1475,7 @@ begin
       WriteBool('pnlCallersVisible',pnlCallers.Visible);
       WriteBool('pnlCalleesVisible',pnlCallees.Visible);
       PutColumns(reg,lvProcs,'lvProcs');
-      PutColumns(reg,lvClasses,'lvClasses');
+      PutHeader(reg,vstClasses,'lvClasses');
       PutColumns(reg,lvUnits,'lvUnits');
       PutColumns(reg,lvThreads,'lvThreads');
       PutColumns(reg,lvCallers,'lvCallers');
@@ -2108,7 +2015,7 @@ begin
   else begin
     with PageControl2 do
       if      ActivePage = tabProcedures then lvProcs.SetFocus
-      else if ActivePage = tabClasses    then lvClasses.SetFocus
+      else if ActivePage = tabClasses    then vstClasses.SetFocus
       else if ActivePage = tabUnits      then lvUnits.SetFocus
       else if ActivePage = tabThreads    then lvThreads.SetFocus;
     lvProcsClick(Sender);
@@ -2230,7 +2137,7 @@ begin
     else if cmp > 0 then Compare :=  1
                     else Compare :=  0;
   end;
-  if not lvClasses.AtoZOrder then Compare := -Compare;
+//  if not lvClasses.AtoZOrder then Compare := -Compare;
 end;
 
 procedure TfrmMain.cbxSelectThreadClassChange(Sender: TObject);
@@ -2262,10 +2169,6 @@ begin
   if not lvUnits.AtoZOrder then Compare := -Compare;
 end;
 
-procedure TfrmMain.cbxOverallThreadChange(Sender: TObject);
-begin
-  FillOverallView;
-end;
 
 function TfrmMain.GetThreadName(index: integer): string;
 begin
@@ -2301,6 +2204,16 @@ begin
 end;
 
 procedure TfrmMain.LoadMetrics(layoutName: string);
+
+  procedure GetHeaders(reg: TGpRegistry; aVST: TVirtualStringTree; prefix: string);
+  var
+    i: integer;
+  begin
+    for i := 0 to aVST.Header.Columns.Count-1 do begin
+      aVST.Header.Columns[i].Width := reg.ReadInteger(prefix+'Column'+IntToStr(i)+'Width',aVST.Header.Columns[i].Width);
+    end;
+  end; { GetColumns }
+
 
   procedure GetColumns(reg: TGpRegistry; lv: TGpArrowListView; prefix: string);
   var
@@ -2370,7 +2283,7 @@ begin
           else pnlSourcePreview.Visible := previewVisibleAnalysis;
         splitSourcePreview.Visible := pnlSourcePreview.Visible;
         GetColumns(reg,lvProcs,'lvProcs');
-        GetColumns(reg,lvClasses,'lvClasses');
+        GetHeaders(reg,vstClasses,'lvClasses');
         GetColumns(reg,lvUnits,'lvUnits');
         GetColumns(reg,lvThreads,'lvThreads');
         GetColumns(reg,lvCallers,'lvCallers');
@@ -2409,6 +2322,8 @@ begin
     sourceCodeEdit.Invalidate;
   finally s.Free; end;
 end;
+
+
 
 { TfrmMain.UseDelphiSettings }
 
@@ -2843,37 +2758,73 @@ procedure TfrmMain.lvProcsClick(Sender: TObject);
 var
   uid: integer;
   lv : TGpArrowListView;
+  LVST : TVirtualStringTree;
+  LEnum : TVTVirtualNodeEnumerator;
+  LData : PProfilingInfoRec;
+  LSelectedID : integer;
 begin
+  LVST := nil;
+  lv := nil;
+  LSelectedID := -1;
   if openProfile <> nil then
     with PageControl2, ActivePage do begin
-      if ActivePage <> tabThreads then begin
-        if      ActivePage = tabProcedures then lv := lvProcs
-        else if ActivePage = tabClasses    then lv := lvClasses
-                                           else lv := lvUnits;
-        with openProfile, lv do begin
-          if Selected <> nil then begin
-            if Selected = selectedProc then Exit;
-            selectedProc := Selected;
+      if ActivePage <> tabThreads then
+      begin
+        if ActivePage = tabProcedures then
+          lv := lvProcs
+        else if ActivePage = tabClasses then
+          LVST := vstClasses
+        else
+          lv := lvUnits;
+
+        if Assigned(lv) then
+        begin
+          if lv.Selected <> nil then
+          begin
+            if lv.Selected = selectedProc then
+              Exit;
+            selectedProc := lv.Selected;
+            LSelectedID := integer(Lv.Selected.Data);
+          end;
+        end
+        else if Assigned(LVST) then
+        begin
+          LEnum := LVST.SelectedNodes(false).GetEnumerator();
+          while(LEnum.MoveNext) do
+          begin
+            if lv.Selected = selectedProc then
+              Exit;
+            LData := PProfilingInfoRec(LEnum.Current.GetData);
+            LSelectedID := LData.GetId;
+          end;
+        end;
+        with openProfile do begin
+        begin
+
+          if LSelectedID >= 0 then
+          begin
             if ActivePage = tabProcedures then begin
               RedisplayCallers;
               RedisplayCallees;
-              LoadSource(resUnits[resProcedures[integer(Selected.Data)].peUID].ueQual,
-                         resProcedures[integer(Selected.Data)].peFirstLn);
+              LoadSource(resUnits[resProcedures[LSelectedID].peUID].ueQual,
+                         resProcedures[LSelectedID].peFirstLn);
               Exit;
             end
             else if ActivePage = tabClasses then begin
-              uid := resClasses[integer(Selected.Data)].ceUID;
-              if uid >= 0 then LoadSource(resUnits[uid].ueQual,resClasses[integer(Selected.Data)].ceFirstLn);
+              uid := resClasses[LSelectedID].ceUID;
+              if uid >= 0 then LoadSource(resUnits[uid].ueQual,resClasses[LSelectedID].ceFirstLn);
               Exit;
             end
             else if ActivePage = tabUnits then begin
-              LoadSource(resUnits[integer(Selected.Data)].ueQual,0);
+              LoadSource(resUnits[LSelectedID].ueQual,0);
               Exit;
             end;
+
           end;
         end;
       end;
     end;
+  end;
   ClearSource;       
 end;
 
@@ -2924,6 +2875,28 @@ end;
 procedure TfrmMain.ExportTo(fileName: string; exportProcs, exportClasses,
   exportUnits, exportThreads, exportCSV: boolean);
 
+  procedure LExport(var f: textfile; aLvTools:TSimpleStatsListTools; delim: char);
+  var
+    i,j   : integer;
+    header: string;
+    line  : string;
+    lEnum : TVTVirtualNodeEnumerator;
+  begin
+    header := '';
+    for i := 0 to aLvTools.ListView.Header.Columns.Count-1 do begin
+      if header <> '' then header := header + delim;
+      header := header + aLvTools.ListView.Header.Columns[i].Text;
+    end;
+    Writeln(f,header);
+    lEnum := aLvTools.ListView.ChildNodes(nil).GetEnumerator;
+    while(lEnum.MoveNext) do
+    begin
+      line := aLVTools.GetRowAsCsv(lEnum.Current,delim);
+      Writeln(f,line);
+    end;
+    Writeln(f,delim);
+  end; { _Export }
+
   procedure _Export(var f: textfile; listView: TGpArrowListView; delim: char);
   var
     i,j   : integer;
@@ -2956,7 +2929,9 @@ procedure TfrmMain.ExportTo(fileName: string; exportProcs, exportClasses,
 
   procedure ExpClasses(var f: textfile; delim: char);
   begin
-    _Export(f,lvClasses,delim);
+   // TODO ASE: add classes
+
+    LExport(f,fvstClassesTools, delim);
   end; { ExpClasses }
 
   procedure ExpUnits(var f: textfile; delim: char);

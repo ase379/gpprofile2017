@@ -14,9 +14,13 @@ type
     fListType : TProfilingInfoTypeEnum;
     fProfileResults : TResults;
     fThreadIndex : Integer;
+    fSortcols: array of TColumnIndex;
     procedure OnFreeNode(Sender: TBaseVirtualTree;Node: PVirtualNode);
     procedure OnGetText(Sender: TBaseVirtualTree; Node: PVirtualNode;
       Column: TColumnIndex; TextType: TVSTTextType; var CellText: string);
+    procedure OnCompareNodes(Sender: TBaseVirtualTree; Node1, Node2: PVirtualNode;
+      Column: TColumnIndex; var Result: Integer);
+    procedure OnHeaderClick(Sender: TVTHeader; HitInfo: TVTHeaderHitInfo);
 
   public
     constructor Create(const aList: TVirtualStringTree;const aListType : TProfilingInfoTypeEnum);
@@ -26,12 +30,17 @@ type
     procedure Clear;
     procedure AddEntry(const aParentId, anEntryId : Integer);
 
+
+    function GetRowAsCsv(const aNode: PVirtualNode; const aDelimeter: char): string;
+
     property ThreadIndex : integer read fThreadIndex write fThreadIndex;
     property ProfileResults : TResults read fProfileResults write fProfileResults;
+    property ListView : TVirtualStringTree read fList;
 
     class function FormatTime(const ticks,frequency: int64): string;
     class function FormatCnt(const cnt: integer): string;
     class function FormatPerc(const per: real): string;
+
   end;
 
 implementation
@@ -52,7 +61,9 @@ begin
   fList := aList;
   fListType := aListType;
   fList.OnFreeNode := self.OnFreeNode;
+  fList.OnCompareNodes := self.OnCompareNodes;
   fList.ongettext := OnGetText;
+  fList.OnHeaderClick := self.OnHeaderClick;
 end;
 
 procedure TSimpleStatsListTools.BeginUpdate;
@@ -85,6 +96,20 @@ end;
 class function TSimpleStatsListTools.FormatTime(const ticks, frequency: int64): string;
 begin
   Result := Format('%.6n',[(ticks/frequency{fProfileResults.resFrequency)})]);
+end;
+
+function TSimpleStatsListTools.GetRowAsCsv(const aNode: PVirtualNode;
+  const aDelimeter: char): string;
+var i :integer;
+    lCellText : string;
+begin
+  result := '';
+  for i := 0 to fList.Header.Columns.Count-1 do
+  begin
+    OnGetText(fList,aNode, i, TVSTTextType.ttNormal,lCellText);
+    lCellText := StringReplace(lCellText, ',', '.', [rfReplaceAll]);
+    result := result + lCellText + aDelimeter;
+  end;
 end;
 
 class function TSimpleStatsListTools.FormatCnt(const cnt: integer): string;
@@ -121,6 +146,7 @@ begin
     exit;
   if LData.ThreadUnitId < 0 then
     exit;
+  CellText := '';
   if LData.ProfilingType = pit_unit then
   begin
     totalTime := fProfileResults.resUnits[0].ueTotalTime[fThreadIndex];
@@ -180,6 +206,45 @@ begin
   end;
 end;
 
+procedure TSimpleStatsListTools.OnHeaderClick(Sender: TVTHeader;
+  HitInfo: TVTHeaderHitInfo);
+begin
+(*  if not CtrlDown then //function I have to test Ctrl state.
+  begin
+    setlength(fSortCols,0);
+  end;*)
+  SetLength(fSortCols,length(fSortCols)+1);
+  fSortCols[Length(fSortCols)-1] := HitInfo.Column;
+  fList.SortTree(HitInfo.Column,Sender.SortDirection,True);
 
+  if Sender.SortDirection=sdAscending then
+    Sender.SortDirection:=sdDescending
+  else
+    Sender.SortDirection:=sdAscending;
+  fList.Header.SortDirection := Sender.SortDirection;
+  fList.Header.SortColumn := HitInfo.Column;
+end;
+
+procedure TSimpleStatsListTools.OnCompareNodes(Sender: TBaseVirtualTree;
+  Node1, Node2: PVirtualNode; Column: TColumnIndex; var Result: Integer);
+var
+    i: integer;
+    LData1: PProfilingInfoRec;
+    LData2: PProfilingInfoRec;
+begin
+  if Length(fSortCols) > 0 then
+  begin
+    LData1 := FList.GetNodeData(Node1);
+    LData2 := fList.GetNodeData(Node2);
+
+    if Assigned(LData1) and Assigned(LData2) then
+      for i := High(fSortCols) downto 0 do
+      begin
+        Result := CompareStr(FList.Text[Node1,i],FList.Text[Node2,i]);
+        if Result <> 0 then
+          Break;
+      end;
+  end;
+end;
 
 end.
