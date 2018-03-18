@@ -15,6 +15,8 @@ type
     fProfileResults : TResults;
     fThreadIndex : Integer;
     fSortcols: array of TColumnIndex;
+    function  GetThreadName(index: integer): string;
+
     procedure OnFreeNode(Sender: TBaseVirtualTree;Node: PVirtualNode);
     procedure OnGetText(Sender: TBaseVirtualTree; Node: PVirtualNode;
       Column: TColumnIndex; TextType: TVSTTextType; var CellText: string);
@@ -37,7 +39,9 @@ type
     property ProfileResults : TResults read fProfileResults write fProfileResults;
     property ListView : TVirtualStringTree read fList;
 
-    class function FormatTime(const ticks,frequency: int64): string;
+    class function FormatTime(const ticks,frequency: int64): string; overload;
+    class function FormatTime(const value: double): string; overload;
+
     class function FormatCnt(const cnt: integer): string;
     class function FormatPerc(const per: real): string;
 
@@ -88,14 +92,38 @@ begin
   LNode := flist.AddChild(nil);
   LData := PProfilingInfoRec(LNode.GetData);
   LData.ProfilingType := fListType;
-  LData.ParentClassId := aParentId;
-  LData.ProcId := anEntryId;
+  case fListType of
+    pit_unit :
+    begin
+      LData.UnitId := anEntryId;
+    end;
+    pit_class :
+    begin
+      LData.ClassId := anEntryId;
+    end;
+    pit_proc :
+    begin
+      LData.ProcId := anEntryId;
+    end;
+    pit_thread :
+    begin
+      LData.ThreadId := anEntryId;
+    end;
+
+  end;
+
 end;
 
 
 class function TSimpleStatsListTools.FormatTime(const ticks, frequency: int64): string;
 begin
-  Result := Format('%.6n',[(ticks/frequency{fProfileResults.resFrequency)})]);
+  Result := FormatTime( ticks / frequency);
+end;
+
+
+class function TSimpleStatsListTools.FormatTime(const value: double): string;
+begin
+  Result := Format('%.6n',[value]);
 end;
 
 function TSimpleStatsListTools.GetRowAsCsv(const aNode: PVirtualNode;
@@ -111,6 +139,17 @@ begin
     result := result + lCellText + aDelimeter;
   end;
 end;
+
+function TSimpleStatsListTools.GetThreadName(index: integer): string;
+begin
+  with fProfileResults.resThreads[index] do
+  begin
+    if teName = '' then
+      Result := 'Thread '+IntToStr(index)
+    else
+      Result := teName;
+  end;
+end; { TfrmMain.GetThreadName }
 
 class function TSimpleStatsListTools.FormatCnt(const cnt: integer): string;
 begin
@@ -144,8 +183,6 @@ begin
   LData := node.GetData;
   if not assigned(fProfileResults) then
     exit;
-  if LData.ThreadUnitId < 0 then
-    exit;
   CellText := '';
   if LData.ProfilingType = pit_unit then
   begin
@@ -168,17 +205,17 @@ begin
     case Column of
       0:
       begin
-        CellText :=IFF(Last(fProfileResults.resClasses[LData.UnitId].ceName,2)='<>',ButLast(fProfileResults.resClasses[LData.UnitId].ceName,1)+'classless procedures>',fProfileResults.resClasses[LData.UnitId].ceName);
+        CellText :=IFF(Last(fProfileResults.resClasses[LData.ClassId].ceName,2)='<>',ButLast(fProfileResults.resClasses[LData.ClassId].ceName,1)+'classless procedures>',fProfileResults.resClasses[LData.ClassId].ceName);
       end;
       1:
       begin
         if totalTime = 0  then
           CellText := FormatPerc(0)
         else
-          CellText := FormatPerc(fProfileResults.resClasses[LData.UnitId].ceTotalTime[fThreadIndex]/totalTime);
+          CellText := FormatPerc(fProfileResults.resClasses[LData.ClassId].ceTotalTime[fThreadIndex]/totalTime);
       end;
-      2: CellText := FormatTime(fProfileResults.resClasses[LData.UnitId].ceTotalTime[fThreadIndex],fProfileResults.resFrequency);
-      3: CellText := FormatCnt(fProfileResults.resClasses[LData.UnitId].ceTotalCnt[fThreadIndex]);
+      2: CellText := FormatTime(fProfileResults.resClasses[LData.ClassId].ceTotalTime[fThreadIndex],fProfileResults.resFrequency);
+      3: CellText := FormatCnt(fProfileResults.resClasses[LData.ClassId].ceTotalCnt[fThreadIndex]);
     end;
   end
   else if LData.ProfilingType = pit_proc then
@@ -202,6 +239,26 @@ begin
       5: CellText := FormatTime(fProfileResults.resProcedures[LData.ProcId].peProcTimeMin[fThreadIndex],fProfileResults.resFrequency);
       6: CellText := FormatTime(fProfileResults.resProcedures[LData.ProcId].peProcTimeMax[fThreadIndex],fProfileResults.resFrequency);
       7: CellText := FormatTime(fProfileResults.resProcedures[LData.ProcId].peProcTimeAvg[fThreadIndex],fProfileResults.resFrequency);
+    end;
+  end
+  else if LData.ProfilingType = pit_thread then
+  begin
+    totalTime := fProfileResults.resThreads[0].teTotalTime;
+    case Column of
+      0:
+      begin
+        CellText := UIntToStr(fProfileResults.resThreads[LData.ThreadId].teThread);
+      end;
+      1: Celltext := GetThreadName(LData.ThreadId);
+      2:
+      begin
+        if totalTime = 0  then
+          CellText := FormatPerc(0)
+        else
+          CellText := FormatPerc(fProfileResults.resThreads[LData.ThreadId].teTotalTime/totalTime);
+      end;
+      3: CellText := FormatTime(fProfileResults.resThreads[LData.ThreadId].teTotalTime,fProfileResults.resFrequency);
+      4: CellText := FormatCnt(fProfileResults.resThreads[LData.ThreadId].teTotalCnt);
     end;
   end;
 end;
