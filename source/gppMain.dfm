@@ -3,7 +3,7 @@ object frmMain: TfrmMain
   Top = 179
   Caption = 'GpProfile 2017'
   ClientHeight = 640
-  ClientWidth = 1056
+  ClientWidth = 1109
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -22,7 +22,7 @@ object frmMain: TfrmMain
   object StatusBar: TStatusBar
     Left = 0
     Top = 616
-    Width = 1056
+    Width = 1109
     Height = 24
     Panels = <
       item
@@ -32,15 +32,17 @@ object frmMain: TfrmMain
         Width = 0
       end>
     OnResize = StatusBarResize
+    ExplicitWidth = 1056
   end
   object Panel3: TPanel
     Left = 0
     Top = 0
-    Width = 1056
+    Width = 1109
     Height = 26
     Align = alTop
     BevelOuter = bvNone
     TabOrder = 0
+    ExplicitWidth = 1056
     object Panel5: TPanel
       Left = 214
       Top = 0
@@ -242,11 +244,12 @@ object frmMain: TfrmMain
     object pnlToolbarLayout: TPanel
       Left = 471
       Top = 0
-      Width = 585
+      Width = 638
       Height = 26
       Align = alClient
       BevelOuter = bvNone
       TabOrder = 3
+      ExplicitWidth = 585
       object tbrLayout: TToolBar
         Left = 0
         Top = 0
@@ -288,15 +291,16 @@ object frmMain: TfrmMain
   object Panel0: TPanel
     Left = 0
     Top = 26
-    Width = 1056
+    Width = 1109
     Height = 590
     Align = alClient
     BevelOuter = bvNone
     TabOrder = 2
+    ExplicitWidth = 1056
     object splitSourcePreview: TSplitter
       Left = 0
       Top = 466
-      Width = 1056
+      Width = 1109
       Height = 3
       Cursor = crVSplit
       Align = alBottom
@@ -307,15 +311,16 @@ object frmMain: TfrmMain
     object Panel1: TPanel
       Left = 0
       Top = 0
-      Width = 1056
+      Width = 1109
       Height = 466
       Align = alClient
       BevelOuter = bvNone
       TabOrder = 0
+      ExplicitWidth = 1056
       object PageControl1: TPageControl
         Left = 0
         Top = 0
-        Width = 1056
+        Width = 1109
         Height = 466
         ActivePage = tabAnalysis
         Align = alClient
@@ -323,9 +328,11 @@ object frmMain: TfrmMain
         Images = imglButtons
         TabOrder = 0
         OnChange = PageControl1Change
+        ExplicitWidth = 1056
         object tabInstrumentation: TTabSheet
           Caption = 'Instrumentation'
           ImageIndex = 16
+          ExplicitWidth = 1048
           object Splitter1: TSplitter
             Left = 129
             Top = 25
@@ -341,11 +348,12 @@ object frmMain: TfrmMain
           object pnlTop: TPanel
             Left = 0
             Top = 0
-            Width = 1048
+            Width = 1101
             Height = 25
             Align = alTop
             BevelOuter = bvNone
             TabOrder = 0
+            ExplicitWidth = 1048
             object chkShowAll: TCheckBox
               Left = 6
               Top = 4
@@ -426,24 +434,26 @@ object frmMain: TfrmMain
           object pnlProcs: TPanel
             Left = 272
             Top = 25
-            Width = 776
+            Width = 829
             Height = 412
             Align = alClient
             BevelOuter = bvNone
             TabOrder = 3
+            ExplicitWidth = 776
             DesignSize = (
-              776
+              829
               412)
             object clbProcs: TGpCheckListBox
               Left = 2
               Top = 24
-              Width = 770
+              Width = 823
               Height = 384
               OnClickCheck = clbProcsClickCheck
               Anchors = [akLeft, akTop, akRight, akBottom]
               ItemHeight = 13
               TabOrder = 0
               OnClick = clbProcsClick
+              ExplicitWidth = 770
             end
             object lblProcs: TStaticText
               Left = 2
@@ -458,23 +468,26 @@ object frmMain: TfrmMain
         object tabAnalysis: TTabSheet
           Caption = 'Analysis'
           ImageIndex = 17
+          ExplicitWidth = 1048
           object PageControl2: TPageControl
             Left = 0
             Top = 0
-            Width = 1048
+            Width = 1101
             Height = 437
             ActivePage = tabClasses
             Align = alClient
             HotTrack = True
             TabOrder = 0
             OnChange = PageControl2Change
+            ExplicitWidth = 1048
             object tabProcedures: TTabSheet
               Caption = 'Procedures'
               ImageIndex = -1
+              ExplicitWidth = 1040
               object splitCallees: TSplitter
                 Left = 0
                 Top = 312
-                Width = 1040
+                Width = 1093
                 Height = 3
                 Cursor = crVSplit
                 Align = alBottom
@@ -485,42 +498,35 @@ object frmMain: TfrmMain
                 ExplicitTop = 186
                 ExplicitWidth = 596
               end
-              object Panel2: TPanel
+              object pnThreadProcs: TPanel
                 Left = 0
                 Top = 0
-                Width = 1040
+                Width = 1093
                 Height = 31
                 Align = alTop
                 BevelOuter = bvNone
                 TabOrder = 0
+                ExplicitWidth = 1040
                 DesignSize = (
-                  1040
+                  1093
                   31)
                 object lblSelectThreadProc: TLabel
-                  Left = 6
-                  Top = 8
+                  Left = 0
+                  Top = 10
                   Width = 66
                   Height = 13
                   Caption = '&Select thread:'
                   FocusControl = cbxSelectThreadProc
                 end
-                object cbxSelectThreadProc: TComboBox
-                  Left = 78
-                  Top = 4
-                  Width = 191
-                  Height = 21
-                  Style = csDropDownList
-                  TabOrder = 0
-                  OnChange = cbxSelectThreadProcChange
-                end
                 object pnlBrowser: TPanel
-                  Left = 940
+                  Left = 993
                   Top = 4
                   Width = 95
                   Height = 26
                   Anchors = [akTop, akRight]
                   BevelOuter = bvNone
-                  TabOrder = 1
+                  TabOrder = 0
+                  ExplicitLeft = 940
                   object ToolBar3: TToolBar
                     Left = 19
                     Top = 0
@@ -556,19 +562,29 @@ object frmMain: TfrmMain
                     end
                   end
                 end
+                object cbxSelectThreadProc: TComboBox
+                  Left = 72
+                  Top = 6
+                  Width = 191
+                  Height = 21
+                  Style = csDropDownList
+                  TabOrder = 1
+                  OnChange = cbxSelectThreadProcChange
+                end
               end
               object pnlTopTwo: TPanel
                 Left = 0
                 Top = 31
-                Width = 1040
+                Width = 1093
                 Height = 281
                 Align = alClient
                 BevelOuter = bvNone
                 TabOrder = 3
+                ExplicitWidth = 1040
                 object splitCallers: TSplitter
                   Left = 0
                   Top = 82
-                  Width = 1040
+                  Width = 1093
                   Height = 3
                   Cursor = crVSplit
                   Align = alTop
@@ -581,17 +597,18 @@ object frmMain: TfrmMain
                 object pnlCallers: TPanel
                   Left = 0
                   Top = 0
-                  Width = 1040
+                  Width = 1093
                   Height = 82
                   Align = alTop
                   BevelOuter = bvNone
                   TabOrder = 0
                   Visible = False
+                  ExplicitWidth = 1040
                   object lvCallers: TGpArrowListView
                     Tag = 79
                     Left = 0
                     Top = 0
-                    Width = 1040
+                    Width = 1093
                     Height = 82
                     Align = alClient
                     Columns = <
@@ -657,21 +674,23 @@ object frmMain: TfrmMain
                     OnDblClick = lvCallersDblClick
                     OnColumnResize = lvProcsColumnResize
                     OnColumnTrack = lvCalleesColumnTrack
+                    ExplicitWidth = 1040
                   end
                 end
                 object pnlCurrent: TPanel
                   Left = 0
                   Top = 85
-                  Width = 1040
+                  Width = 1093
                   Height = 196
                   Align = alClient
                   BevelOuter = bvNone
                   TabOrder = 1
+                  ExplicitWidth = 1040
                   object lvProcs: TGpArrowListView
                     Tag = 68
                     Left = 0
                     Top = 0
-                    Width = 1040
+                    Width = 1093
                     Height = 196
                     Align = alClient
                     Columns = <
@@ -738,23 +757,25 @@ object frmMain: TfrmMain
                     OnSelectItem = lvProcsSelectItem
                     OnColumnResize = lvProcsColumnResize
                     OnColumnTrack = lvCalleesColumnTrack
+                    ExplicitWidth = 1040
                   end
                 end
               end
               object pnlCallees: TPanel
                 Left = 0
                 Top = 315
-                Width = 1040
+                Width = 1093
                 Height = 91
                 Align = alBottom
                 BevelOuter = bvNone
                 TabOrder = 2
                 Visible = False
+                ExplicitWidth = 1040
                 object lvCallees: TGpArrowListView
                   Tag = 89
                   Left = 0
                   Top = 0
-                  Width = 1040
+                  Width = 1093
                   Height = 91
                   Align = alClient
                   Columns = <
@@ -820,25 +841,28 @@ object frmMain: TfrmMain
                   OnDblClick = lvCallersDblClick
                   OnColumnResize = lvProcsColumnResize
                   OnColumnTrack = lvCalleesColumnTrack
+                  ExplicitWidth = 1040
                 end
               end
               object pnlBottom: TPanel
                 Left = 0
                 Top = 406
-                Width = 1040
+                Width = 1093
                 Height = 3
                 Align = alBottom
                 BevelOuter = bvNone
                 TabOrder = 1
+                ExplicitWidth = 1040
               end
             end
             object tabClasses: TTabSheet
               Caption = 'Classes'
               ImageIndex = -1
+              ExplicitWidth = 1040
               object vstClasses: TVirtualStringTree
                 Left = 0
                 Top = 33
-                Width = 1040
+                Width = 1093
                 Height = 376
                 Align = alClient
                 Header.AutoSizeIndex = 0
@@ -848,7 +872,8 @@ object frmMain: TfrmMain
                 PopupMenu = popAnalysisListview
                 TabOrder = 0
                 TreeOptions.PaintOptions = [toShowButtons, toShowDropmark, toThemeAware, toUseBlendedImages]
-                ExplicitTop = 34
+                ExplicitTop = 35
+                ExplicitWidth = 1040
                 Columns = <
                   item
                     MinWidth = 200
@@ -875,15 +900,16 @@ object frmMain: TfrmMain
                     WideText = 'Calls'
                   end>
               end
-              object Panel7: TPanel
+              object pnThreadClass: TPanel
                 Left = 0
                 Top = 0
-                Width = 1040
+                Width = 1093
                 Height = 33
                 Align = alTop
                 BevelOuter = bvNone
-                Caption = 'Panel7'
+                Caption = 'pnThreadClass'
                 TabOrder = 1
+                ExplicitWidth = 1040
                 object Label1: TLabel
                   Left = 0
                   Top = 10
@@ -893,8 +919,8 @@ object frmMain: TfrmMain
                   FocusControl = cbxSelectThreadClass
                 end
                 object cbxSelectThreadClass: TComboBox
-                  Left = 74
-                  Top = 7
+                  Left = 72
+                  Top = 6
                   Width = 199
                   Height = 21
                   Style = csDropDownList
@@ -906,20 +932,23 @@ object frmMain: TfrmMain
             object tabUnits: TTabSheet
               Caption = 'Units'
               ImageIndex = -1
+              ExplicitLeft = 0
+              ExplicitTop = 26
+              ExplicitWidth = 1040
               DesignSize = (
-                1040
+                1093
                 409)
               object Label2: TLabel
-                Left = 6
-                Top = 8
+                Left = 0
+                Top = 10
                 Width = 66
                 Height = 13
                 Caption = '&Select thread:'
                 FocusControl = cbxSelectThreadUnit
               end
               object cbxSelectThreadUnit: TComboBox
-                Left = 78
-                Top = 4
+                Left = 72
+                Top = 6
                 Width = 199
                 Height = 21
                 Style = csDropDownList
@@ -928,7 +957,7 @@ object frmMain: TfrmMain
               object lvUnits: TGpArrowListView
                 Left = 4
                 Top = 32
-                Width = 1032
+                Width = 1085
                 Height = 325
                 Anchors = [akLeft, akTop, akRight, akBottom]
                 Columns = <
@@ -966,55 +995,59 @@ object frmMain: TfrmMain
                 OnClick = lvProcsClick
                 OnCompare = lvUnitsCompare
                 OnSelectItem = lvProcsSelectItem
+                ExplicitWidth = 1032
               end
             end
             object tabThreads: TTabSheet
               Caption = 'Threads'
               ImageIndex = -1
-              object lvThreads: TGpArrowListView
+              ExplicitWidth = 1040
+              object vstThreads: TVirtualStringTree
                 Left = 0
                 Top = 0
-                Width = 1040
+                Width = 1093
                 Height = 409
                 Align = alClient
-                Columns = <
-                  item
-                    Caption = 'ThreadID'
-                    MinWidth = 90
-                    Width = 90
-                  end
-                  item
-                    Caption = 'Thread'
-                    Width = 275
-                  end
-                  item
-                    Alignment = taRightJustify
-                    Caption = '% Time'
-                    MaxWidth = 75
-                    MinWidth = 75
-                    Width = 75
-                  end
-                  item
-                    Alignment = taRightJustify
-                    Caption = 'Time'
-                    MaxWidth = 75
-                    MinWidth = 75
-                    Width = 75
-                  end
-                  item
-                    Alignment = taRightJustify
-                    Caption = 'Calls'
-                    MaxWidth = 75
-                    MinWidth = 75
-                    Width = 75
-                  end>
-                HotTrack = True
-                ReadOnly = True
-                RowSelect = True
+                Header.AutoSizeIndex = 0
+                Header.Height = 20
+                Header.MinHeight = 20
+                Header.Options = [hoColumnResize, hoDrag, hoShowSortGlyphs, hoVisible]
+                Header.PopupMenu = popAnalysisListview
                 PopupMenu = popAnalysisListview
                 TabOrder = 0
-                ViewStyle = vsReport
-                OnCompare = lvThreadsCompare
+                TreeOptions.PaintOptions = [toShowButtons, toShowDropmark, toThemeAware, toUseBlendedImages]
+                ExplicitTop = 2
+                Columns = <
+                  item
+                    MinWidth = 90
+                    Position = 0
+                    Width = 90
+                    WideText = 'ThreadID'
+                  end
+                  item
+                    MinWidth = 275
+                    Position = 1
+                    Width = 275
+                    WideText = 'Thread'
+                  end
+                  item
+                    MinWidth = 75
+                    Position = 2
+                    Width = 75
+                    WideText = '% Time'
+                  end
+                  item
+                    MinWidth = 75
+                    Position = 3
+                    Width = 75
+                    WideText = 'Time'
+                  end
+                  item
+                    MinWidth = 75
+                    Position = 4
+                    Width = 75
+                    WideText = 'Calls'
+                  end>
               end
             end
           end
@@ -1024,15 +1057,16 @@ object frmMain: TfrmMain
     object pnlSourcePreview: TPanel
       Left = 0
       Top = 469
-      Width = 1056
+      Width = 1109
       Height = 121
       Align = alBottom
       BevelOuter = bvNone
       TabOrder = 1
+      ExplicitWidth = 1056
       object sourceCodeEdit: TSynEdit
         Left = 0
         Top = 0
-        Width = 1056
+        Width = 1109
         Height = 121
         Align = alClient
         Font.Charset = DEFAULT_CHARSET
@@ -1059,12 +1093,13 @@ object frmMain: TfrmMain
         Lines.Strings = (
           'sourceCodeEdit')
         FontSmoothing = fsmNone
+        ExplicitWidth = 1056
       end
     end
   end
   object pnlLayout: TPanel
-    Left = 442
-    Top = 0
+    Left = 744
+    Top = -8
     Width = 162
     Height = 100
     Hint = 'Layout Manager'
