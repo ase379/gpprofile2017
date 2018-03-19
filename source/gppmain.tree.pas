@@ -30,7 +30,7 @@ type
     procedure BeginUpdate;
     procedure EndUpdate;
     procedure Clear;
-    procedure AddEntry(const aParentId, anEntryId : Integer);
+    procedure AddEntry(const anEntryId : Cardinal);
 
 
     function GetRowAsCsv(const aNode: PVirtualNode; const aDelimeter: char): string;
@@ -84,7 +84,7 @@ end;
 
 
 
-procedure TSimpleStatsListTools.AddEntry(const aParentId, anEntryId : Integer);
+procedure TSimpleStatsListTools.AddEntry(const anEntryId : Cardinal);
 var
   LData : PProfilingInfoRec;
   LNode : PVirtualNode;
@@ -191,11 +191,7 @@ begin
       0: CellText := fProfileResults.resUnits[LData.UnitId].ueName;
       1: CellText := FormatPerc(fProfileResults.resUnits[LData.UnitId].ueTotalTime[fThreadIndex]/totalTime);
       2: CellText := FormatTime(fProfileResults.resUnits[LData.UnitId].ueTotalTime[fThreadIndex],fProfileResults.resFrequency);
-      3: CellText := '-';
-      4: CellText := FormatCnt(fProfileResults.resUnits[LData.UnitId].ueTotalCnt[fThreadIndex]);
-      5: CellText := '-';
-      6: CellText := '-';
-      7: CellText := '-';
+      3: CellText := FormatCnt(fProfileResults.resUnits[LData.UnitId].ueTotalCnt[fThreadIndex]);
     end;
 
   end

@@ -32,7 +32,6 @@ object frmMain: TfrmMain
         Width = 0
       end>
     OnResize = StatusBarResize
-    ExplicitWidth = 1056
   end
   object Panel3: TPanel
     Left = 0
@@ -42,7 +41,6 @@ object frmMain: TfrmMain
     Align = alTop
     BevelOuter = bvNone
     TabOrder = 0
-    ExplicitWidth = 1056
     object Panel5: TPanel
       Left = 214
       Top = 0
@@ -249,7 +247,6 @@ object frmMain: TfrmMain
       Align = alClient
       BevelOuter = bvNone
       TabOrder = 3
-      ExplicitWidth = 585
       object tbrLayout: TToolBar
         Left = 0
         Top = 0
@@ -296,7 +293,6 @@ object frmMain: TfrmMain
     Align = alClient
     BevelOuter = bvNone
     TabOrder = 2
-    ExplicitWidth = 1056
     object splitSourcePreview: TSplitter
       Left = 0
       Top = 466
@@ -316,7 +312,6 @@ object frmMain: TfrmMain
       Align = alClient
       BevelOuter = bvNone
       TabOrder = 0
-      ExplicitWidth = 1056
       object PageControl1: TPageControl
         Left = 0
         Top = 0
@@ -328,11 +323,9 @@ object frmMain: TfrmMain
         Images = imglButtons
         TabOrder = 0
         OnChange = PageControl1Change
-        ExplicitWidth = 1056
         object tabInstrumentation: TTabSheet
           Caption = 'Instrumentation'
           ImageIndex = 16
-          ExplicitWidth = 1048
           object Splitter1: TSplitter
             Left = 129
             Top = 25
@@ -353,7 +346,6 @@ object frmMain: TfrmMain
             Align = alTop
             BevelOuter = bvNone
             TabOrder = 0
-            ExplicitWidth = 1048
             object chkShowAll: TCheckBox
               Left = 6
               Top = 4
@@ -439,7 +431,6 @@ object frmMain: TfrmMain
             Align = alClient
             BevelOuter = bvNone
             TabOrder = 3
-            ExplicitWidth = 776
             DesignSize = (
               829
               412)
@@ -453,7 +444,6 @@ object frmMain: TfrmMain
               ItemHeight = 13
               TabOrder = 0
               OnClick = clbProcsClick
-              ExplicitWidth = 770
             end
             object lblProcs: TStaticText
               Left = 2
@@ -468,22 +458,19 @@ object frmMain: TfrmMain
         object tabAnalysis: TTabSheet
           Caption = 'Analysis'
           ImageIndex = 17
-          ExplicitWidth = 1048
           object PageControl2: TPageControl
             Left = 0
             Top = 0
             Width = 1101
             Height = 437
-            ActivePage = tabClasses
+            ActivePage = tabUnits
             Align = alClient
             HotTrack = True
             TabOrder = 0
             OnChange = PageControl2Change
-            ExplicitWidth = 1048
             object tabProcedures: TTabSheet
               Caption = 'Procedures'
               ImageIndex = -1
-              ExplicitWidth = 1040
               object splitCallees: TSplitter
                 Left = 0
                 Top = 312
@@ -506,7 +493,6 @@ object frmMain: TfrmMain
                 Align = alTop
                 BevelOuter = bvNone
                 TabOrder = 0
-                ExplicitWidth = 1040
                 DesignSize = (
                   1093
                   31)
@@ -526,7 +512,6 @@ object frmMain: TfrmMain
                   Anchors = [akTop, akRight]
                   BevelOuter = bvNone
                   TabOrder = 0
-                  ExplicitLeft = 940
                   object ToolBar3: TToolBar
                     Left = 19
                     Top = 0
@@ -580,7 +565,6 @@ object frmMain: TfrmMain
                 Align = alClient
                 BevelOuter = bvNone
                 TabOrder = 3
-                ExplicitWidth = 1040
                 object splitCallers: TSplitter
                   Left = 0
                   Top = 82
@@ -603,7 +587,6 @@ object frmMain: TfrmMain
                   BevelOuter = bvNone
                   TabOrder = 0
                   Visible = False
-                  ExplicitWidth = 1040
                   object lvCallers: TGpArrowListView
                     Tag = 79
                     Left = 0
@@ -674,7 +657,6 @@ object frmMain: TfrmMain
                     OnDblClick = lvCallersDblClick
                     OnColumnResize = lvProcsColumnResize
                     OnColumnTrack = lvCalleesColumnTrack
-                    ExplicitWidth = 1040
                   end
                 end
                 object pnlCurrent: TPanel
@@ -685,7 +667,6 @@ object frmMain: TfrmMain
                   Align = alClient
                   BevelOuter = bvNone
                   TabOrder = 1
-                  ExplicitWidth = 1040
                   object lvProcs: TGpArrowListView
                     Tag = 68
                     Left = 0
@@ -757,7 +738,6 @@ object frmMain: TfrmMain
                     OnSelectItem = lvProcsSelectItem
                     OnColumnResize = lvProcsColumnResize
                     OnColumnTrack = lvCalleesColumnTrack
-                    ExplicitWidth = 1040
                   end
                 end
               end
@@ -770,7 +750,6 @@ object frmMain: TfrmMain
                 BevelOuter = bvNone
                 TabOrder = 2
                 Visible = False
-                ExplicitWidth = 1040
                 object lvCallees: TGpArrowListView
                   Tag = 89
                   Left = 0
@@ -841,7 +820,6 @@ object frmMain: TfrmMain
                   OnDblClick = lvCallersDblClick
                   OnColumnResize = lvProcsColumnResize
                   OnColumnTrack = lvCalleesColumnTrack
-                  ExplicitWidth = 1040
                 end
               end
               object pnlBottom: TPanel
@@ -852,13 +830,11 @@ object frmMain: TfrmMain
                 Align = alBottom
                 BevelOuter = bvNone
                 TabOrder = 1
-                ExplicitWidth = 1040
               end
             end
             object tabClasses: TTabSheet
               Caption = 'Classes'
               ImageIndex = -1
-              ExplicitWidth = 1040
               object vstClasses: TVirtualStringTree
                 Left = 0
                 Top = 33
@@ -872,8 +848,6 @@ object frmMain: TfrmMain
                 PopupMenu = popAnalysisListview
                 TabOrder = 0
                 TreeOptions.PaintOptions = [toShowButtons, toShowDropmark, toThemeAware, toUseBlendedImages]
-                ExplicitTop = 35
-                ExplicitWidth = 1040
                 Columns = <
                   item
                     MinWidth = 200
@@ -907,9 +881,7 @@ object frmMain: TfrmMain
                 Height = 33
                 Align = alTop
                 BevelOuter = bvNone
-                Caption = 'pnThreadClass'
                 TabOrder = 1
-                ExplicitWidth = 1040
                 object Label1: TLabel
                   Left = 0
                   Top = 10
@@ -934,74 +906,75 @@ object frmMain: TfrmMain
               ImageIndex = -1
               ExplicitLeft = 0
               ExplicitTop = 26
-              ExplicitWidth = 1040
-              DesignSize = (
-                1093
-                409)
-              object Label2: TLabel
+              object pnThreadUnits: TPanel
                 Left = 0
-                Top = 10
-                Width = 66
-                Height = 13
-                Caption = '&Select thread:'
-                FocusControl = cbxSelectThreadUnit
-              end
-              object cbxSelectThreadUnit: TComboBox
-                Left = 72
-                Top = 6
-                Width = 199
-                Height = 21
-                Style = csDropDownList
+                Top = 0
+                Width = 1093
+                Height = 33
+                Align = alTop
+                BevelOuter = bvNone
                 TabOrder = 0
+                object Label2: TLabel
+                  Left = 8
+                  Top = 10
+                  Width = 66
+                  Height = 13
+                  Caption = '&Select thread:'
+                  FocusControl = cbxSelectThreadUnit
+                end
+                object cbxSelectThreadUnit: TComboBox
+                  Left = 80
+                  Top = 6
+                  Width = 199
+                  Height = 21
+                  Style = csDropDownList
+                  TabOrder = 0
+                  OnChange = cbxSelectThreadUnitChange
+                end
               end
-              object lvUnits: TGpArrowListView
-                Left = 4
-                Top = 32
-                Width = 1085
-                Height = 325
-                Anchors = [akLeft, akTop, akRight, akBottom]
-                Columns = <
-                  item
-                    Caption = 'Unit'
-                    Width = 275
-                  end
-                  item
-                    Alignment = taRightJustify
-                    Caption = '% Time'
-                    MaxWidth = 75
-                    MinWidth = 75
-                    Width = 75
-                  end
-                  item
-                    Alignment = taRightJustify
-                    Caption = 'Time'
-                    MaxWidth = 75
-                    MinWidth = 75
-                    Width = 75
-                  end
-                  item
-                    Alignment = taRightJustify
-                    Caption = 'Calls'
-                    MaxWidth = 75
-                    MinWidth = 75
-                    Width = 75
-                  end>
-                HotTrack = True
-                ReadOnly = True
-                RowSelect = True
+              object vstUnits: TVirtualStringTree
+                Left = 0
+                Top = 33
+                Width = 1093
+                Height = 376
+                Align = alClient
+                Header.AutoSizeIndex = 0
+                Header.Height = 20
+                Header.MinHeight = 20
+                Header.Options = [hoColumnResize, hoDrag, hoShowSortGlyphs, hoVisible]
                 PopupMenu = popAnalysisListview
                 TabOrder = 1
-                ViewStyle = vsReport
-                OnClick = lvProcsClick
-                OnCompare = lvUnitsCompare
-                OnSelectItem = lvProcsSelectItem
-                ExplicitWidth = 1032
+                TreeOptions.PaintOptions = [toShowButtons, toShowDropmark, toThemeAware, toUseBlendedImages]
+                Columns = <
+                  item
+                    MinWidth = 200
+                    Position = 0
+                    Width = 200
+                    WideText = 'Unit'
+                  end
+                  item
+                    MinWidth = 150
+                    Position = 1
+                    Width = 150
+                    WideText = '% Time'
+                  end
+                  item
+                    MinWidth = 150
+                    Position = 2
+                    Width = 150
+                    WideText = 'Time'
+                  end
+                  item
+                    MinWidth = 150
+                    Position = 3
+                    Width = 150
+                    WideText = 'Calls'
+                  end>
               end
             end
             object tabThreads: TTabSheet
               Caption = 'Threads'
               ImageIndex = -1
-              ExplicitWidth = 1040
               object vstThreads: TVirtualStringTree
                 Left = 0
                 Top = 0
@@ -1016,7 +989,6 @@ object frmMain: TfrmMain
                 PopupMenu = popAnalysisListview
                 TabOrder = 0
                 TreeOptions.PaintOptions = [toShowButtons, toShowDropmark, toThemeAware, toUseBlendedImages]
-                ExplicitTop = 2
                 Columns = <
                   item
                     MinWidth = 90
@@ -1062,7 +1034,6 @@ object frmMain: TfrmMain
       Align = alBottom
       BevelOuter = bvNone
       TabOrder = 1
-      ExplicitWidth = 1056
       object sourceCodeEdit: TSynEdit
         Left = 0
         Top = 0
@@ -1093,7 +1064,6 @@ object frmMain: TfrmMain
         Lines.Strings = (
           'sourceCodeEdit')
         FontSmoothing = fsmNone
-        ExplicitWidth = 1056
       end
     end
   end

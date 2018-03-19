@@ -125,9 +125,6 @@ type
     tabProcedures: TTabSheet;
     tabClasses: TTabSheet;
     tabUnits: TTabSheet;
-    Label2: TLabel;
-    cbxSelectThreadUnit: TComboBox;
-    lvUnits: TGpArrowListView;
     tabThreads: TTabSheet;
     pnlSourcePreview: TPanel;
     splitSourcePreview: TSplitter;
@@ -213,6 +210,10 @@ type
     lblSelectThreadProc: TLabel;
     cbxSelectThreadProc: TComboBox;
     vstThreads: TVirtualStringTree;
+    pnThreadUnits: TPanel;
+    Label2: TLabel;
+    cbxSelectThreadUnit: TComboBox;
+    vstUnits: TVirtualStringTree;
     procedure FormCreate(Sender: TObject);
     procedure MRUClick(Sender: TObject; LatestFile: String);
     procedure FormDestroy(Sender: TObject);
@@ -241,8 +242,6 @@ type
     procedure lvClassesCompare(Sender: TObject; Item1,
       Item2: TListItem; Data: Integer; var Compare: Integer);
     procedure cbxSelectThreadClassChange(Sender: TObject);
-    procedure lvUnitsCompare(Sender: TObject; Item1, Item2: TListItem;
-      Data: Integer; var Compare: Integer);
     procedure FormShow(Sender: TObject);
     procedure StatusBarResize(Sender: TObject);
     procedure actHideNotExecutedExecute(Sender: TObject);
@@ -309,6 +308,7 @@ type
     procedure splitCallersMoved(Sender: TObject);
     procedure clbUnitsKeyPress(Sender: TObject; var Key: Char);
     procedure clbClassesKeyPress(Sender: TObject; var Key: Char);
+    procedure cbxSelectThreadUnitChange(Sender: TObject);
   private
     openProject               : TProject;
     openProfile               : TResults;
@@ -332,6 +332,7 @@ type
     selectedProc              : pointer;
     callersPerc               : real;
     calleesPerc               : real;
+    fvstUnitsTools            : TSimpleStatsListTools;
     fvstClassesTools          : TSimpleStatsListTools;
     fvstThreadsTools          : TSimpleStatsListTools;
 
@@ -794,7 +795,6 @@ begin
   lvProcs.Color                      := clBtnFace;
   lvCallers.Color                    := clBtnFace;
   lvCallees.Color                    := clBtnFace;
-  lvUnits.Color                      := clBtnFace;
   cbxSelectThreadProc.Color          := clBtnFace;
   cbxSelectThreadClass.Color         := clBtnFace;
   cbxSelectThreadUnit.Color          := clBtnFace;
@@ -809,7 +809,6 @@ begin
   lvProcs.Color                      := clWindow;
   lvCallers.Color                    := clWindow;
   lvCallees.Color                    := clWindow;
-  lvUnits.Color                      := clWindow;
   StatusPanel0('',false);
   if cbxSelectThreadProc.Items.Count > 2 then begin
     cbxSelectThreadProc.Color  := clWindow;
@@ -1044,7 +1043,7 @@ begin
           with resClasses[i] do begin
             if (not actHideNotExecuted.Checked) or (ceTotalCnt[cbxSelectThreadClass.ItemIndex] > 0) then
             begin
-              fvstClassesTools.AddEntry(ceUID,i);
+              fvstClassesTools.AddEntry(i);
             end;
           end;
         end;
@@ -1063,31 +1062,25 @@ var
   li       : TListItem;
   totalTime: int64;
 begin
-  with lvUnits, openProfile do begin
-    Items.BeginUpdate;
+  fvstUnitsTools.BeginUpdate;
+  fvstUnitsTools.Clear();
+  fvstUnitsTools.ThreadIndex := cbxSelectThreadUnit.ItemIndex;
+  fvstUnitsTools.ProfileResults := openProfile;
+  with openProfile do begin
     try
-      Items.Clear;
       if cbxSelectThreadUnit.ItemIndex >= 0 then begin
         totalTime := resUnits[0].ueTotalTime[cbxSelectThreadUnit.ItemIndex];
-        AllocBy := High(resUnits)-Low(resUnits)+1;
         for i := Low(resUnits)+1 to High(resUnits) do begin
           with resUnits[i] do begin
             if (not actHideNotExecuted.Checked) or (ueTotalCnt[cbxSelectThreadUnit.ItemIndex] > 0) then begin
-              li := Items.Add;
-              li.Caption := ueName;
-              if totalTime = 0
-                then li.Subitems.Add(TSimpleStatsListTools.FormatPerc(0))
-                else li.Subitems.Add(TSimpleStatsListTools.FormatPerc(ueTotalTime[cbxSelectThreadUnit.ItemIndex]/totalTime));
-              li.Subitems.Add(TSimpleStatsListTools.FormatTime(ueTotalTime[cbxSelectThreadUnit.ItemIndex],resFrequency));
-              li.Subitems.Add(TSimpleStatsListTools.FormatCnt(ueTotalCnt[cbxSelectThreadUnit.ItemIndex]));
-              li.Data := pointer(i);
+              fvstUnitsTools.AddEntry(i);
             end;
           end;
         end;
-        if resortOn >= 0 then lvUnits.SortOn(resortOn,false)
-                         else lvUnits.Resort;
       end;
-    finally Items.EndUpdate; end;
+    finally
+      fvstUnitsTools.EndUpdate;
+    end;
   end;
 end; { TfrmMain.FillUnitView }
 
@@ -1110,7 +1103,7 @@ begin
         for i := Low(resThreads)+1 to High(resThreads) do begin
           with resThreads[i] do begin
             if (not actHideNotExecuted.Checked) or (teTotalCnt > 0) then begin
-              fvstThreadsTools.AddEntry(teThread,i);
+              fvstThreadsTools.AddEntry(i);
             end;
           end;
         end;
@@ -1401,6 +1394,7 @@ begin
   MRUPrf.LoadFromRegistry;
   undelProject := '';
   SlidersMoved;
+  fvstUnitsTools   := TSimpleStatsListTools.Create(vstUnits,TProfilingInfoTypeEnum.pit_unit);
   fvstClassesTools := TSimpleStatsListTools.Create(vstClasses,TProfilingInfoTypeEnum.pit_class);
   fvstThreadsTools := TSimpleStatsListTools.Create(vstThreads,TProfilingInfoTypeEnum.pit_thread);
 end;
@@ -1465,7 +1459,7 @@ begin
       WriteBool('pnlCalleesVisible',pnlCallees.Visible);
       PutColumns(reg,lvProcs,'lvProcs');
       PutHeader(reg,vstClasses,'lvClasses');
-      PutColumns(reg,lvUnits,'lvUnits');
+      PutHeader(reg,vstUnits,'lvUnits');
       PutHeader(reg,vstThreads,'lvThreads');
       PutColumns(reg,lvCallers,'lvCallers');
       PutColumns(reg,lvCallees,'lvCallees');
@@ -1497,6 +1491,7 @@ begin
   MRUPrf.SaveToRegistry;
   FreeAndNil(openProject);
   FreeAndNil(openProfile);
+  FreeAndNil(fvstUnitsTools);
   FreeAndNil(fvstClassesTools);
   FreeAndNil(fvstThreadsTools);
 end;
@@ -2006,7 +2001,7 @@ begin
     with PageControl2 do
       if      ActivePage = tabProcedures then lvProcs.SetFocus
       else if ActivePage = tabClasses    then vstClasses.SetFocus
-      else if ActivePage = tabUnits      then lvUnits.SetFocus
+      else if ActivePage = tabUnits      then vstUnits.SetFocus
       else if ActivePage = tabThreads    then vstThreads.SetFocus;
     lvProcsClick(Sender);
     pnlSourcePreview.Visible := previewVisibleAnalysis;
@@ -2106,6 +2101,11 @@ begin
   FillProcView;
 end;
 
+procedure TfrmMain.cbxSelectThreadUnitChange(Sender: TObject);
+begin
+  FillUnitView();
+end;
+
 procedure TfrmMain.lvClassesCompare(Sender: TObject; Item1,
   Item2: TListItem; Data: Integer; var Compare: Integer);
 var
@@ -2134,31 +2134,6 @@ procedure TfrmMain.cbxSelectThreadClassChange(Sender: TObject);
 begin
   FillClassView;
 end;
-
-procedure TfrmMain.lvUnitsCompare(Sender: TObject; Item1, Item2: TListItem;
-  Data: Integer; var Compare: Integer);
-var
-  cmp: Int64;
-begin
-  with openProfile do begin
-    case Data of
-      0: cmp := StrIComp(PChar(resUnits[integer(item1.Data)].ueName),
-                         PChar(resUnits[integer(item2.Data)].ueName));
-      1: cmp := resUnits[integer(item1.Data)].ueTotalTime[cbxSelectThreadUnit.ItemIndex]-
-                resUnits[integer(item2.Data)].ueTotalTime[cbxSelectThreadUnit.ItemIndex];
-      2: cmp := resUnits[integer(item1.Data)].ueTotalTime[cbxSelectThreadUnit.ItemIndex]-
-                resUnits[integer(item2.Data)].ueTotalTime[cbxSelectThreadUnit.ItemIndex];
-      3: cmp := resUnits[integer(item1.Data)].ueTotalCnt[cbxSelectThreadUnit.ItemIndex]-
-                resUnits[integer(item2.Data)].ueTotalCnt[cbxSelectThreadUnit.ItemIndex];
-      else cmp := 0;
-    end;
-    if      cmp < 0 then Compare := -1
-    else if cmp > 0 then Compare :=  1
-                    else Compare :=  0;
-  end;
-  if not lvUnits.AtoZOrder then Compare := -Compare;
-end;
-
 
 
 procedure TfrmMain.LoadMetrics(layoutName: string);
@@ -2242,7 +2217,7 @@ begin
         splitSourcePreview.Visible := pnlSourcePreview.Visible;
         GetColumns(reg,lvProcs,'lvProcs');
         GetHeaders(reg,vstClasses,'lvClasses');
-        GetColumns(reg,lvUnits,'lvUnits');
+        GetHeaders(reg,vstUnits,'lvUnits');
         GetHeaders(reg,vstThreads,'lvThreads');
         GetColumns(reg,lvCallers,'lvCallers');
         GetColumns(reg,lvCallees,'lvCallees');
@@ -2733,7 +2708,7 @@ begin
         else if ActivePage = tabClasses then
           LVST := vstClasses
         else
-          lv := lvUnits;
+          LVST := vstUnits;
 
         if Assigned(lv) then
         begin
@@ -2891,7 +2866,7 @@ procedure TfrmMain.ExportTo(fileName: string; exportProcs, exportClasses,
 
   procedure ExpUnits(var f: textfile; delim: char);
   begin
-    _Export(f,lvUnits,delim);
+    LExport(f,fvstUnitsTools,delim);
   end; { ExpUnits }
 
   procedure ExpThreads(var f: textfile; delim: char);
