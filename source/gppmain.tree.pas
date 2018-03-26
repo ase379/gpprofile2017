@@ -32,6 +32,10 @@ type
     procedure Clear;
     procedure AddEntry(const anEntryId : Cardinal);
 
+    function GetSelectedId(): Int64;
+    function GetSelectedCaption(): string;
+
+    function GetSelectedNode: PVirtualNode;
 
     function GetRowAsCsv(const aNode: PVirtualNode; const aDelimeter: char): string;
 
@@ -93,25 +97,11 @@ begin
   LData := PProfilingInfoRec(LNode.GetData);
   LData.ProfilingType := fListType;
   case fListType of
-    pit_unit :
-    begin
-      LData.UnitId := anEntryId;
-    end;
-    pit_class :
-    begin
-      LData.ClassId := anEntryId;
-    end;
-    pit_proc :
-    begin
-      LData.ProcId := anEntryId;
-    end;
-    pit_thread :
-    begin
-      LData.ThreadId := anEntryId;
-    end;
-
+    pit_unit : LData.UnitId := anEntryId;
+    pit_class : LData.ClassId := anEntryId;
+    pit_proc : LData.ProcId := anEntryId;
+    pit_thread : LData.ThreadId := anEntryId;
   end;
-
 end;
 
 
@@ -138,6 +128,39 @@ begin
     lCellText := StringReplace(lCellText, ',', '.', [rfReplaceAll]);
     result := result + lCellText + aDelimeter;
   end;
+end;
+
+
+function TSimpleStatsListTools.GetSelectedNode: PVirtualNode;
+var
+  LEnum : TVTVirtualNodeEnumerator;
+begin
+  result := nil;
+  LEnum := fList.SelectedNodes(false).GetEnumerator();
+  while(LEnum.MoveNext) do
+  begin
+    Exit(LEnum.Current);
+  end;
+end;
+
+function TSimpleStatsListTools.GetSelectedId: int64;
+var
+  LNode : PVirtualNode;
+begin
+  result := -1;
+  LNode := self.GetSelectedNode;
+  if assigned(LNode) then
+    Result := PProfilingInfoRec(LNode.GetData).GetId;
+end;
+
+function TSimpleStatsListTools.GetSelectedCaption(): string;
+var
+  LNode : PVirtualNode;
+begin
+  result := '';
+  LNode := self.GetSelectedNode;
+  if Assigned(LNode) then
+    OnGetText(fList,LNode, 0, TVSTTextType.ttNormal,result);
 end;
 
 function TSimpleStatsListTools.GetThreadName(index: integer): string;

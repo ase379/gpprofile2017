@@ -173,7 +173,6 @@ type
     pnlCallers: TPanel;
     splitCallers: TSplitter;
     pnlCurrent: TPanel;
-    lvProcs: TGpArrowListView;
     splitCallees: TSplitter;
     pnlCallees: TPanel;
     lvCallees: TGpArrowListView;
@@ -214,6 +213,7 @@ type
     Label2: TLabel;
     cbxSelectThreadUnit: TComboBox;
     vstUnits: TVirtualStringTree;
+    vstProcs: TVirtualStringTree;
     procedure FormCreate(Sender: TObject);
     procedure MRUClick(Sender: TObject; LatestFile: String);
     procedure FormDestroy(Sender: TObject);
@@ -236,11 +236,7 @@ type
     procedure MRUPrfClick(Sender: TObject; LatestFile: String);
     procedure actInstrumentRunExecute(Sender: TObject);
     procedure btnCancelLoadClick(Sender: TObject);
-    procedure lvProcsCompare(Sender: TObject; Item1, Item2: TListItem;
-      Data: Integer; var Compare: Integer);
     procedure cbxSelectThreadProcChange(Sender: TObject);
-    procedure lvClassesCompare(Sender: TObject; Item1,
-      Item2: TListItem; Data: Integer; var Compare: Integer);
     procedure cbxSelectThreadClassChange(Sender: TObject);
     procedure FormShow(Sender: TObject);
     procedure StatusBarResize(Sender: TObject);
@@ -251,8 +247,6 @@ type
     procedure clbProcsClick(Sender: TObject);
     procedure lvProcsClick(Sender: TObject);
     procedure PageControl2Change(Sender: TObject);
-    procedure lvProcsSelectItem(Sender: TObject; Item: TListItem;
-      Selected: Boolean);
     procedure actExportProfileExecute(Sender: TObject);
     procedure mnuExportProfileClick(Sender: TObject);
     procedure actMakeCopyProfileExecute(Sender: TObject);
@@ -289,13 +283,7 @@ type
     procedure actShowHideCallersUpdate(Sender: TObject);
     procedure actShowHideCalleesExecute(Sender: TObject);
     procedure actShowHideCalleesUpdate(Sender: TObject);
-    procedure lvProcsColumnResize(Sender: TObject; columnIndex: Integer);
-    procedure lvCalleesColumnTrack(Sender: TObject; columnIndex: Integer);
     procedure lvCallersDblClick(Sender: TObject);
-    procedure lvCallersCompare(Sender: TObject; Item1, Item2: TListItem;
-      Data: Integer; var Compare: Integer);
-    procedure lvCalleesCompare(Sender: TObject; Item1, Item2: TListItem;
-      Data: Integer; var Compare: Integer);
     procedure actBrowsePreviousExecute(Sender: TObject);
     procedure actBrowseNextExecute(Sender: TObject);
     procedure actBrowseNextUpdate(Sender: TObject);
@@ -309,6 +297,8 @@ type
     procedure clbUnitsKeyPress(Sender: TObject; var Key: Char);
     procedure clbClassesKeyPress(Sender: TObject; var Key: Char);
     procedure cbxSelectThreadUnitChange(Sender: TObject);
+    procedure vstProcsNodeClick(Sender: TBaseVirtualTree;
+      const HitInfo: THitInfo);
   private
     openProject               : TProject;
     openProfile               : TResults;
@@ -334,6 +324,7 @@ type
     calleesPerc               : real;
     fvstUnitsTools            : TSimpleStatsListTools;
     fvstClassesTools          : TSimpleStatsListTools;
+    fvstProcsTools             : TSimpleStatsListTools;
     fvstThreadsTools          : TSimpleStatsListTools;
 
     procedure ParseProject(const aProject: string; aJustRescan: boolean);
@@ -792,7 +783,6 @@ procedure TfrmMain.DisablePC2;
 begin
   tabAnalysis.Font.Color             := clBtnShadow;
   PageControl2.Font.Color            := clBtnShadow;
-  lvProcs.Color                      := clBtnFace;
   lvCallers.Color                    := clBtnFace;
   lvCallees.Color                    := clBtnFace;
   cbxSelectThreadProc.Color          := clBtnFace;
@@ -806,7 +796,6 @@ procedure TfrmMain.EnablePC2;
 begin
   tabAnalysis.Font.Color             := clWindowText;
   PageControl2.Font.Color            := clWindowText;
-  lvProcs.Color                      := clWindow;
   lvCallers.Color                    := clWindow;
   lvCallees.Color                    := clWindow;
   StatusPanel0('',false);
@@ -991,37 +980,25 @@ procedure TfrmMain.FillProcView(resortOn: integer = -1);
 var
   i        : integer;
   li       : TListItem;
-  totalTime: int64;
 begin
-  with lvProcs, openProfile do begin
-    Items.BeginUpdate;
+  fvstProcsTools.BeginUpdate;
+  fvstProcsTools.Clear();
+  fvstProcsTools.ThreadIndex := cbxSelectThreadClass.ItemIndex;
+  fvstProcsTools.ProfileResults := openProfile;
+  with openProfile do begin
     try
-      Items.Clear;
       if cbxSelectThreadProc.ItemIndex >= 0 then begin
-        totalTime := resProcedures[0].peProcTime[cbxSelectThreadProc.ItemIndex];
-        AllocBy := High(resProcedures)-Low(resProcedures)+1;
         for i := Low(resProcedures)+1 to High(resProcedures) do begin
           with resProcedures[i] do begin
             if (not actHideNotExecuted.Checked) or (peProcCnt[cbxSelectThreadProc.ItemIndex] > 0) then begin
-              li := Items.Add;
-              li.Caption := peName;
-              if totalTime = 0
-                then li.Subitems.Add(TSimpleStatsListTools.FormatPerc(0))
-                else li.Subitems.Add(TSimpleStatsListTools.FormatPerc(peProcTime[cbxSelectThreadProc.ItemIndex]/totalTime));
-              li.Subitems.Add(TSimpleStatsListTools.FormatTime(peProcTime[cbxSelectThreadProc.ItemIndex],resFrequency));
-              li.Subitems.Add(TSimpleStatsListTools.FormatTime(peProcChildTime[cbxSelectThreadProc.ItemIndex],resFrequency));
-              li.Subitems.Add(TSimpleStatsListTools.FormatCnt(peProcCnt[cbxSelectThreadProc.ItemIndex]));
-              li.Subitems.Add(TSimpleStatsListTools.FormatTime(peProcTimeMin[cbxSelectThreadProc.ItemIndex],resFrequency));
-              li.Subitems.Add(TSimpleStatsListTools.FormatTime(peProcTimeMax[cbxSelectThreadProc.ItemIndex],resFrequency));
-              li.Subitems.Add(TSimpleStatsListTools.FormatTime(peProcTimeAvg[cbxSelectThreadProc.ItemIndex],resFrequency));
-              li.Data := pointer(i);
+              fvstProcsTools.AddEntry(i);
             end;
           end;
         end;
-        if resortOn >= 0 then lvProcs.SortOn(resortOn,false)
-                         else lvProcs.Resort;
       end;
-    finally Items.EndUpdate; end;
+    finally
+      fvstProcsTools.EndUpdate;
+    end;
   end;
 end; { TfrmMain.FillProcView }
 
@@ -1029,7 +1006,6 @@ procedure TfrmMain.FillClassView(resortOn: integer = -1);
 var
   i        : integer;
   li       : TListItem;
-  totalTime: int64;
 begin
   fvstClassesTools.BeginUpdate;
   fvstClassesTools.Clear();
@@ -1038,7 +1014,6 @@ begin
   with openProfile do begin
     try
       if cbxSelectThreadClass.ItemIndex >= 0 then begin
-        totalTime := resClasses[0].ceTotalTime[cbxSelectThreadClass.ItemIndex];
         for i := Low(resClasses)+1 to High(resClasses) do begin
           with resClasses[i] do begin
             if (not actHideNotExecuted.Checked) or (ceTotalCnt[cbxSelectThreadClass.ItemIndex] > 0) then
@@ -1060,7 +1035,6 @@ procedure TfrmMain.FillUnitView(resortOn: integer = -1);
 var
   i        : integer;
   li       : TListItem;
-  totalTime: int64;
 begin
   fvstUnitsTools.BeginUpdate;
   fvstUnitsTools.Clear();
@@ -1069,7 +1043,6 @@ begin
   with openProfile do begin
     try
       if cbxSelectThreadUnit.ItemIndex >= 0 then begin
-        totalTime := resUnits[0].ueTotalTime[cbxSelectThreadUnit.ItemIndex];
         for i := Low(resUnits)+1 to High(resUnits) do begin
           with resUnits[i] do begin
             if (not actHideNotExecuted.Checked) or (ueTotalCnt[cbxSelectThreadUnit.ItemIndex] > 0) then begin
@@ -1089,7 +1062,6 @@ procedure TfrmMain.FillThreadView(resortOn: integer = -1);
 var
   i        : integer;
   li       : TListItem;
-  totalTime: int64;
 begin
   fvstThreadsTools.BeginUpdate;
   fvstThreadsTools.Clear();
@@ -1099,7 +1071,6 @@ begin
   with openProfile do begin
     try
       if openProfile <> nil then begin
-        totalTime := resThreads[0].teTotalTime;
         for i := Low(resThreads)+1 to High(resThreads) do begin
           with resThreads[i] do begin
             if (not actHideNotExecuted.Checked) or (teTotalCnt > 0) then begin
@@ -1396,6 +1367,7 @@ begin
   SlidersMoved;
   fvstUnitsTools   := TSimpleStatsListTools.Create(vstUnits,TProfilingInfoTypeEnum.pit_unit);
   fvstClassesTools := TSimpleStatsListTools.Create(vstClasses,TProfilingInfoTypeEnum.pit_class);
+  fvstProcsTools   := TSimpleStatsListTools.Create(vstProcs,TProfilingInfoTypeEnum.pit_proc);
   fvstThreadsTools := TSimpleStatsListTools.Create(vstThreads,TProfilingInfoTypeEnum.pit_thread);
 end;
 
@@ -1457,7 +1429,7 @@ begin
       WriteInteger('pnlCalleesHeight',pnlCallees.Height);
       WriteBool('pnlCallersVisible',pnlCallers.Visible);
       WriteBool('pnlCalleesVisible',pnlCallees.Visible);
-      PutColumns(reg,lvProcs,'lvProcs');
+      PutHeader(reg,vstProcs,'lvProcs');
       PutHeader(reg,vstClasses,'lvClasses');
       PutHeader(reg,vstUnits,'lvUnits');
       PutHeader(reg,vstThreads,'lvThreads');
@@ -1493,6 +1465,7 @@ begin
   FreeAndNil(openProfile);
   FreeAndNil(fvstUnitsTools);
   FreeAndNil(fvstClassesTools);
+  FreeAndNil(fvstProcsTools);
   FreeAndNil(fvstThreadsTools);
 end;
 
@@ -1999,7 +1972,7 @@ begin
   end
   else begin
     with PageControl2 do
-      if      ActivePage = tabProcedures then lvProcs.SetFocus
+      if      ActivePage = tabProcedures then vstProcs.SetFocus
       else if ActivePage = tabClasses    then vstClasses.SetFocus
       else if ActivePage = tabUnits      then vstUnits.SetFocus
       else if ActivePage = tabThreads    then vstThreads.SetFocus;
@@ -2064,37 +2037,6 @@ begin
   cancelLoading := true;
 end;
 
-procedure TfrmMain.lvProcsCompare(Sender: TObject; Item1, Item2: TListItem;
-  Data: Integer; var Compare: Integer);
-var
-  cmp: Int64;
-begin
-  with openProfile do begin
-    case Data of
-      0: cmp := StrIComp(PChar(resProcedures[integer(item1.Data)].peName),
-                         PChar(resProcedures[integer(item2.Data)].peName));
-      1: cmp := resProcedures[integer(item1.Data)].peProcTime[cbxSelectThreadProc.ItemIndex]-
-                resProcedures[integer(item2.Data)].peProcTime[cbxSelectThreadProc.ItemIndex];
-      2: cmp := resProcedures[integer(item1.Data)].peProcTime[cbxSelectThreadProc.ItemIndex]-
-                resProcedures[integer(item2.Data)].peProcTime[cbxSelectThreadProc.ItemIndex];
-      3: cmp := resProcedures[integer(item1.Data)].peProcChildTime[cbxSelectThreadProc.ItemIndex]-
-                resProcedures[integer(item2.Data)].peProcChildTime[cbxSelectThreadProc.ItemIndex];
-      4: cmp := resProcedures[integer(item1.Data)].peProcCnt[cbxSelectThreadProc.ItemIndex]-
-                resProcedures[integer(item2.Data)].peProcCnt[cbxSelectThreadProc.ItemIndex];
-      5: cmp := resProcedures[integer(item1.Data)].peProcTimeMin[cbxSelectThreadProc.ItemIndex]-
-                resProcedures[integer(item2.Data)].peProcTimeMin[cbxSelectThreadProc.ItemIndex];
-      6: cmp := resProcedures[integer(item1.Data)].peProcTimeMax[cbxSelectThreadProc.ItemIndex]-
-                resProcedures[integer(item2.Data)].peProcTimeMax[cbxSelectThreadProc.ItemIndex];
-      7: cmp := resProcedures[integer(item1.Data)].peProcTimeAvg[cbxSelectThreadProc.ItemIndex]-
-                resProcedures[integer(item2.Data)].peProcTimeAvg[cbxSelectThreadProc.ItemIndex];
-      else cmp := 0;
-    end;
-    if      cmp < 0 then Compare := -1
-    else if cmp > 0 then Compare :=  1
-                    else Compare :=  0;
-  end;
-  if not lvProcs.AtoZOrder then Compare := -Compare;
-end;
 
 procedure TfrmMain.cbxSelectThreadProcChange(Sender: TObject);
 begin
@@ -2104,30 +2046,6 @@ end;
 procedure TfrmMain.cbxSelectThreadUnitChange(Sender: TObject);
 begin
   FillUnitView();
-end;
-
-procedure TfrmMain.lvClassesCompare(Sender: TObject; Item1,
-  Item2: TListItem; Data: Integer; var Compare: Integer);
-var
-  cmp: Int64;
-begin
-  with openProfile do begin
-    case Data of
-      0: cmp := StrIComp(PChar(resClasses[integer(item1.Data)].ceName),
-                         PChar(resClasses[integer(item2.Data)].ceName));
-      1: cmp := resClasses[integer(item1.Data)].ceTotalTime[cbxSelectThreadClass.ItemIndex]-
-                resClasses[integer(item2.Data)].ceTotalTime[cbxSelectThreadClass.ItemIndex];
-      2: cmp := resClasses[integer(item1.Data)].ceTotalTime[cbxSelectThreadClass.ItemIndex]-
-                resClasses[integer(item2.Data)].ceTotalTime[cbxSelectThreadClass.ItemIndex];
-      3: cmp := resClasses[integer(item1.Data)].ceTotalCnt[cbxSelectThreadClass.ItemIndex]-
-                resClasses[integer(item2.Data)].ceTotalCnt[cbxSelectThreadClass.ItemIndex];
-      else cmp := 0;
-    end;
-    if      cmp < 0 then Compare := -1
-    else if cmp > 0 then Compare :=  1
-                    else Compare :=  0;
-  end;
-//  if not lvClasses.AtoZOrder then Compare := -Compare;
 end;
 
 procedure TfrmMain.cbxSelectThreadClassChange(Sender: TObject);
@@ -2215,7 +2133,7 @@ begin
           then pnlSourcePreview.Visible := previewVisibleInstr
           else pnlSourcePreview.Visible := previewVisibleAnalysis;
         splitSourcePreview.Visible := pnlSourcePreview.Visible;
-        GetColumns(reg,lvProcs,'lvProcs');
+        GetHeaders(reg,vstProcs,'lvProcs');
         GetHeaders(reg,vstClasses,'lvClasses');
         GetHeaders(reg,vstUnits,'lvUnits');
         GetHeaders(reg,vstThreads,'lvThreads');
@@ -2257,6 +2175,12 @@ begin
 end;
 
 
+
+procedure TfrmMain.vstProcsNodeClick(Sender: TBaseVirtualTree;
+  const HitInfo: THitInfo);
+begin
+  lvProcsClick(Sender);
+end;
 
 { TfrmMain.UseDelphiSettings }
 
@@ -2704,7 +2628,7 @@ begin
       if ActivePage <> tabThreads then
       begin
         if ActivePage = tabProcedures then
-          lv := lvProcs
+          LVST := vstProcs
         else if ActivePage = tabClasses then
           LVST := vstClasses
         else
@@ -2764,13 +2688,6 @@ begin
   if PageControl2.ActivePage = tabThreads then
     ClearSource
   else
-    lvProcsClick(Sender);
-end;
-
-procedure TfrmMain.lvProcsSelectItem(Sender: TObject; Item: TListItem;
-  Selected: Boolean);
-begin
-  if Selected then
     lvProcsClick(Sender);
 end;
 
@@ -2854,7 +2771,7 @@ procedure TfrmMain.ExportTo(fileName: string; exportProcs, exportClasses,
 
   procedure ExpProcedures(var f: textfile; delim: char);
   begin
-    _Export(f,lvProcs,delim);
+    LExport(f,fvstProcsTools,delim);
   end; { ExpProcedures }
 
   procedure ExpClasses(var f: textfile; delim: char);
@@ -3439,40 +3356,17 @@ begin
                                 (PageControl2.ActivePage = tabProcedures);
 end;
 
-procedure TfrmMain.lvProcsColumnResize(Sender: TObject;
-  columnIndex: Integer);
-begin
-  if not inLVResize then begin
-    inLVResize := true;
-    try
-      if Sender <> lvCallers then lvCallers.Column[columnIndex].Width := (Sender as TListView).Column[columnIndex].Width;
-      if Sender <> lvProcs   then lvProcs.Column[columnIndex].Width := (Sender as TListView).Column[columnIndex].Width;
-      if Sender <> lvCallees then lvCallees.Column[columnIndex].Width := (Sender as TListView).Column[columnIndex].Width;
-    finally inlVResize := false; end;
-  end;
-end;
 
-procedure TfrmMain.lvCalleesColumnTrack(Sender: TObject;
-  columnIndex: Integer);
-begin
-  if not inLVResize then begin
-    inLVResize := true;
-    try
-      if Sender <> lvCallers then lvCallers.Column[columnIndex].Width := (Sender as TListView).Column[columnIndex].Width;
-      if Sender <> lvProcs   then lvProcs.Column[columnIndex].Width   := (Sender as TListView).Column[columnIndex].Width;
-      if Sender <> lvCallees then lvCallees.Column[columnIndex].Width := (Sender as TListView).Column[columnIndex].Width;
-    finally inLVResize := false; end;
-  end;
-end;
 
 procedure TfrmMain.RedisplayCallees(resortOn: integer = -1);
 var
-  callingPID: integer;
+  callingPID: int64;
   totalTime : int64;
   i         : integer;
   li        : TListItem;
 begin
-  if pnlCallees.Visible and assigned(lvProcs.Selected) then begin
+  if pnlCallees.Visible and (vstProcs.SelectedCount>0) then
+  begin
     with lvCallees, openProfile do begin
       lvCallees.Perform(WM_SETREDRAW,0,0);
       try
@@ -3481,7 +3375,7 @@ begin
           Items.Clear;
           if DigestVer < 3 then Exit;
           if cbxSelectThreadProc.ItemIndex >= 0 then begin
-            callingPID := integer(lvProcs.Selected.Data);
+            callingPID := fvstProcsTools.GetSelectedId;
             totalTime := resCallGraph[callingPID,0]^.cgeProcTime[cbxSelectThreadProc.ItemIndex];
             AllocBy := High(resCallGraph[callingPID])-Low(resCallGraph[callingPID])+1;
             for i := Low(resCallGraph)+1 to High(resCallGraph) do begin
@@ -3515,12 +3409,12 @@ end;
 
 procedure TfrmMain.RedisplayCallers(resortOn: integer = -1);
 var
-  calledPID: integer;
+  calledPID: int64;
   totalTime: int64;
   i        : integer;
   li       : TListItem;
 begin
-  if pnlCallers.Visible and assigned(lvProcs.Selected) then begin
+  if pnlCallers.Visible and (vstProcs.SelectedCount<>0) then begin
     with lvCallers, openProfile do begin
       lvCallers.Perform(WM_SETREDRAW,0,0);
       try
@@ -3529,7 +3423,7 @@ begin
           Items.Clear;
           if DigestVer < 3 then Exit;
           if cbxSelectThreadProc.ItemIndex >= 0 then begin
-            calledPID := integer(lvProcs.Selected.Data);
+            calledPID := fvstProcsTools.GetSelectedId();
             totalTime := resProcedures[calledPID].peProcTime[cbxSelectThreadProc.ItemIndex];
             AllocBy := High(resCallGraph[calledPID])-Low(resCallGraph[calledPID])+1;
             for i := Low(resCallGraph)+1 to High(resCallGraph) do begin
@@ -3562,22 +3456,39 @@ begin
 end;
 
 procedure TfrmMain.lvCallersDblClick(Sender: TObject);
+var
+  LCaption : string;
+  LSelectedProcID : Int64;
 begin
   with Sender as TGpArrowListView do
     if assigned(Selected) then begin
       ClearBrowser(popBrowseNext);
-      if assigned(lvProcs.Selected) then
-        PushBrowser(popBrowsePrevious,lvProcs.Selected.Caption,integer(lvProcs.Selected.Data));
-      SelectProcs(integer(Selected.Data));
+      LSelectedProcID := fvstProcsTools.GetSelectedId;
+      if LSelectedProcID<>-1 then
+      begin
+        LCaption := openProfile.resProcedures[LSelectedProcID].peName;
+        PushBrowser(popBrowsePrevious,LCaption,LSelectedProcID);
+      end;
+      SelectProcs(LSelectedProcID);
     end;
 end;
 
 procedure TfrmMain.SelectProcs(pid: integer);
 var
-  i: integer;
+  LEnumor : TVTVirtualNodeEnumerator;
+  LData : PProfilingInfoRec;
 begin
-  with lvProcs do begin
-    for i := 0 to Items.Count-1 do
+  LEnumor := vstProcs.Nodes().GetEnumerator();
+  while(LEnumor.MoveNext) do
+  begin
+    LData := PProfilingInfoRec(LEnumor.Current.GetData());
+    if LData.ProcId = pid then
+    begin
+      vstProcs.Selected[LEnumor.Current] := True;
+
+    end;
+  end;
+(*  for i := 0 to .Count-1 do
       if integer(Items[i].Data) = pid then begin
         Selected := Items[i];
         ItemFocused := Selected;
@@ -3586,71 +3497,7 @@ begin
         lvProcsSelectItem(lvProcs,Selected,true);
         Exit;
       end;
-  end;
-end;
-
-procedure TfrmMain.lvCallersCompare(Sender: TObject; Item1,
-  Item2: TListItem; Data: Integer; var Compare: Integer);
-var
-  pidCalled: integer;
-  cmp      : Int64;
-begin
-  with openProfile do begin
-    pidCalled := integer(lvProcs.Selected.Data);
-    case Data of
-      0: cmp := StrIComp(PChar(resProcedures[integer(item1.Data)].peName),
-                         PChar(resProcedures[integer(item2.Data)].peName));
-      1: cmp := resCallGraph[integer(item1.Data),pidCalled].cgeProcTime[cbxSelectThreadProc.ItemIndex]-
-                resCallGraph[integer(item2.Data),pidCalled].cgeProcTime[cbxSelectThreadProc.ItemIndex];
-      2: cmp := resCallGraph[integer(item1.Data),pidCalled].cgeProcTime[cbxSelectThreadProc.ItemIndex]-
-                resCallGraph[integer(item2.Data),pidCalled].cgeProcTime[cbxSelectThreadProc.ItemIndex];
-      3: cmp := resCallGraph[integer(item1.Data),pidCalled].cgeProcChildTime[cbxSelectThreadProc.ItemIndex]-
-                resCallGraph[integer(item2.Data),pidCalled].cgeProcChildTime[cbxSelectThreadProc.ItemIndex];
-      4: cmp := resCallGraph[integer(item1.Data),pidCalled].cgeProcCnt[cbxSelectThreadProc.ItemIndex]-
-                resCallGraph[integer(item2.Data),pidCalled].cgeProcCnt[cbxSelectThreadProc.ItemIndex];
-      5: cmp := resCallGraph[integer(item1.Data),pidCalled].cgeProcTimeMin[cbxSelectThreadProc.ItemIndex]-
-                resCallGraph[integer(item2.Data),pidCalled].cgeProcTimeMin[cbxSelectThreadProc.ItemIndex];
-      6: cmp := resCallGraph[integer(item1.Data),pidCalled].cgeProcTimeMax[cbxSelectThreadProc.ItemIndex]-
-                resCallGraph[integer(item2.Data),pidCalled].cgeProcTimeMax[cbxSelectThreadProc.ItemIndex];
-      7: cmp := resCallGraph[integer(item1.Data),pidCalled].cgeProcTimeAvg[cbxSelectThreadProc.ItemIndex]-
-                resCallGraph[integer(item2.Data),pidCalled].cgeProcTimeAvg[cbxSelectThreadProc.ItemIndex];
-      else cmp := 0;
-    end;
-    if      cmp < 0 then Compare := -1
-    else if cmp > 0 then Compare :=  1
-                    else Compare :=  0;
-  end;
-  if not lvCallers.AtoZOrder then Compare := -Compare;
-end;
-
-procedure TfrmMain.lvCalleesCompare(Sender: TObject; Item1,
-  Item2: TListItem; Data: Integer; var Compare: Integer);
-var
-  pidCaller: integer;
-begin
-  with openProfile do begin
-    pidCaller := integer(lvProcs.Selected.Data);
-    case Data of
-      0: Compare := StrIComp(PChar(resProcedures[integer(item1.Data)].peName),
-                             PChar(resProcedures[integer(item2.Data)].peName));
-      1: Compare := resCallGraph[pidCaller,integer(item1.Data)].cgeProcTime[cbxSelectThreadProc.ItemIndex]-
-                    resCallGraph[pidCaller,integer(item2.Data)].cgeProcTime[cbxSelectThreadProc.ItemIndex];
-      2: Compare := resCallGraph[pidCaller,integer(item1.Data)].cgeProcTime[cbxSelectThreadProc.ItemIndex]-
-                    resCallGraph[pidCaller,integer(item2.Data)].cgeProcTime[cbxSelectThreadProc.ItemIndex];
-      3: Compare := resCallGraph[pidCaller,integer(item1.Data)].cgeProcChildTime[cbxSelectThreadProc.ItemIndex]-
-                    resCallGraph[pidCaller,integer(item2.Data)].cgeProcChildTime[cbxSelectThreadProc.ItemIndex];
-      4: Compare := resCallGraph[pidCaller,integer(item1.Data)].cgeProcCnt[cbxSelectThreadProc.ItemIndex]-
-                    resCallGraph[pidCaller,integer(item2.Data)].cgeProcCnt[cbxSelectThreadProc.ItemIndex];
-      5: Compare := resCallGraph[pidCaller,integer(item1.Data)].cgeProcTimeMin[cbxSelectThreadProc.ItemIndex]-
-                    resCallGraph[pidCaller,integer(item2.Data)].cgeProcTimeMin[cbxSelectThreadProc.ItemIndex];
-      6: Compare := resCallGraph[pidCaller,integer(item1.Data)].cgeProcTimeMax[cbxSelectThreadProc.ItemIndex]-
-                    resCallGraph[pidCaller,integer(item2.Data)].cgeProcTimeMax[cbxSelectThreadProc.ItemIndex];
-      7: Compare := resCallGraph[pidCaller,integer(item1.Data)].cgeProcTimeAvg[cbxSelectThreadProc.ItemIndex]-
-                    resCallGraph[pidCaller,integer(item2.Data)].cgeProcTimeAvg[cbxSelectThreadProc.ItemIndex];
-      else Compare := 0;
-    end;
-  end;
-  if not lvCallees.AtoZOrder then Compare := -Compare;
+  end;    *)
 end;
 
 procedure TfrmMain.ClearBrowser(popBrowser: TPopupMenu);
@@ -3727,9 +3574,11 @@ procedure TfrmMain.RestackOne(fromPop, toPop: TPopupMenu);
 var
   description: string;
   procID     : integer;
+  LNode : PVirtualNode;
 begin
-  if assigned(lvProcs.Selected) then
-    PushBrowser(toPop,lvProcs.Selected.Caption,integer(lvProcs.Selected.Data));
+  LNode := fvstProcsTools.GetSelectedNode;
+  if assigned(LNode) then
+    PushBrowser(toPop,fvstProcsTools.GetSelectedCaption(),fvstProcsTools.GetSelectedId());
   PopBrowser(fromPop,description,procID);
   SelectProcs(procID);
 end;
@@ -3741,8 +3590,8 @@ var
   juggleDesc: string;
   jugglePID : integer;
 begin
-  juggleDesc := lvProcs.Selected.Caption;
-  jugglePID  := integer(lvProcs.Selected.Data);
+  juggleDesc := fvstProcsTools.GetSelectedCaption();
+  jugglePID  := fvstProcsTools.GetSelectedId();
   repeat
     mustStop := (fromPop.Items[0] = menuItem);
     PushBrowser(toPop,juggleDesc,jugglePID);
@@ -3773,12 +3622,12 @@ end;
 procedure TfrmMain.actJumpToCallGraphExecute(Sender: TObject);
 begin
   actOpenCallGraph.Execute;
-  frmCallGraph.ZoomOnProcedure(integer(lvProcs.Selected.Data),cbxSelectThreadProc.ItemIndex);
+  frmCallGraph.ZoomOnProcedure(fvstProcsTools.GetSelectedId(),cbxSelectThreadProc.ItemIndex);
 end;
 
 procedure TfrmMain.actJumpToCallGraphUpdate(Sender: TObject);
 begin
-  actJumpToCallGraph.Enabled := assigned(lvProcs.Selected);
+  actJumpToCallGraph.Enabled := assigned(fvstProcsTools.GetSelectedNode());
 end;
 
 procedure TfrmMain.lvCalleesClick(Sender: TObject);
