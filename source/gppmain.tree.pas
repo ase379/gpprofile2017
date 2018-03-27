@@ -4,6 +4,7 @@ interface
 
 uses
   VirtualTrees,
+
   gppmain.tree.types,
   gppresults;
 
@@ -30,7 +31,8 @@ type
     procedure BeginUpdate;
     procedure EndUpdate;
     procedure Clear;
-    procedure AddEntry(const anEntryId : Cardinal);
+    procedure AddEntry(const anEntryId : Cardinal);overload;
+    procedure AddEntry(const anEntryId, anIndex : Cardinal);overload;
 
     function GetSelectedId(): Int64;
     function GetSelectedCaption(): string;
@@ -68,6 +70,7 @@ constructor TSimpleStatsListTools.Create(const aList: TVirtualStringTree; const 
 begin
   fList := aList;
   fListType := aListType;
+  fList.NodeDataSize := SizeOf(TProfilingInfoRec);
   fList.OnFreeNode := self.OnFreeNode;
   fList.OnCompareNodes := self.OnCompareNodes;
   fList.ongettext := OnGetText;
@@ -99,7 +102,36 @@ begin
   case fListType of
     pit_unit : LData.UnitId := anEntryId;
     pit_class : LData.ClassId := anEntryId;
-    pit_proc : LData.ProcId := anEntryId;
+    pit_proc: LData.ProcId := anEntryId;
+    pit_proc_callers,
+    pit_proc_callees : raise Exception.Create('Caller and Callee must be added with an index.');
+    pit_thread : LData.ThreadId := anEntryId;
+  end;
+end;
+
+
+procedure TSimpleStatsListTools.AddEntry(const anEntryId, anIndex : Cardinal);
+var
+  LData : PProfilingInfoRec;
+  LNode : PVirtualNode;
+begin
+  LNode := flist.AddChild(nil);
+  LData := PProfilingInfoRec(LNode.GetData);
+  LData.ProfilingType := fListType;
+  case fListType of
+    pit_unit : LData.UnitId := anEntryId;
+    pit_class : LData.ClassId := anEntryId;
+    pit_proc: LData.ProcId := anEntryId;
+    pit_proc_callers :
+      begin
+        LData.CallerProcId := anEntryId;
+        LData.CallerGraphIndex := anIndex;
+      end;
+    pit_proc_callees :
+      begin
+        LData.CalleeProcId := anEntryId;
+        LData.CalleeGraphIndex := anIndex;
+      end;
     pit_thread : LData.ThreadId := anEntryId;
   end;
 end;
@@ -239,7 +271,7 @@ begin
   end
   else if LData.ProfilingType = pit_proc then
   begin
-    totalTime := fProfileResults.resProcedures[0].peProcTime[fThreadIndex];
+    totalTime := fProfileResults.resProcedures[LData.ProcId].peProcTime[fThreadIndex];
     case Column of
       0:
       begin
@@ -254,10 +286,33 @@ begin
       end;
       2: CellText := FormatTime(fProfileResults.resProcedures[LData.ProcId].peProcTime[fThreadIndex],fProfileResults.resFrequency);
       3: CellText := FormatTime(fProfileResults.resProcedures[LData.ProcId].peProcChildTime[fThreadIndex],fProfileResults.resFrequency);
-      4: CellText := FormatTime(fProfileResults.resProcedures[LData.ProcId].peProcCnt[fThreadIndex],fProfileResults.resFrequency);
+      4: CellText := FormatCnt(fProfileResults.resProcedures[LData.ProcId].peProcCnt[fThreadIndex]);
       5: CellText := FormatTime(fProfileResults.resProcedures[LData.ProcId].peProcTimeMin[fThreadIndex],fProfileResults.resFrequency);
       6: CellText := FormatTime(fProfileResults.resProcedures[LData.ProcId].peProcTimeMax[fThreadIndex],fProfileResults.resFrequency);
       7: CellText := FormatTime(fProfileResults.resProcedures[LData.ProcId].peProcTimeAvg[fThreadIndex],fProfileResults.resFrequency);
+    end;
+  end
+  else if LData.ProfilingType = pit_proc_callers then
+  begin
+    totalTime := fProfileResults.resProcedures[LData.CallerProcId].peProcTime[fThreadIndex];
+    case Column of
+      0:
+      begin
+        CellText :=fProfileResults.resProcedures[LData.CallerGraphIndex].peName;
+      end;
+      1:
+      begin
+        if totalTime = 0  then
+          CellText := FormatPerc(0)
+        else
+          CellText := FormatPerc(fProfileResults.resCallGraph[LData.CallerGraphIndex,LData.CallerProcId].cgeProcTime[fThreadIndex]/totalTime);
+      end;
+      2: CellText := FormatTime(fProfileResults.resCallGraph[LData.CallerGraphIndex,LData.CallerProcId].cgeProcTime[fThreadIndex],fProfileResults.resFrequency);
+      3: CellText := FormatTime(fProfileResults.resCallGraph[LData.CallerGraphIndex,LData.CallerProcId].cgeProcChildTime[fThreadIndex],fProfileResults.resFrequency);
+      4: CellText := FormatCnt(fProfileResults.resCallGraph[LData.CallerGraphIndex,LData.CallerProcId].cgeProcCnt[fThreadIndex]);
+      5: CellText := FormatTime(fProfileResults.resCallGraph[LData.CallerGraphIndex,LData.CallerProcId].cgeProcTimeMin[fThreadIndex],fProfileResults.resFrequency);
+      6: CellText := FormatTime(fProfileResults.resCallGraph[LData.CallerGraphIndex,LData.CallerProcId].cgeProcTimeMax[fThreadIndex],fProfileResults.resFrequency);
+      7: CellText := FormatTime(fProfileResults.resCallGraph[LData.CallerGraphIndex,LData.CallerProcId].cgeProcTimeAvg[fThreadIndex],fProfileResults.resFrequency);
     end;
   end
   else if LData.ProfilingType = pit_thread then

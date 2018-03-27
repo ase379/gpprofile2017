@@ -587,74 +587,69 @@ object frmMain: TfrmMain
                   BevelOuter = bvNone
                   TabOrder = 0
                   Visible = False
-                  object lvCallers: TGpArrowListView
-                    Tag = 79
+                  object vstCallers: TVirtualStringTree
                     Left = 0
                     Top = 0
                     Width = 1093
                     Height = 82
                     Align = alClient
+                    Header.AutoSizeIndex = 0
+                    Header.Height = 20
+                    Header.MinHeight = 20
+                    Header.Options = [hoColumnResize, hoDrag, hoShowSortGlyphs, hoVisible]
+                    PopupMenu = popAnalysisListview
+                    TabOrder = 0
+                    TreeOptions.PaintOptions = [toShowButtons, toShowDropmark, toThemeAware, toUseBlendedImages]
+                    OnNodeClick = vstProcsNodeClick
                     Columns = <
                       item
-                        Caption = 'Procedure (Callers)'
-                        Width = 150
+                        MinWidth = 200
+                        Position = 0
+                        Width = 200
+                        WideText = 'Procedure (Callers)'
                       end
                       item
-                        Alignment = taRightJustify
-                        Caption = '% Time'
-                        MaxWidth = 80
-                        MinWidth = 80
-                        Width = 80
+                        MinWidth = 75
+                        Position = 1
+                        Width = 75
+                        WideText = '% Time'
                       end
                       item
-                        Alignment = taRightJustify
-                        Caption = 'Time'
-                        MaxWidth = 80
-                        MinWidth = 80
-                        Width = 80
+                        MinWidth = 75
+                        Position = 2
+                        Width = 75
+                        WideText = 'Time'
                       end
                       item
-                        Alignment = taRightJustify
-                        Caption = 'w/Child'
-                        MaxWidth = 80
-                        MinWidth = 80
-                        Width = 80
+                        MinWidth = 75
+                        Position = 3
+                        Width = 75
+                        WideText = 'w/Child'
                       end
                       item
-                        Alignment = taRightJustify
-                        Caption = 'Calls'
-                        MaxWidth = 80
-                        MinWidth = 80
-                        Width = 80
+                        MinWidth = 75
+                        Position = 4
+                        Width = 75
+                        WideText = 'Calls'
                       end
                       item
-                        Alignment = taRightJustify
-                        Caption = 'Min/Call'
-                        MaxWidth = 80
-                        MinWidth = 80
-                        Width = 80
+                        MinWidth = 75
+                        Position = 5
+                        Width = 75
+                        WideText = 'Min/Call'
                       end
                       item
-                        Alignment = taRightJustify
-                        Caption = 'Max/Call'
-                        MaxWidth = 80
-                        MinWidth = 80
-                        Width = 80
+                        MinWidth = 75
+                        Position = 6
+                        Width = 75
+                        WideText = 'Max/Call'
                       end
                       item
-                        Alignment = taRightJustify
-                        Caption = 'Avg/Call'
-                        MaxWidth = 80
-                        MinWidth = 80
-                        Width = 80
+                        MinWidth = 75
+                        Position = 7
+                        Width = 75
+                        WideText = 'Avg/Call'
                       end>
-                    ReadOnly = True
-                    RowSelect = True
-                    TabOrder = 0
-                    ViewStyle = vsReport
-                    OnClick = lvCalleesClick
-                    OnDblClick = lvCallersDblClick
-                    ExplicitTop = 2
                   end
                 end
                 object pnlCurrent: TPanel
@@ -665,7 +660,6 @@ object frmMain: TfrmMain
                   Align = alClient
                   BevelOuter = bvNone
                   TabOrder = 1
-                  ExplicitTop = 82
                   object vstProcs: TVirtualStringTree
                     Left = 0
                     Top = 0
@@ -680,7 +674,6 @@ object frmMain: TfrmMain
                     TabOrder = 0
                     TreeOptions.PaintOptions = [toShowButtons, toShowDropmark, toThemeAware, toUseBlendedImages]
                     OnNodeClick = vstProcsNodeClick
-                    ExplicitTop = -3
                     Columns = <
                       item
                         MinWidth = 200
@@ -962,10 +955,6 @@ object frmMain: TfrmMain
             object tabThreads: TTabSheet
               Caption = 'Threads'
               ImageIndex = -1
-              ExplicitLeft = 0
-              ExplicitTop = 0
-              ExplicitWidth = 0
-              ExplicitHeight = 0
               object vstThreads: TVirtualStringTree
                 Left = 0
                 Top = 0

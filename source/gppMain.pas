@@ -176,7 +176,6 @@ type
     splitCallees: TSplitter;
     pnlCallees: TPanel;
     lvCallees: TGpArrowListView;
-    lvCallers: TGpArrowListView;
     pnlBottom: TPanel;
     sourceCodeEdit: TSynEdit;
     pnlBrowser: TPanel;
@@ -214,6 +213,7 @@ type
     cbxSelectThreadUnit: TComboBox;
     vstUnits: TVirtualStringTree;
     vstProcs: TVirtualStringTree;
+    vstCallers: TVirtualStringTree;
     procedure FormCreate(Sender: TObject);
     procedure MRUClick(Sender: TObject; LatestFile: String);
     procedure FormDestroy(Sender: TObject);
@@ -325,6 +325,7 @@ type
     fvstUnitsTools            : TSimpleStatsListTools;
     fvstClassesTools          : TSimpleStatsListTools;
     fvstProcsTools             : TSimpleStatsListTools;
+    fvstProcsCallersTools     : TSimpleStatsListTools;
     fvstThreadsTools          : TSimpleStatsListTools;
 
     procedure ParseProject(const aProject: string; aJustRescan: boolean);
@@ -783,7 +784,6 @@ procedure TfrmMain.DisablePC2;
 begin
   tabAnalysis.Font.Color             := clBtnShadow;
   PageControl2.Font.Color            := clBtnShadow;
-  lvCallers.Color                    := clBtnFace;
   lvCallees.Color                    := clBtnFace;
   cbxSelectThreadProc.Color          := clBtnFace;
   cbxSelectThreadClass.Color         := clBtnFace;
@@ -796,7 +796,6 @@ procedure TfrmMain.EnablePC2;
 begin
   tabAnalysis.Font.Color             := clWindowText;
   PageControl2.Font.Color            := clWindowText;
-  lvCallers.Color                    := clWindow;
   lvCallees.Color                    := clWindow;
   StatusPanel0('',false);
   if cbxSelectThreadProc.Items.Count > 2 then begin
@@ -1368,6 +1367,7 @@ begin
   fvstUnitsTools   := TSimpleStatsListTools.Create(vstUnits,TProfilingInfoTypeEnum.pit_unit);
   fvstClassesTools := TSimpleStatsListTools.Create(vstClasses,TProfilingInfoTypeEnum.pit_class);
   fvstProcsTools   := TSimpleStatsListTools.Create(vstProcs,TProfilingInfoTypeEnum.pit_proc);
+  fvstProcsCallersTools := TSimpleStatsListTools.Create(vstCallers,TProfilingInfoTypeEnum.pit_proc_callers);
   fvstThreadsTools := TSimpleStatsListTools.Create(vstThreads,TProfilingInfoTypeEnum.pit_thread);
 end;
 
@@ -1433,7 +1433,7 @@ begin
       PutHeader(reg,vstClasses,'lvClasses');
       PutHeader(reg,vstUnits,'lvUnits');
       PutHeader(reg,vstThreads,'lvThreads');
-      PutColumns(reg,lvCallers,'lvCallers');
+      PutHeader(reg,vstCallers,'lvCallers');
       PutColumns(reg,lvCallees,'lvCallees');
     end;
   finally reg.Free; end;
@@ -1466,6 +1466,7 @@ begin
   FreeAndNil(fvstUnitsTools);
   FreeAndNil(fvstClassesTools);
   FreeAndNil(fvstProcsTools);
+  FreeAndNil(fvstProcsCallersTools);
   FreeAndNil(fvstThreadsTools);
 end;
 
@@ -2137,7 +2138,7 @@ begin
         GetHeaders(reg,vstClasses,'lvClasses');
         GetHeaders(reg,vstUnits,'lvUnits');
         GetHeaders(reg,vstThreads,'lvThreads');
-        GetColumns(reg,lvCallers,'lvCallers');
+        GetHeaders(reg,vstCallers,'lvCallers');
         GetColumns(reg,lvCallees,'lvCallees');
         ResetSourcePreview(false);
         ResetCallers;
@@ -2614,14 +2615,11 @@ end; { TfrmMain.ClearSource }
 procedure TfrmMain.lvProcsClick(Sender: TObject);
 var
   uid: integer;
-  lv : TGpArrowListView;
   LVST : TVirtualStringTree;
   LEnum : TVTVirtualNodeEnumerator;
   LData : PProfilingInfoRec;
   LSelectedID : integer;
 begin
-  LVST := nil;
-  lv := nil;
   LSelectedID := -1;
   if openProfile <> nil then
     with PageControl2, ActivePage do begin
@@ -2634,17 +2632,7 @@ begin
         else
           LVST := vstUnits;
 
-        if Assigned(lv) then
-        begin
-          if lv.Selected <> nil then
-          begin
-            if lv.Selected = selectedProc then
-              Exit;
-            selectedProc := lv.Selected;
-            LSelectedID := integer(Lv.Selected.Data);
-          end;
-        end
-        else if Assigned(LVST) then
+        if Assigned(LVST) then
         begin
           LEnum := LVST.SelectedNodes(false).GetEnumerator();
           while(LEnum.MoveNext) do
@@ -2724,7 +2712,7 @@ procedure TfrmMain.ExportTo(fileName: string; exportProcs, exportClasses,
 
   procedure LExport(var f: textfile; aLvTools:TSimpleStatsListTools; delim: char);
   var
-    i,j   : integer;
+    i   : integer;
     header: string;
     line  : string;
     lEnum : TVTVirtualNodeEnumerator;
@@ -3410,47 +3398,32 @@ end;
 procedure TfrmMain.RedisplayCallers(resortOn: integer = -1);
 var
   calledPID: int64;
-  totalTime: int64;
   i        : integer;
-  li       : TListItem;
 begin
-  if pnlCallers.Visible and (vstProcs.SelectedCount<>0) then begin
-    with lvCallers, openProfile do begin
-      lvCallers.Perform(WM_SETREDRAW,0,0);
-      try
-        Items.BeginUpdate;
-        try
-          Items.Clear;
-          if DigestVer < 3 then Exit;
-          if cbxSelectThreadProc.ItemIndex >= 0 then begin
-            calledPID := fvstProcsTools.GetSelectedId();
-            totalTime := resProcedures[calledPID].peProcTime[cbxSelectThreadProc.ItemIndex];
-            AllocBy := High(resCallGraph[calledPID])-Low(resCallGraph[calledPID])+1;
-            for i := Low(resCallGraph)+1 to High(resCallGraph) do begin
-              if assigned(resCallGraph[i,calledPID]) then begin
-                with resCallGraph[i,calledPID]^ do begin
-                  if (not actHideNotExecuted.Checked) or (cgeProcCnt[cbxSelectThreadProc.ItemIndex] > 0) then begin
-                    li := Items.Add;
-                    li.Caption := resProcedures[i].peName;
-                    if totalTime = 0
-                      then li.Subitems.Add(TSimpleStatsListTools.FormatPerc(0))
-                      else li.Subitems.Add(TSimpleStatsListTools.FormatPerc(cgeProcTime[cbxSelectThreadProc.ItemIndex]/totalTime));
-                    li.Subitems.Add(TSimpleStatsListTools.FormatTime(cgeProcTime[cbxSelectThreadProc.ItemIndex],resFrequency));
-                    li.Subitems.Add(TSimpleStatsListTools.FormatTime(cgeProcChildTime[cbxSelectThreadProc.ItemIndex],resFrequency));
-                    li.Subitems.Add(TSimpleStatsListTools.FormatCnt(cgeProcCnt[cbxSelectThreadProc.ItemIndex]));
-                    li.Subitems.Add(TSimpleStatsListTools.FormatTime(cgeProcTimeMin[cbxSelectThreadProc.ItemIndex],resFrequency));
-                    li.Subitems.Add(TSimpleStatsListTools.FormatTime(cgeProcTimeMax[cbxSelectThreadProc.ItemIndex],resFrequency));
-                    li.Subitems.Add(TSimpleStatsListTools.FormatTime(cgeProcTimeAvg[cbxSelectThreadProc.ItemIndex],resFrequency));
-                    li.Data := pointer(i);
-                  end;
-                end; // with
-              end; // if
-            end; // for
-            if resortOn >= 0 then lvCallers.SortOn(resortOn,false)
-                             else lvCallers.Resort;
-          end;
-        finally Items.EndUpdate; end;
-      finally lvCallers.Perform(WM_SETREDRAW,1,0); end;
+  if pnlCallers.Visible and (vstProcs.SelectedCount<>0) then
+  begin
+    fvstProcsCallersTools.BeginUpdate;
+    fvstProcsCallersTools.Clear();
+    fvstProcsCallersTools.ThreadIndex := cbxSelectThreadClass.ItemIndex;
+    fvstProcsCallersTools.ProfileResults := openProfile;
+    try
+      with openProfile do
+      begin
+        if DigestVer < 3 then
+          Exit;
+        if cbxSelectThreadProc.ItemIndex >= 0 then
+        begin
+          calledPID := fvstProcsTools.GetSelectedId();
+          for i := Low(resCallGraph)+1 to High(resCallGraph) do begin
+            if assigned(resCallGraph[i,calledPID]) then
+            begin
+              fvstProcsCallersTools.AddEntry(calledPID, i);
+            end; // if
+          end; // for
+        end;
+      end;
+    finally
+      fvstProcsCallersTools.EndUpdate;
     end;
   end;
 end;
@@ -3566,7 +3539,7 @@ procedure TfrmMain.ClearBreakdown;
 begin
   ClearBrowser(popBrowseNext);
   ClearBrowser(popBrowsePrevious);
-  lvCallers.Items.Clear;
+  fvstProcsCallersTools.Clear;
   lvCallees.Items.Clear;
 end;
 
