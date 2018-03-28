@@ -315,6 +315,30 @@ begin
       7: CellText := FormatTime(fProfileResults.resCallGraph[LData.CallerGraphIndex,LData.CallerProcId].cgeProcTimeAvg[fThreadIndex],fProfileResults.resFrequency);
     end;
   end
+  else if LData.ProfilingType = pit_proc_callees then
+  begin
+    totalTime := fProfileResults.resCallGraph[LData.CallerProcId,0].cgeProcTime[fThreadIndex];
+
+    case Column of
+      0:
+      begin
+        CellText :=fProfileResults.resProcedures[LData.CalleeGraphIndex].peName;
+      end;
+      1:
+      begin
+        if totalTime = 0  then
+          CellText := FormatPerc(0)
+        else
+          CellText := FormatPerc(fProfileResults.resCallGraph[LData.CalleeProcId,LData.CalleeGraphIndex].cgeProcTime[fThreadIndex]/totalTime);
+      end;
+      2: CellText := FormatTime(fProfileResults.resCallGraph[LData.CalleeProcId,LData.CalleeGraphIndex].cgeProcTime[fThreadIndex],fProfileResults.resFrequency);
+      3: CellText := FormatTime(fProfileResults.resCallGraph[LData.CalleeProcId,LData.CalleeGraphIndex].cgeProcChildTime[fThreadIndex],fProfileResults.resFrequency);
+      4: CellText := FormatCnt(fProfileResults.resCallGraph[LData.CalleeProcId,LData.CalleeGraphIndex].cgeProcCnt[fThreadIndex]);
+      5: CellText := FormatTime(fProfileResults.resCallGraph[LData.CalleeProcId,LData.CalleeGraphIndex].cgeProcTimeMin[fThreadIndex],fProfileResults.resFrequency);
+      6: CellText := FormatTime(fProfileResults.resCallGraph[LData.CalleeProcId,LData.CalleeGraphIndex].cgeProcTimeMax[fThreadIndex],fProfileResults.resFrequency);
+      7: CellText := FormatTime(fProfileResults.resCallGraph[LData.CalleeProcId,LData.CalleeGraphIndex].cgeProcTimeAvg[fThreadIndex],fProfileResults.resFrequency);
+    end;
+  end
   else if LData.ProfilingType = pit_thread then
   begin
     totalTime := fProfileResults.resThreads[0].teTotalTime;
