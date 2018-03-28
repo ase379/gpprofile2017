@@ -7,6 +7,7 @@ type
   PProfilingInfoRec = ^TProfilingInfoRec;
   TProfilingInfoRec = record
     function GetId : Integer;
+    procedure GetCallStackInfo(var aProcId: Int64;var aGraphIndex : Int16);
     case ProfilingType: TProfilingInfoTypeEnum of
       pit_unit: (UnitId: integer);
       pit_class: (ClassId: integer);
@@ -30,6 +31,28 @@ begin
     pit_thread : Exit(ThreadID);
   else
      Exit(-1);
+  end;
+end;
+
+
+procedure TProfilingInfoRec.GetCallStackInfo(var aProcId: Int64;var aGraphIndex : Int16);
+begin
+  case ProfilingType of
+    pit_proc_callers:
+    begin
+       aProcId := self.CallerProcId;
+       aGraphIndex := Self.CallerGraphIndex;
+    end;
+    pit_proc_callees:
+    begin
+       aProcId := self.CalleeProcId;
+       aGraphIndex := Self.CalleeGraphIndex;
+    end;
+  else
+    begin
+       aProcId := -1;
+       aGraphIndex := -1;
+    end;
   end;
 end;
 

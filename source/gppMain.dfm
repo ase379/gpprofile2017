@@ -600,7 +600,8 @@ object frmMain: TfrmMain
                     PopupMenu = popAnalysisListview
                     TabOrder = 0
                     TreeOptions.PaintOptions = [toShowButtons, toShowDropmark, toThemeAware, toUseBlendedImages]
-                    OnNodeClick = vstProcsNodeClick
+                    OnNodeClick = vstCalleesNodeClick
+                    OnNodeDblClick = vstCalleesNodeDblClick
                     Columns = <
                       item
                         MinWidth = 200
@@ -748,7 +749,8 @@ object frmMain: TfrmMain
                   PopupMenu = popAnalysisListview
                   TabOrder = 0
                   TreeOptions.PaintOptions = [toShowButtons, toShowDropmark, toThemeAware, toUseBlendedImages]
-                  OnNodeClick = vstProcsNodeClick
+                  OnNodeClick = vstCalleesNodeClick
+                  OnNodeDblClick = vstCalleesNodeDblClick
                   ExplicitTop = 3
                   Columns = <
                     item
@@ -1041,6 +1043,7 @@ object frmMain: TfrmMain
         Lines.Strings = (
           'sourceCodeEdit')
         FontSmoothing = fsmNone
+        ExplicitTop = 3
       end
     end
   end

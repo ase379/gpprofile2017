@@ -283,7 +283,6 @@ type
     procedure actShowHideCallersUpdate(Sender: TObject);
     procedure actShowHideCalleesExecute(Sender: TObject);
     procedure actShowHideCalleesUpdate(Sender: TObject);
-    procedure lvCallersDblClick(Sender: TObject);
     procedure actBrowsePreviousExecute(Sender: TObject);
     procedure actBrowseNextExecute(Sender: TObject);
     procedure actBrowseNextUpdate(Sender: TObject);
@@ -292,12 +291,15 @@ type
     procedure actOpenCallGraphUpdate(Sender: TObject);
     procedure actJumpToCallGraphExecute(Sender: TObject);
     procedure actJumpToCallGraphUpdate(Sender: TObject);
-    procedure lvCalleesClick(Sender: TObject);
     procedure splitCallersMoved(Sender: TObject);
     procedure clbUnitsKeyPress(Sender: TObject; var Key: Char);
     procedure clbClassesKeyPress(Sender: TObject; var Key: Char);
     procedure cbxSelectThreadUnitChange(Sender: TObject);
     procedure vstProcsNodeClick(Sender: TBaseVirtualTree;
+      const HitInfo: THitInfo);
+    procedure vstCalleesNodeClick(Sender: TBaseVirtualTree;
+      const HitInfo: THitInfo);
+    procedure vstCalleesNodeDblClick(Sender: TBaseVirtualTree;
       const HitInfo: THitInfo);
   private
     openProject               : TProject;
@@ -2180,6 +2182,72 @@ end;
 
 
 
+procedure TfrmMain.vstCalleesNodeClick(Sender: TBaseVirtualTree;
+  const HitInfo: THitInfo);
+var
+  LProfilingType : TProfilingInfoTypeEnum;
+  LEnum : TVTVirtualNodeEnumerator;
+  LProcId : Int64;
+  LGraphId : int16;
+begin
+  LProcId := -1;
+  LGraphId := -1;
+  LProfilingType := TProfilingInfoTypeEnum.pit_proc; // unused here..
+  if assigned(openProfile) and (Sender is TVirtualStringTree) and ((Sender as TVirtualStringTree).SelectedCount>0) then
+  begin
+    LEnum := (Sender as TVirtualStringTree).SelectedNodes(false).GetEnumerator();
+    while(LEnum.MoveNext) do
+    begin
+      LProfilingType := PProfilingInfoRec(LEnum.Current.GetData).ProfilingType;
+      PProfilingInfoRec(LEnum.Current.GetData).GetCallStackInfo(LProcId,LGraphId);
+      Break;
+    end;
+    with openProfile do
+    begin
+      if LProfilingType in [TProfilingInfoTypeEnum.pit_proc_callers,TProfilingInfoTypeEnum.pit_proc_callees] then
+      begin
+        LoadSource(resUnits[resProcedures[LGraphId].peUID].ueQual,
+                   resProcedures[LGraphId].peFirstLn);
+      end;
+    end;
+  end;
+
+
+end;
+
+procedure TfrmMain.vstCalleesNodeDblClick(Sender: TBaseVirtualTree;
+  const HitInfo: THitInfo);
+var
+  LProfilingType : TProfilingInfoTypeEnum;
+  LEnum : TVTVirtualNodeEnumerator;
+  LCaption : string;
+  LSelectedProcID : Int64;
+  LCallStackID : Int16;
+begin
+  LSelectedProcID := -1;
+  LCallStackID := -1;
+  LProfilingType := TProfilingInfoTypeEnum.pit_proc; // unused here..
+  with Sender as TVirtualStringTree do
+    if (Sender as TVirtualStringTree).SelectedCount>0 then
+    begin
+      ClearBrowser(popBrowseNext);
+      LEnum := (Sender as TVirtualStringTree).SelectedNodes(false).GetEnumerator();
+      while(LEnum.MoveNext) do
+      begin
+        LProfilingType := PProfilingInfoRec(LEnum.Current.GetData).ProfilingType;
+        PProfilingInfoRec(LEnum.Current.GetData).GetCallStackInfo(LSelectedProcID,LCallStackID);
+        Break;
+      end;
+      if LCallStackID<>-1 then
+        if LProfilingType in [TProfilingInfoTypeEnum.pit_proc_callers,TProfilingInfoTypeEnum.pit_proc_callees] then
+        begin
+          LCaption := openProfile.resProcedures[LCallStackID].peName;
+          PushBrowser(popBrowsePrevious,LCaption,LCallStackID);
+        end;
+      SelectProcs(LCallStackID);
+    end;
+end;
+
 procedure TfrmMain.vstProcsNodeClick(Sender: TBaseVirtualTree;
   const HitInfo: THitInfo);
 begin
@@ -3419,24 +3487,6 @@ begin
   end;
 end;
 
-procedure TfrmMain.lvCallersDblClick(Sender: TObject);
-var
-  LCaption : string;
-  LSelectedProcID : Int64;
-begin
-  with Sender as TGpArrowListView do
-    if assigned(Selected) then begin
-      ClearBrowser(popBrowseNext);
-      LSelectedProcID := fvstProcsTools.GetSelectedId;
-      if LSelectedProcID<>-1 then
-      begin
-        LCaption := openProfile.resProcedures[LSelectedProcID].peName;
-        PushBrowser(popBrowsePrevious,LCaption,LSelectedProcID);
-      end;
-      SelectProcs(LSelectedProcID);
-    end;
-end;
-
 procedure TfrmMain.SelectProcs(pid: integer);
 var
   LEnumor : TVTVirtualNodeEnumerator;
@@ -3592,14 +3642,6 @@ end;
 procedure TfrmMain.actJumpToCallGraphUpdate(Sender: TObject);
 begin
   actJumpToCallGraph.Enabled := assigned(fvstProcsTools.GetSelectedNode());
-end;
-
-procedure TfrmMain.lvCalleesClick(Sender: TObject);
-begin
-  if assigned(openProfile) and (Sender is TListView) and assigned((Sender as TListView).Selected) then
-    with openProfile do
-      LoadSource(resUnits[resProcedures[integer((Sender as TListView).Selected.Data)].peUID].ueQual,
-                 resProcedures[integer((Sender as TListView).Selected.Data)].peFirstLn);
 end;
 
 function TfrmMain.GetDOFSetting(section, key, defval: string): string;
