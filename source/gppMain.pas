@@ -11,7 +11,7 @@ uses
   gpArrowListView, DProjUnit, SynEdit,
   SynEditHighlighter, SynEditCodeFolding, SynHighlighterPas, System.ImageList,
   System.Actions,gppCurrentPrefs, VirtualTrees,
-  gppmain.tree;
+  gppmain.tree,gppmain.checkableList;
 
 const
   WM_ReloadProfile = WM_USER;
@@ -214,6 +214,7 @@ type
     vstProcs: TVirtualStringTree;
     vstCallers: TVirtualStringTree;
     vstCallees: TVirtualStringTree;
+    vstSelectUnits: TVirtualStringTree;
     procedure FormCreate(Sender: TObject);
     procedure MRUClick(Sender: TObject; LatestFile: String);
     procedure FormDestroy(Sender: TObject);
@@ -301,6 +302,9 @@ type
       const HitInfo: THitInfo);
     procedure vstCalleesNodeDblClick(Sender: TBaseVirtualTree;
       const HitInfo: THitInfo);
+    procedure vstSelectUnitsChecked(Sender: TBaseVirtualTree;
+      Node: PVirtualNode);
+    procedure vstSelectUnitsClick(Sender: TObject);
   private
     openProject               : TProject;
     openProfile               : TResults;
@@ -324,12 +328,13 @@ type
     selectedProc              : pointer;
     callersPerc               : real;
     calleesPerc               : real;
+    fVstSelectUnitTools       : TCheckableListTools;
+
     fvstUnitsTools            : TSimpleStatsListTools;
     fvstClassesTools          : TSimpleStatsListTools;
     fvstProcsTools             : TSimpleStatsListTools;
     fvstProcsCallersTools     : TSimpleStatsListTools;
     fvstProcsCalleesTools     : TSimpleStatsListTools;
-
     fvstThreadsTools          : TSimpleStatsListTools;
 
     procedure ParseProject(const aProject: string; aJustRescan: boolean);
@@ -337,9 +342,11 @@ type
     procedure NotifyParse(const aUnitName: string);
     procedure NotifyInstrument(const aFullName, aUnitName: string; aParse: Boolean);
     procedure FillUnitTree(projectDirOnly: boolean);
-    procedure RecreateClasses(recheck: boolean);
+    procedure RecreateClasses(recheck: boolean;const aUnitName : string);
     procedure RecheckTopClass;
-    procedure RecreateProcs;
+    function  GetSelectedProcedureName(): string;
+
+    procedure RecreateProcs(const aProcName: string);
     procedure ClickProcs(index: integer; recreateCl: boolean);
     procedure DelphiVerClick(Sender: TObject);
     procedure LayoutClick(Sender: TObject);
@@ -379,6 +386,7 @@ type
     procedure SwitchDelMode(delete: boolean);
     procedure NoProfile;
     procedure DoOnUnitCheck(index: integer; instrument: boolean);
+    procedure OnUnitChecked(const aTool: TCheckableListTools;const index: integer; const instrument: boolean);
     procedure DoInstrument;
     procedure RescanProject;
     procedure LoadMetrics(layoutName: string);
@@ -570,6 +578,9 @@ var
 begin                         
   s := TStringList.Create;
   try
+    fVstSelectUnitTools.BeginUpdate;
+    fVstSelectUnitTools.Clear();
+
     clbUnits.Perform(WM_SETREDRAW,0,0);
     try
       clbUnits.Items.BeginUpdate;
@@ -581,10 +592,12 @@ begin
           alli := true;
           nonei := true;
           clbUnits.Items.Add('<all units>');
+          fVstSelectUnitTools.AddEntry('<all units>');
           for i := 0 to s.Count-1 do
           begin
             // Two last chars in each element of the list, returned by GetUnitList, are the two flags,
-            // ("0" and "1"): first indicates "All Instrumented", second - "None instrumented" state 
+            // ("0" and "1"): first indicates "All Instrumented", second - "None instrumented" state
+            fVstSelectUnitTools.AddEntry(ButLast(s[i], 2));
             clbUnits.Items.Add(ButLast(s[i], 2));
             allu  := (s[i][Length(s[i])-1] = '1');
             noneu := (s[i][Length(s[i])] = '1');
@@ -610,6 +623,7 @@ begin
         end;
       finally
         clbUnits.Items.EndUpdate;
+        fVstSelectUnitTools.EndUpdate;
       end;
     finally
       clbUnits.Perform(WM_SETREDRAW, 1, 0);
@@ -630,6 +644,7 @@ begin
   lblProcs.Enabled                   := false;
   clbUnits.Color                     := clBtnFace;
   clbUnits.Enabled                   := false;
+  vstSelectUnits.Enabled             := false;
   clbClasses.Color                   := clBtnFace;
   clbClasses.Enabled                 := false;
   clbProcs.Color                     := clBtnFace;
@@ -647,6 +662,7 @@ begin
   lblProcs.Enabled                   := true;
   clbUnits.Color                     := clWindow;
   clbUnits.Enabled                   := true;
+  vstSelectUnits.Enabled             := true;
   clbClasses.Color                   := clWindow;
   clbClasses.Enabled                 := true;
   clbProcs.Color                     := clWindow;
@@ -1366,6 +1382,8 @@ begin
   MRUPrf.LoadFromRegistry;
   undelProject := '';
   SlidersMoved;
+  fVstSelectUnitTools := TCheckableListTools.Create(vstSelectUnits, cid_Unit);
+
   fvstUnitsTools   := TSimpleStatsListTools.Create(vstUnits,TProfilingInfoTypeEnum.pit_unit);
   fvstClassesTools := TSimpleStatsListTools.Create(vstClasses,TProfilingInfoTypeEnum.pit_class);
   fvstProcsTools   := TSimpleStatsListTools.Create(vstProcs,TProfilingInfoTypeEnum.pit_proc);
@@ -1467,6 +1485,7 @@ begin
   MRUPrf.SaveToRegistry;
   FreeAndNil(openProject);
   FreeAndNil(openProfile);
+  FreeAndNil(fVstSelectUnitTools);
   FreeAndNil(fvstUnitsTools);
   FreeAndNil(fvstClassesTools);
   FreeAndNil(fvstProcsTools);
@@ -1510,7 +1529,7 @@ begin
     try
       clbClasses.Items.Clear;
       if clbUnits.ItemIndex > 0 then begin
-        RecreateClasses(false);
+        RecreateClasses(false,clbUnits.Items[clbUnits.ItemIndex]);
         clbClasses.ItemIndex := 0;
         clbClassesClick(self);
         StatusPanel0(openProject.GetUnitPath(clbUnits.Items[clbUnits.ItemIndex]),false);
@@ -1644,7 +1663,12 @@ begin
   end;
 end; { TfrmMain.RecheckTopClass }
 
-procedure TfrmMain.RecreateClasses(recheck: boolean);
+function TfrmMain.GetSelectedProcedureName(): string;
+begin
+  result := fVstSelectUnitTools.GetName(fVstSelectUnitTools.GetSelectedNode.Index);
+end;
+
+procedure TfrmMain.RecreateClasses(recheck: boolean; const aUnitName : string);
 type
   PAN = ^TAN;
   TAN = record
@@ -1665,7 +1689,7 @@ var
 begin
   un := TStringList.Create;
   try
-    openProject.GetProcList(clbUnits.Items[clbUnits.ItemIndex],un,true);
+    openProject.GetProcList(aUnitName,un,true);
     uc := TStringList.Create;
     try
       cl.anAll  := true;
@@ -1742,7 +1766,7 @@ begin
   finally un.Free; end;
 end;
 
-procedure TfrmMain.RecreateProcs;
+procedure TfrmMain.RecreateProcs(const aProcName: string);
 var
   s    : TStringList;
   t    : string;
@@ -1797,7 +1821,7 @@ end; { TfrmMain.RecreateProcs }
 
 procedure TfrmMain.clbClassesClick(Sender: TObject);
 begin
-  RecreateProcs;
+  RecreateProcs(GetSelectedProcedureName());
   ReloadSource;
 end;
 
@@ -2253,6 +2277,74 @@ procedure TfrmMain.vstProcsNodeClick(Sender: TBaseVirtualTree;
 begin
   lvProcsClick(Sender);
 end;
+
+procedure TfrmMain.vstSelectUnitsChecked(Sender: TBaseVirtualTree;
+  Node: PVirtualNode);
+begin
+  OnUnitChecked(fVstSelectUnitTools,node.Index,true);
+end;
+
+procedure TfrmMain.vstSelectUnitsClick(Sender: TObject);
+var LSelectedNode : PVirtualNode;
+begin
+  fVstSelectUnitTools.BeginUpdate;
+  try
+    clbProcs.Items.Clear;
+    clbClasses.Items.BeginUpdate;
+    try
+      clbClasses.Items.Clear;
+      LSelectedNode := fVstSelectUnitTools.GetSelectedNode();
+      if Assigned(LSelectedNode) then begin
+        RecreateClasses(false);
+        clbClasses.ItemIndex := 0;
+        clbClassesClick(self);
+        StatusPanel0(openProject.GetUnitPath(GetSelectedProcedureName()),false);
+      end
+      else if openProject <> nil then StatusBar.Panels[0].Text := openProject.Name;
+      ClearSource;
+    finally
+      clbClasses.Items.EndUpdate;
+    end;
+  finally
+    fVstSelectUnitTools.EndUpdate;
+  end;
+end;
+
+procedure TfrmMain.OnUnitChecked(const aTool: TCheckableListTools;const index: integer; const instrument: boolean);
+var
+  i: integer;
+  LCheckedState : TCheckState;
+  LEnum : TVTVirtualNodeEnumerator;
+  LNode : PVirtualNode;
+begin
+  if index = 0 then
+  begin
+    fVstSelectUnitTools.BeginUpdate;
+    try
+      LCheckedState := fVstSelectUnitTools.GetNode(0).CheckState;
+      LEnum := vstSelectUnits.Nodes().GetEnumerator();
+      while (LEnum.MoveNext) do
+        LEnum.Current.CheckState := LCheckedState;
+    finally
+      fVstSelectUnitTools.EndUpdate;
+    end;
+    openProject.InstrumentAll(fVstSelectUnitTools.IsChecked(0),not chkShowAll.Checked);
+  end
+  else begin
+    if instrument then
+    begin
+      openProject.InstrumentUnit(fVstSelectUnitTools.GetName(index),fVstSelectUnitTools.IsChecked(index));
+    end;
+    LNode := fVstSelectUnitTools.GetNode(0);
+    if openProject.AllInstrumented(not chkShowAll.Checked) then
+      LNode.CheckState := TCheckState.csCheckedNormal
+    else if openProject.NoneInstrumented(not chkShowAll.Checked) then
+      LNode.CheckState := TCheckState.csUncheckedNormal
+    else
+      LNode.CheckState := TCheckState.csMixedNormal
+  end;
+end;
+
 
 { TfrmMain.UseDelphiSettings }
 
