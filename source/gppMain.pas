@@ -342,7 +342,7 @@ type
     procedure NotifyParse(const aUnitName: string);
     procedure NotifyInstrument(const aFullName, aUnitName: string; aParse: Boolean);
     procedure FillUnitTree(projectDirOnly: boolean);
-    procedure RecreateClasses(recheck: boolean);
+    procedure RecreateClasses(recheck: boolean;const aUnitName : string);
     procedure RecheckTopClass;
     function  GetSelectedProcedureName(): string;
 
@@ -1529,7 +1529,7 @@ begin
     try
       clbClasses.Items.Clear;
       if clbUnits.ItemIndex > 0 then begin
-        RecreateClasses(false);
+        RecreateClasses(false,clbUnits.Items[clbUnits.ItemIndex]);
         clbClasses.ItemIndex := 0;
         clbClassesClick(self);
         StatusPanel0(openProject.GetUnitPath(clbUnits.Items[clbUnits.ItemIndex]),false);
@@ -1668,7 +1668,7 @@ begin
   result := fVstSelectUnitTools.GetName(fVstSelectUnitTools.GetSelectedNode.Index);
 end;
 
-procedure TfrmMain.RecreateClasses(recheck: boolean);
+procedure TfrmMain.RecreateClasses(recheck: boolean; const aUnitName : string);
 type
   PAN = ^TAN;
   TAN = record
@@ -1686,12 +1686,10 @@ var
   an: PAN;
   cl: TAN;
   un: TStringList;
-  LUnitName : string;
 begin
   un := TStringList.Create;
   try
-    LUnitName := clbUnits.Items[clbUnits.ItemIndex];
-    openProject.GetProcList(LUnitName,un,true);
+    openProject.GetProcList(aUnitName,un,true);
     uc := TStringList.Create;
     try
       cl.anAll  := true;
