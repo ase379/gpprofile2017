@@ -11,7 +11,7 @@ uses
   gpArrowListView, DProjUnit, SynEdit,
   SynEditHighlighter, SynEditCodeFolding, SynHighlighterPas, System.ImageList,
   System.Actions,gppCurrentPrefs, VirtualTrees,
-  gppmain.tree,gppmain.checkableList;
+  virtualTree.tools.statistics,virtualTree.tools.checkable;
 
 const
   WM_ReloadProfile = WM_USER;
@@ -1568,7 +1568,8 @@ begin
     end;
     openProject.InstrumentAll(fVstSelectUnitTools.GetCheckedState(0) = TCheckedState.checked,not chkShowAll.Checked);
   end
-  else begin
+  else
+  begin
     if instrument then
       openProject.InstrumentUnit(fVstSelectUnitTools.GetName(index), fVstSelectUnitTools.GetCheckedState(index)=TCheckedState.checked);
     if openProject.AllInstrumented(not chkShowAll.Checked) then
