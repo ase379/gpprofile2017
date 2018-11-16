@@ -1,6 +1,7 @@
 object frmMain: TfrmMain
   Left = 312
   Top = 179
+  ActiveControl = vstSelectUnits
   Caption = 'GpProfile 2017'
   ClientHeight = 640
   ClientWidth = 1109
@@ -326,10 +327,6 @@ object frmMain: TfrmMain
         object tabInstrumentation: TTabSheet
           Caption = 'Instrumentation'
           ImageIndex = 16
-          ExplicitLeft = 0
-          ExplicitTop = 0
-          ExplicitWidth = 0
-          ExplicitHeight = 0
           object Splitter1: TSplitter
             Left = 129
             Top = 25
@@ -372,7 +369,7 @@ object frmMain: TfrmMain
               AlignWithMargins = True
               Left = 3
               Top = 3
-              Width = 37
+              Width = 123
               Height = 17
               Align = alTop
               Caption = '&Units:'
@@ -380,22 +377,20 @@ object frmMain: TfrmMain
             end
             object vstSelectUnits: TVirtualStringTree
               Left = 0
-              Top = 28
+              Top = 23
               Width = 129
-              Height = 384
-              Align = alBottom
+              Height = 389
+              Align = alClient
               Header.AutoSizeIndex = -1
               Header.Height = 20
               Header.MainColumn = -1
               Header.MinHeight = 20
-              Header.Options = [hoColumnResize, hoDrag, hoShowSortGlyphs, hoVisible]
               PopupMenu = popAnalysisListview
               TabOrder = 1
+              TreeOptions.MiscOptions = [toAcceptOLEDrop, toCheckSupport, toFullRepaintOnResize, toInitOnSave, toToggleOnDblClick, toWheelPanning]
               TreeOptions.PaintOptions = [toShowButtons, toShowDropmark, toThemeAware, toUseBlendedImages]
-              Visible = False
-              OnNodeClick = vstProcsNodeClick
-              ExplicitTop = 26
-              ExplicitWidth = 1093
+              OnAddToSelection = vstSelectUnitsAddToSelection
+              OnChecked = vstSelectUnitsChecked
               Columns = <>
             end
           end
@@ -432,7 +427,6 @@ object frmMain: TfrmMain
               Align = alTop
               Caption = '&Classes:'
               TabOrder = 1
-              ExplicitWidth = 49
             end
           end
           object pnlProcs: TPanel
@@ -466,17 +460,12 @@ object frmMain: TfrmMain
               Align = alTop
               Caption = 'P&rocedures:'
               TabOrder = 1
-              ExplicitWidth = 67
             end
           end
         end
         object tabAnalysis: TTabSheet
           Caption = 'Analysis'
           ImageIndex = 17
-          ExplicitLeft = 0
-          ExplicitTop = 0
-          ExplicitWidth = 0
-          ExplicitHeight = 0
           object PageControl2: TPageControl
             Left = 0
             Top = 0
@@ -490,10 +479,6 @@ object frmMain: TfrmMain
             object tabProcedures: TTabSheet
               Caption = 'Procedures'
               ImageIndex = -1
-              ExplicitLeft = 0
-              ExplicitTop = 0
-              ExplicitWidth = 0
-              ExplicitHeight = 0
               object splitCallees: TSplitter
                 Left = 0
                 Top = 312
@@ -838,10 +823,6 @@ object frmMain: TfrmMain
             object tabClasses: TTabSheet
               Caption = 'Classes'
               ImageIndex = -1
-              ExplicitLeft = 0
-              ExplicitTop = 0
-              ExplicitWidth = 0
-              ExplicitHeight = 0
               object vstClasses: TVirtualStringTree
                 Left = 0
                 Top = 33
@@ -911,10 +892,6 @@ object frmMain: TfrmMain
             object tabUnits: TTabSheet
               Caption = 'Units'
               ImageIndex = -1
-              ExplicitLeft = 0
-              ExplicitTop = 0
-              ExplicitWidth = 0
-              ExplicitHeight = 0
               object pnThreadUnits: TPanel
                 Left = 0
                 Top = 0
@@ -984,10 +961,6 @@ object frmMain: TfrmMain
             object tabThreads: TTabSheet
               Caption = 'Threads'
               ImageIndex = -1
-              ExplicitLeft = 0
-              ExplicitTop = 0
-              ExplicitWidth = 0
-              ExplicitHeight = 0
               object vstThreads: TVirtualStringTree
                 Left = 0
                 Top = 0
