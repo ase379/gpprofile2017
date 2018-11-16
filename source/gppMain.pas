@@ -387,7 +387,6 @@ type
     procedure SwitchDelMode(delete: boolean);
     procedure NoProfile;
     procedure DoOnUnitCheck(index: integer; instrument: boolean);
-    procedure OnUnitChecked(const aTool: TCheckableListTools;const index: integer; const instrument: boolean);
     procedure DoInstrument;
     procedure RescanProject;
     procedure LoadMetrics(layoutName: string);
@@ -2342,43 +2341,6 @@ procedure TfrmMain.vstSelectUnitsChecked(Sender: TBaseVirtualTree;
 begin
   clbUnitsClickCheck(nil,node.index)
 end;
-
-
-procedure TfrmMain.OnUnitChecked(const aTool: TCheckableListTools;const index: integer; const instrument: boolean);
-var
-  i: integer;
-  LCheckedState : TCheckState;
-  LEnum : TVTVirtualNodeEnumerator;
-  LNode : PVirtualNode;
-begin
-  if index = 0 then
-  begin
-    fVstSelectUnitTools.BeginUpdate;
-    try
-      LCheckedState := fVstSelectUnitTools.GetNode(0).CheckState;
-      LEnum := vstSelectUnits.Nodes().GetEnumerator();
-      while (LEnum.MoveNext) do
-        LEnum.Current.CheckState := LCheckedState;
-    finally
-      fVstSelectUnitTools.EndUpdate;
-    end;
-    openProject.InstrumentAll(fVstSelectUnitTools.GetCheckedState(0)=TCheckedState.checked,not chkShowAll.Checked);
-  end
-  else begin
-    if instrument then
-    begin
-      openProject.InstrumentUnit(fVstSelectUnitTools.GetName(index),fVstSelectUnitTools.GetCheckedState(index)=TCheckedState.checked);
-    end;
-    LNode := fVstSelectUnitTools.GetNode(0);
-    if openProject.AllInstrumented(not chkShowAll.Checked) then
-      LNode.CheckState := TCheckState.csCheckedNormal
-    else if openProject.NoneInstrumented(not chkShowAll.Checked) then
-      LNode.CheckState := TCheckState.csUncheckedNormal
-    else
-      LNode.CheckState := TCheckState.csMixedNormal
-  end;
-end;
-
 
 { TfrmMain.UseDelphiSettings }
 
