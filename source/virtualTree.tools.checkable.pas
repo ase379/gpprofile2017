@@ -10,7 +10,7 @@ uses
 
 
 type
-  TCheckableItemDataEnum = (cid_Unit);
+  TCheckableItemDataEnum = (cid_Unit, cid_Class);
   PCheckableItemData = ^TCheckableItemData;
   TCheckableItemData = record
     Name : string;
@@ -35,6 +35,7 @@ type
     constructor Create(const aList: TVirtualStringTree; const aListType : TCheckableItemDataEnum);
     destructor Destroy;override;
     function AddEntry(const aName : String): PVirtualNode;
+    function InsertEntry(const anIndex : integer; const aName : string):PVirtualNode;
 
     function GetCheckedState(const anIndex: Cardinal): TCheckedState;
     procedure SetCheckedState(const anIndex: Cardinal;const aCheckedState : TCheckedState);
@@ -87,6 +88,7 @@ begin
   end;
 end;
 
+
 procedure TCheckableListTools.SetCheckedState(const anIndex: Cardinal;const aCheckedState : TCheckedState);
 var
   LNode : PVirtualNode;
@@ -109,12 +111,33 @@ var
   LNode : PVirtualNode;
   LID : Int64;
 begin
-
   LNode := flist.AddChild(nil);
   LNode.CheckType := ctTriStateCheckBox;
   LData := PCheckableItemData(LNode.GetData);
   case fListType of
-    cid_unit :
+    cid_unit,
+    cid_Class :
+    begin
+      LData.Name := aName;
+    end;
+  end;
+end;
+
+
+function TCheckableListTools.InsertEntry(const anIndex: integer; const aName: string): PVirtualNode;
+var
+  LData : PCheckableItemData;
+  LNode : PVirtualNode;
+  LID : Int64;
+  LPredecessor : PVirtualNode;
+begin
+  LPredecessor := GetNode(anIndex);
+  LNode := flist.InsertNode(LPredecessor, TVTNodeAttachMode.amInsertBefore);
+  LNode.CheckType := ctTriStateCheckBox;
+  LData := PCheckableItemData(LNode.GetData);
+  case fListType of
+    cid_unit,
+    cid_Class :
     begin
       LData.Name := aName;
     end;
@@ -141,9 +164,12 @@ var
 begin
   LData := node.GetData;
   CellText := '';
-  if fListType = cid_Unit then
-  begin
-    CellText := LData.Name;
+  case fListType of
+    cid_Unit,
+    cid_Class:
+    begin
+      CellText := LData.Name;
+    end;
   end;
 end;
 

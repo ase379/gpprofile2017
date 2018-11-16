@@ -402,22 +402,6 @@ object frmMain: TfrmMain
             Align = alLeft
             BevelOuter = bvNone
             TabOrder = 2
-            DesignSize = (
-              137
-              412)
-            object clbClasses: TGpCheckListBox
-              Left = 3
-              Top = 26
-              Width = 133
-              Height = 384
-              OnClickCheck = clbClassesClickCheck
-              AllowGrayed = True
-              Anchors = [akLeft, akTop, akRight, akBottom]
-              ItemHeight = 13
-              TabOrder = 0
-              OnClick = clbClassesClick
-              OnKeyPress = clbClassesKeyPress
-            end
             object lblClasses: TStaticText
               AlignWithMargins = True
               Left = 3
@@ -426,7 +410,26 @@ object frmMain: TfrmMain
               Height = 17
               Align = alTop
               Caption = '&Classes:'
+              TabOrder = 0
+            end
+            object vstSelectClasses: TVirtualStringTree
+              Left = 0
+              Top = 23
+              Width = 137
+              Height = 389
+              Align = alClient
+              Header.AutoSizeIndex = -1
+              Header.Height = 20
+              Header.MainColumn = -1
+              Header.MinHeight = 20
+              PopupMenu = popAnalysisListview
               TabOrder = 1
+              TreeOptions.MiscOptions = [toAcceptOLEDrop, toCheckSupport, toFullRepaintOnResize, toInitOnSave, toToggleOnDblClick, toWheelPanning]
+              TreeOptions.PaintOptions = [toShowButtons, toShowDropmark, toThemeAware, toUseBlendedImages]
+              OnAddToSelection = vstSelectClassesAddToSelection
+              OnChecked = vstSelectClassesChecked
+              ExplicitTop = 21
+              Columns = <>
             end
           end
           object pnlProcs: TPanel
