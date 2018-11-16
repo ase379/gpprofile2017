@@ -5,7 +5,8 @@ interface
 uses
   System.Generics.Collections,
   VirtualTrees,
-  gppresults;
+  gppresults,
+  virtualTree.tools.base;
 
 
 type
@@ -18,9 +19,8 @@ type
   {$SCOPEDENUMS ON}
   TCheckedState = (unchecked, greyed, checked);
   {$SCOPEDENUMS OFF}
-  TCheckableListTools = class
+  TCheckableListTools = class(TVirtualTreeBaseTools)
   private
-    fList: TVirtualStringTree;
     fListType : TCheckableItemDataEnum;
     fSortcols: array of TColumnIndex;
 
@@ -34,18 +34,9 @@ type
   public
     constructor Create(const aList: TVirtualStringTree; const aListType : TCheckableItemDataEnum);
     destructor Destroy;override;
-    procedure BeginUpdate;
-    procedure EndUpdate;
-    procedure Clear;
     function AddEntry(const aName : String): PVirtualNode;
 
-    function GetSelectedNode(): PVirtualNode;
-    function GetCount: integer;
-
-    function GetNode(const anIndex : Cardinal): PVirtualNode;
-    function GetName(const anIndex : Cardinal): string;
     function GetCheckedState(const anIndex: Cardinal): TCheckedState;
-
     procedure SetCheckedState(const anIndex: Cardinal;const aCheckedState : TCheckedState);
   end;
 
@@ -56,11 +47,6 @@ uses
   GpIFF,
   gpString;
 
-
-procedure TCheckableListTools.Clear;
-begin
-  fList.Clear();
-end;
 
 constructor TCheckableListTools.Create(const aList: TVirtualStringTree; const aListType : TCheckableItemDataEnum);
 begin
@@ -78,49 +64,6 @@ begin
   inherited;
 end;
 
-procedure TCheckableListTools.BeginUpdate;
-begin
-  FList.BeginUpdate;
-  fList.TreeOptions.MiscOptions := fList.TreeOptions.MiscOptions;
-end;
-
-procedure TCheckableListTools.EndUpdate;
-begin
-  fList.TreeOptions.MiscOptions := fList.TreeOptions.MiscOptions;
-  FList.EndUpdate;
-end;
-
-
-function TCheckableListTools.GetSelectedNode: PVirtualNode;
-var
-  LEnumor : TVTVirtualNodeEnumerator;
-begin
-  result := nil;
-  LEnumor := fList.SelectedNodes().GetEnumerator();
-  while(LEnumor.MoveNext) do
-    Exit(LEnumor.Current);
-end;
-
-function TCheckableListTools.GetCount: integer;
-var
-  LEnumor : TVTVirtualNodeEnumerator;
-begin
-  result := 0;
-  LEnumor := fList.Nodes().GetEnumerator();
-  while(LEnumor.MoveNext) do
-    inc(result);
-end;
-
-
-function TCheckableListTools.GetName(const anIndex: Cardinal): string;
-var
-  LNode : PVirtualNode;
-begin
-  result := '';
-  LNode := GetNode(anIndex);
-  if Assigned(LNode) then
-    OnGetText(fList,LNode,0,TVSTTextType.ttNormal,Result);
-end;
 
 function TCheckableListTools.GetCheckedState(const anIndex: Cardinal): TCheckedState;
 var
@@ -156,25 +99,9 @@ begin
       TCheckedState.checked : LNode.CheckState := TCheckState.csCheckedNormal;
       TCheckedState.greyed : LNode.CheckState := TCheckState.csMixedNormal;
     end;
+    FList.InvalidateNode(LNode);
   end;
 end;
-
-function TCheckableListTools.GetNode(const anIndex: Cardinal): PVirtualNode;
-var
-  I : Cardinal;
-  LEnumor : TVTVirtualNodeEnumerator;
-begin
-  i := 0;
-  result := nil;
-  LEnumor := fList.Nodes().GetEnumerator();
-  while(LEnumor.MoveNext) do
-  begin
-    if i = anIndex then
-      Exit(LEnumor.Current);
-    inc(i);
-  end;
-end;
-
 
 function TCheckableListTools.AddEntry(const aName : String): PVirtualNode;
 var

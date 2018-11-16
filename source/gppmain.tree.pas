@@ -6,12 +6,12 @@ uses
   VirtualTrees,
 
   gppmain.tree.types,
-  gppresults;
+  gppresults,
+  virtualTree.tools.base;
 
 type
-  TSimpleStatsListTools = class
+  TSimpleStatsListTools = class(TVirtualTreeBaseTools)
   private
-    fList: TVirtualStringTree;
     fListType : TProfilingInfoTypeEnum;
     fProfileResults : TResults;
     fThreadIndex : Integer;
@@ -28,9 +28,6 @@ type
   public
     constructor Create(const aList: TVirtualStringTree;const aListType : TProfilingInfoTypeEnum);
 
-    procedure BeginUpdate;
-    procedure EndUpdate;
-    procedure Clear;
     procedure AddEntry(const anEntryId : Cardinal);overload;
     procedure AddEntry(const anEntryId, anIndex : Cardinal);overload;
 
@@ -61,11 +58,6 @@ uses
   gpString;
 
 
-procedure TSimpleStatsListTools.Clear;
-begin
-  fList.Clear();
-end;
-
 constructor TSimpleStatsListTools.Create(const aList: TVirtualStringTree; const aListType : TProfilingInfoTypeEnum);
 begin
   fList := aList;
@@ -76,20 +68,6 @@ begin
   fList.ongettext := OnGetText;
   fList.OnHeaderClick := self.OnHeaderClick;
 end;
-
-procedure TSimpleStatsListTools.BeginUpdate;
-begin
-  FList.BeginUpdate;
-  fList.TreeOptions.MiscOptions := fList.TreeOptions.MiscOptions - [toReadOnly];
-end;
-
-procedure TSimpleStatsListTools.EndUpdate;
-begin
-  fList.TreeOptions.MiscOptions := fList.TreeOptions.MiscOptions + [toReadOnly];
-  FList.EndUpdate;
-end;
-
-
 
 procedure TSimpleStatsListTools.AddEntry(const anEntryId : Cardinal);
 var
