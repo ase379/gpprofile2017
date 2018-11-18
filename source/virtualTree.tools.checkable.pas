@@ -94,26 +94,23 @@ var
   LNode : PVirtualNode;
 begin
   LNode := GetNode(anIndex);
-  if Assigned(LNode) then
-  begin
-    case aCheckedState of
-      TCheckedState.unchecked : LNode.CheckState := TCheckState.csUncheckedNormal;
-      TCheckedState.checked : LNode.CheckState := TCheckState.csCheckedNormal;
-      TCheckedState.greyed : LNode.CheckState := TCheckState.csMixedNormal;
-    end;
-    FList.InvalidateNode(LNode);
+  if not Assigned(LNode) then
+    raise EArgumentException.Create('TCheckableListTools: Node with index '+anIndex.ToString()+' does not exist.');
+  case aCheckedState of
+    TCheckedState.unchecked : LNode.CheckState := TCheckState.csUncheckedNormal;
+    TCheckedState.checked : LNode.CheckState := TCheckState.csCheckedNormal;
+    TCheckedState.greyed : LNode.CheckState := TCheckState.csMixedNormal;
   end;
+  FList.InvalidateNode(LNode);
 end;
 
 function TCheckableListTools.AddEntry(const aName : String): PVirtualNode;
 var
   LData : PCheckableItemData;
-  LNode : PVirtualNode;
-  LID : Int64;
 begin
-  LNode := flist.AddChild(nil);
-  LNode.CheckType := ctTriStateCheckBox;
-  LData := PCheckableItemData(LNode.GetData);
+  result := flist.AddChild(nil);
+  result.CheckType := ctTriStateCheckBox;
+  LData := PCheckableItemData(result.GetData);
   case fListType of
     cid_unit,
     cid_Class :
@@ -127,14 +124,12 @@ end;
 function TCheckableListTools.InsertEntry(const anIndex: integer; const aName: string): PVirtualNode;
 var
   LData : PCheckableItemData;
-  LNode : PVirtualNode;
-  LID : Int64;
   LPredecessor : PVirtualNode;
 begin
   LPredecessor := GetNode(anIndex);
-  LNode := flist.InsertNode(LPredecessor, TVTNodeAttachMode.amInsertBefore);
-  LNode.CheckType := ctTriStateCheckBox;
-  LData := PCheckableItemData(LNode.GetData);
+  result := flist.InsertNode(LPredecessor, TVTNodeAttachMode.amInsertBefore);
+  result.CheckType := ctTriStateCheckBox;
+  LData := PCheckableItemData(result.GetData);
   case fListType of
     cid_unit,
     cid_Class :
