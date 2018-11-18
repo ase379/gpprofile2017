@@ -51,7 +51,9 @@ uses
   gppTree in 'gppTree.pas',
   gpPrfPlaceholders in 'gpPrfPlaceholders.pas',
   gpPrfPlaceholderDlg in 'gpPrfPlaceholderDlg.pas' {frmPreferenceMacros},
-  gppCurrentPrefs in 'gppCurrentPrefs.pas';
+  gppCurrentPrefs in 'gppCurrentPrefs.pas',
+  virtualTree.tools.base in 'virtualTree.tools.base.pas',
+  gpParser.analysis in 'gpParser.analysis.pas';
 
 {$R *.RES}
 

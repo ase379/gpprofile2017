@@ -31,6 +31,8 @@ type
     function GetCount: integer;
 
     function GetNode(const anIndex : Cardinal): PVirtualNode;
+    function GetNodeByName(const aName: string): PVirtualNode;
+
     function GetName(const anIndex: Cardinal): string;
 
     procedure setSelectedIndex(const anIndex : cardinal);
@@ -125,6 +127,21 @@ begin
   while(LEnumor.MoveNext) do
   begin
     if LEnumor.Current.Index = anIndex then
+      Exit(LEnumor.Current);
+  end;
+end;
+
+
+function TVirtualTreeBaseTools.GetNodeByName(const aName: string): PVirtualNode;
+var
+  I : Cardinal;
+  LEnumor : TVTVirtualNodeEnumerator;
+begin
+  result := nil;
+  LEnumor := fList.Nodes().GetEnumerator();
+  while(LEnumor.MoveNext) do
+  begin
+    if sametext(GetName(LEnumor.Current.Index), aName) then
       Exit(LEnumor.Current);
   end;
 end;

@@ -5,6 +5,7 @@ unit gpParser;
 interface
 
 uses
+  System.SysUtils,
   System.Classes,
   gppIDT,
   SimpleReportUnit,
@@ -15,7 +16,7 @@ uses
 type
   TNotifyProc = procedure(const aUnitName: String) of object;
   TNotifyInstProc = procedure(const aFullName, aUnitName: String; aParse: boolean) of object;
-
+  EUnitInSearchPathNotFoundError = class(Exception);
   // Do not change order
   TCommentType=(
     Ct_Arrow = 0,
@@ -190,7 +191,6 @@ implementation
 
 uses
   Windows,
-  System.SysUtils,
   IoUtils,
 {$IFDEF LogParser}
   GpIFF,
@@ -608,7 +608,7 @@ uses
       end;
 
       if not FindOnPath(aUnitFN, aSearchPath, aDefaultDir, vUnitFullName) then
-        raise Exception.Create('Unit not found in search path: ' + aUnitFN);
+        raise EUnitInSearchPathNotFoundError.Create('Unit not found in search path: ' + aUnitFN);
 
       parser := TmwPasLex.Create;
       stream := TMemoryStream.Create();
@@ -729,7 +729,7 @@ uses
       begin
         // Anton Alisov: not sure, for what reason FindOnPath is called here with unFullName instead of unName
         if not FindOnPath(unFullName, aSearchPath, aDefaultDir, vUnitFullName) then
-          raise Exception.Create('Unit not found in search path: ' + unFullName);
+          raise EUnitInSearchPathNotFoundError.Create('Unit not found in search path: ' + unFullName);
         unFullName := vUnitFullName;
         Assert(IsAbsolutePath(unFullName));
 {$IFDEF LogParser}GpLogEventEx(Format('FindOnPath(%s,%s)=%s', [searchPath, defaultDir, unFullName]), FullLogName);{$ENDIF}

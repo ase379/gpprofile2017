@@ -1736,90 +1736,73 @@ begin
 end;
 
 procedure TfrmMain.RecreateClasses(recheck: boolean; const aUnitName : string);
+
+  procedure SearchAndConfigureItem(const aNode : PVirtualNode;const aSelection : TClassInfo; const aCaption : string);
+  var
+    LFoundNode : PVirtualNode;
+  begin
+    LFoundNode := aNode;
+    if not assigned(LFoundNode) then
+      LFoundNode := fVstSelectClassTools.GetNodeByName(aCaption);
+
+    if assigned(LFoundNode) then
+    begin
+      if aSelection.anAll then
+        fVstSelectClassTools.SetCheckedState(LFoundNode, TCheckedState.Checked)
+      else if aSelection.anNone then
+        fVstSelectClassTools.SetCheckedState(LFoundNode, TCheckedState.Unchecked)
+      else
+        fVstSelectClassTools.SetCheckedState(LFoundNode, TCheckedState.greyed);
+    end;
+  end;
+
 var
-  LClassList: TSelectionInformationList;
-  LSelection : TSelectionInformation;
+  LInfoList: TClassInfoList;
+  LInfo : TClassInfo;
   s : string;
   i : integer;
   j : integer;
   p : integer;
   q : integer;
+  LFoundNode : PVirtualNode;
   LUnitProcsList: TStringList;
-  LEnum : TVTVirtualNodeEnumerator;
+const
+  CLASSLESS_PROCEUDURES = '<classless procedures>';
+  ALL_CLASSES = '<all classes>';
 begin
   LUnitProcsList := TStringList.Create;
   try
-    LClassList := nil; // in case of exception
+    LInfoList := nil; // in case of exception
     openProject.GetProcList(aUnitName,LUnitProcsList,true);
-    LClassList := GetClassesFromUnit(LUnitProcsList);
+    LInfoList := GetClassesFromUnit(LUnitProcsList);
     fVstSelectClassTools.BeginUpdate;
     try
       try
         if not recheck then
-        begin
           fVstSelectClassTools.Clear;
-          // clbClasses.Sorted := true;
-        end;
-        for i := 0 to LClassList.Count - 1 do
+        for i := 0 to LInfoList.Count - 1 do
         begin
-          LSelection := LClassList[i];
+          LInfo := LInfoList[i];
+          LFoundNode := nil;
           if not recheck then
-            p := fVstSelectClassTools.AddEntry(LSelection.anName).Index
-          else
-          begin
-            p := -1;
-            s := UpperCase(LSelection.anName);
-            LEnum := vstSelectClasses.Nodes.GetEnumerator();
-            while (LEnum.MoveNext) do
-            begin
-              if UpperCase(fVstSelectClassTools.GetName(LEnum.Current.index)) = s then
-              begin
-                p := LEnum.Current.index;
-                break;
-              end;
-            end;
-          end;
-          if p >= 0 then
-          begin
-            if LSelection.anAll then
-              fVstSelectClassTools.SetCheckedState(p, TCheckedState.checked)
-            else if LSelection.anNone then
-              fVstSelectClassTools.SetCheckedState(p, TCheckedState.unchecked)
-            else
-              fVstSelectClassTools.SetCheckedState(p, TCheckedState.greyed)
-          end;
+            LFoundNode := fVstSelectClassTools.AddEntry(LInfo.anName);
+          SearchAndConfigureItem(LFoundNode, LInfo, LInfo.anName);
         end;
-        if not(LClassList.ClasslessEntry.anAll and LClassList.ClasslessEntry.anNone) then
+        if not(LInfoList.ClasslessEntry.anAll and LInfoList.ClasslessEntry.anNone) then
         begin
-          p := 1;
           if not recheck then
-          begin
             // need to insert it, we rebuid the items
-            p := 0;
-            fVstSelectClassTools.InsertEntry(p, '<classless procedures>');
-          end;
-          if LClassList.ClasslessEntry.anAll then
-            fVstSelectClassTools.SetCheckedState(p, TCheckedState.Checked)
-          else if LClassList.ClasslessEntry.anNone then
-            fVstSelectClassTools.SetCheckedState(p, TCheckedState.Unchecked)
-          else
-            fVstSelectClassTools.SetCheckedState(p, TCheckedState.greyed);
+            LFoundNode := fVstSelectClassTools.InsertEntry(0, CLASSLESS_PROCEUDURES);
+          SearchAndConfigureItem(LFoundNode,  LInfoList.ClasslessEntry, CLASSLESS_PROCEUDURES);
         end;
-        if not(LClassList.AllClassesEntry.anAll and LClassList.AllClassesEntry.anNone) then
+        if not(LInfoList.AllClassesEntry.anAll and LInfoList.AllClassesEntry.anNone) then
         begin
-          p := 0;
           // need to insert it, we rebuid the items
           if not recheck then
-            fVstSelectClassTools.InsertEntry(p, '<all classes>');
-          if LClassList.AllClassesEntry.anAll then
-            fVstSelectClassTools.SetCheckedState(p, TCheckedState.Checked)
-          else if LClassList.AllClassesEntry.anNone then
-            fVstSelectClassTools.SetCheckedState(p, TCheckedState.Unchecked)
-          else
-            fVstSelectClassTools.SetCheckedState(p, TCheckedState.greyed);
+            LFoundNode := fVstSelectClassTools.InsertEntry(0, ALL_CLASSES);
+          // need to insert it, we rebuid the items
+          SearchAndConfigureItem(LFoundNode, LInfoList.AllClassesEntry, ALL_CLASSES);
         end;
-
-
       finally
         vstSelectClasses.Invalidate;
       end;
@@ -1829,62 +1812,64 @@ begin
     end;
 
   finally
-    LClassList.Free;
+    LInfoList.Free;
     LUnitProcsList.free;
   end;
 end;
 
 procedure TfrmMain.RecreateProcs(const aProcName: string);
+
+  procedure ConfigureCheckBox(const anIndex : integer; const aAllI, aNoneI : boolean);
+  begin
+    if aAllI then
+      clbProcs.State[anIndex] := cbChecked
+    else if aNoneI then
+      clbProcs.State[anIndex] := cbUnchecked
+    else
+      clbProcs.State[anIndex] := cbGrayed;
+  end;
+
 var
-  s    : TStringList;
-  t    : string;
-  p    : integer;
-  i    : integer;
-  alli : boolean;
-  nonei: boolean;
-  ii   : integer;
-  uc   : string;
-  cc   : string;
+  LProcNameList    : TStringList;
+  LIndex : integer;
+  LInfo : TProcInfo;
+  LInfoList : TProcInfoList;
 begin
-  s := TStringList.Create;
+  LProcNameList := TStringList.Create;
   try
-    openProject.GetProcList(GetSelectedUnitName(),s,true);
-    s.Sorted := true;
-    clbProcs.Perform(WM_SETREDRAW,0,0);
+    openProject.GetProcList(GetSelectedUnitName(), LProcNameList, true);
+    LProcNameList.Sorted := true;
+    clbProcs.Perform(WM_SETREDRAW, 0, 0);
     try
       clbProcs.Items.BeginUpdate;
       clbProcs.Items.Clear;
       try
-        alli  := true;
-        nonei := true;
-        ii    :=  fVstSelectClassTools.GetSelectedIndex;
-        cc    :=  fVstSelectClassTools.GetName(ii);
-        uc    := UpperCase(cc);
-        for i := 0 to s.Count-1 do begin
-          t := ButLast(s[i],1);
-          if t <> '' then begin
-            p := Pos('.',t);
-            if (ii = 0) or ((cc[1] = '<') and (p = 0)) or
-               ((cc[1] <> '<') and (UpperCase(First(t,p-1)) = uc)) then begin
-              if (cc[1] <> '<') and (p > 0) then clbProcs.Items.Add(ButFirst(t,p))
-                                            else clbProcs.Items.Add(t);
-              clbProcs.Checked[clbProcs.Items.Count-1] := (Last(s[i],1) = '1');
-              if not clbProcs.Checked[clbProcs.Items.Count-1] then alli  := false
-                                                              else nonei := false;
-            end;
-          end;
+        LInfoList := GetProcsFromUnit(LProcNameList,fVstSelectClassTools.GetSelectedIndex,GetSelectedClassName());
+        for LInfo in LInfoList do
+        begin
+          LIndex := clbProcs.Items.Add(LInfo.anName);
+          ConfigureCheckBox(LIndex, LInfo.anInstrument, not LInfo.anInstrument);
         end;
-        if clbProcs.Items.Count > 0 then begin
-          if ii = 0 then clbProcs.Items.Insert(0,'<all procedures>')
-          else if cc[1] = '<' then clbProcs.Items.Insert(0,'<all classless procedures>')
-          else clbProcs.Items.Insert(0,'<all '+cc+' methods>');
-          if      alli  then clbProcs.State[0] := cbChecked
-          else if nonei then clbProcs.State[0] := cbUnchecked
-                        else clbProcs.State[0] := cbGrayed;
+        if LInfoList.Count > 0 then
+        begin
+          if fVstSelectClassTools.GetSelectedIndex = 0 then
+            clbProcs.Items.insert(0, '<all procedures>')
+          else if GetSelectedClassName = '<' then
+            clbProcs.Items.insert(0, '<all classless procedures>')
+          else
+            clbProcs.Items.insert(0, '<all ' + GetSelectedClassName + ' methods>');
+          ConfigureCheckBox(0,LInfoList.AllInstrumented, LInfoList.NoneInstrumented);
         end;
-      finally clbProcs.Items.EndUpdate; end;
-    finally clbProcs.Perform(WM_SETREDRAW,1,0); end;
-  finally s.Destroy; end;
+        LInfoList.free;
+      finally
+        clbProcs.Items.EndUpdate;
+      end;
+    finally
+      clbProcs.Perform(WM_SETREDRAW, 1, 0);
+    end;
+  finally
+    LProcNameList.free;
+  end;
 end; { TfrmMain.RecreateProcs }
 
 procedure TfrmMain.clbClassesClick(Sender: TObject);
@@ -2388,7 +2373,8 @@ end;
 procedure TfrmMain.vstSelectUnitsChecked(Sender: TBaseVirtualTree;
   Node: PVirtualNode);
 begin
-  clbUnitsClickCheck(nil,node.index)
+  clbUnitsClickCheck(nil,node.index);
+
 end;
 
 { TfrmMain.UseDelphiSettings }

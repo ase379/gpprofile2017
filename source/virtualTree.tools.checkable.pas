@@ -38,7 +38,8 @@ type
     function InsertEntry(const anIndex : integer; const aName : string):PVirtualNode;
 
     function GetCheckedState(const anIndex: Cardinal): TCheckedState;
-    procedure SetCheckedState(const anIndex: Cardinal;const aCheckedState : TCheckedState);
+    procedure SetCheckedState(const anIndex: Cardinal;const aCheckedState : TCheckedState); overload;
+    procedure SetCheckedState(const aNode: PVirtualNode;const aCheckedState : TCheckedState); overload;
   end;
 
 implementation
@@ -90,19 +91,23 @@ end;
 
 
 procedure TCheckableListTools.SetCheckedState(const anIndex: Cardinal;const aCheckedState : TCheckedState);
-var
-  LNode : PVirtualNode;
 begin
-  LNode := GetNode(anIndex);
-  if not Assigned(LNode) then
-    raise EArgumentException.Create('TCheckableListTools: Node with index '+anIndex.ToString()+' does not exist.');
-  case aCheckedState of
-    TCheckedState.unchecked : LNode.CheckState := TCheckState.csUncheckedNormal;
-    TCheckedState.checked : LNode.CheckState := TCheckState.csCheckedNormal;
-    TCheckedState.greyed : LNode.CheckState := TCheckState.csMixedNormal;
-  end;
-  FList.InvalidateNode(LNode);
+  SetCheckedState(GetNode(anIndex), aCheckedState);
 end;
+
+procedure TCheckableListTools.SetCheckedState(const aNode: PVirtualNode; const aCheckedState: TCheckedState);
+begin
+  if not Assigned(aNode) then
+    raise EArgumentException.Create('TCheckableListTools: Node is nil.');
+  case aCheckedState of
+    TCheckedState.unchecked : aNode.CheckState := TCheckState.csUncheckedNormal;
+    TCheckedState.checked : aNode.CheckState := TCheckState.csCheckedNormal;
+    TCheckedState.greyed : aNode.CheckState := TCheckState.csMixedNormal;
+  end;
+  FList.InvalidateNode(aNode);
+end;
+
+
 
 function TCheckableListTools.AddEntry(const aName : String): PVirtualNode;
 var
