@@ -2350,19 +2350,30 @@ end;
 procedure TfrmMain.vstSelectClassesChecked(Sender: TBaseVirtualTree; Node: PVirtualNode);
 begin
   clbClassesClickCheck(nil, node.index);
+  TThread.Queue(nil,
+    procedure
+    begin
+       clbClassesClick(nil);
+    end
+  );
 end;
 
 procedure TfrmMain.vstSelectUnitsAddToSelection(Sender: TBaseVirtualTree;
   Node: PVirtualNode);
 begin
-  clbUnitsClick(nil)
+  clbUnitsClick(nil);
 end;
 
 procedure TfrmMain.vstSelectUnitsChecked(Sender: TBaseVirtualTree;
   Node: PVirtualNode);
 begin
   clbUnitsClickCheck(nil,node.index);
-
+  TThread.Queue(nil,
+    procedure
+    begin
+       clbUnitsClick(nil);
+    end
+  );
 end;
 
 { TfrmMain.UseDelphiSettings }
