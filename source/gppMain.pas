@@ -454,7 +454,7 @@ uses
   gpPrfPlaceholders,
   UITypes,
   StrUtils,
-  ioUtils;
+  ioUtils, gpParser.Analysis;
 
 {$R *.DFM}
 
@@ -1736,124 +1736,102 @@ begin
 end;
 
 procedure TfrmMain.RecreateClasses(recheck: boolean; const aUnitName : string);
-type
-  PAN = ^TAN;
-  TAN = record
-    anName: string;
-    anAll : boolean;
-    anNone: boolean;
-  end;
 var
-  uc: TStringList;
+  LClassList: TSelectionInformationList;
+  LSelection : TSelectionInformation;
   s : string;
   i : integer;
   j : integer;
   p : integer;
   q : integer;
-  an: PAN;
-  cl: TAN;
-  un: TStringList;
+  LUnitProcsList: TStringList;
   LEnum : TVTVirtualNodeEnumerator;
 begin
-  un := TStringList.Create;
+  LUnitProcsList := TStringList.Create;
   try
-    openProject.GetProcList(aUnitName,un,true);
-    uc := TStringList.Create;
+    LClassList := nil; // in case of exception
+    openProject.GetProcList(aUnitName,LUnitProcsList,true);
+    LClassList := GetClassesFromUnit(LUnitProcsList);
+    fVstSelectClassTools.BeginUpdate;
     try
-      cl.anAll  := true;
-      cl.anNone := true;
-      for i := 0 to un.Count-1 do begin
-        s := ButLast(un[i],1);
-        p := Pos('.',s);
-        if p > 0 then begin
-          s := Copy(s,1,p-1);
-          q := uc.IndexOf(UpperCase(s));
-          if q = -1 then begin
-            New(an);
-            an.anName := s;
-            an.anAll  := true;
-            an.anNone := true;
-            q := uc.Add(UpperCase(s));
-            uc.Objects[q] := TObject(an);
-          end;
-          an := PAN(uc.Objects[q]);
-        end
-        else an := @cl;
-        if Last(un[i],1) = '1' then an.anNone := false
-                               else an.anAll  := false;
-      end;
-      fVstSelectClassTools.BeginUpdate;
       try
-        try
-          if not recheck then
-          begin
-            fVstSelectClassTools.Clear;
-            // clbClasses.Sorted := true;
-          end;
-          for i := 0 to uc.Count - 1 do
-            with PAN(uc.Objects[i])^ do
-            begin
-              if not recheck then
-                p := fVstSelectClassTools.AddEntry(anName).Index
-              else
-              begin
-                p := -1;
-                s := UpperCase(anName);
-                LEnum := vstSelectClasses.Nodes.GetEnumerator();
-                while (LEnum.MoveNext) do
-                begin
-                  if UpperCase(fVstSelectClassTools.GetName(LEnum.Current.index)) = s then
-                  begin
-                    p := LEnum.Current.index;
-                    break;
-                  end;
-                end;
-              end;
-              if p >= 0 then
-              begin
-                if anAll then
-                  fVstSelectClassTools.SetCheckedState(p, TCheckedState.checked)
-                else if anNone then
-                  fVstSelectClassTools.SetCheckedState(p, TCheckedState.unchecked)
-                else
-                  fVstSelectClassTools.SetCheckedState(p, TCheckedState.greyed)
-              end;
-            end;
-          //if not recheck then
-          //  fVstSelectClassTools.Sorted := false;
-          if not(cl.anAll and cl.anNone) then
-          begin
-            if recheck then
-              p := 1
-            else
-            begin
-              fVstSelectClassTools.InsertEntry(0, '<classless procedures>');
-              p := 0;
-            end;
-            if cl.anAll then
-              fVstSelectClassTools.SetCheckedState(p, TCheckedState.Checked)
-            else if cl.anNone then
-              fVstSelectClassTools.SetCheckedState(p, TCheckedState.Unchecked)
-            else
-              fVstSelectClassTools.SetCheckedState(p, TCheckedState.greyed);
-          end;
-          if not recheck then
-            fVstSelectClassTools.InsertEntry(0, '<all classes>');
-        finally
-
-          //clbClasses.Perform(WM_SETREDRAW, 1, 0);
+        if not recheck then
+        begin
+          fVstSelectClassTools.Clear;
+          // clbClasses.Sorted := true;
         end;
-        RecheckTopClass;
-      finally
-        fVstSelectClassTools.EndUpdate;
-      end;
+        for i := 0 to LClassList.Count - 1 do
+        begin
+          LSelection := LClassList[i];
+          if not recheck then
+            p := fVstSelectClassTools.AddEntry(LSelection.anName).Index
+          else
+          begin
+            p := -1;
+            s := UpperCase(LSelection.anName);
+            LEnum := vstSelectClasses.Nodes.GetEnumerator();
+            while (LEnum.MoveNext) do
+            begin
+              if UpperCase(fVstSelectClassTools.GetName(LEnum.Current.index)) = s then
+              begin
+                p := LEnum.Current.index;
+                break;
+              end;
+            end;
+          end;
+          if p >= 0 then
+          begin
+            if LSelection.anAll then
+              fVstSelectClassTools.SetCheckedState(p, TCheckedState.checked)
+            else if LSelection.anNone then
+              fVstSelectClassTools.SetCheckedState(p, TCheckedState.unchecked)
+            else
+              fVstSelectClassTools.SetCheckedState(p, TCheckedState.greyed)
+          end;
+        end;
+        if not(LClassList.ClasslessEntry.anAll and LClassList.ClasslessEntry.anNone) then
+        begin
+          p := 1;
+          if not recheck then
+          begin
+            // need to insert it, we rebuid the items
+            p := 0;
+            fVstSelectClassTools.InsertEntry(p, '<classless procedures>');
+          end;
+          if LClassList.ClasslessEntry.anAll then
+            fVstSelectClassTools.SetCheckedState(p, TCheckedState.Checked)
+          else if LClassList.ClasslessEntry.anNone then
+            fVstSelectClassTools.SetCheckedState(p, TCheckedState.Unchecked)
+          else
+            fVstSelectClassTools.SetCheckedState(p, TCheckedState.greyed);
+        end;
+        if not(LClassList.AllClassesEntry.anAll and LClassList.AllClassesEntry.anNone) then
+        begin
+          p := 0;
+          // need to insert it, we rebuid the items
+          if not recheck then
+            fVstSelectClassTools.InsertEntry(p, '<all classes>');
+          if LClassList.AllClassesEntry.anAll then
+            fVstSelectClassTools.SetCheckedState(p, TCheckedState.Checked)
+          else if LClassList.AllClassesEntry.anNone then
+            fVstSelectClassTools.SetCheckedState(p, TCheckedState.Unchecked)
+          else
+            fVstSelectClassTools.SetCheckedState(p, TCheckedState.greyed);
+        end;
 
+
+      finally
+        vstSelectClasses.Invalidate;
+      end;
+      RecheckTopClass;
     finally
-      for i := 0 to uc.Count-1 do
-        Dispose(PAN(uc.Objects[i]));
-      uc.Free;
+      fVstSelectClassTools.EndUpdate;
     end;
-  finally un.Free; end;
+
+  finally
+    LClassList.Free;
+    LUnitProcsList.free;
+  end;
 end;
 
 procedure TfrmMain.RecreateProcs(const aProcName: string);
@@ -2399,8 +2377,6 @@ end;
 procedure TfrmMain.vstSelectClassesChecked(Sender: TBaseVirtualTree; Node: PVirtualNode);
 begin
   clbClassesClickCheck(nil, node.index);
-  // reclick to update procedures
-  clbClassesClick(nil)
 end;
 
 procedure TfrmMain.vstSelectUnitsAddToSelection(Sender: TBaseVirtualTree;
