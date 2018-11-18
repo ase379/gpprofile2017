@@ -995,7 +995,6 @@ end; { TfrmMain.ParseProfile }
 procedure TfrmMain.FillProcView(resortOn: integer = -1);
 var
   i        : integer;
-  li       : TListItem;
 begin
   fvstProcsTools.BeginUpdate;
   fvstProcsTools.Clear();
@@ -1021,7 +1020,6 @@ end; { TfrmMain.FillProcView }
 procedure TfrmMain.FillClassView(resortOn: integer = -1);
 var
   i        : integer;
-  li       : TListItem;
 begin
   fvstClassesTools.BeginUpdate;
   fvstClassesTools.Clear();
@@ -1050,7 +1048,6 @@ end; { TfrmMain.FillClassView }
 procedure TfrmMain.FillUnitView(resortOn: integer = -1);
 var
   i        : integer;
-  li       : TListItem;
 begin
   fvstUnitsTools.BeginUpdate;
   fvstUnitsTools.Clear();
@@ -1077,7 +1074,6 @@ end; { TfrmMain.FillUnitView }
 procedure TfrmMain.FillThreadView(resortOn: integer = -1);
 var
   i        : integer;
-  li       : TListItem;
 begin
   fvstThreadsTools.BeginUpdate;
   fvstThreadsTools.Clear();
@@ -1567,7 +1563,6 @@ end;
 
 procedure TfrmMain.DoOnUnitCheck(index: integer; instrument: boolean);
 var
-  i: integer;
   LEnumor : TVTVirtualNodeEnumerator;
   LFirstCheckedState : TCheckedState;
 begin
@@ -1688,7 +1683,6 @@ procedure TfrmMain.RecheckTopClass;
 var
   all : boolean;
   none: boolean;
-  i   : integer;
   LState : TCheckedState;
   LSelectedIndex : cardinal;
   LEnum : TVTVirtualNodeEnumerator;
@@ -1759,11 +1753,7 @@ procedure TfrmMain.RecreateClasses(recheck: boolean; const aUnitName : string);
 var
   LInfoList: TClassInfoList;
   LInfo : TClassInfo;
-  s : string;
   i : integer;
-  j : integer;
-  p : integer;
-  q : integer;
   LFoundNode : PVirtualNode;
   LUnitProcsList: TStringList;
 const
@@ -1884,11 +1874,9 @@ var
   cl: string;
   i : integer;
   p : integer;
-  LCheckedState : TCheckedState;
 begin
-  LCheckedState := fVstSelectClassTools.getCheckedState(index);
-  if LCheckedState = TCheckedState.greyed then
-    LCheckedState := TCheckedState.Checked;
+  if fVstSelectClassTools.getCheckedState(index) = TCheckedState.greyed then
+    fVstSelectClassTools.setCheckedState(index, TCheckedState.Checked);
   if index = 0 then
   begin
     fVstSelectUnitTools.SetCheckedState(fVstSelectUnitTools.GetSelectedIndex,fVstSelectClassTools.getCheckedState(index));
@@ -2454,11 +2442,6 @@ begin
 end;
 
 procedure TfrmMain.actProjectOptionsExecute(Sender: TObject);
-var
-  projMarker   : integer;
-  projSpeedSize: integer;
-  oldDefines   : string;
-  LSettingsDict : TPrfPlaceholderValueDict;
 begin
   with frmPreferences do
   begin
@@ -2672,7 +2655,6 @@ var
   vBdsProjFN: TFileName;
   vBdsProj: TBdsProj;
   vOldCurDir: String;
-  vXE2Platform: string;
   XE2Pos: cardinal;
 begin
   Result := '';
