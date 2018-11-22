@@ -1847,7 +1847,7 @@ begin
           else if GetSelectedClassName = '<' then
             clbProcs.Items.insert(0, '<all classless procedures>')
           else
-            clbProcs.Items.insert(0, '<all ' + GetSelectedClassName + ' methods>');
+            clbProcs.Items.insert(0, '<all ' + GetSelectedUnitName + ' methods>');
           ConfigureCheckBox(0,LInfoList.AllInstrumented, LInfoList.NoneInstrumented);
         end;
         LInfoList.free;
