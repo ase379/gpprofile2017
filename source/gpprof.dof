@@ -68,13 +68,13 @@ CodePage=1252
 [Version Info Keys]
 CompanyName= 
 FileDescription=Profiler for Delphi 2, 3, and 4. 
-FileVersion=1.4.0.1
+FileVersion=1.4.0.2
 InternalName=GpProfile 
 LegalCopyright=(c) 1998, 1999 Primoz Gabrijelcic 
 LegalTrademarks= 
 OriginalFilename= 
 ProductName=GpProfile 
-ProductVersion=1.4.0.1
+ProductVersion=1.4.0.2
 Comments= 
 Key1= 
 Key2= 
