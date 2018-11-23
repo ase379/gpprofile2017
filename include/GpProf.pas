@@ -340,7 +340,7 @@ begin
   begin
     LEntry := TThreadInformation.Create;
     LEntry.ID := AThreadId;
-    LEntry.Name := AThreadName;
+    LEntry.Name := utf8Encode(AThreadName);
     prfThreadsInfo.Add(LEntry);
   end;
 end; { NameThreadForDebugging }
@@ -465,33 +465,55 @@ begin
   end;
 end; { ReadIncSettings }
 
-procedure Initialize;
+procedure AppendToErrorLog(const aFilename, aMessage : string);
+var
+  myFile : TextFile;
+begin
+  AssignFile(myFile, aFilename);
+  Append(myFile);
+  WriteLn(myFile, aMessage);
+  CloseFile(myFile);
+end;
+
+procedure Initialize();
+var
+  LErrorPath : string;
 begin
   ReadIncSettings;
-  if not prfDisabled then begin
-    prfRunning          := profProfilingAutostart;
-    prfCounter.QuadPart := 0;
-    prfOnlyThread       := 0;
-    prfThreads          := TThreadList.Create;
-    prfThreadsInfo      := TThreadInformationList.Create();
-    prfMaxThreadNum     := 256;
-    prfThreadBytes      := 1;
-    prfLastTick         := -1;
-    prfDoneMsg          := RegisterWindowMessage(CMD_MESSAGE);
-    prfName             := CombineNames(prfModuleName, 'prf');
-    if profPrfOutputFile <> '' then
-      prfName := profPrfOutputFile + '.prf';
-    prfBuf              := VirtualAlloc(nil, BUF_SIZE, MEM_RESERVE + MEM_COMMIT, PAGE_READWRITE);
-    prfBufOffs          := 0;
-    Win32Check(VirtualLock(prfBuf, BUF_SIZE));
-    Win32Check(prfBuf <> nil);
-    FillChar(prfBuf^, BUF_SIZE, 0);
-    InitializeCriticalSection(prfLock);
-    prfFile := CreateFile(PChar(prfName), GENERIC_WRITE, 0, nil, CREATE_ALWAYS,
-                          FILE_ATTRIBUTE_NORMAL + FILE_FLAG_WRITE_THROUGH +
-                          FILE_FLAG_NO_BUFFERING, 0);
-    Win32Check(prfFile <> INVALID_HANDLE_VALUE);
-    QueryPerformanceFrequency(TInt64((@prfFreq)^));
+  try
+    ReadIncSettings;
+    if not prfDisabled then begin
+      prfRunning          := profProfilingAutostart;
+      prfCounter.QuadPart := 0;
+      prfOnlyThread       := 0;
+      prfThreads          := TThreadList.Create;
+      prfThreadsInfo      := TThreadInformationList.Create();
+      prfMaxThreadNum     := 256;
+      prfThreadBytes      := 1;
+      prfLastTick         := -1;
+      prfDoneMsg          := RegisterWindowMessage(CMD_MESSAGE);
+      prfName             := CombineNames(prfModuleName, 'prf');
+      if profPrfOutputFile <> '' then
+        prfName := profPrfOutputFile + '.prf';
+      prfBuf              := VirtualAlloc(nil, BUF_SIZE, MEM_RESERVE + MEM_COMMIT, PAGE_READWRITE);
+      prfBufOffs          := 0;
+      Win32Check(VirtualLock(prfBuf, BUF_SIZE));
+      Win32Check(prfBuf <> nil);
+      FillChar(prfBuf^, BUF_SIZE, 0);
+      InitializeCriticalSection(prfLock);
+      prfFile := CreateFile(PChar(prfName), GENERIC_WRITE, 0, nil, CREATE_ALWAYS,
+                            FILE_ATTRIBUTE_NORMAL + FILE_FLAG_WRITE_THROUGH +
+                            FILE_FLAG_NO_BUFFERING, 0);
+      Win32Check(prfFile <> INVALID_HANDLE_VALUE);
+      QueryPerformanceFrequency(TInt64((@prfFreq)^));
+    end;
+  except
+    on e: exception do
+    begin
+      LErrorPath := ChangeFileExt(prfName, '.err');
+      AppendToErrorLog(LErrorPath, 'Error in initialize: '+e.message);
+      raise;
+    end;
   end;
 end; { Initialize }
 

@@ -1,4 +1,4 @@
-unit testThreads;
+﻿unit testThreads;
 
 interface
 
@@ -21,13 +21,12 @@ implementation
 constructor TTestThread.Create;
 begin
   inherited Create();
-  FreeOnTerminate := true;
 end;
 
 procedure TTestThread.Execute;
 begin
   NameThreadForDebugging('AwesomeThread', self.ThreadID);
-  self.namethreadfordebugging('AwesomeThread2', self.ThreadID);
+  self.namethreadfordebugging('AwesomeThread2☺☼d156exÈ', self.ThreadID);
   Sleep(1000);
   inherited;
 end;
