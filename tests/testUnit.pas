@@ -34,8 +34,8 @@ procedure TestThread();
 var lThread : TTestThread;
 begin
   lThread := TTestThread.Create;
-  //FreeOnTerminate is true
   lThread.WaitFor;
+  lThread.free;
 end;
 
 
