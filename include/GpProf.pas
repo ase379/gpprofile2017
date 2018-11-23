@@ -340,7 +340,7 @@ begin
   begin
     LEntry := TThreadInformation.Create;
     LEntry.ID := AThreadId;
-    LEntry.Name := AThreadName;
+    LEntry.Name := utf8Encode(AThreadName);
     prfThreadsInfo.Add(LEntry);
   end;
 end; { NameThreadForDebugging }

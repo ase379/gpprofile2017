@@ -470,7 +470,7 @@ begin
       begin
         if Length(resThreads[k].teName) > 0 then
           resThreads[k].teName := resThreads[k].teName + '; ';
-        resThreads[k].teName := resThreads[k].teName + LThreadName;
+        resThreads[k].teName := resThreads[k].teName + utf8Decode(LThreadName);
       end;
     end;
   end;
