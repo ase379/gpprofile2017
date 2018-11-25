@@ -40,7 +40,7 @@ type
 
     function Root: IXMLNodeList;
     function SearchPath: String;
-    function OutputDir(const aConfigName: string): String;
+    function OutputDir(): String;
 
     function XE2Config: string;
     function XE2Platform: string;
@@ -192,17 +192,13 @@ begin
   fDProjConfigs.ApplySettingInheritance();
 end;
 
-function TDProj.OutputDir(const aConfigName: string): String;
+function TDProj.OutputDir(): String;
 var
   i: Integer;
   LValue : String;
   LPropertyGroupNode : IXMLNode;
-  LConfigName : string;
 begin
   Result := '';
-  LConfigName := AConfigName;
-  if LConfigName = '' then
-    LConfigName := XE2Config();
   for i := 0 to Root.Count-1 do
   begin
     LPropertyGroupNode := Root.Nodes[i];
