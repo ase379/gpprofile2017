@@ -1622,7 +1622,7 @@ begin
         WriteBool('Performance','ProfilingAutostart',GetProjectPref('ProfilingAutostart',prefProfilingAutostart));
         WriteBool('Performance','CompressTicks',GetProjectPref('SpeedSize',prefSpeedSize)>1);
         WriteBool('Performance','CompressThreads',GetProjectPref('SpeedSize',prefSpeedSize)>2);
-        WriteString('Output','PrfOutputFilename',ResolvePrfProjectPlaceholders(prefPrfFilenameMakro));
+        WriteString('Output','PrfOutputFilename',ResolvePrfProjectPlaceholders(GetProjectPref('PrfFilenameMakro',prefPrfFilenameMakro)));
       finally
         Free;
       end;
