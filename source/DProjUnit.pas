@@ -3,27 +3,55 @@ unit DProjUnit;
 interface
 
 uses
-  SysUtils, Forms, Variants, XMLDoc, XMLIntf, Dialogs;
+  SysUtils, Forms, Variants, XMLDoc, XMLIntf, Dialogs, System.Generics.Collections;
 
 type
+  DProjConfig = class
+  public
+    Condition : string;
+    ConfigName : string;
+    ConfigParentName : string;
+    IsEnabledConfig : boolean;
+    ExeOutput : string;
+  end;
+
+  TDProjConfigs = class(TObjectList<DProjConfig>)
+  private
+    CurrentPlatForm : string;
+    CurrentPlatFormCondition : string;
+    CurrentConfigCondition : string;
+    CurrentConfig : string;
+  public
+    function GetActiveConfig() : DProjConfig;
+    function FindConfigByConfigName(const aConfigName : string) : DProjConfig;
+    procedure ApplySettingInheritance();
+  end;
+
   TDProj = class
   private
     FFileName: TFileName;
     FXML: IXMLDocument;
+    fDProjConfigs : TDProjConfigs;
+    procedure LoadConfigs();
+
   public
     constructor Create(const aFN: TFileName);
     destructor Destroy; override;
 
     function Root: IXMLNodeList;
     function SearchPath: String;
-    function OutputDir: String;
+    function OutputDir(const aConfigName: string): String;
+
     function XE2Config: string;
     function XE2Platform: string;
   end;
 
 function IfThen(const aCond: Boolean; const aIfTrue: String; const aIfFalse: string = ''): String;
-  
+
 implementation
+
+uses
+  System.StrUtils;
 
 const
   gnPropertyGroup = 'PropertyGroup';
@@ -44,40 +72,157 @@ begin
     raise Exception.Create('File not found "' + aFN + '".');
   FFileName := aFN;
   FXML := TXMLDocument.Create(Application);
+  fDProjConfigs := TDProjConfigs.Create();
   FXML.LoadFromFile(aFN);
+  LoadConfigs();
 end;
 
 destructor TDProj.Destroy;
 begin
   FXML := nil;
+  fDProjConfigs.free;
   inherited;
 end;
 
-function TDProj.OutputDir: String;
+procedure TDProj.LoadConfigs();
+
+  function GetConfigNameFromConfigLine(const aConfigLine: string) : string;
+
+    function ReverseFind(const ASentence : string; const aChar : Char) : integer;
+    var
+      I : integer;
+    begin
+      result := -1;
+      for i := Length(ASentence) downto 1 do
+      begin
+        if aSentence[i] = aChar then
+          exit(i);
+      end;
+    end;
+
+  const
+    APOS = #27;
+  var
+    LPreamble : string;
+    LEndString : string;
+    LPosAposStart : integer;
+    LPosAposEnd : integer;
+    LConfigName : string;
+  begin
+    result := '';
+    LPreamble := '''$(Config)''==''';
+    LEndString := ')''!=''''';
+    if aConfigLine.EndsWith(LEndString) then
+    begin
+      LPosAposEnd := Length(aConfigLine) - Length(LEndString);
+      LPosAposStart := ReverseFind(Copy(aConfigLine, 1, Length(aConfigLine)-Length(LEndString)),'''');
+      LConfigName := Copy(aConfigLine,LPosAposStart+1,LPosAposEnd-LPosAposStart+1);
+      // remove "$(" at beginning and ")" end
+      LConfigName := Copy(LConfigName, 3, Length(LConfigName)-3);
+      result := LConfigName;
+    end;
+  end;
+
+var
+  i : integer;
+  LPropertyGroupNode : IXMLNode;
+  LChild : IXMLNode;
+  LConfigName : string;
+  LNewConfig : DProjConfig;
+begin
+  fDProjConfigs.Clear();
+  for i := 0 to Root.Count-1 do
+  begin
+    LPropertyGroupNode := Root.Nodes[i];
+    if LPropertyGroupNode.NodeName <> 'PropertyGroup' then
+      Continue;
+
+    // is it the base property group defining the ProjectGuid and the current platform and current config ?
+    if LPropertyGroupNode.ChildValues['ProjectGuid'] <> null then
+    begin
+      if LPropertyGroupNode.ChildValues['Config'] <> null then
+      begin
+        LChild := LPropertyGroupNode.ChildNodes.Nodes['Config'];
+        fDProjConfigs.CurrentConfig := LChild.Text;
+        fDProjConfigs.CurrentConfigCondition := LChild.Attributes['Condition'];
+      end;
+      if LPropertyGroupNode.ChildValues['Platform'] <> null then
+      begin
+        LChild := LPropertyGroupNode.ChildNodes.Nodes['Platform'];
+        fDProjConfigs.CurrentPlatForm := LChild.Text;
+        fDProjConfigs.CurrentPlatFormCondition := LChild.Attributes['Condition'];
+
+      end;
+    end;
+
+
+
+    // NB! "Condition" attribute in PropertyGroup is not analyzed due to its complicated structure
+    // In current realization simply take first nonempty OutputDir
+    // (i.e. analysis of different config types (debug/release) is not implemented)
+    if LPropertyGroupNode.Attributes['Condition'] <> null then
+    begin
+      LConfigName := GetConfigNameFromConfigLine(LPropertyGroupNode.Attributes['Condition']);
+      if (LPropertyGroupNode.ChildValues['Base'] <> Null) then
+      begin
+        // 'Base'marks the base config; thus create the node
+        LNewConfig := DProjConfig.Create();
+        LNewConfig.Condition := LPropertyGroupNode.Attributes['Condition'];
+        LNewConfig.ConfigName := LConfigName;
+        if (LNewConfig.ConfigName <> 'Base') then // already reserverd for isBase
+          if (LPropertyGroupNode.ChildValues[LNewConfig.ConfigName] <> Null) then
+            LNewConfig.IsEnabledConfig := true;
+        if (LPropertyGroupNode.ChildValues['CfgParent'] <> Null) then
+          LNewConfig.ConfigParentName := LPropertyGroupNode.ChildValues['CfgParent'];
+        fDProjConfigs.add(LNewConfig);
+      end
+      else
+      begin
+        // Additionally Properties are marks, read them
+        LNewConfig := fDProjConfigs.FindConfigByConfigName(LConfigName);
+        if assigned(LNewConfig) then
+        begin
+          if LPropertyGroupNode.ChildValues['DCC_ExeOutput'] <> Null then
+            LNewConfig.ExeOutput := LPropertyGroupNode.ChildValues['DCC_ExeOutput'];
+        end;
+
+      end;
+    end;
+  end;
+  fDProjConfigs.ApplySettingInheritance();
+end;
+
+function TDProj.OutputDir(const aConfigName: string): String;
 var
   i: Integer;
   LValue : String;
+  LPropertyGroupNode : IXMLNode;
+  LConfigName : string;
 begin
   Result := '';
+  LConfigName := AConfigName;
+  if LConfigName = '' then
+    LConfigName := XE2Config();
   for i := 0 to Root.Count-1 do
   begin
-    if Root.Nodes[i].NodeName <> 'PropertyGroup' then
+    LPropertyGroupNode := Root.Nodes[i];
+    if LPropertyGroupNode.NodeName <> 'PropertyGroup' then
       Continue;
 
     // NB! "Condition" attribute in PropertyGroup is not analyzed due to its complicated structure
     // In current realization simply take first nonempty OutputDir
     // (i.e. analysis of different config types (debug/release) is not implemented)
-    if Root.Nodes[i].ChildValues['DCC_ExeOutput'] <> Null then
+    if LPropertyGroupNode.ChildValues['DCC_ExeOutput'] <> Null then
     begin
+      LValue := LPropertyGroupNode.ChildValues['DCC_ExeOutput'];
       if (Result <> '') then
       begin
-        LValue := Root.Nodes[i].ChildValues['DCC_ExeOutput'];
         if LValue <> Result then
           raise Exception.Create('Project "' + FFileName + '" - error: ' + #13#10 +
             'Output dir for exe-file differs for different configuration types (release/debug etc.)'+slineBreak+
             'Result was '+Result+', new node is '+ LValue);
       end;
-      Result := Root.Nodes[i].ChildValues['DCC_ExeOutput'];
+      Result := LValue;
     end;
   end;
 end;
@@ -150,6 +295,50 @@ end;
 function TDProj.Root: IXMLNodeList;
 begin
   Result := FXML.DocumentElement.ChildNodes;
+end;
+
+{ TDProjConfigs }
+
+procedure TDProjConfigs.ApplySettingInheritance;
+
+  procedure ApplyBaseRecursive(const anEntry : DProjConfig);
+  var
+    LBaseEntry : DProjConfig;
+  begin
+    if anEntry.ConfigParentName = '' then
+      exit;
+
+    LBaseEntry := FindConfigByConfigName(anEntry.ConfigParentName);
+    ApplyBaseRecursive(LBaseEntry);
+    if anEntry.ExeOutput = '' then
+      anEntry.ExeOutput := LBaseEntry.ExeOutput;
+  end;
+
+var
+  i : integer;
+begin
+  for i := self.Count-1 downto 0 do
+    ApplyBaseRecursive(self[i]);
+end;
+
+function TDProjConfigs.FindConfigByConfigName(const aConfigName : string): DProjConfig;
+var
+  LEntry : DProjConfig;
+begin
+  result := nil;
+  for LEntry in self do
+    if LEntry.ConfigName = aConfigName then
+      exit(LEntry);
+end;
+
+function TDProjConfigs.GetActiveConfig: DProjConfig;
+var
+  LEntry : DProjConfig;
+begin
+  result := nil;
+  for LEntry in self do
+//    if LEntry.Condition.Contains(Self.CurrentConfig = aConfigName then
+      exit(LEntry);
 end;
 
 end.
