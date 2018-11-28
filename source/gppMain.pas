@@ -1015,7 +1015,11 @@ begin
     Items.BeginUpdate;
     try
       Items.Clear;
-      if cbxSelectThreadProc.ItemIndex >= 0 then begin
+      if cbxSelectThreadProc.ItemIndex >= 0 then
+      begin
+        totalTime := 0;
+        if cbxSelectThreadProc.ItemIndex < Length(resProcedures[0].peProcTime) then
+          totalTime := resProcedures[0].peProcTime[cbxSelectThreadProc.ItemIndex];
         totalTime := resProcedures[0].peProcTime[cbxSelectThreadProc.ItemIndex];
         AllocBy := High(resProcedures)-Low(resProcedures)+1;
         for i := Low(resProcedures)+1 to High(resProcedures) do begin
@@ -1053,8 +1057,11 @@ begin
     Items.BeginUpdate;
     try
       Items.Clear;
-      if cbxSelectThreadClass.ItemIndex >= 0 then begin
-        totalTime := resClasses[0].ceTotalTime[cbxSelectThreadClass.ItemIndex];
+      if cbxSelectThreadClass.ItemIndex >= 0 then
+      begin
+        totalTime := 0;
+        if cbxSelectThreadClass.ItemIndex < Length(resClasses[0].ceTotalTime) then
+          totalTime := resClasses[0].ceTotalTime[cbxSelectThreadClass.ItemIndex];
         AllocBy := High(resClasses)-Low(resClasses)+1;
         for i := Low(resClasses)+1 to High(resClasses) do begin
           with resClasses[i] do begin
@@ -1088,7 +1095,9 @@ begin
     try
       Items.Clear;
       if cbxSelectThreadUnit.ItemIndex >= 0 then begin
-        totalTime := resUnits[0].ueTotalTime[cbxSelectThreadUnit.ItemIndex];
+        totalTime := 0;
+        if cbxSelectThreadUnit.ItemIndex < Length(resUnits[0].ueTotalTime) then
+          totalTime := resUnits[0].ueTotalTime[cbxSelectThreadUnit.ItemIndex];
         AllocBy := High(resUnits)-Low(resUnits)+1;
         for i := Low(resUnits)+1 to High(resUnits) do begin
           with resUnits[i] do begin
