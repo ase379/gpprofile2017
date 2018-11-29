@@ -988,7 +988,8 @@ begin
   fvstProcsTools.ProfileResults := openProfile;
   with openProfile do begin
     try
-      if cbxSelectThreadProc.ItemIndex >= 0 then begin
+      if cbxSelectThreadProc.ItemIndex >= 0 then
+      begin
         for i := Low(resProcedures)+1 to High(resProcedures) do begin
           with resProcedures[i] do begin
             if (not actHideNotExecuted.Checked) or (peProcCnt[cbxSelectThreadProc.ItemIndex] > 0) then begin
@@ -1014,7 +1015,8 @@ begin
   fvstClassesTools.ProfileResults := openProfile;
   with openProfile do begin
     try
-      if cbxSelectThreadClass.ItemIndex >= 0 then begin
+      if cbxSelectThreadClass.ItemIndex >= 0 then
+      begin
         for i := Low(resClasses)+1 to High(resClasses) do begin
           with resClasses[i] do begin
             if (not actHideNotExecuted.Checked) or (ceTotalCnt[cbxSelectThreadClass.ItemIndex] > 0) then
@@ -1043,7 +1045,8 @@ begin
   fvstUnitsTools.ProfileResults := openProfile;
   with openProfile do begin
     try
-      if cbxSelectThreadUnit.ItemIndex >= 0 then begin
+      if cbxSelectThreadUnit.ItemIndex >= 0 then 
+	  begin
         for i := Low(resUnits)+1 to High(resUnits) do begin
           with resUnits[i] do begin
             if (not actHideNotExecuted.Checked) or (ueTotalCnt[cbxSelectThreadUnit.ItemIndex] > 0) then begin
@@ -1582,7 +1585,7 @@ begin
         WriteBool('Performance','ProfilingAutostart',GetProjectPref('ProfilingAutostart',prefProfilingAutostart));
         WriteBool('Performance','CompressTicks',GetProjectPref('SpeedSize',prefSpeedSize)>1);
         WriteBool('Performance','CompressThreads',GetProjectPref('SpeedSize',prefSpeedSize)>2);
-        WriteString('Output','PrfOutputFilename',ResolvePrfProjectPlaceholders(prefPrfFilenameMakro));
+        WriteString('Output','PrfOutputFilename',ResolvePrfProjectPlaceholders(GetProjectPref('PrfFilenameMakro',prefPrfFilenameMakro)));
       finally
         Free;
       end;
