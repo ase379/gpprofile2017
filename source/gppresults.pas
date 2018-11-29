@@ -218,22 +218,24 @@ end; { TResults.Create }
 constructor TResults.Create(fileName: String; callback: TProgressCallback);
 begin
   Create();
+  resName := fileName;
+  resFile := TGpHugeFile.CreateEx(resName,FILE_FLAG_SEQUENTIAL_SCAN+FILE_ATTRIBUTE_NORMAL);
+  resFile.ResetBuffered(1);
   try
-    resName := fileName;
-    resFile := TGpHugeFile.CreateEx(resName,FILE_FLAG_SEQUENTIAL_SCAN+FILE_ATTRIBUTE_NORMAL);
-    resFile.ResetBuffered(1);
-    try
-      LoadHeader;
-      if IsDigest then LoadDigest(callback)
-      else begin
-        LoadTables;
-        if Version > 2 then LoadCalibration;
-        LoadData(callback);
-        LoadThreadInformation();
-        RecalcTimes;
-      end;
-    finally resFile.Free; end;
-  except end;
+    LoadHeader;
+    if IsDigest then
+      LoadDigest(callback)
+    else
+    begin
+      LoadTables;
+      if Version > 2 then LoadCalibration;
+      LoadData(callback);
+      LoadThreadInformation();
+      RecalcTimes;
+    end;
+  finally
+    resFile.Free;
+  end;
 end; { TResults.Create }
 
 destructor TResults.Destroy;
@@ -470,7 +472,7 @@ begin
       begin
         if Length(resThreads[k].teName) > 0 then
           resThreads[k].teName := resThreads[k].teName + '; ';
-        resThreads[k].teName := resThreads[k].teName + utf8Decode(LThreadName);
+        resThreads[k].teName := resThreads[k].teName + LThreadName;
       end;
     end;
   end;
