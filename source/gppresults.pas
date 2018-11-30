@@ -106,7 +106,11 @@ type
     ProcId : Integer;
     constructor Create(aParentId, aChildId : integer);
   end;
-  { info describing the data (each entry for one Thread id)}
+
+  /// <summary>
+  /// The class describes the call graph info (which parent proc calls which child proc).
+  /// The lists are as long as the number of threads.
+  /// </summary>
   TCallGraphInfo = class
   public
     ProcTime     : TList<int64>;   // nil = sum
@@ -119,6 +123,13 @@ type
     destructor Destroy; override;
   end;
 
+  /// <summary>
+  /// The old implementation used a 2d vector to store the parent and child proc id.
+  /// The cell contained the graph info record or nil. Column 0 was reserved for the total counts.
+  /// This caused an OOM, cause 2d arrays tend to consume a lot of memory.
+  /// This class represents a sparse array: all nils are ommited. Only valid values are stored
+  /// inside.
+  /// </summary>
   TCallGraphInfoDict = class(TObjectDictionary<TCallGraphKey,TCallGraphInfo>)
   public
     function GetGraphInfo(const i,j: integer) : TCallGraphInfo;
@@ -826,7 +837,7 @@ begin
     for j := Low(resThreads) + 1 to High(resThreads) do
     begin
       LInfo.ProcTime[j] := 0;
-      for k := 0 to fCallGraphInfoMaxElementCount do
+      for k := 0 to fCallGraphInfoMaxElementCount-1 do
       begin
         LInfoChild := fCallGraphInfoDict.GetGraphInfo(i, k);
         if assigned(LInfoChild) then
@@ -987,8 +998,8 @@ begin
         for j := Low(peProcTimeAvg) to High(peProcTimeAvg) do WriteInt64(peProcTimeAvg[j]);
       end;
     WriteTag(PR_DIGCALLG);
-    for i := 0 to fCallGraphInfoMaxElementCount do
-      for k := 0 to fCallGraphInfoMaxElementCount do begin
+    for i := 0 to fCallGraphInfoMaxElementCount-1 do
+      for k := 0 to fCallGraphInfoMaxElementCount-1 do begin
       begin
         LInfo := fCallGraphInfoDict.GetGraphInfo(i,k);
         if Assigned(LInfo) then
