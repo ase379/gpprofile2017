@@ -89,17 +89,6 @@ type
     peRecLevel     : array {thread} of integer; // 0 = unused
   end;
 
-  PCallGraphEntry = ^TCallGraphEntry;
-  TCallGraphEntry = record
-    cgeProcTime     : array {thread} of int64;   // 0 = sum
-    cgeProcTimeMin  : array {thread} of int64;   // 0 = unused
-    cgeProcTimeMax  : array {thread} of int64;   // 0 = unused
-    cgeProcTimeAvg  : array {thread} of int64;   // 0 = unused
-    cgeProcChildTime: array {thread} of int64;   // 0 = sum
-    cgeProcCnt      : array {thread} of integer; // 0 = sum
-  end;
-
-
   TCallGraphKey = record
   public
     ParentProcId : Integer;
