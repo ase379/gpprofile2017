@@ -1015,7 +1015,11 @@ begin
     Items.BeginUpdate;
     try
       Items.Clear;
-      if cbxSelectThreadProc.ItemIndex >= 0 then begin
+      if cbxSelectThreadProc.ItemIndex >= 0 then
+      begin
+        totalTime := 0;
+        if cbxSelectThreadProc.ItemIndex < Length(resProcedures[0].peProcTime) then
+          totalTime := resProcedures[0].peProcTime[cbxSelectThreadProc.ItemIndex];
         totalTime := resProcedures[0].peProcTime[cbxSelectThreadProc.ItemIndex];
         AllocBy := High(resProcedures)-Low(resProcedures)+1;
         for i := Low(resProcedures)+1 to High(resProcedures) do begin
@@ -1053,8 +1057,11 @@ begin
     Items.BeginUpdate;
     try
       Items.Clear;
-      if cbxSelectThreadClass.ItemIndex >= 0 then begin
-        totalTime := resClasses[0].ceTotalTime[cbxSelectThreadClass.ItemIndex];
+      if cbxSelectThreadClass.ItemIndex >= 0 then
+      begin
+        totalTime := 0;
+        if cbxSelectThreadClass.ItemIndex < Length(resClasses[0].ceTotalTime) then
+          totalTime := resClasses[0].ceTotalTime[cbxSelectThreadClass.ItemIndex];
         AllocBy := High(resClasses)-Low(resClasses)+1;
         for i := Low(resClasses)+1 to High(resClasses) do begin
           with resClasses[i] do begin
@@ -1088,7 +1095,9 @@ begin
     try
       Items.Clear;
       if cbxSelectThreadUnit.ItemIndex >= 0 then begin
-        totalTime := resUnits[0].ueTotalTime[cbxSelectThreadUnit.ItemIndex];
+        totalTime := 0;
+        if cbxSelectThreadUnit.ItemIndex < Length(resUnits[0].ueTotalTime) then
+          totalTime := resUnits[0].ueTotalTime[cbxSelectThreadUnit.ItemIndex];
         AllocBy := High(resUnits)-Low(resUnits)+1;
         for i := Low(resUnits)+1 to High(resUnits) do begin
           with resUnits[i] do begin
@@ -1622,7 +1631,7 @@ begin
         WriteBool('Performance','ProfilingAutostart',GetProjectPref('ProfilingAutostart',prefProfilingAutostart));
         WriteBool('Performance','CompressTicks',GetProjectPref('SpeedSize',prefSpeedSize)>1);
         WriteBool('Performance','CompressThreads',GetProjectPref('SpeedSize',prefSpeedSize)>2);
-        WriteString('Output','PrfOutputFilename',ResolvePrfProjectPlaceholders(prefPrfFilenameMakro));
+        WriteString('Output','PrfOutputFilename',ResolvePrfProjectPlaceholders(GetProjectPref('PrfFilenameMakro',prefPrfFilenameMakro)));
       finally
         Free;
       end;
@@ -3475,6 +3484,7 @@ var
   totalTime : int64;
   i         : integer;
   li        : TListItem;
+  LInfo     : TCallGraphInfo;
 begin
   if pnlCallees.Visible and assigned(lvProcs.Selected) then begin
     with lvCallees, openProfile do begin
@@ -3486,26 +3496,27 @@ begin
           if DigestVer < 3 then Exit;
           if cbxSelectThreadProc.ItemIndex >= 0 then begin
             callingPID := integer(lvProcs.Selected.Data);
-            totalTime := resCallGraph[callingPID,0]^.cgeProcTime[cbxSelectThreadProc.ItemIndex];
-            AllocBy := High(resCallGraph[callingPID])-Low(resCallGraph[callingPID])+1;
-            for i := Low(resCallGraph)+1 to High(resCallGraph) do begin
-              if assigned(resCallGraph[callingPID,i]) then begin
-                with resCallGraph[callingPID,i]^ do begin
-                  if (not actHideNotExecuted.Checked) or (cgeProcCnt[cbxSelectThreadProc.ItemIndex] > 0) then begin
-                    li := Items.Add;
-                    li.Caption := resProcedures[i].peName;
-                    if totalTime = 0
-                      then li.Subitems.Add(FormatPerc(0))
-                      else li.Subitems.Add(FormatPerc(cgeProcTime[cbxSelectThreadProc.ItemIndex]/totalTime));
-                    li.Subitems.Add(FormatTime(cgeProcTime[cbxSelectThreadProc.ItemIndex]));
-                    li.Subitems.Add(FormatTime(cgeProcChildTime[cbxSelectThreadProc.ItemIndex]));
-                    li.Subitems.Add(FormatCnt(cgeProcCnt[cbxSelectThreadProc.ItemIndex]));
-                    li.Subitems.Add(FormatTime(cgeProcTimeMin[cbxSelectThreadProc.ItemIndex]));
-                    li.Subitems.Add(FormatTime(cgeProcTimeMax[cbxSelectThreadProc.ItemIndex]));
-                    li.Subitems.Add(FormatTime(cgeProcTimeAvg[cbxSelectThreadProc.ItemIndex]));
-                    li.Data := pointer(i);
-                  end;
-                end; // with
+            totalTime := CallGraphInfo.GetGraphInfo(callingPID,0).ProcTime[cbxSelectThreadProc.ItemIndex];
+            //AllocBy := High(resCallGraph[callingPID])-Low(resCallGraph[callingPID])+1;
+            for i := 1 to CallGraphInfoCount-1 do
+            begin
+              LInfo := CallGraphInfo.GetGraphInfo(callingPID,i);
+              if assigned(LInfo) then
+              begin
+                if (not actHideNotExecuted.Checked) or (LInfo.ProcCnt[cbxSelectThreadProc.ItemIndex] > 0) then begin
+                  li := Items.Add;
+                  li.Caption := resProcedures[i].peName;
+                  if totalTime = 0
+                    then li.Subitems.Add(FormatPerc(0))
+                    else li.Subitems.Add(FormatPerc(LInfo.ProcTime[cbxSelectThreadProc.ItemIndex]/totalTime));
+                  li.Subitems.Add(FormatTime(LInfo.ProcTime[cbxSelectThreadProc.ItemIndex]));
+                  li.Subitems.Add(FormatTime(LInfo.ProcChildTime[cbxSelectThreadProc.ItemIndex]));
+                  li.Subitems.Add(FormatCnt(LInfo.ProcCnt[cbxSelectThreadProc.ItemIndex]));
+                  li.Subitems.Add(FormatTime(LInfo.ProcTimeMin[cbxSelectThreadProc.ItemIndex]));
+                  li.Subitems.Add(FormatTime(LInfo.ProcTimeMax[cbxSelectThreadProc.ItemIndex]));
+                  li.Subitems.Add(FormatTime(LInfo.ProcTimeAvg[cbxSelectThreadProc.ItemIndex]));
+                  li.Data := pointer(i);
+                end; // if
               end; // if
             end; // for
             if resortOn >= 0 then lvCallees.SortOn(resortOn,false)
@@ -3523,6 +3534,7 @@ var
   totalTime: int64;
   i        : integer;
   li       : TListItem;
+  LInfo    : TCallGraphInfo;
 begin
   if pnlCallers.Visible and assigned(lvProcs.Selected) then begin
     with lvCallers, openProfile do begin
@@ -3535,25 +3547,27 @@ begin
           if cbxSelectThreadProc.ItemIndex >= 0 then begin
             calledPID := integer(lvProcs.Selected.Data);
             totalTime := resProcedures[calledPID].peProcTime[cbxSelectThreadProc.ItemIndex];
-            AllocBy := High(resCallGraph[calledPID])-Low(resCallGraph[calledPID])+1;
-            for i := Low(resCallGraph)+1 to High(resCallGraph) do begin
-              if assigned(resCallGraph[i,calledPID]) then begin
-                with resCallGraph[i,calledPID]^ do begin
-                  if (not actHideNotExecuted.Checked) or (cgeProcCnt[cbxSelectThreadProc.ItemIndex] > 0) then begin
-                    li := Items.Add;
-                    li.Caption := resProcedures[i].peName;
-                    if totalTime = 0
-                      then li.Subitems.Add(FormatPerc(0))
-                      else li.Subitems.Add(FormatPerc(cgeProcTime[cbxSelectThreadProc.ItemIndex]/totalTime));
-                    li.Subitems.Add(FormatTime(cgeProcTime[cbxSelectThreadProc.ItemIndex]));
-                    li.Subitems.Add(FormatTime(cgeProcChildTime[cbxSelectThreadProc.ItemIndex]));
-                    li.Subitems.Add(FormatCnt(cgeProcCnt[cbxSelectThreadProc.ItemIndex]));
-                    li.Subitems.Add(FormatTime(cgeProcTimeMin[cbxSelectThreadProc.ItemIndex]));
-                    li.Subitems.Add(FormatTime(cgeProcTimeMax[cbxSelectThreadProc.ItemIndex]));
-                    li.Subitems.Add(FormatTime(cgeProcTimeAvg[cbxSelectThreadProc.ItemIndex]));
-                    li.Data := pointer(i);
-                  end;
-                end; // with
+            //AllocBy := High(resCallGraph[calledPID])-Low(resCallGraph[calledPID])+1;
+            for i := 1 to CallGraphInfoCount-1 do
+            begin
+              LInfo := CallGraphInfo.GetGraphInfo(i,calledPID);
+              if assigned(LInfo) then
+              begin
+                if (not actHideNotExecuted.Checked) or (LInfo.ProcCnt[cbxSelectThreadProc.ItemIndex] > 0) then begin
+                  li := Items.Add;
+                  li.Caption := resProcedures[i].peName;
+                  if totalTime = 0
+                    then li.Subitems.Add(FormatPerc(0))
+                    else li.Subitems.Add(FormatPerc(LInfo.ProcTime[cbxSelectThreadProc.ItemIndex]/totalTime));
+                  li.Subitems.Add(FormatTime(LInfo.ProcTime[cbxSelectThreadProc.ItemIndex]));
+                  li.Subitems.Add(FormatTime(LInfo.ProcChildTime[cbxSelectThreadProc.ItemIndex]));
+                  li.Subitems.Add(FormatCnt(LInfo.ProcCnt[cbxSelectThreadProc.ItemIndex]));
+                  li.Subitems.Add(FormatTime(LInfo.ProcTimeMin[cbxSelectThreadProc.ItemIndex]));
+                  li.Subitems.Add(FormatTime(LInfo.ProcTimeMax[cbxSelectThreadProc.ItemIndex]));
+                  li.Subitems.Add(FormatTime(LInfo.ProcTimeAvg[cbxSelectThreadProc.ItemIndex]));
+                  li.Data := pointer(i);
+                end;
+
               end; // if
             end; // for
             if resortOn >= 0 then lvCallers.SortOn(resortOn,false)
@@ -3604,20 +3618,20 @@ begin
     case Data of
       0: cmp := StrIComp(PChar(resProcedures[integer(item1.Data)].peName),
                          PChar(resProcedures[integer(item2.Data)].peName));
-      1: cmp := resCallGraph[integer(item1.Data),pidCalled].cgeProcTime[cbxSelectThreadProc.ItemIndex]-
-                resCallGraph[integer(item2.Data),pidCalled].cgeProcTime[cbxSelectThreadProc.ItemIndex];
-      2: cmp := resCallGraph[integer(item1.Data),pidCalled].cgeProcTime[cbxSelectThreadProc.ItemIndex]-
-                resCallGraph[integer(item2.Data),pidCalled].cgeProcTime[cbxSelectThreadProc.ItemIndex];
-      3: cmp := resCallGraph[integer(item1.Data),pidCalled].cgeProcChildTime[cbxSelectThreadProc.ItemIndex]-
-                resCallGraph[integer(item2.Data),pidCalled].cgeProcChildTime[cbxSelectThreadProc.ItemIndex];
-      4: cmp := resCallGraph[integer(item1.Data),pidCalled].cgeProcCnt[cbxSelectThreadProc.ItemIndex]-
-                resCallGraph[integer(item2.Data),pidCalled].cgeProcCnt[cbxSelectThreadProc.ItemIndex];
-      5: cmp := resCallGraph[integer(item1.Data),pidCalled].cgeProcTimeMin[cbxSelectThreadProc.ItemIndex]-
-                resCallGraph[integer(item2.Data),pidCalled].cgeProcTimeMin[cbxSelectThreadProc.ItemIndex];
-      6: cmp := resCallGraph[integer(item1.Data),pidCalled].cgeProcTimeMax[cbxSelectThreadProc.ItemIndex]-
-                resCallGraph[integer(item2.Data),pidCalled].cgeProcTimeMax[cbxSelectThreadProc.ItemIndex];
-      7: cmp := resCallGraph[integer(item1.Data),pidCalled].cgeProcTimeAvg[cbxSelectThreadProc.ItemIndex]-
-                resCallGraph[integer(item2.Data),pidCalled].cgeProcTimeAvg[cbxSelectThreadProc.ItemIndex];
+      1: cmp := CallGraphInfo.GetGraphInfo(integer(item1.Data),pidCalled).ProcTime[cbxSelectThreadProc.ItemIndex]-
+                CallGraphInfo.GetGraphInfo(integer(item2.Data),pidCalled).ProcTime[cbxSelectThreadProc.ItemIndex];
+      2: cmp := CallGraphInfo.GetGraphInfo(integer(item1.Data),pidCalled).ProcTime[cbxSelectThreadProc.ItemIndex]-
+                CallGraphInfo.GetGraphInfo(integer(item2.Data),pidCalled).ProcTime[cbxSelectThreadProc.ItemIndex];
+      3: cmp := CallGraphInfo.GetGraphInfo(integer(item1.Data),pidCalled).ProcChildTime[cbxSelectThreadProc.ItemIndex]-
+                CallGraphInfo.GetGraphInfo(integer(item2.Data),pidCalled).ProcChildTime[cbxSelectThreadProc.ItemIndex];
+      4: cmp := CallGraphInfo.GetGraphInfo(integer(item1.Data),pidCalled).ProcCnt[cbxSelectThreadProc.ItemIndex]-
+                CallGraphInfo.GetGraphInfo(integer(item2.Data),pidCalled).ProcCnt[cbxSelectThreadProc.ItemIndex];
+      5: cmp := CallGraphInfo.GetGraphInfo(integer(item1.Data),pidCalled).ProcTimeMin[cbxSelectThreadProc.ItemIndex]-
+                CallGraphInfo.GetGraphInfo(integer(item2.Data),pidCalled).ProcTimeMin[cbxSelectThreadProc.ItemIndex];
+      6: cmp := CallGraphInfo.GetGraphInfo(integer(item1.Data),pidCalled).ProcTimeMax[cbxSelectThreadProc.ItemIndex]-
+                CallGraphInfo.GetGraphInfo(integer(item2.Data),pidCalled).ProcTimeMax[cbxSelectThreadProc.ItemIndex];
+      7: cmp := CallGraphInfo.GetGraphInfo(integer(item1.Data),pidCalled).ProcTimeAvg[cbxSelectThreadProc.ItemIndex]-
+                CallGraphInfo.GetGraphInfo(integer(item2.Data),pidCalled).ProcTimeAvg[cbxSelectThreadProc.ItemIndex];
       else cmp := 0;
     end;
     if      cmp < 0 then Compare := -1
@@ -3637,20 +3651,20 @@ begin
     case Data of
       0: Compare := StrIComp(PChar(resProcedures[integer(item1.Data)].peName),
                              PChar(resProcedures[integer(item2.Data)].peName));
-      1: Compare := resCallGraph[pidCaller,integer(item1.Data)].cgeProcTime[cbxSelectThreadProc.ItemIndex]-
-                    resCallGraph[pidCaller,integer(item2.Data)].cgeProcTime[cbxSelectThreadProc.ItemIndex];
-      2: Compare := resCallGraph[pidCaller,integer(item1.Data)].cgeProcTime[cbxSelectThreadProc.ItemIndex]-
-                    resCallGraph[pidCaller,integer(item2.Data)].cgeProcTime[cbxSelectThreadProc.ItemIndex];
-      3: Compare := resCallGraph[pidCaller,integer(item1.Data)].cgeProcChildTime[cbxSelectThreadProc.ItemIndex]-
-                    resCallGraph[pidCaller,integer(item2.Data)].cgeProcChildTime[cbxSelectThreadProc.ItemIndex];
-      4: Compare := resCallGraph[pidCaller,integer(item1.Data)].cgeProcCnt[cbxSelectThreadProc.ItemIndex]-
-                    resCallGraph[pidCaller,integer(item2.Data)].cgeProcCnt[cbxSelectThreadProc.ItemIndex];
-      5: Compare := resCallGraph[pidCaller,integer(item1.Data)].cgeProcTimeMin[cbxSelectThreadProc.ItemIndex]-
-                    resCallGraph[pidCaller,integer(item2.Data)].cgeProcTimeMin[cbxSelectThreadProc.ItemIndex];
-      6: Compare := resCallGraph[pidCaller,integer(item1.Data)].cgeProcTimeMax[cbxSelectThreadProc.ItemIndex]-
-                    resCallGraph[pidCaller,integer(item2.Data)].cgeProcTimeMax[cbxSelectThreadProc.ItemIndex];
-      7: Compare := resCallGraph[pidCaller,integer(item1.Data)].cgeProcTimeAvg[cbxSelectThreadProc.ItemIndex]-
-                    resCallGraph[pidCaller,integer(item2.Data)].cgeProcTimeAvg[cbxSelectThreadProc.ItemIndex];
+      1: Compare := CallGraphInfo.GetGraphInfo(pidCaller,integer(item1.Data)).ProcTime[cbxSelectThreadProc.ItemIndex]-
+                    CallGraphInfo.GetGraphInfo(pidCaller,integer(item2.Data)).ProcTime[cbxSelectThreadProc.ItemIndex];
+      2: Compare := CallGraphInfo.GetGraphInfo(pidCaller,integer(item1.Data)).ProcTime[cbxSelectThreadProc.ItemIndex]-
+                    CallGraphInfo.GetGraphInfo(pidCaller,integer(item2.Data)).ProcTime[cbxSelectThreadProc.ItemIndex];
+      3: Compare := CallGraphInfo.GetGraphInfo(pidCaller,integer(item1.Data)).ProcChildTime[cbxSelectThreadProc.ItemIndex]-
+                    CallGraphInfo.GetGraphInfo(pidCaller,integer(item2.Data)).ProcChildTime[cbxSelectThreadProc.ItemIndex];
+      4: Compare := CallGraphInfo.GetGraphInfo(pidCaller,integer(item1.Data)).ProcCnt[cbxSelectThreadProc.ItemIndex]-
+                    CallGraphInfo.GetGraphInfo(pidCaller,integer(item2.Data)).ProcCnt[cbxSelectThreadProc.ItemIndex];
+      5: Compare := CallGraphInfo.GetGraphInfo(pidCaller,integer(item1.Data)).ProcTimeMin[cbxSelectThreadProc.ItemIndex]-
+                    CallGraphInfo.GetGraphInfo(pidCaller,integer(item2.Data)).ProcTimeMin[cbxSelectThreadProc.ItemIndex];
+      6: Compare := CallGraphInfo.GetGraphInfo(pidCaller,integer(item1.Data)).ProcTimeMax[cbxSelectThreadProc.ItemIndex]-
+                    CallGraphInfo.GetGraphInfo(pidCaller,integer(item2.Data)).ProcTimeMax[cbxSelectThreadProc.ItemIndex];
+      7: Compare := CallGraphInfo.GetGraphInfo(pidCaller,integer(item1.Data)).ProcTimeAvg[cbxSelectThreadProc.ItemIndex]-
+                    CallGraphInfo.GetGraphInfo(pidCaller,integer(item2.Data)).ProcTimeAvg[cbxSelectThreadProc.ItemIndex];
       else Compare := 0;
     end;
   end;
