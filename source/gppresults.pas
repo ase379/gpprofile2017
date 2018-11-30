@@ -6,7 +6,8 @@ interface
 
 uses
   Windows,
-  GpHugeF;
+  GpHugeF,
+  System.Generics.Collections;
 
 type
   TProgressCallback = function (percent: integer): boolean of object;
@@ -96,7 +97,32 @@ type
     cgeProcTimeAvg  : array {thread} of int64;   // 0 = unused
     cgeProcChildTime: array {thread} of int64;   // 0 = sum
     cgeProcCnt      : array {thread} of integer; // 0 = sum
-//    cgeRecLevel     : array {thread} of integer; // 0 = unused
+  end;
+
+
+  TCallGraphKey = record
+  public
+    ParentProcId : Integer;
+    ProcId : Integer;
+    constructor Create(aParentId, aChildId : integer);
+  end;
+  { info describing the data (each entry for one Thread id)}
+  TCallGraphInfo = class
+  public
+    ProcTime     : TList<int64>;   // nil = sum
+    ProcTimeMin  : TList<int64>;   // nil = unused
+    ProcTimeMax  : TList<int64>;   // nil = unused
+    ProcTimeAvg  : TList<int64>;   // nil = unused
+    ProcChildTime: TList<int64>;   // nil = sum
+    ProcCnt      : TList<integer>; // nil = sum
+    constructor Create(const aThreadCount: Integer);
+    destructor Destroy; override;
+  end;
+
+  TCallGraphInfoDict = class(TObjectDictionary<TCallGraphKey,TCallGraphInfo>)
+  public
+    function GetGraphInfo(const i,j: integer) : TCallGraphInfo;
+    function GetOrCreateGraphInfo(const i,j,threads: integer) : TCallGraphInfo;
   end;
 
   TResults = class
@@ -155,13 +181,14 @@ type
     function    ThLocate(thread: integer): integer;
     procedure   EnterProc(proxy: TProcProxy; pkt: TResPacket);
     procedure   ExitProc(proxy,parent: TProcProxy; pkt: TResPacket);
-    procedure   AllocCGEntry(i,j,threads: integer);
   public
     resThreads   : array of TThreadEntry;
     resUnits     : array of TUnitEntry;
     resClasses   : array of TClassEntry;
     resProcedures: array of TProcEntry;
-    resCallGraph : array {procedure} of array {procedure} of PCallGraphEntry;
+    fCallGraphInfoDict : TCallGraphInfoDict;
+    fCallGraphInfoMaxElementCount : Integer;
+
     resFrequency : int64;
     constructor Create(fileName: string; callback: TProgressCallback); overload;
     constructor Create; overload;
@@ -178,6 +205,8 @@ type
     property    Version: integer read resPrfVersion;
     property    IsDigest: boolean read resPrfDigest;
     property    DigestVer: integer read resPrfDigestVer;
+    property    CallGraphInfo: TCallGraphInfoDict read fCallGraphInfoDict;
+    property    CallGraphInfoCount: integer read fCallGraphInfoMaxElementCount;
   end;
 
 implementation
@@ -198,21 +227,20 @@ const
 constructor TResults.Create;
 begin
   inherited Create;
-  try
-    SetLength(resThreads,1);
-    resThreads[0].teThread      := 0; // impossible handle
-    resThreads[0].teActiveProcs := nil;
-    resOldTicks        := -1;
-    resThreadBytes     := 1;
-    resCompressTicks   := false;
-    resCompressThreads := false;
-    resPrfVersion      := 0;
-    resPrfDigest       := false;
-    resPrfDigestVer    := 0;
-    resNullOverhead    := 0;
-    resNullError       := 0;
-    resNullErrorAcc    := 0;
-  except end;
+  SetLength(resThreads,1);
+  resThreads[0].teThread      := 0; // impossible handle
+  resThreads[0].teActiveProcs := nil;
+  resOldTicks        := -1;
+  resThreadBytes     := 1;
+  resCompressTicks   := false;
+  resCompressThreads := false;
+  resPrfVersion      := 0;
+  resPrfDigest       := false;
+  resPrfDigestVer    := 0;
+  resNullOverhead    := 0;
+  resNullError       := 0;
+  resNullErrorAcc    := 0;
+  fCallGraphInfoDict := TCallGraphInfoDict.Create();
 end; { TResults.Create }
 
 constructor TResults.Create(fileName: String; callback: TProgressCallback);
@@ -240,12 +268,11 @@ end; { TResults.Create }
 
 destructor TResults.Destroy;
 var
-  i,j: integer;
+  i: integer;
 begin
-  for i := Low(resThreads) to High(resThreads) do resThreads[i].teActiveProcs.Free;
-  for i := Low(resCallGraph) to High(resCallGraph) do 
-    for j := Low(resCallGraph[Low(resCallGraph)]) to High(resCallGraph[Low(resCallGraph)]) do 
-      if assigned(resCallGraph[i,j]) then Dispose(resCallGraph[i,j]); 
+  fCallGraphInfoDict.free;
+  for i := Low(resThreads) to High(resThreads) do
+    resThreads[i].teActiveProcs.Free;
   inherited Destroy;
 end; { TResults.Destroy }
 
@@ -334,7 +361,7 @@ end; { TResults.CheckTag }
 
 procedure TResults.LoadTables;
 var
-  i,j     : integer;
+  i     : integer;
   elements: integer;
 begin
   CheckTag(PR_UNITTABLE);
@@ -389,10 +416,9 @@ begin
       SetLength(peRecLevel,1);         // placeholder for a unused entry
     end;
   end;
-  SetLength(resCallGraph,elements+1,elements+1); // resCallGraph[0,x], resCallGraph[x,0] = unused (to match indexes in resProcedure)
-  for i := Low(resCallGraph) to High(resCallGraph) do
-    for j := Low(resCallGraph[Low(resCallGraph)]) to High(resCallGraph[Low(resCallGraph)]) do
-      resCallGraph[i,j] := nil;
+  fCallGraphInfoDict.Clear;
+  // max number elements is (elements+1)*(elements+1): 1 child per parent.
+  fCallGraphInfoMaxElementCount := elements+1;
   for i := 1 to High(resClasses) do
     with resClasses[i] do
       if ceFirstLn = MaxLongint then ceFirstLn := -1;
@@ -549,8 +575,10 @@ begin
 end; { TResults.LoadHeader }
 
 procedure TResults.UpdateRunningTime(proxy,parent: TProcProxy);
+var
+  LInfo : TCallGraphInfo;
 begin
-  // update resProcedures, resActiveProcs, and resCallGraph
+  // update resProcedures, resActiveProcs, and CallGraph
   // other structures will be recalculated at the end
   with resProcedures[proxy.ppProcID] do begin
     if assigned(parent)
@@ -566,31 +594,28 @@ begin
     end;
     Inc(peProcCnt[proxy.ppThreadID],1);
   end;
-//  resThreads[proxy.ppThreadID].teActiveProcs.UpdateRunningTime(proxy);        //gp 1999-09-28 - not needed anymore
-  if assigned(parent) then begin
-    AllocCGEntry(parent.ppProcID,proxy.ppProcID,High(resThreads));
-    with resCallGraph[parent.ppProcID,proxy.ppProcID]^ do begin
-      Inc(cgeProcTime[proxy.ppThreadID],proxy.ppTotalTime);
-      Inc(cgeProcTime[0],proxy.ppTotalTime);
-      if proxy.ppTotalTime < cgeProcTimeMin[proxy.ppThreadID] then
-        cgeProcTimeMin[proxy.ppThreadID] := proxy.ppTotalTime;
-      if proxy.ppTotalTime > cgeProcTimeMax[proxy.ppThreadID] then
-        cgeProcTimeMax[proxy.ppThreadID] := proxy.ppTotalTime;
-      if resProcedures[proxy.ppProcID].peRecLevel[proxy.ppThreadID] = 0 then begin
-        Inc(cgeProcChildTime[proxy.ppThreadID],proxy.ppChildTime);
-        Inc(cgeProcChildTime[proxy.ppThreadID],proxy.ppTotalTime);
+  if assigned(parent) then
+  begin
+    LInfo := fCallGraphInfoDict.GetOrCreateGraphInfo(parent.ppProcID,proxy.ppProcID,High(resThreads));
+      LInfo.ProcTime[proxy.ppThreadID] := LInfo.ProcTime[proxy.ppThreadID]+proxy.ppTotalTime;
+      LInfo.ProcTime[0] := LInfo.ProcTime[0] + proxy.ppTotalTime;
+      if proxy.ppTotalTime < LInfo.ProcTimeMin[proxy.ppThreadID] then
+        LInfo.ProcTimeMin[proxy.ppThreadID] := proxy.ppTotalTime;
+      if proxy.ppTotalTime > LInfo.ProcTimeMax[proxy.ppThreadID] then
+        LInfo.ProcTimeMax[proxy.ppThreadID] := proxy.ppTotalTime;
+      if resProcedures[proxy.ppProcID].peRecLevel[proxy.ppThreadID] = 0 then
+      begin
+        LInfo.ProcChildTime[proxy.ppThreadID] := LInfo.ProcChildTime[proxy.ppThreadID] + proxy.ppChildTime;
+        LInfo.ProcChildTime[proxy.ppThreadID] := LInfo.ProcChildTime[proxy.ppThreadID] + proxy.ppTotalTime;
       end
-{begin}                                                                         //gp 1999-09-28
-// Very dirty hack but it looks like it is OK. Actually I need a proxy mechanism at callgraph level, too.
       else if (resProcedures[proxy.ppProcID].peRecLevel[proxy.ppThreadID] = 1) and
-              (parent.ppProcID = proxy.ppProcID) then begin
-        Inc(cgeProcChildTime[proxy.ppThreadID],proxy.ppChildTime);
-        Inc(cgeProcChildTime[proxy.ppThreadID],proxy.ppTotalTime);
+              (parent.ppProcID = proxy.ppProcID) then
+      begin
+        LInfo.ProcChildTime[proxy.ppThreadID] := LInfo.ProcChildTime[proxy.ppThreadID] + proxy.ppChildTime;
+        LInfo.ProcChildTime[proxy.ppThreadID] := LInfo.ProcChildTime[proxy.ppThreadID] + proxy.ppTotalTime;
       end;
-{end}                                                                           //gp 1999-09-28
-      Inc(cgeProcCnt[proxy.ppThreadID],1);
-      Inc(cgeProcCnt[0],1);
-    end;
+      LInfo.ProcCnt[proxy.ppThreadID] := LInfo.ProcCnt[proxy.ppThreadID] + 1;
+      LInfo.ProcCnt[0] := LInfo.ProcCnt[0] + 1;
   end;
 end; { TResults.UpdateRunningTime }
 
@@ -615,8 +640,10 @@ end; { TResults.ThLocate }
 
 function TResults.ThCreate(thread: integer): integer;
 var
-  i,j  : integer;
+  i  : integer;
   numth: integer;
+  LPair : TPair<TCallGraphKey, TCallGraphInfo>;
+  LInfo : TCallGraphInfo;
 begin
   numth := High(resThreads)+1;
   SetLength(resThreads,numth+1);
@@ -645,26 +672,17 @@ begin
       peRecLevel[numth-1]      := 0;
     end;
   end;
-  // resize resCallGraph
-  for i := Low(resCallGraph) to High(resCallGraph) do
-    for j := Low(resCallGraph[Low(resCallGraph)]) to High(resCallGraph[Low(resCallGraph)]) do
-      if assigned(resCallGraph[i,j]) then
-        with resCallGraph[i,j]^ do begin
-          SetLength(cgeProcTime,numth);
-          SetLength(cgeProcTimeMin,numth);
-          SetLength(cgeProcTimeMax,numth);
-          SetLength(cgeProcTimeAvg,numth);
-          SetLength(cgeProcChildTime,numth);
-          SetLength(cgeProcCnt,numth);
-//          SetLength(cgeRecLevel,numth);
-          cgeProcTime[numth-1]      := 0;
-          cgeProcTimeMin[numth-1]   := High(int64);
-          cgeProcTimeMax[numth-1]   := 0;
-          cgeProcTimeAvg[numth-1]   := 0;
-          cgeProcChildTime[numth-1] := 0;
-          cgeProcCnt[numth-1]       := 0;
-//          cgeRecLevel[numth-1]      := 0;
-        end;
+  // resize fCallGraphInfoDict
+  for LPair in fCallGraphInfoDict do
+  begin
+    LInfo := LPair.Value;
+    LInfo.ProcTime.Add(0);
+    LInfo.ProcTimeMin.Add(High(int64));
+    LInfo.ProcTimeMax.Add(0);
+    LInfo.ProcTimeAvg.Add(0);
+    LInfo.ProcChildTime.Add(0);
+    LInfo.ProcCnt.Add(0);
+  end;
   Result := numth-1;
 end; { TResults.ThCreate }
 
@@ -672,6 +690,8 @@ procedure TResults.RecalcTimes;
 var
   i,j,k: integer;
   numth: integer;
+  LInfo : TCallGraphInfo;
+  LInfoChild : TCallGraphInfo;
 begin
   numth := High(resThreads);
   // resize resUnits and resClasses
@@ -778,29 +798,41 @@ begin
     Inc(resThreads[Low(resThreads)].teTotalTime,resThreads[i].teTotalTime);
     Inc(resThreads[Low(resThreads)].teTotalCnt,resThreads[i].teTotalCnt);
   end;
-  // resCallGraph
-  for i := Low(resCallGraph)+1 to High(resCallGraph) do begin
-    for k := Low(resCallGraph[Low(resCallGraph)]) to High(resCallGraph[Low(resCallGraph)]) do begin
-      if assigned(resCallGraph[i,k]) then begin
-        with resCallGraph[i,k]^ do begin
-          for j := Low(cgeProcTime)+1 to High(cgeProcTime) do begin
-            if cgeProcTimeMin[j] = High(int64) then cgeProcTimeMin[j] := 0;
-            if cgeProcCnt[j] = 0 then cgeProcTimeAvg[j] := 0
-                                 else cgeProcTimeAvg[j] := cgeProcTime[j] div cgeProcCnt[j];
-          end;
-        end; // with
-      end; // if
-    end; // for
-  end; // for
-  for i := Low(resCallGraph)+1 to High(resCallGraph) do begin
-    AllocCGEntry(i,0,High(resThreads));
-    resCallGraph[i,0]^.cgeProcTime[0] := 0;
-    for j := Low(resThreads)+1 to High(resThreads) do begin
-      resCallGraph[i,0]^.cgeProcTime[j] := 0;
-      for k := Low(resCallGraph[i]) to High(resCallGraph[i]) do begin
-        if assigned(resCallGraph[i,k]) then begin
-          Inc(resCallGraph[i,0]^.cgeProcTime[j],resCallGraph[i,k]^.cgeProcTime[j]);
-          Inc(resCallGraph[i,0]^.cgeProcTime[0],resCallGraph[i,k]^.cgeProcTime[j]);
+
+  // fCallGraphInfoDict: calculate average and min time
+  for i := 0+1 to fCallGraphInfoMaxElementCount-1 do
+    for k := 0 to fCallGraphInfoMaxElementCount-1 do
+    begin
+      LInfo := fCallGraphInfoDict.GetGraphInfo(i,k);
+      if assigned(LInfo) then
+      begin
+        for j := 0 + 1 to LInfo.ProcTime.count - 1 do
+        begin
+          if LInfo.ProcTimeMin[j] = High(int64) then
+            LInfo.ProcTimeMin[j] := 0;
+          if LInfo.ProcCnt[j] = 0 then
+            LInfo.ProcTimeAvg[j] := 0
+          else
+            LInfo.ProcTimeAvg[j] := LInfo.ProcTime[j] div LInfo.ProcCnt[j];
+        end;
+      end;
+    end;
+
+  // fCallGraphInfo: calculate proc time for each thread
+  for i := 0+1 to fCallGraphInfoMaxElementCount-1 do
+  begin
+    LInfo := fCallGraphInfoDict.GetOrCreateGraphInfo(i,0,High(resThreads));
+    LInfo.ProcTime[0] := 0;
+    for j := Low(resThreads) + 1 to High(resThreads) do
+    begin
+      LInfo.ProcTime[j] := 0;
+      for k := 0 to fCallGraphInfoMaxElementCount do
+      begin
+        LInfoChild := fCallGraphInfoDict.GetGraphInfo(i, k);
+        if assigned(LInfoChild) then
+        begin
+          LInfo.ProcTime[j] := LInfo.ProcTime[j] + LInfoChild.ProcTime[j];
+          LInfo.ProcTime[0] := LInfo.ProcTime[0] + LInfoChild.ProcTime[j];
         end; // if
       end; // for
     end; // for
@@ -889,6 +921,7 @@ end; { TResults.LoadCalibration }
 procedure TResults.SaveDigest(fileName: string);
 var
   i,j,k: integer;
+  LInfo : TCallGraphInfo;
 begin
   resFile := TGpHugeFile.CreateEx(fileName,FILE_FLAG_SEQUENTIAL_SCAN+FILE_ATTRIBUTE_NORMAL);
   resFile.RewriteBuffered(1);
@@ -954,22 +987,30 @@ begin
         for j := Low(peProcTimeAvg) to High(peProcTimeAvg) do WriteInt64(peProcTimeAvg[j]);
       end;
     WriteTag(PR_DIGCALLG);
-    for i := Low(resCallGraph) to High(resCallGraph) do
-      for k := Low(resCallGraph[Low(resCallGraph)]) to High(resCallGraph[Low(resCallGraph)]) do begin
-        if assigned(resCallGraph[i,k]) then begin
+    for i := 0 to fCallGraphInfoMaxElementCount do
+      for k := 0 to fCallGraphInfoMaxElementCount do begin
+      begin
+        LInfo := fCallGraphInfoDict.GetGraphInfo(i,k);
+        if Assigned(LInfo) then
+        begin
           WriteInt(i);
           WriteInt(k);
-          with resCallGraph[i,k]^ do begin
-            WriteInt(High(cgeProcTime)-Low(cgeProcTime)+1);
-            for j := Low(cgeProcTime) to High(cgeProcTime) do WriteInt64(cgeProcTime[j]);
-            for j := Low(cgeProcTimeMin) to High(cgeProcTimeMin) do WriteInt64(cgeProcTimeMin[j]);
-            for j := Low(cgeProcTimeMax) to High(cgeProcTimeMax) do WriteInt64(cgeProcTimeMax[j]);
-            for j := Low(cgeProcChildTime) to High(cgeProcChildTime) do WriteInt64(cgeProcChildTime[j]);
-            for j := Low(cgeProcCnt) to High(cgeProcCnt) do WriteInt(cgeProcCnt[j]);
-            for j := Low(cgeProcTimeAvg) to High(cgeProcTimeAvg) do WriteInt64(cgeProcTimeAvg[j]);
-          end;
+          WriteInt(LInfo.ProcTime.Count); // number of threads
+          for j := 0 to LInfo.ProcTime.Count-1 do
+            WriteInt64(LInfo.ProcTime[j]);
+          for j := 0 to LInfo.ProcTimeMin.Count-1 do
+            WriteInt64(LInfo.ProcTimeMin[j]);
+          for j := 0 to LInfo.ProcTimeMax.Count-1 do
+            WriteInt64(LInfo.ProcTimeMax[j]);
+          for j := 0 to LInfo.ProcChildTime.Count-1 do
+            WriteInt64(LInfo.ProcChildTime[j]);
+          for j := 0 to LInfo.ProcCnt.Count-1 do
+            WriteInt(LInfo.ProcCnt[j]);
+          for j := 0 to LInfo.ProcTimeAvg.Count-1 do
+            WriteInt64(LInfo.ProcTimeAvg[j]);
         end;
       end;
+    end;
     WriteInt(PR_DIGENDCG);
     // dump call graph
     WriteTag(PR_ENDDIGEST);
@@ -1003,6 +1044,10 @@ var
     end;
   end; { CheckPerc }
 
+var
+  LInfo : TCallGraphInfo;
+  LInt64 : Int64;
+  LInt : Integer;
 begin
   fpstart  := resFile.FilePos;
   filesz   := resFile.FileSize;
@@ -1061,10 +1106,8 @@ begin
       PR_DIGPROCS: begin
         ReadInt(num);
         SetLength(resProcedures,num);
-        SetLength(resCallGraph,num,num);
-        for i := Low(resCallGraph) to High(resCallGraph) do
-          for j := Low(resCallGraph[Low(resCallGraph)]) to High(resCallGraph[Low(resCallGraph)]) do
-            resCallGraph[i,j] := nil;
+        fCallGraphInfoMaxElementCount := num;
+        fCallGraphInfoDict.Clear();
         for i := Low(resProcedures) to High(resProcedures) do
           with resProcedures[i] do begin
             CheckPerc;
@@ -1101,20 +1144,42 @@ begin
           if i = PR_DIGENDCG then break;
           ReadInt(j);
           ReadInt(num);
-          AllocCGEntry(i,j,num);
-          with resCallGraph[i,j]^ do begin
-            SetLength(cgeProcTime,num);
-            for j := Low(cgeProcTime) to High(cgeProcTime) do ReadInt64(cgeProcTime[j]);
-            SetLength(cgeProcTimeMin,num);
-            for j := Low(cgeProcTimeMin) to High(cgeProcTimeMin) do ReadInt64(cgeProcTimeMin[j]);
-            SetLength(cgeProcTimeMax,num);
-            for j := Low(cgeProcTimeMax) to High(cgeProcTimeMax) do ReadInt64(cgeProcTimeMax[j]);
-            SetLength(cgeProcChildTime,num);
-            for j := Low(cgeProcChildTime) to High(cgeProcChildTime) do ReadInt64(cgeProcChildTime[j]);
-            SetLength(cgeProcCnt,num);
-            for j := Low(cgeProcCnt) to High(cgeProcCnt) do ReadInt(cgeProcCnt[j]);
-            SetLength(cgeProcTimeAvg,num);
-            for j := Low(cgeProcTimeAvg) to High(cgeProcTimeAvg) do ReadInt64(cgeProcTimeAvg[j]);
+          LInfo := fCallGraphInfoDict.GetOrCreateGraphInfo(i,j,num);
+          LInfo.ProcTime.Count := num;
+          for j := 0 to LInfo.ProcTime.Count-1 do
+          begin
+            ReadInt64(LInt64);
+            LInfo.ProcTime[j] := LInt64;
+          end;
+          LInfo.ProcTimeMin.Count := num;
+          for j := 0 to LInfo.ProcTimeMin.Count-1 do
+          begin
+            ReadInt64(LInt64);
+            LInfo.ProcTimeMin[j] := LInt64;
+          end;
+          LInfo.ProcTimeMax.Count := num;
+          for j := 0 to LInfo.ProcTimeMax.Count-1 do
+          begin
+            ReadInt64(LInt64);
+            LInfo.ProcTimeMax[j] := LInt64;
+          end;
+          LInfo.ProcChildTime.Count := num;
+          for j := 0 to LInfo.ProcChildTime.Count-1 do
+          begin
+            ReadInt64(LInt64);
+            LInfo.ProcChildTime[j] := LInt64;
+          end;
+          LInfo.ProcCnt.Count := num;
+          for j := 0 to LInfo.ProcCnt.Count-1 do
+          begin
+            ReadInt(LInt);
+            LInfo.ProcCnt[j] := LInt;
+          end;
+          LInfo.ProcTimeAvg.Count := num;
+          for j := 0 to LInfo.ProcTimeAvg.Count-1 do
+          begin
+            ReadInt64(LInt64);
+            LInfo.ProcTimeAvg[j] := LInt64;
           end;
         until false;
       end; // PR_DIGCALLG
@@ -1125,22 +1190,6 @@ end; { TResults.LoadDigest }
 procedure TResults.Rename(fileName: string);
 begin
   resName := fileName;
-end;
-
-procedure TResults.AllocCGEntry(i, j, threads: integer);
-begin
-  if resCallGraph[i,j] = nil then begin
-    New(resCallGraph[i,j]);
-    with resCallGraph[i,j]^ do begin
-      SetLength(cgeProcTime,threads+1);
-      SetLength(cgeProcTimeMin,threads+1);
-      SetLength(cgeProcTimeMax,threads+1);
-      SetLength(cgeProcTimeAvg,threads+1);
-      SetLength(cgeProcChildTime,threads+1);
-      SetLength(cgeProcCnt,threads+1);
-//      SetLength(cgeRecLevel,threads+1);
-    end;
-  end;
 end;
 
 procedure TResults.AssignTables(tableFile: string);
@@ -1301,5 +1350,68 @@ begin
 //  for i := aplCount-1 downto Low(aplList) do
 //    aplList[i].UpdateRunningTime(proxy);
 end; { TActiveProcList.UpdateRunningTime }
+
+{ TCallGraphInfo }
+
+constructor TCallGraphInfo.Create(const aThreadCount: Integer);
+begin
+  inherited Create();
+  ProcTime := TList<int64>.Create();
+  ProcTimeMin := TList<int64>.Create();
+  ProcTimeMax := TList<int64>.Create();
+  ProcTimeAvg := TList<int64>.Create();
+  ProcChildTime:= TList<int64>.Create();
+  ProcCnt := TList<integer>.Create();
+
+  ProcTime.Count := aThreadCount;
+  ProcTimeMin.Count := aThreadCount;
+  ProcTimeMax.Count := aThreadCount;
+  ProcTimeAvg.Count := aThreadCount;
+  ProcChildTime.Count := aThreadCount;
+  ProcCnt.Count := aThreadCount;
+end;
+
+destructor TCallGraphInfo.Destroy;
+begin
+  ProcTime.free;
+  ProcTimeMin.free;
+  ProcTimeMax.free;
+  ProcTimeAvg.free;
+  ProcChildTime.free;
+  ProcCnt.free;
+  inherited;
+end;
+
+{ TCallGraphKey }
+
+constructor TCallGraphKey.Create(aParentId, aChildId: integer);
+begin
+  self.ParentProcId := aParentId;
+  self.ProcId := aChildId;
+end;
+
+{ TCallGraphInfoDict }
+
+function TCallGraphInfoDict.GetGraphInfo(const i,j: integer) : TCallGraphInfo;
+var
+  LKey : TCallGraphKey;
+begin
+  LKey := TCallGraphKey.Create(i,j);
+  if not TryGetValue(LKey, result) then
+    result := nil;
+end;
+
+function TCallGraphInfoDict.GetOrCreateGraphInfo(const i,j,threads: integer) : TCallGraphInfo;
+var
+  LKey : TCallGraphKey;
+begin
+  LKey := TCallGraphKey.Create(i,j);
+  if not TryGetValue(LKey, result) then
+  begin
+    result := TCallGraphInfo.Create(threads+1);
+    Add(LKey, result);
+  end;
+end;
+
 
 end.
