@@ -3,18 +3,32 @@ unit bdsVersions;
 interface
 
 
+function RemoveDelphiPrefix(const aDelphiVer: string): string;
 function DelphiVerToBDSVer(const aDelphiVer: string): string;
 function DelphiVerToCompilerVersion(const aDelphiVer: string): string;
-
 function BdsVerToDephiVer(const aBdsVersionString: string): string;
 
 implementation
+
+uses System.SysUtils;
 
 
 const SEATTLE = '10.0 Seattle';
       BERLIN = '10.1 Berlin';
       TOKYO = '10.2 Tokyo';
       RIO = '10.3 Rio';
+
+function RemoveDelphiPrefix(const aDelphiVer: string): string;
+begin
+  Result := aDelphiVer;
+  if aDelphiVer.startswith('Delphi &') then
+    result := copy(aDelphiVer, Length('Delphi &')+1, Length(aDelphiVer))
+  else
+  begin
+    if aDelphiVer.startswith('Delphi ') then
+      result := copy(aDelphiVer, Length('Delphi ')+1, Length(aDelphiVer))
+  end;
+end;
 
 
 function DelphiVerToBDSVer(const aDelphiVer: string): string;

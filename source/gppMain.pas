@@ -405,7 +405,6 @@ type
     procedure RestackOne(fromPop, toPop: TPopupMenu);
     procedure LoadLayouts;
     procedure UseDelphiSettings(delphiVer: integer);
-    function  GetPrefDelphiName: string;
     procedure RebuildDefines;
     procedure RepositionSliders;
     procedure SlidersMoved;
@@ -718,10 +717,6 @@ begin
   FillUnitTree(not chkShowAll.Checked);
 end; { TfrmMain.ParseProject }
 
-function TfrmMain.GetPrefDelphiName: string;
-begin
-  Result := ButFirst(frmPreferences.cbxCompilerVersion.Items[prefCompilerVersion],Length('Delphi '));
-end; { TfrmMain.GetPrefDelphiName }
 
 function TfrmMain.IsProjectConsole: boolean;
 begin
@@ -759,7 +754,7 @@ begin
     currentProject := ExtractFileName(fileName);
     ParseProject(fileName,false);
     if defaultDelphi = '' then
-      defaultDelphi := GetPrefDelphiName;
+      defaultDelphi := RemoveDelphiPrefix(frmPreferences.cbxCompilerVersion.Items[prefCompilerVersion]);
     selectedDelphi := GetProjectPref('DelphiVersion',defaultDelphi);
     RebuildDelphiVer;
     chkShowAll.Checked := GetProjectPref('ShowAllFolders',prefShowAllFolders);
@@ -780,7 +775,7 @@ begin
     if Items.Count >= 1 then 
       Items[Items.Count-1].Checked := true;
     for i := 0 to Items.Count-1 do begin
-      if ButFirst(Items[i].Caption,Length('Delphi &')) = selectedDelphi then
+      if RemoveDelphiPrefix(Items[i].Caption) = selectedDelphi then
       begin
         Items[Items.Count-1].Checked := false;
         Items[i].Checked := true;
@@ -790,7 +785,7 @@ begin
     end;
 
     if (not found) and (Items.Count >= 1) then begin
-      selectedDelphi := ButFirst(Items[Items.Count-1].Caption, Length('Delphi &'));
+      selectedDelphi := RemoveDelphiPrefix(Items[Items.Count-1].Caption);
     end;
   end;
   tbtnRun.Hint := 'Run Delphi '+selectedDelphi;
@@ -1221,7 +1216,7 @@ end; { TfrmMain.WMReLoadProfile }
 
 procedure TfrmMain.DelphiVerClick(Sender: TObject);
 begin
-  selectedDelphi := ButFirst(TMenuItem(Sender).Caption,Length('Delphi &'));
+  selectedDelphi := RemoveDelphiPrefix(TMenuItem(Sender).Caption);
   RebuildDelphiVer;
   SetProjectPref('DelphiVersion',selectedDelphi);
 end;

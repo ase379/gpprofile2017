@@ -309,7 +309,7 @@ begin
   if cbStandardDefines.Checked then begin
     AddDefine('WIN32',DEF_DELPHI);
     AddDefine('CPU386',DEF_DELPHI);
-    AddDefine(DelphiVerToCompilerVersion(ButFirst(cbxDelphiDefines.Text,Length('Delphi '))), DEF_DELPHI);
+    AddDefine(DelphiVerToCompilerVersion(RemoveDelphiPrefix(cbxDelphiDefines.Text)), DEF_DELPHI);
   end
   else RemoveTag(DEF_DELPHI);
   cbxDelphiDefines.Enabled := cbStandardDefines.Checked;
@@ -572,7 +572,7 @@ begin
     else begin
       cbxCompilerVersion.ItemIndex := cbxCompilerVersion.Items.Count-1;
       cbxDelphiDefines.ItemIndex   := cbxCompilerVersion.Items.Count-1;
-      selectedDelphi := ButFirst(cbxCompilerVersion.Items[cbxCompilerVersion.ItemIndex],Length('Delphi '));
+      selectedDelphi := RemoveDelphiPrefix(cbxCompilerVersion.Items[cbxCompilerVersion.ItemIndex]);
     end;
 end; { TfrmPreferences.ReselectCompilerVersion }
 
@@ -686,7 +686,7 @@ begin
     prefInstrumentAssembler:= cbInstrumentAssembler.Checked;
     prefMakeBackupOfInstrumentedFile := cbMakeBackupOfInstrumentedFile.Checked;
     SavePreferences;
-    selectedDelphi := ButFirst(cbxCompilerVersion.Items[prefCompilerVersion],Length('Delphi '));
+    selectedDelphi := RemoveDelphiPrefix(cbxCompilerVersion.Items[prefCompilerVersion]);
   end;
 end;
 
@@ -754,7 +754,7 @@ begin
       SetProjectPref('ProfilingAutostart',cbProfilingAutostart.Checked);
       SetProjectPref('InstrumentAssembler',cbInstrumentAssembler.Checked);
       SetProjectPref('MakeBackupOfInstrumentedFile',cbMakeBackupOfInstrumentedFile.Checked);
-      selectedDelphi := ButFirst(cbxCompilerVersion.Items[cbxCompilerVersion.ItemIndex],Length('Delphi '));
+      selectedDelphi := RemoveDelphiPrefix(cbxCompilerVersion.Items[cbxCompilerVersion.ItemIndex]);
       if memoExclUnits.Text = prefExcludedUnits
         then DelProjectPref('ExcludedUnits')
         else SetProjectPref('ExcludedUnits',memoExclUnits.Text);
