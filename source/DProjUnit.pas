@@ -9,10 +9,12 @@ type
   DProjConfig = class
   public
     Condition : string;
-    ConfigName : string;
-    ConfigParentName : string;
+    ConfigType : string; // Base, relase, debug...
+    ConfigName : string; // internal name (cfg_1)..
+    ConfigParentName : string; // internal parent config name
+    PlatformName : string;
     IsEnabledConfig : boolean;
-    ExeOutput : string;
+    ExeOutput : string; // the exe path (with inheritance)
   end;
 
   TDProjConfigs = class(TObjectList<DProjConfig>)
@@ -24,6 +26,8 @@ type
   public
     function GetActiveConfig() : DProjConfig;
     function FindConfigByConfigName(const aConfigName : string) : DProjConfig;
+    function FindConfigByCurrentSettings(): DProjConfig;
+
     procedure ApplySettingInheritance();
   end;
 
@@ -123,6 +127,44 @@ procedure TDProj.LoadConfigs();
     end;
   end;
 
+  function GetConfigTypeFromConfigLine(const aConfigLine: string) : string;
+  var
+    LPreamble : string;
+    LPosAposStart : integer;
+    LPosAposEnd : integer;
+  begin
+    result := '';
+    // find all Platform matches
+    LPreamble := Copy(fDProjConfigs.CurrentConfigCondition, 1,Length(fDProjConfigs.CurrentConfigCondition)-1);
+    //LPreamble := '''$(Config)''==''';
+    if aConfigLine.Contains(LPreamble) then
+    begin
+      LPosAposEnd := PosEx('''', aConfigLine, Length(LPreamble)+1);
+      LPosAposStart := PosEx(LPreamble, aConfigLine,1) + Length(LPreamble)-1;
+      result := Copy(aConfigLine,LPosAposStart+1,LPosAposEnd-LPosAposStart-1);
+    end;
+  end;
+
+  function GetPlatFormNameFromConfigLine(const aConfigLine: string) : string;
+  var
+    LPreamble : string;
+    LPosAposStart : integer;
+    LPosAposEnd : integer;
+  begin
+    result := '';
+    // find all Platform matches
+    LPreamble := Copy(fDProjConfigs.CurrentPlatFormCondition, 1,Length(fDProjConfigs.CurrentPlatFormCondition)-1);
+
+    if aConfigLine.Contains(LPreamble) then
+    begin
+      LPosAposStart := PosEx(LPreamble, aConfigLine,1) + Length(LPreamble)-1;
+      LPosAposEnd := PosEx('''', aConfigLine, LPosAposStart+1);
+      result := Copy(aConfigLine,LPosAposStart+1,LPosAposEnd-LPosAposStart-1);
+    end;
+  end;
+
+
+
 var
   i : integer;
   LPropertyGroupNode : IXMLNode;
@@ -151,7 +193,6 @@ begin
         LChild := LPropertyGroupNode.ChildNodes.Nodes['Platform'];
         fDProjConfigs.CurrentPlatForm := LChild.Text;
         fDProjConfigs.CurrentPlatFormCondition := LChild.Attributes['Condition'];
-
       end;
     end;
 
@@ -169,6 +210,8 @@ begin
         LNewConfig := DProjConfig.Create();
         LNewConfig.Condition := LPropertyGroupNode.Attributes['Condition'];
         LNewConfig.ConfigName := LConfigName;
+        LNewConfig.ConfigType := GetConfigTypeFromConfigLine(LPropertyGroupNode.Attributes['Condition']);
+        LNewConfig.PlatformName := GetPlatFormNameFromConfigLine(LPropertyGroupNode.Attributes['Condition']);
         if (LNewConfig.ConfigName <> 'Base') then // already reserverd for isBase
           if (LPropertyGroupNode.ChildValues[LNewConfig.ConfigName] <> Null) then
             LNewConfig.IsEnabledConfig := true;
@@ -197,8 +240,13 @@ var
   i: Integer;
   LValue : String;
   LPropertyGroupNode : IXMLNode;
+  LConfig : DProjConfig;
 begin
   Result := '';
+  LConfig := fDProjConfigs.FindConfigByCurrentSettings();
+  if assigned(LConfig) then
+    Exit(LConfig.ExeOutput);
+
   for i := 0 to Root.Count-1 do
   begin
     LPropertyGroupNode := Root.Nodes[i];
@@ -308,6 +356,8 @@ procedure TDProjConfigs.ApplySettingInheritance;
     ApplyBaseRecursive(LBaseEntry);
     if anEntry.ExeOutput = '' then
       anEntry.ExeOutput := LBaseEntry.ExeOutput;
+    if anEntry.ConfigType = '' then
+      anEntry.ConfigType := LBaseEntry.ConfigType;
   end;
 
 var
@@ -325,6 +375,18 @@ begin
   for LEntry in self do
     if LEntry.ConfigName = aConfigName then
       exit(LEntry);
+end;
+
+
+function TDProjConfigs.FindConfigByCurrentSettings(): DProjConfig;
+var
+  LEntry : DProjConfig;
+begin
+  result := nil;
+  for LEntry in self do
+    if LEntry.PlatformName = CurrentPlatForm then
+      if LEntry.ConfigType = CurrentConfig then
+        Exit(LEntry);
 end;
 
 function TDProjConfigs.GetActiveConfig: DProjConfig;
