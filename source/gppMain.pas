@@ -2631,22 +2631,6 @@ begin
     vDProj := TDProj.Create(vDProjFN);
     try
       Result := vDProj.OutputDir;
-      XE2Pos:= Pos(cConfig,Result);
-      if XE2Pos <> 0 then begin
-        if (XE2ConfigOverride <> '') then
-          XE2Config:= XE2ConfigOverride
-        else
-          XE2Config:= vDProj.XE2Config;
-        Result:= ReplaceStr(Result, cConfig, XE2Config);
-      end;
-      XE2Pos:= Pos(cPlatform,Result);
-      if XE2Pos <> 0 then begin
-        if (XE2PlatformOverride <> '') then
-          XE2Platform:= XE2PlatformOverride
-        else
-          XE2Platform:= vDProj.XE2Platform;
-        Result:= ReplaceStr(Result, cPlatform, XE2Platform);
-      end;
     finally
       vDProj.Free;
     end;
