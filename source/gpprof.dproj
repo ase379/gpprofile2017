@@ -10,7 +10,7 @@
         <Base>True</Base>
         <Config Condition="'$(Config)'==''">Release</Config>
         <Platform Condition="'$(Platform)'==''">Win32</Platform>
-        <TargetedPlatforms>1</TargetedPlatforms>
+        <TargetedPlatforms>3</TargetedPlatforms>
         <AppType>Application</AppType>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Config)'=='Base' or '$(Base)'!=''">
@@ -37,6 +37,12 @@
         <Cfg_1>true</Cfg_1>
         <Base>true</Base>
     </PropertyGroup>
+    <PropertyGroup Condition="('$(Platform)'=='Win64' and '$(Cfg_1)'=='true') or '$(Cfg_1_Win64)'!=''">
+        <Cfg_1_Win64>true</Cfg_1_Win64>
+        <CfgParent>Cfg_1</CfgParent>
+        <Cfg_1>true</Cfg_1>
+        <Base>true</Base>
+    </PropertyGroup>
     <PropertyGroup Condition="'$(Config)'=='Debug' or '$(Cfg_2)'!=''">
         <Cfg_2>true</Cfg_2>
         <CfgParent>Base</CfgParent>
@@ -48,8 +54,14 @@
         <Cfg_2>true</Cfg_2>
         <Base>true</Base>
     </PropertyGroup>
+    <PropertyGroup Condition="('$(Platform)'=='Win64' and '$(Cfg_2)'=='true') or '$(Cfg_2_Win64)'!=''">
+        <Cfg_2_Win64>true</Cfg_2_Win64>
+        <CfgParent>Cfg_2</CfgParent>
+        <Cfg_2>true</Cfg_2>
+        <Base>true</Base>
+    </PropertyGroup>
     <PropertyGroup Condition="'$(Base)'!=''">
-        <VerInfo_Build>2</VerInfo_Build>
+        <VerInfo_Build>3</VerInfo_Build>
         <VerInfo_AutoIncVersion>true</VerInfo_AutoIncVersion>
         <DCC_DcuOutput>..\DCU</DCC_DcuOutput>
         <DCC_ExeOutput>..\bin</DCC_ExeOutput>
@@ -62,17 +74,19 @@
         <SanitizedProjectName>gpprof</SanitizedProjectName>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Base_Win32)'!=''">
-        <DCC_Namespace>Data.Win;Datasnap.Win;Web.Win;Soap.Win;Xml.Win;Bde;$(DCC_Namespace)</DCC_Namespace>
+        <AppEnableHighDPI>true</AppEnableHighDPI>
         <Icon_MainIcon>gpprof_Icon1.ico</Icon_MainIcon>
         <Manifest_File>$(BDS)\bin\default_app.manifest</Manifest_File>
         <AppEnableRuntimeThemes>true</AppEnableRuntimeThemes>
-        <VerInfo_Keys>CompanyName=;FileDescription=;FileVersion=1.4.0.3;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProductName=;ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Base_Win64)'!=''">
+        <AppEnableHighDPI>true</AppEnableHighDPI>
+        <AppEnableRuntimeThemes>true</AppEnableRuntimeThemes>
+        <VerInfo_Build>3</VerInfo_Build>
+        <Manifest_File>$(BDS)\bin\default_app.manifest</Manifest_File>
         <Icon_MainIcon>gpprof_Icon1.ico</Icon_MainIcon>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_1)'!=''">
-        <VerInfo_Keys>CompanyName=;FileDescription=Profiler for all versions of Delphi (incl. Delphi XE);FileVersion=1.4.0.3;InternalName=GpProfile;LegalCopyright=(c) 1998, 1999 Primoz Gabrijelcic;LegalTrademarks=;OriginalFilename=;ProductName=GpProfile 2011;ProductVersion=1.4.0;Comments=</VerInfo_Keys>
         <Version>7.0</Version>
         <DCC_Alignment>1</DCC_Alignment>
         <DCC_DebugInformation>0</DCC_DebugInformation>
@@ -85,18 +99,20 @@
         <DCC_DebugInfoInExe>True</DCC_DebugInfoInExe>
         <DCC_DebugVN>True</DCC_DebugVN>
         <DCC_ResourcePath>x:\mstpl\ezdsl;$(DELPHI)\components;x:\mstpl\ddp\source;x:\mstpl\pkg\mwedit;$(DCC_ResourcePath)</DCC_ResourcePath>
-        <DCC_ObjPath>x:\mstpl\ezdsl;$(DELPHI)\components;x:\mstpl\ddp\source;x:\mstpl\pkg\mwedit;$(DCC_ObjPath)</DCC_ObjPath>
-        <DCC_IncludePath>x:\mstpl\ezdsl;$(DELPHI)\components;x:\mstpl\ddp\source;x:\mstpl\pkg\mwedit;$(DCC_IncludePath)</DCC_IncludePath>
         <DCC_Define>xDebugPanels;DDP;xLogFEExecute;LogAccessFile;xLogParser;xLogRegister;xDebugParser;RELEASE;$(DCC_Define)</DCC_Define>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_1_Win32)'!=''">
+        <VerInfo_Build>3</VerInfo_Build>
         <VerInfo_AutoIncVersion>false</VerInfo_AutoIncVersion>
-        <VerInfo_Keys>CompanyName=;FileDescription=Profiler for all versions of Delphi (incl. Delphi XE);FileVersion=1.4.0.3;InternalName=GpProfile;LegalCopyright=(c) 1998, 1999 Primoz Gabrijelcic;LegalTrademarks=;OriginalFilename=;ProductName=GpProfile 2017;ProductVersion=1.4.0.3;Comments=</VerInfo_Keys>
         <AppEnableHighDPI>true</AppEnableHighDPI>
         <AppEnableRuntimeThemes>true</AppEnableRuntimeThemes>
     </PropertyGroup>
+    <PropertyGroup Condition="'$(Cfg_1_Win64)'!=''">
+        <VerInfo_Build>3</VerInfo_Build>
+        <AppEnableRuntimeThemes>true</AppEnableRuntimeThemes>
+        <AppEnableHighDPI>true</AppEnableHighDPI>
+    </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_2)'!=''">
-        <VerInfo_Keys>CompanyName=;FileDescription=Profiler for all versions of Delphi (incl. Delphi XE);FileVersion=1.4.0.3;InternalName=GpProfile;LegalCopyright=(c) 1998, 1999 Primoz Gabrijelcic;LegalTrademarks=;OriginalFilename=;ProductName=GpProfile 2011;ProductVersion=1.4.0;Comments=</VerInfo_Keys>
         <Version>7.0</Version>
         <DCC_Alignment>1</DCC_Alignment>
         <DCC_Optimize>False</DCC_Optimize>
@@ -117,10 +133,16 @@
         <DCC_HppOutput>..\DCU</DCC_HppOutput>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_2_Win32)'!=''">
+        <VerInfo_Build>3</VerInfo_Build>
         <VerInfo_AutoIncVersion>false</VerInfo_AutoIncVersion>
         <AppEnableHighDPI>true</AppEnableHighDPI>
         <AppEnableRuntimeThemes>true</AppEnableRuntimeThemes>
-        <VerInfo_Keys>CompanyName=;FileDescription=Profiler for all versions of Delphi (incl. Delphi XE);FileVersion=1.4.0.3;InternalName=GpProfile;LegalCopyright=(c) 1998, 1999 Primoz Gabrijelcic;LegalTrademarks=;OriginalFilename=;ProductName=GpProfile 2017;ProductVersion=1.4.0.3;Comments=</VerInfo_Keys>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Cfg_2_Win64)'!=''">
+        <VerInfo_Keys>CompanyName=;FileDescription=Profiler for all versions of Delphi (incl. Delphi XE);FileVersion=1.4.0.5;InternalName=GpProfile;LegalCopyright=(c) 1998, 1999 Primoz Gabrijelcic;LegalTrademarks=;OriginalFilename=;ProductName=GpProfile 2017;ProductVersion=1.4.0;Comments=</VerInfo_Keys>
+        <VerInfo_Build>5</VerInfo_Build>
+        <AppEnableRuntimeThemes>true</AppEnableRuntimeThemes>
+        <AppEnableHighDPI>true</AppEnableHighDPI>
     </PropertyGroup>
     <ProjectExtensions>
         <Borland.Personality>Delphi.Personality.12</Borland.Personality>
@@ -174,7 +196,7 @@
             </Delphi.Personality>
             <Platforms>
                 <Platform value="Win32">True</Platform>
-                <Platform value="Win64">False</Platform>
+                <Platform value="Win64">True</Platform>
             </Platforms>
         </BorlandProject>
         <ProjectFileVersion>12</ProjectFileVersion>
