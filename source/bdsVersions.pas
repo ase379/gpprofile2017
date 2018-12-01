@@ -3,15 +3,32 @@ unit bdsVersions;
 interface
 
 
+function RemoveDelphiPrefix(const aDelphiVer: string): string;
 function DelphiVerToBDSVer(const aDelphiVer: string): string;
+function DelphiVerToCompilerVersion(const aDelphiVer: string): string;
 function BdsVerToDephiVer(const aBdsVersionString: string): string;
 
 implementation
 
+uses System.SysUtils;
+
 
 const SEATTLE = '10.0 Seattle';
       BERLIN = '10.1 Berlin';
-      TOKYO = '11.0 Tokyo';
+      TOKYO = '10.2 Tokyo';
+      RIO = '10.3 Rio';
+
+function RemoveDelphiPrefix(const aDelphiVer: string): string;
+begin
+  Result := aDelphiVer;
+  if aDelphiVer.startswith('Delphi &') then
+    result := copy(aDelphiVer, Length('Delphi &')+1, Length(aDelphiVer))
+  else
+  begin
+    if aDelphiVer.startswith('Delphi ') then
+      result := copy(aDelphiVer, Length('Delphi ')+1, Length(aDelphiVer))
+  end;
+end;
 
 
 function DelphiVerToBDSVer(const aDelphiVer: string): string;
@@ -48,13 +65,57 @@ begin
   else if aDelphiVer = BERLIN then
     Result:= '18.0'
   else if aDelphiVer = TOKYO then
-    Result:= '19.0';
+    Result:= '19.0'
+  else if aDelphiVer = RIO then
+    Result:= '20.0';
 end;
+
+function DelphiVerToCompilerVersion(const aDelphiVer: string): string;
+begin
+  Result := '';
+  if aDelphiVer = '2005' then
+    Result := 'VER170'
+  else if aDelphiVer = '2006' then
+    Result := 'VER180'
+  else if aDelphiVer = '2007' then
+    Result := 'VER180'
+  else if aDelphiVer = '2009' then
+    Result := 'VER200'
+  else if aDelphiVer = '2010' then
+    Result := 'VER210'
+  else if aDelphiVer = 'XE' then
+    Result := 'VER220'
+  else if aDelphiVer = 'XE2' then
+    Result:= 'VER230'
+  else if aDelphiVer = 'XE3' then
+    Result:= 'VER240'
+  else if aDelphiVer = 'XE4' then
+    Result:= 'VER250'
+  else if aDelphiVer = 'XE5' then
+    Result:= 'VER260'
+  else if aDelphiVer = 'XE6' then
+    Result:= 'VER270'
+  else if aDelphiVer = 'XE7' then
+    Result:= 'VER280'
+  else if aDelphiVer = 'XE8' then
+    Result:= 'VER290'
+  else if aDelphiVer = SEATTLE then
+    Result:= 'VER300'
+  else if aDelphiVer = BERLIN then
+    Result:= 'VER310'
+  else if aDelphiVer = TOKYO then
+    Result:= 'VER320'
+  else if aDelphiVer = RIO then
+    Result:= 'VER330';
+end;
+
 
 function BdsVerToDephiVer(const aBdsVersionString: string): string;
 begin
   result := '';
-  if aBdsVersionString = '19.0' then
+  if aBdsVersionString = '20.0' then
+    exit(RIO)
+  else if aBdsVersionString = '19.0' then
     exit(TOKYO)
   else if aBdsVersionString = '18.0' then
     exit(BERLIN)

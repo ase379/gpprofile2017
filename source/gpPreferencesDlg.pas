@@ -139,6 +139,7 @@ function ResolvePrfProjectPlaceholders(const aFilenameWithPh: string): string;
 implementation
 
 uses
+  bdsVersions,
   GpString,
   gppComCtl,
   gppMain,
@@ -308,9 +309,7 @@ begin
   if cbStandardDefines.Checked then begin
     AddDefine('WIN32',DEF_DELPHI);
     AddDefine('CPU386',DEF_DELPHI);
-    if Pos('2',cbxDelphiDefines.Text) > 0 then AddDefine('VER90',DEF_DELPHI)
-    else if Pos('3',cbxDelphiDefines.Text) > 0 then AddDefine('VER100',DEF_DELPHI)
-    else if Pos('4',cbxDelphiDefines.Text) > 0 then AddDefine('VER120',DEF_DELPHI);
+    AddDefine(DelphiVerToCompilerVersion(RemoveDelphiPrefix(cbxDelphiDefines.Text)), DEF_DELPHI);
   end
   else RemoveTag(DEF_DELPHI);
   cbxDelphiDefines.Enabled := cbStandardDefines.Checked;
@@ -573,7 +572,7 @@ begin
     else begin
       cbxCompilerVersion.ItemIndex := cbxCompilerVersion.Items.Count-1;
       cbxDelphiDefines.ItemIndex   := cbxCompilerVersion.Items.Count-1;
-      selectedDelphi := ButFirst(cbxCompilerVersion.Items[cbxCompilerVersion.ItemIndex],Length('Delphi '));
+      selectedDelphi := RemoveDelphiPrefix(cbxCompilerVersion.Items[cbxCompilerVersion.ItemIndex]);
     end;
 end; { TfrmPreferences.ReselectCompilerVersion }
 
@@ -687,7 +686,7 @@ begin
     prefInstrumentAssembler:= cbInstrumentAssembler.Checked;
     prefMakeBackupOfInstrumentedFile := cbMakeBackupOfInstrumentedFile.Checked;
     SavePreferences;
-    selectedDelphi := ButFirst(cbxCompilerVersion.Items[prefCompilerVersion],Length('Delphi '));
+    selectedDelphi := RemoveDelphiPrefix(cbxCompilerVersion.Items[prefCompilerVersion]);
   end;
 end;
 
@@ -755,7 +754,7 @@ begin
       SetProjectPref('ProfilingAutostart',cbProfilingAutostart.Checked);
       SetProjectPref('InstrumentAssembler',cbInstrumentAssembler.Checked);
       SetProjectPref('MakeBackupOfInstrumentedFile',cbMakeBackupOfInstrumentedFile.Checked);
-      selectedDelphi := ButFirst(cbxCompilerVersion.Items[cbxCompilerVersion.ItemIndex],Length('Delphi '));
+      selectedDelphi := RemoveDelphiPrefix(cbxCompilerVersion.Items[cbxCompilerVersion.ItemIndex]);
       if memoExclUnits.Text = prefExcludedUnits
         then DelProjectPref('ExcludedUnits')
         else SetProjectPref('ExcludedUnits',memoExclUnits.Text);
