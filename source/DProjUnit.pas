@@ -24,7 +24,10 @@ type
     CurrentConfigCondition : string;
     CurrentConfig : string;
   public
-    function GetActiveConfig() : DProjConfig;
+    function GetConfigNameFromConfigLine(const aConfigLine: string) : string;
+    function GetConfigTypeFromConfigLine(const aConfigLine: string) : string;
+    function GetPlatFormNameFromConfigLine(const aConfigLine: string) : string;
+
     function FindConfigByConfigName(const aConfigName : string) : DProjConfig;
     function FindConfigByCurrentSettings(): DProjConfig;
 
@@ -89,82 +92,6 @@ begin
 end;
 
 procedure TDProj.LoadConfigs();
-
-  function GetConfigNameFromConfigLine(const aConfigLine: string) : string;
-
-    function ReverseFind(const ASentence : string; const aChar : Char) : integer;
-    var
-      I : integer;
-    begin
-      result := -1;
-      for i := Length(ASentence) downto 1 do
-      begin
-        if aSentence[i] = aChar then
-          exit(i);
-      end;
-    end;
-
-  const
-    APOS = #27;
-  var
-    LPreamble : string;
-    LEndString : string;
-    LPosAposStart : integer;
-    LPosAposEnd : integer;
-    LConfigName : string;
-  begin
-    result := '';
-    LPreamble := '''$(Config)''==''';
-    LEndString := ')''!=''''';
-    if aConfigLine.EndsWith(LEndString) then
-    begin
-      LPosAposEnd := Length(aConfigLine) - Length(LEndString);
-      LPosAposStart := ReverseFind(Copy(aConfigLine, 1, Length(aConfigLine)-Length(LEndString)),'''');
-      LConfigName := Copy(aConfigLine,LPosAposStart+1,LPosAposEnd-LPosAposStart+1);
-      // remove "$(" at beginning and ")" end
-      LConfigName := Copy(LConfigName, 3, Length(LConfigName)-3);
-      result := LConfigName;
-    end;
-  end;
-
-  function GetConfigTypeFromConfigLine(const aConfigLine: string) : string;
-  var
-    LPreamble : string;
-    LPosAposStart : integer;
-    LPosAposEnd : integer;
-  begin
-    result := '';
-    // find all Platform matches
-    LPreamble := Copy(fDProjConfigs.CurrentConfigCondition, 1,Length(fDProjConfigs.CurrentConfigCondition)-1);
-    //LPreamble := '''$(Config)''==''';
-    if aConfigLine.Contains(LPreamble) then
-    begin
-      LPosAposEnd := PosEx('''', aConfigLine, Length(LPreamble)+1);
-      LPosAposStart := PosEx(LPreamble, aConfigLine,1) + Length(LPreamble)-1;
-      result := Copy(aConfigLine,LPosAposStart+1,LPosAposEnd-LPosAposStart-1);
-    end;
-  end;
-
-  function GetPlatFormNameFromConfigLine(const aConfigLine: string) : string;
-  var
-    LPreamble : string;
-    LPosAposStart : integer;
-    LPosAposEnd : integer;
-  begin
-    result := '';
-    // find all Platform matches
-    LPreamble := Copy(fDProjConfigs.CurrentPlatFormCondition, 1,Length(fDProjConfigs.CurrentPlatFormCondition)-1);
-
-    if aConfigLine.Contains(LPreamble) then
-    begin
-      LPosAposStart := PosEx(LPreamble, aConfigLine,1) + Length(LPreamble)-1;
-      LPosAposEnd := PosEx('''', aConfigLine, LPosAposStart+1);
-      result := Copy(aConfigLine,LPosAposStart+1,LPosAposEnd-LPosAposStart-1);
-    end;
-  end;
-
-
-
 var
   i : integer;
   LPropertyGroupNode : IXMLNode;
@@ -203,15 +130,15 @@ begin
     // (i.e. analysis of different config types (debug/release) is not implemented)
     if LPropertyGroupNode.Attributes['Condition'] <> null then
     begin
-      LConfigName := GetConfigNameFromConfigLine(LPropertyGroupNode.Attributes['Condition']);
+      LConfigName := fDProjConfigs.GetConfigNameFromConfigLine(LPropertyGroupNode.Attributes['Condition']);
       if (LPropertyGroupNode.ChildValues['Base'] <> Null) then
       begin
         // 'Base'marks the base config; thus create the node
         LNewConfig := DProjConfig.Create();
         LNewConfig.Condition := LPropertyGroupNode.Attributes['Condition'];
         LNewConfig.ConfigName := LConfigName;
-        LNewConfig.ConfigType := GetConfigTypeFromConfigLine(LPropertyGroupNode.Attributes['Condition']);
-        LNewConfig.PlatformName := GetPlatFormNameFromConfigLine(LPropertyGroupNode.Attributes['Condition']);
+        LNewConfig.ConfigType := fDProjConfigs.GetConfigTypeFromConfigLine(LPropertyGroupNode.Attributes['Condition']);
+        LNewConfig.PlatformName := fDProjConfigs.GetPlatFormNameFromConfigLine(LPropertyGroupNode.Attributes['Condition']);
         if (LNewConfig.ConfigName <> 'Base') then // already reserverd for isBase
           if (LPropertyGroupNode.ChildValues[LNewConfig.ConfigName] <> Null) then
             LNewConfig.IsEnabledConfig := true;
@@ -389,14 +316,75 @@ begin
         Exit(LEntry);
 end;
 
-function TDProjConfigs.GetActiveConfig: DProjConfig;
+function TDProjConfigs.GetConfigNameFromConfigLine(const aConfigLine: string) : string;
+
+  function ReverseFind(const ASentence : string; const aChar : Char) : integer;
+  var
+    I : integer;
+  begin
+    result := -1;
+    for i := Length(ASentence) downto 1 do
+    begin
+      if aSentence[i] = aChar then
+        exit(i);
+    end;
+  end;
+
 var
-  LEntry : DProjConfig;
+  LPreamble : string;
+  LEndString : string;
+  LPosAposStart : integer;
+  LPosAposEnd : integer;
+  LConfigName : string;
 begin
-  result := nil;
-  for LEntry in self do
-//    if LEntry.Condition.Contains(Self.CurrentConfig = aConfigName then
-      exit(LEntry);
+  result := '';
+  LPreamble := '''$(Config)''==''';
+  LEndString := ')''!=''''';
+  if aConfigLine.EndsWith(LEndString) then
+  begin
+    LPosAposEnd := Length(aConfigLine) - Length(LEndString);
+    LPosAposStart := ReverseFind(Copy(aConfigLine, 1, Length(aConfigLine)-Length(LEndString)),'''');
+    LConfigName := Copy(aConfigLine,LPosAposStart+1,LPosAposEnd-LPosAposStart+1);
+    // remove "$(" at beginning and ")" end
+    LConfigName := Copy(LConfigName, 3, Length(LConfigName)-3);
+    result := LConfigName;
+  end;
+end;
+
+function TDProjConfigs.GetConfigTypeFromConfigLine(const aConfigLine: string) : string;
+var
+  LPreamble : string;
+  LPosAposStart : integer;
+  LPosAposEnd : integer;
+begin
+  result := '';
+  // find all Platform matches
+  LPreamble := Copy(CurrentConfigCondition, 1,Length(CurrentConfigCondition)-1);
+  //LPreamble := '''$(Config)''==''';
+  if aConfigLine.Contains(LPreamble) then
+  begin
+    LPosAposEnd := PosEx('''', aConfigLine, Length(LPreamble)+1);
+    LPosAposStart := PosEx(LPreamble, aConfigLine,1) + Length(LPreamble)-1;
+    result := Copy(aConfigLine,LPosAposStart+1,LPosAposEnd-LPosAposStart-1);
+  end;
+end;
+
+function TDProjConfigs.GetPlatFormNameFromConfigLine(const aConfigLine: string) : string;
+var
+  LPreamble : string;
+  LPosAposStart : integer;
+  LPosAposEnd : integer;
+begin
+  result := '';
+  // find all Platform matches
+  LPreamble := Copy(CurrentPlatFormCondition, 1,Length(CurrentPlatFormCondition)-1);
+
+  if aConfigLine.Contains(LPreamble) then
+  begin
+    LPosAposStart := PosEx(LPreamble, aConfigLine,1) + Length(LPreamble)-1;
+    LPosAposEnd := PosEx('''', aConfigLine, LPosAposStart+1);
+    result := Copy(aConfigLine,LPosAposStart+1,LPosAposEnd-LPosAposStart-1);
+  end;
 end;
 
 end.
