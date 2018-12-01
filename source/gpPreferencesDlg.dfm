@@ -284,6 +284,10 @@ object frmPreferences: TfrmPreferences
     object tabAnalysis: TTabSheet
       Caption = 'Analysis'
       ImageIndex = -1
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       object grpAnalysisSettings: TGroupBox
         AlignWithMargins = True
         Left = 3
@@ -326,7 +330,7 @@ object frmPreferences: TfrmPreferences
           AlignWithMargins = True
           Left = 10
           Top = 23
-          Width = 449
+          Width = 232
           Height = 13
           Margins.Left = 8
           Margins.Top = 8
@@ -458,8 +462,8 @@ object frmPreferences: TfrmPreferences
           OnClick = lvDefinesClick
         end
         object cbStandardDefines: TCheckBox
-          Left = 240
-          Top = 22
+          Left = 239
+          Top = 47
           Width = 105
           Height = 17
           Caption = '&Compiler defines'
@@ -467,8 +471,8 @@ object frmPreferences: TfrmPreferences
           OnClick = cbStandardDefinesClick
         end
         object cbProjectDefines: TCheckBox
-          Left = 240
-          Top = 58
+          Left = 239
+          Top = 79
           Width = 121
           Height = 17
           Caption = '&Project defines'
@@ -476,8 +480,8 @@ object frmPreferences: TfrmPreferences
           OnClick = cbProjectDefinesClick
         end
         object cbConsoleDefines: TCheckBox
-          Left = 240
-          Top = 40
+          Left = 239
+          Top = 63
           Width = 121
           Height = 17
           Caption = 'C&onsole application'
@@ -516,9 +520,9 @@ object frmPreferences: TfrmPreferences
           TabOrder = 5
         end
         object cbxDelphiDefines: TComboBox
-          Left = 352
+          Left = 231
           Top = 20
-          Width = 89
+          Width = 146
           Height = 21
           Style = csDropDownList
           TabOrder = 2
@@ -534,8 +538,8 @@ object frmPreferences: TfrmPreferences
           TabOrder = 9
         end
         object cbDisableUserDefines: TCheckBox
-          Left = 240
-          Top = 76
+          Left = 239
+          Top = 95
           Width = 121
           Height = 17
           Caption = 'Disable &user defines'

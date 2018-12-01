@@ -4,6 +4,8 @@ interface
 
 
 function DelphiVerToBDSVer(const aDelphiVer: string): string;
+function DelphiVerToCompilerVersion(const aDelphiVer: string): string;
+
 function BdsVerToDephiVer(const aBdsVersionString: string): string;
 
 implementation
@@ -53,6 +55,46 @@ begin
   else if aDelphiVer = RIO then
     Result:= '20.0';
 end;
+
+function DelphiVerToCompilerVersion(const aDelphiVer: string): string;
+begin
+  Result := '';
+  if aDelphiVer = '2005' then
+    Result := 'VER170'
+  else if aDelphiVer = '2006' then
+    Result := 'VER180'
+  else if aDelphiVer = '2007' then
+    Result := 'VER180'
+  else if aDelphiVer = '2009' then
+    Result := 'VER200'
+  else if aDelphiVer = '2010' then
+    Result := 'VER210'
+  else if aDelphiVer = 'XE' then
+    Result := 'VER220'
+  else if aDelphiVer = 'XE2' then
+    Result:= 'VER230'
+  else if aDelphiVer = 'XE3' then
+    Result:= 'VER240'
+  else if aDelphiVer = 'XE4' then
+    Result:= 'VER250'
+  else if aDelphiVer = 'XE5' then
+    Result:= 'VER260'
+  else if aDelphiVer = 'XE6' then
+    Result:= 'VER270'
+  else if aDelphiVer = 'XE7' then
+    Result:= 'VER280'
+  else if aDelphiVer = 'XE8' then
+    Result:= 'VER290'
+  else if aDelphiVer = SEATTLE then
+    Result:= 'VER300'
+  else if aDelphiVer = BERLIN then
+    Result:= 'VER310'
+  else if aDelphiVer = TOKYO then
+    Result:= 'VER320'
+  else if aDelphiVer = RIO then
+    Result:= 'VER330';
+end;
+
 
 function BdsVerToDephiVer(const aBdsVersionString: string): string;
 begin

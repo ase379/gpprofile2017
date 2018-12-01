@@ -139,6 +139,7 @@ function ResolvePrfProjectPlaceholders(const aFilenameWithPh: string): string;
 implementation
 
 uses
+  bdsVersions,
   GpString,
   gppComCtl,
   gppMain,
@@ -308,9 +309,7 @@ begin
   if cbStandardDefines.Checked then begin
     AddDefine('WIN32',DEF_DELPHI);
     AddDefine('CPU386',DEF_DELPHI);
-    if Pos('2',cbxDelphiDefines.Text) > 0 then AddDefine('VER90',DEF_DELPHI)
-    else if Pos('3',cbxDelphiDefines.Text) > 0 then AddDefine('VER100',DEF_DELPHI)
-    else if Pos('4',cbxDelphiDefines.Text) > 0 then AddDefine('VER120',DEF_DELPHI);
+    AddDefine(DelphiVerToCompilerVersion(ButFirst(cbxDelphiDefines.Text,Length('Delphi '))), DEF_DELPHI);
   end
   else RemoveTag(DEF_DELPHI);
   cbxDelphiDefines.Enabled := cbStandardDefines.Checked;
