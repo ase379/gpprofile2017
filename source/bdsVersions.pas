@@ -11,7 +11,8 @@ implementation
 
 const SEATTLE = '10.0 Seattle';
       BERLIN = '10.1 Berlin';
-      TOKYO = '11.0 Tokyo';
+      TOKYO = '10.2 Tokyo';
+      RIO = '10.3 Rio';
 
 
 function DelphiVerToBDSVer(const aDelphiVer: string): string;
@@ -48,13 +49,17 @@ begin
   else if aDelphiVer = BERLIN then
     Result:= '18.0'
   else if aDelphiVer = TOKYO then
-    Result:= '19.0';
+    Result:= '19.0'
+  else if aDelphiVer = RIO then
+    Result:= '20.0';
 end;
 
 function BdsVerToDephiVer(const aBdsVersionString: string): string;
 begin
   result := '';
-  if aBdsVersionString = '19.0' then
+  if aBdsVersionString = '20.0' then
+    exit(RIO)
+  else if aBdsVersionString = '19.0' then
     exit(TOKYO)
   else if aBdsVersionString = '18.0' then
     exit(BERLIN)
