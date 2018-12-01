@@ -64,11 +64,6 @@ type
     cbDisableUserDefines: TCheckBox;
     btnClearAllDefines: TButton;
     cbInstrumentAssembler: TCheckBox;
-    GroupBox6: TGroupBox;
-    cbbXE2Platform: TComboBox;
-    cbbXE2Config: TComboBox;
-    Label3: TLabel;
-    Label5: TLabel;
     GroupBox7: TGroupBox;
     Label6: TLabel;
     Panel2: TPanel;
@@ -258,8 +253,6 @@ end;
 procedure TfrmPreferences.btnInstrumentationDefaultsClick(Sender: TObject);
 begin
   ResetDefaults(0);
-  cbbXE2Platform.ItemIndex:= 0;
-  cbbXE2Config.ItemIndex:= 0;
 end;
 
 procedure TfrmPreferences.btnAnalysisDefaultsClick(Sender: TObject);
@@ -665,10 +658,6 @@ begin
   Left := frmMain.Left+((frmMain.Width-Width) div 2);
   Top := frmMain.Top+((frmMain.Height-Height) div 2);
   if ShowModal = mrOK then begin
-    if (cbbXE2Platform.ItemIndex <> 0) then XE2PlatformOverride:= cbbXE2Platform.Text
-    else XE2PlatformOverride:= '';
-    if (cbbXE2Config.ItemIndex <> 0) then XE2ConfigOverride:= cbbXE2Config.Text
-    else XE2ConfigOverride:= '';
     prefMarkerStyle        := cbxMarker.ItemIndex;
     prefCompilerVersion    := cbxCompilerVersion.ItemIndex;
     prefHideNotExecuted    := cbHideNotExecuted.Checked;
