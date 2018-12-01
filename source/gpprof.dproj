@@ -10,7 +10,7 @@
         <Base>True</Base>
         <Config Condition="'$(Config)'==''">Release</Config>
         <Platform Condition="'$(Platform)'==''">Win32</Platform>
-        <TargetedPlatforms>1</TargetedPlatforms>
+        <TargetedPlatforms>3</TargetedPlatforms>
         <AppType>Application</AppType>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Config)'=='Base' or '$(Base)'!=''">
@@ -61,7 +61,7 @@
         <Base>true</Base>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Base)'!=''">
-        <VerInfo_Build>2</VerInfo_Build>
+        <VerInfo_Build>3</VerInfo_Build>
         <VerInfo_AutoIncVersion>true</VerInfo_AutoIncVersion>
         <DCC_DcuOutput>..\DCU</DCC_DcuOutput>
         <DCC_ExeOutput>..\bin</DCC_ExeOutput>
@@ -75,7 +75,6 @@
     </PropertyGroup>
     <PropertyGroup Condition="'$(Base_Win32)'!=''">
         <AppEnableHighDPI>true</AppEnableHighDPI>
-        <DCC_Namespace>Data.Win;Datasnap.Win;Web.Win;Soap.Win;Xml.Win;Bde;$(DCC_Namespace)</DCC_Namespace>
         <Icon_MainIcon>gpprof_Icon1.ico</Icon_MainIcon>
         <Manifest_File>$(BDS)\bin\default_app.manifest</Manifest_File>
         <AppEnableRuntimeThemes>true</AppEnableRuntimeThemes>
@@ -83,10 +82,8 @@
     <PropertyGroup Condition="'$(Base_Win64)'!=''">
         <AppEnableHighDPI>true</AppEnableHighDPI>
         <AppEnableRuntimeThemes>true</AppEnableRuntimeThemes>
-        <VerInfo_MinorVer>0</VerInfo_MinorVer>
-        <VerInfo_Build>0</VerInfo_Build>
+        <VerInfo_Build>3</VerInfo_Build>
         <Manifest_File>$(BDS)\bin\default_app.manifest</Manifest_File>
-        <DCC_Namespace>Data.Win;Datasnap.Win;Web.Win;Soap.Win;Xml.Win;$(DCC_Namespace)</DCC_Namespace>
         <Icon_MainIcon>gpprof_Icon1.ico</Icon_MainIcon>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_1)'!=''">
@@ -102,11 +99,10 @@
         <DCC_DebugInfoInExe>True</DCC_DebugInfoInExe>
         <DCC_DebugVN>True</DCC_DebugVN>
         <DCC_ResourcePath>x:\mstpl\ezdsl;$(DELPHI)\components;x:\mstpl\ddp\source;x:\mstpl\pkg\mwedit;$(DCC_ResourcePath)</DCC_ResourcePath>
-        <DCC_ObjPath>x:\mstpl\ezdsl;$(DELPHI)\components;x:\mstpl\ddp\source;x:\mstpl\pkg\mwedit;$(DCC_ObjPath)</DCC_ObjPath>
-        <DCC_IncludePath>x:\mstpl\ezdsl;$(DELPHI)\components;x:\mstpl\ddp\source;x:\mstpl\pkg\mwedit;$(DCC_IncludePath)</DCC_IncludePath>
         <DCC_Define>xDebugPanels;DDP;xLogFEExecute;LogAccessFile;xLogParser;xLogRegister;xDebugParser;RELEASE;$(DCC_Define)</DCC_Define>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_1_Win32)'!=''">
+        <VerInfo_Build>3</VerInfo_Build>
         <VerInfo_AutoIncVersion>false</VerInfo_AutoIncVersion>
         <AppEnableHighDPI>true</AppEnableHighDPI>
         <AppEnableRuntimeThemes>true</AppEnableRuntimeThemes>
@@ -137,11 +133,14 @@
         <DCC_HppOutput>..\DCU</DCC_HppOutput>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_2_Win32)'!=''">
+        <VerInfo_Build>3</VerInfo_Build>
         <VerInfo_AutoIncVersion>false</VerInfo_AutoIncVersion>
         <AppEnableHighDPI>true</AppEnableHighDPI>
         <AppEnableRuntimeThemes>true</AppEnableRuntimeThemes>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_2_Win64)'!=''">
+        <VerInfo_Keys>CompanyName=;FileDescription=Profiler for all versions of Delphi (incl. Delphi XE);FileVersion=1.4.0.5;InternalName=GpProfile;LegalCopyright=(c) 1998, 1999 Primoz Gabrijelcic;LegalTrademarks=;OriginalFilename=;ProductName=GpProfile 2017;ProductVersion=1.4.0;Comments=</VerInfo_Keys>
+        <VerInfo_Build>5</VerInfo_Build>
         <AppEnableRuntimeThemes>true</AppEnableRuntimeThemes>
         <AppEnableHighDPI>true</AppEnableHighDPI>
     </PropertyGroup>
