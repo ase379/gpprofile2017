@@ -12,10 +12,6 @@ uses
   SynEditHighlighter, SynEditCodeFolding, SynHighlighterPas, System.ImageList,
   System.Actions,gppCurrentPrefs;
 
-const
-  WM_ReloadProfile = WM_USER;
-  WM_FormShow      = WM_USER+1;
-
 type
   TfrmMain = class(TForm)
     Project1: TMenuItem;
@@ -226,7 +222,6 @@ type
     procedure clbClassesClickCheck(Sender: TObject; index: Integer);
     procedure actRemoveInstrumentationExecute(Sender: TObject);
     procedure actRunExecute(Sender: TObject);
-    procedure WMReLoadProfile(var msg: TMessage); message WM_ReloadProfile;
     procedure actOpenProfileExecute(Sender: TObject);
     procedure PageControl1Change(Sender: TObject);
     procedure MRUPrfClick(Sender: TObject; LatestFile: String);
@@ -261,7 +256,6 @@ type
     procedure actRenameMoveProfileExecute(Sender: TObject);
     procedure actRescanChangedExecute(Sender: TObject);
     procedure AppActivate(Sender: TObject);
-    procedure AppMessage(var Msg: TMsg; var Handled: Boolean);
     procedure AppShortcut(var Msg: TWMKey; var Handled: boolean);
     procedure actChangeLayoutExecute(Sender: TObject);
     procedure actLayoutManagerExecute(Sender: TObject);
@@ -314,7 +308,6 @@ type
     openProfile               : TResults;
     currentProject            : string;               
     currentProfile            : string;
-    cmdMsg                    : cardinal;
     cancelLoading             : boolean;
     loadCanceled              : boolean;
     storedPanel1Width         : integer;
@@ -1192,28 +1185,6 @@ begin
   end;
 end; { TfrmMain.LoadProfile }
 
-procedure TfrmMain.WMReLoadProfile(var msg: TMessage);
-var
-  outDir: string;
-  vFName: String;
-begin
-  if assigned(openProject) then begin
-    outDir := GetOutputDir(openProject.Name);
-    vFName := MakeSmartBackslash(outDir)+ChangeFileExt(ExtractFileName(openProject.Name),'.prf');
-    if not FileExists(vFName) then
-    begin
-      if MessageDlg('Profiling file not found: ' + vFName + #13#10 +
-        'Choose file location manually?',
-        mtWarning, [mbYes, mbCancel], -1) = mrYes then
-        if OpenDialog1.Execute then
-          vFName := OpenDialog1.FileName;
-    end;
-
-    LoadProfile(vFName);
-  end;
-end; { TfrmMain.WMReLoadProfile }
-
-
 procedure TfrmMain.DelphiVerClick(Sender: TObject);
 begin
   selectedDelphi := RemoveDelphiPrefix(TMenuItem(Sender).Caption);
@@ -1401,7 +1372,6 @@ begin
   inLVResize := false;
   selectedProc := nil;
   Application.OnActivate := AppActivate;
-  Application.OnMessage  := AppMessage;
   Application.OnShortCut := AppShortcut;
   Application.HelpFile := ChangeFileExt(ParamStr(0),'.Chm');
   if not FileExists(Application.HelpFile) then Application.HelpFile := '';
@@ -1420,7 +1390,6 @@ begin
   DisablePC2;
   DisablePC;
   loadCanceled := false;
-  cmdMsg := RegisterWindowMessage(CMD_MESSAGE);
   openProject := nil;
   openProfile := nil;
   CurrentProjectName := '';
@@ -3063,18 +3032,6 @@ begin
   // Maybe, Rescan in OnActivate is excessive (especially for large projects)
   actRescanChanged.Execute;
 end; { TfrmMain.AppActivate }
-
-procedure TfrmMain.AppMessage(var Msg: TMsg; var Handled: Boolean);
-begin
-  Handled := false;
-  if msg.HWND = Application.Handle then
-    if msg.message = cmdMsg then
-      if msg.WParam = CMD_DONE then
-      begin
-        PostMessage(Handle,WM_ReloadProfile,0,0);
-        Handled := true;
-      end;
-end; { TfrmMain.AppMessage }
 
 procedure TfrmMain.AppShortcut(var Msg: TWMKey; var Handled: boolean);
 begin
