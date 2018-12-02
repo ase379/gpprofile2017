@@ -568,27 +568,6 @@ object frmAbout: TfrmAbout
           TabOrder = 0
         end
       end
-      object TabSheet5: TTabSheet
-        Caption = 'Open Source'
-        ImageIndex = 4
-        object RichEdit2: TRichEdit
-          Left = 16
-          Top = 16
-          Width = 353
-          Height = 257
-          Color = clBtnFace
-          Font.Charset = ANSI_CHARSET
-          Font.Color = clWindowText
-          Font.Height = -11
-          Font.Name = 'MS Sans Serif'
-          Font.Style = []
-          ParentFont = False
-          ReadOnly = True
-          ScrollBars = ssVertical
-          TabOrder = 0
-          Zoom = 100
-        end
-      end
     end
   end
 end

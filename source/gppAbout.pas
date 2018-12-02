@@ -20,8 +20,6 @@ type
     Image2: TImage;
     Bevel1: TBevel;
     Label11: TLabel;
-    TabSheet5: TTabSheet;
-    RichEdit2: TRichEdit;
     oxGraphicButton1: TBitBtn;
     procedure FormCreate(Sender: TObject);
     procedure FormKeyPress(Sender: TObject; var Key: Char);
@@ -41,10 +39,8 @@ uses
   GpIFF;      
 
 {$R *.DFM}
-{$R BAGGAGE.RES}
 
 {$I HELP.INC}
-{$I BAGGAGE.INC} // IDD_WHATSNEW, IDD_OPENSOURCE
 
 procedure TfrmAbout.FormCreate(Sender: TObject);
 var
@@ -58,9 +54,6 @@ begin
     if verInfo.IsPrivateBuild then lblVersion.Caption := lblVersion.Caption + ' internal';
     if verInfo.IsPrerelease then lblVersion.Caption := lblVersion.Caption + ' beta';
   finally verInfo.Free; end;
-  stream := TResourceStream.CreateFromID(HInstance, IDD_OPENSOURCE, RT_RCDATA);
-  try RichEdit2.Lines.LoadFromStream(stream);
-  finally stream.Free; end;
 end; { TfrmAbout.FormCreate }
 
 procedure TfrmAbout.FormKeyPress(Sender: TObject; var Key: Char);
