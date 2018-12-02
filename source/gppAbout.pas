@@ -10,8 +10,7 @@ uses
 
 type
   TfrmAbout = class(TForm)
-    Panel1: TPanel;         
-    Button1: TButton;
+    Panel1: TPanel;
     PageControl1: TPageControl;
     TabSheet1: TTabSheet;
     Image1: TImage;
@@ -21,8 +20,6 @@ type
     Image2: TImage;
     Bevel1: TBevel;
     Label11: TLabel;
-    TabSheet4: TTabSheet;
-    RichEdit1: TRichEdit;
     TabSheet5: TTabSheet;
     RichEdit2: TRichEdit;
     oxGraphicButton1: TBitBtn;
@@ -61,9 +58,6 @@ begin
     if verInfo.IsPrivateBuild then lblVersion.Caption := lblVersion.Caption + ' internal';
     if verInfo.IsPrerelease then lblVersion.Caption := lblVersion.Caption + ' beta';
   finally verInfo.Free; end;
-  stream := TResourceStream.CreateFromID(HInstance, IDD_WHATSNEW, RT_RCDATA);
-  try RichEdit1.Lines.LoadFromStream(stream);
-  finally stream.Free; end;
   stream := TResourceStream.CreateFromID(HInstance, IDD_OPENSOURCE, RT_RCDATA);
   try RichEdit2.Lines.LoadFromStream(stream);
   finally stream.Free; end;

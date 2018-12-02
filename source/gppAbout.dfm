@@ -29,15 +29,6 @@ object frmAbout: TfrmAbout
     BevelInner = bvLowered
     BevelWidth = 2
     TabOrder = 0
-    object Button1: TButton
-      Left = 311
-      Top = 339
-      Width = 75
-      Height = 25
-      Caption = 'Close'
-      ModalResult = 1
-      TabOrder = 0
-    end
     object PageControl1: TPageControl
       Left = 4
       Top = 4
@@ -45,7 +36,7 @@ object frmAbout: TfrmAbout
       Height = 325
       ActivePage = TabSheet1
       Align = alTop
-      TabOrder = 1
+      TabOrder = 0
       object TabSheet1: TTabSheet
         Caption = 'About'
         object Image1: TImage
@@ -575,27 +566,6 @@ object frmAbout: TfrmAbout
             6B6B6B6B6B6B6B6B6B6B6B6B6B6B6B6B6B6B6B6B6B6B6B6B6B6B6B6B6B6B6B6B
             6B6B6B6B6B6B6B6B6B6B6B4C0000}
           TabOrder = 0
-        end
-      end
-      object TabSheet4: TTabSheet
-        Caption = 'What'#39's New'
-        ImageIndex = 3
-        object RichEdit1: TRichEdit
-          Left = 16
-          Top = 16
-          Width = 353
-          Height = 257
-          Color = clBtnFace
-          Font.Charset = ANSI_CHARSET
-          Font.Color = clWindowText
-          Font.Height = -11
-          Font.Name = 'MS Sans Serif'
-          Font.Style = []
-          ParentFont = False
-          ReadOnly = True
-          ScrollBars = ssVertical
-          TabOrder = 0
-          Zoom = 100
         end
       end
       object TabSheet5: TTabSheet
