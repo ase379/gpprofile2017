@@ -230,56 +230,6 @@ object frmPreferences: TfrmPreferences
         TabOrder = 2
         OnClick = btnInstrumentationDefaultsClick
       end
-      object GroupBox6: TGroupBox
-        Left = 8
-        Top = 199
-        Width = 361
-        Height = 90
-        Caption = 'XE2 and up only'
-        TabOrder = 3
-        object Label3: TLabel
-          Left = 16
-          Top = 23
-          Width = 80
-          Height = 13
-          Caption = 'Override platform'
-        end
-        object Label5: TLabel
-          Left = 16
-          Top = 55
-          Width = 72
-          Height = 13
-          Caption = 'Override config'
-        end
-        object cbbXE2Platform: TComboBox
-          Left = 104
-          Top = 20
-          Width = 145
-          Height = 21
-          DropDownCount = 3
-          ItemIndex = 0
-          TabOrder = 0
-          Text = '(Read from .dproj file)'
-          Items.Strings = (
-            '(Read from .dproj file)'
-            'Win32'
-            'Win64')
-        end
-        object cbbXE2Config: TComboBox
-          Left = 104
-          Top = 52
-          Width = 145
-          Height = 21
-          DropDownCount = 3
-          ItemIndex = 0
-          TabOrder = 1
-          Text = 'Read from .dproj file'
-          Items.Strings = (
-            'Read from .dproj file'
-            'Release'
-            'Debug')
-        end
-      end
     end
     object tabAnalysis: TTabSheet
       Caption = 'Analysis'
@@ -338,6 +288,7 @@ object frmPreferences: TfrmPreferences
           Margins.Bottom = 8
           Align = alTop
           Caption = 'Performance output file name: (without extension)'
+          ExplicitWidth = 232
         end
         object Panel2: TPanel
           AlignWithMargins = True
