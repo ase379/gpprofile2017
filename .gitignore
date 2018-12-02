@@ -6,3 +6,7 @@ BIN/gpprof.map
 tests/Win32/Debug/*.*
 source/__history
 *.identcache
+*.rsm
+*.res
+*.bak
+*.bk1
