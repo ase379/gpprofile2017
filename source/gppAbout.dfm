@@ -15,7 +15,6 @@ object frmAbout: TfrmAbout
   KeyPreview = True
   OldCreateOrder = False
   Position = poDefault
-  Scaled = False
   OnCreate = FormCreate
   OnKeyPress = FormKeyPress
   PixelsPerInch = 96

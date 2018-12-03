@@ -14,7 +14,6 @@ object frmPreferences: TfrmPreferences
   KeyPreview = True
   OldCreateOrder = True
   Position = poDefault
-  Scaled = False
   OnCreate = FormCreate
   OnKeyPress = FormKeyPress
   PixelsPerInch = 96
@@ -234,10 +233,6 @@ object frmPreferences: TfrmPreferences
     object tabAnalysis: TTabSheet
       Caption = 'Analysis'
       ImageIndex = -1
-      ExplicitLeft = 0
-      ExplicitTop = 0
-      ExplicitWidth = 0
-      ExplicitHeight = 0
       object grpAnalysisSettings: TGroupBox
         AlignWithMargins = True
         Left = 3
@@ -280,7 +275,7 @@ object frmPreferences: TfrmPreferences
           AlignWithMargins = True
           Left = 10
           Top = 23
-          Width = 232
+          Width = 449
           Height = 13
           Margins.Left = 8
           Margins.Top = 8

@@ -14,7 +14,6 @@ object frmPreferenceMacros: TfrmPreferenceMacros
   KeyPreview = True
   OldCreateOrder = True
   Position = poScreenCenter
-  Scaled = False
   PixelsPerInch = 96
   TextHeight = 13
   object Panel1: TPanel
@@ -76,11 +75,12 @@ object frmPreferenceMacros: TfrmPreferenceMacros
       Margins.Top = 5
       Align = alTop
       Caption = 'Please select the macro to be added....'
+      ExplicitWidth = 185
     end
     object cbAvailableMacros: TComboBox
       AlignWithMargins = True
       Left = 3
-      Top = 21
+      Top = 24
       Width = 471
       Height = 21
       Align = alClient
