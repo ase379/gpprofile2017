@@ -69,7 +69,7 @@
         <VerInfo_Locale>1033</VerInfo_Locale>
         <DCC_Namespace>Vcl;Vcl.Imaging;Vcl.Touch;Vcl.Samples;Vcl.Shell;System;Xml;Data;Datasnap;Web;Soap;Winapi;System.Win;$(DCC_Namespace)</DCC_Namespace>
         <VerInfo_MinorVer>4</VerInfo_MinorVer>
-        <VerInfo_Keys>CompanyName=;FileDescription=Profiler for all versions of Delphi (incl. Delphi XE);FileVersion=1.4.1.0;InternalName=GpProfile;LegalCopyright=(c) 1998, 1999 Primoz Gabrijelcic;LegalTrademarks=;OriginalFilename=;ProductName=GpProfile 2017;ProductVersion=1.4.1</VerInfo_Keys>
+        <VerInfo_Keys>CompanyName=;FileDescription=Profiler for all versions of Delphi;FileVersion=1.4.1.0;InternalName=GpProfile;LegalCopyright=(c) 1998, 1999 Primoz Gabrijelcic;LegalTrademarks=;OriginalFilename=;ProductName=GpProfile 2017;ProductVersion=1.4.1</VerInfo_Keys>
         <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
         <SanitizedProjectName>gpprof</SanitizedProjectName>
     </PropertyGroup>
@@ -223,9 +223,6 @@
         <DCCReference Include="gppCommon.pas"/>
         <DCCReference Include="gppCallGraph.pas">
             <Form>frmCallGraph</Form>
-        </DCCReference>
-        <DCCReference Include="gppComCtl.pas">
-            <Form>frmComCtl</Form>
         </DCCReference>
         <DCCReference Include="DProjUnit.pas"/>
         <DCCReference Include="BdsProjUnit.pas"/>
