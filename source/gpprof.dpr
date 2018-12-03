@@ -44,7 +44,6 @@ uses
   gpRegUnreg in 'gpRegUnreg.pas',
   gppCommon in 'gppCommon.pas',
   gppCallGraph in 'gppCallGraph.pas' {frmCallGraph},
-  gppComCtl in 'gppComCtl.pas' {frmComCtl},
   DProjUnit in 'DProjUnit.pas',
   BdsProjUnit in 'BdsProjUnit.pas',
   bdsVersions in 'bdsVersions.pas',
