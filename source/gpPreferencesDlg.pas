@@ -136,7 +136,6 @@ implementation
 uses
   bdsVersions,
   GpString,
-  gppComCtl,
   gppMain,
   gpRegistry,
   gppCurrentPrefs,
@@ -510,24 +509,15 @@ procedure TfrmPreferences.cbDisableUserDefinesClick(Sender: TObject);
 var
   image: TBitmap;
 begin
+  image := TBitmap.Create;
   try
-    image := TBitmap.Create;
-    try
-      if cbDisableUserDefines.Checked
-        then imgDefines.GetBitmap(DEF_USER+1,image)
-        else imgDefines.GetBitmap(DEF_USER+2,image);
+    if cbDisableUserDefines.Checked then
+      imgDefines.GetBitmap(DEF_USER+1,image)
+    else imgDefines.GetBitmap(DEF_USER+2,image);
       imgDefines.Replace(DEF_USER,Image,nil);
-    finally image.Free; end;
-  except
-    on E:EInvalidOperation do begin
-      if not TGpRegistryTools.GetPref('System','ShownComCtl32',false) then begin
-        Application.CreateForm(TfrmComCtl, frmComCtl);
-        frmComCtl.ShowModal;
-        frmComCtl.Free;
-        TGpRegistryTools.SetPref('System','ShownComCtl32',true);
-      end;
+    finally
+      image.Free;
     end;
-  end;
 end;
 
 procedure TfrmPreferences.btnClearUserDefinesClick(Sender: TObject);
