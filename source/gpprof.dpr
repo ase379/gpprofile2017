@@ -43,7 +43,6 @@ uses
   gpFileEdit in 'gpFileEdit.pas',
   gpRegUnreg in 'gpRegUnreg.pas',
   gppCommon in 'gppCommon.pas',
-  gppCallGraph in 'gppCallGraph.pas' {frmCallGraph},
   DProjUnit in 'DProjUnit.pas',
   BdsProjUnit in 'BdsProjUnit.pas',
   bdsVersions in 'bdsVersions.pas',
@@ -126,7 +125,6 @@ begin
   Application.CreateForm(TfrmLoadProgress, frmLoadProgress);
   Application.CreateForm(TfrmAbout, frmAbout);
   Application.CreateForm(TfrmExport, frmExport);
-  Application.CreateForm(TfrmCallGraph, frmCallGraph);
   Application.CreateForm(TfrmPreferenceMacros, frmPreferenceMacros);
   Application.Run;
   end;

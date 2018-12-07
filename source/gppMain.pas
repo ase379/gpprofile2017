@@ -193,7 +193,6 @@ type
     popBrowseNext: TPopupMenu;
     actOpenCallGraph: TAction;
     N8: TMenuItem;
-    actJumpToCallGraph: TAction;
     ToolButton21: TToolButton;
     actHelpOpenHome: TAction;
     actHelpWriteMail: TAction;
@@ -297,8 +296,6 @@ type
     procedure actBrowsePreviousUpdate(Sender: TObject);
     procedure actOpenCallGraphExecute(Sender: TObject);
     procedure actOpenCallGraphUpdate(Sender: TObject);
-    procedure actJumpToCallGraphExecute(Sender: TObject);
-    procedure actJumpToCallGraphUpdate(Sender: TObject);
     procedure lvCalleesClick(Sender: TObject);
     procedure splitCallersMoved(Sender: TObject);
     procedure clbUnitsKeyPress(Sender: TObject; var Key: Char);
@@ -1168,7 +1165,6 @@ begin
       FillViews(1);
       ClearBreakdown;
       actHideNotExecuted.Enabled   := true;
-      actJumpToCallGraph.Enabled   := true;
       actRescanProfile.Enabled     := true;
       actExportProfile.Enabled     := true;
       mnuExportProfile.Enabled     := true;
@@ -2994,7 +2990,6 @@ begin
   FillViews(1);
   ClearBreakdown;
   actHideNotExecuted.Enabled   := false;
-  actJumpToCallGraph.Enabled   := false;
   actRescanProfile.Enabled     := false;
   actExportProfile.Enabled     := false;
   mnuExportProfile.Enabled     := false;
@@ -3722,17 +3717,6 @@ end;
 procedure TfrmMain.actOpenCallGraphUpdate(Sender: TObject);
 begin
   actOpenCallGraph.Enabled := assigned(openProfile) and (openProfile.DigestVer > 2);
-end;
-
-procedure TfrmMain.actJumpToCallGraphExecute(Sender: TObject);
-begin
-  actOpenCallGraph.Execute;
-  frmCallGraph.ZoomOnProcedure(integer(lvProcs.Selected.Data),cbxSelectThreadProc.ItemIndex);
-end;
-
-procedure TfrmMain.actJumpToCallGraphUpdate(Sender: TObject);
-begin
-  actJumpToCallGraph.Enabled := assigned(lvProcs.Selected);
 end;
 
 procedure TfrmMain.lvCalleesClick(Sender: TObject);

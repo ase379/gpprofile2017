@@ -324,6 +324,10 @@ object frmMain: TfrmMain
         object tabInstrumentation: TTabSheet
           Caption = 'Instrumentation'
           ImageIndex = 16
+          ExplicitLeft = 0
+          ExplicitTop = 0
+          ExplicitWidth = 0
+          ExplicitHeight = 0
           object Splitter1: TSplitter
             Left = 129
             Top = 25
@@ -467,6 +471,10 @@ object frmMain: TfrmMain
             object tabProcedures: TTabSheet
               Caption = 'Procedures'
               ImageIndex = -1
+              ExplicitLeft = 0
+              ExplicitTop = 0
+              ExplicitWidth = 0
+              ExplicitHeight = 0
               object splitCallees: TSplitter
                 Left = 0
                 Top = 186
@@ -837,6 +845,10 @@ object frmMain: TfrmMain
             object tabClasses: TTabSheet
               Caption = 'Classes'
               ImageIndex = -1
+              ExplicitLeft = 0
+              ExplicitTop = 0
+              ExplicitWidth = 0
+              ExplicitHeight = 0
               DesignSize = (
                 596
                 283)
@@ -903,6 +915,10 @@ object frmMain: TfrmMain
             object tabUnits: TTabSheet
               Caption = 'Units'
               ImageIndex = -1
+              ExplicitLeft = 0
+              ExplicitTop = 0
+              ExplicitWidth = 0
+              ExplicitHeight = 0
               DesignSize = (
                 596
                 283)
@@ -1421,14 +1437,6 @@ object frmMain: TfrmMain
       OnExecute = actOpenCallGraphExecute
       OnUpdate = actOpenCallGraphUpdate
     end
-    object actJumpToCallGraph: TAction
-      Category = 'Analysis'
-      Caption = 'Jump to Call &Graph'
-      Enabled = False
-      Hint = 'Jump to Call Graph'
-      OnExecute = actJumpToCallGraphExecute
-      OnUpdate = actJumpToCallGraphUpdate
-    end
     object actHelpOpenHome: TAction
       Category = 'Help'
       Caption = '&Home Page'
@@ -1450,7 +1458,7 @@ object frmMain: TfrmMain
     Left = 47
     Top = 134
     Bitmap = {
-      494C01011D002100100010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
+      494C01011D002100040010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000008000000001002000000000000080
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000
@@ -2707,7 +2715,7 @@ object frmMain: TfrmMain
     Left = 47
     Top = 164
     Bitmap = {
-      494C010103000500100010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
+      494C010103000500040010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000001000000001002000000000000010
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000
