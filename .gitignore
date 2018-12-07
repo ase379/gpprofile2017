@@ -5,3 +5,9 @@ BIN/gpprof.map
 *.~dsk
 tests/Win32/Debug/*.*
 source/__history
+*.identcache
+*.rsm
+*.res
+*.bak
+*.bk1
+*.stat

@@ -13,10 +13,6 @@ uses
   System.Actions,gppCurrentPrefs, VirtualTrees,
   gppmain.tree;
 
-const
-  WM_ReloadProfile = WM_USER;
-  WM_FormShow      = WM_USER+1;
-
 type
 
   TfrmMain = class(TForm)
@@ -185,9 +181,7 @@ type
     actBrowseNext: TAction;
     popBrowsePrevious: TPopupMenu;
     popBrowseNext: TPopupMenu;
-    actOpenCallGraph: TAction;
     N8: TMenuItem;
-    actJumpToCallGraph: TAction;
     ToolButton21: TToolButton;
     actHelpOpenHome: TAction;
     actHelpWriteMail: TAction;
@@ -230,7 +224,6 @@ type
     procedure clbClassesClickCheck(Sender: TObject; index: Integer);
     procedure actRemoveInstrumentationExecute(Sender: TObject);
     procedure actRunExecute(Sender: TObject);
-    procedure WMReLoadProfile(var msg: TMessage); message WM_ReloadProfile;
     procedure actOpenProfileExecute(Sender: TObject);
     procedure PageControl1Change(Sender: TObject);
     procedure MRUPrfClick(Sender: TObject; LatestFile: String);
@@ -254,7 +247,6 @@ type
     procedure actRenameMoveProfileExecute(Sender: TObject);
     procedure actRescanChangedExecute(Sender: TObject);
     procedure AppActivate(Sender: TObject);
-    procedure AppMessage(var Msg: TMsg; var Handled: Boolean);
     procedure AppShortcut(var Msg: TWMKey; var Handled: boolean);
     procedure actChangeLayoutExecute(Sender: TObject);
     procedure actLayoutManagerExecute(Sender: TObject);
@@ -287,10 +279,7 @@ type
     procedure actBrowseNextExecute(Sender: TObject);
     procedure actBrowseNextUpdate(Sender: TObject);
     procedure actBrowsePreviousUpdate(Sender: TObject);
-    procedure actOpenCallGraphExecute(Sender: TObject);
-    procedure actOpenCallGraphUpdate(Sender: TObject);
-    procedure actJumpToCallGraphExecute(Sender: TObject);
-    procedure actJumpToCallGraphUpdate(Sender: TObject);
+    procedure lvCalleesClick(Sender: TObject);
     procedure splitCallersMoved(Sender: TObject);
     procedure clbUnitsKeyPress(Sender: TObject; var Key: Char);
     procedure clbClassesKeyPress(Sender: TObject; var Key: Char);
@@ -306,7 +295,6 @@ type
     openProfile               : TResults;
     currentProject            : string;               
     currentProfile            : string;
-    cmdMsg                    : cardinal;
     cancelLoading             : boolean;
     loadCanceled              : boolean;
     storedPanel1Width         : integer;
@@ -402,7 +390,6 @@ type
     procedure RestackOne(fromPop, toPop: TPopupMenu);
     procedure LoadLayouts;
     procedure UseDelphiSettings(delphiVer: integer);
-    function  GetPrefDelphiName: string;
     procedure RebuildDefines;
     procedure RepositionSliders;
     procedure SlidersMoved;
@@ -436,7 +423,6 @@ uses
   gppLoadProgress,
   gppAbout,
   gppExport,
-  gppCallGraph,
   gpPrfPlaceholders,
   UITypes,
   StrUtils,
@@ -702,10 +688,6 @@ begin
   FillUnitTree(not chkShowAll.Checked);
 end; { TfrmMain.ParseProject }
 
-function TfrmMain.GetPrefDelphiName: string;
-begin
-  Result := ButFirst(frmPreferences.cbxCompilerVersion.Items[prefCompilerVersion],Length('Delphi '));
-end; { TfrmMain.GetPrefDelphiName }
 
 function TfrmMain.IsProjectConsole: boolean;
 begin
@@ -743,7 +725,7 @@ begin
     currentProject := ExtractFileName(fileName);
     ParseProject(fileName,false);
     if defaultDelphi = '' then
-      defaultDelphi := GetPrefDelphiName;
+      defaultDelphi := RemoveDelphiPrefix(frmPreferences.cbxCompilerVersion.Items[prefCompilerVersion]);
     selectedDelphi := GetProjectPref('DelphiVersion',defaultDelphi);
     RebuildDelphiVer;
     chkShowAll.Checked := GetProjectPref('ShowAllFolders',prefShowAllFolders);
@@ -764,7 +746,7 @@ begin
     if Items.Count >= 1 then 
       Items[Items.Count-1].Checked := true;
     for i := 0 to Items.Count-1 do begin
-      if ButFirst(Items[i].Caption,Length('Delphi &')) = selectedDelphi then
+      if RemoveDelphiPrefix(Items[i].Caption) = selectedDelphi then
       begin
         Items[Items.Count-1].Checked := false;
         Items[i].Checked := true;
@@ -774,7 +756,7 @@ begin
     end;
 
     if (not found) and (Items.Count >= 1) then begin
-      selectedDelphi := ButFirst(Items[Items.Count-1].Caption, Length('Delphi &'));
+      selectedDelphi := RemoveDelphiPrefix(Items[Items.Count-1].Caption);
     end;
   end;
   tbtnRun.Hint := 'Run Delphi '+selectedDelphi;
@@ -933,9 +915,6 @@ begin
   frmExport.expSelectThreadProc.Items.Add('Summary');
   frmExport.expSelectThreadProc.Enabled := (frmExport.expSelectThreadProc.Items.Count > 3);
   frmExport.expSelectThreadProc.ItemIndex := cbxSelectThreadProc.ItemIndex;
-  frmCallGraph.cbxSelectThreadCG.Items.Assign(cbxSelectThreadProc.Items);
-  frmCallGraph.cbxSelectThreadCG.Enabled   := cbxSelectThreadProc.Enabled;
-  frmCallGraph.cbxSelectThreadCG.ItemIndex := cbxSelectThreadProc.ItemIndex;
 end; { TfrmMain.FillThreadCombos }
 
 function TfrmMain.ParseProfile(profile: string): boolean;
@@ -1113,7 +1092,6 @@ begin
       FillViews(1);
       ClearBreakdown;
       actHideNotExecuted.Enabled   := true;
-      actJumpToCallGraph.Enabled   := true;
       actRescanProfile.Enabled     := true;
       actExportProfile.Enabled     := true;
       mnuExportProfile.Enabled     := true;
@@ -1121,40 +1099,13 @@ begin
       actMakeCopyProfile.Enabled   := true;
       actDelUndelProfile.Enabled   := true;
       SwitchDelMode(true);
-      if openProfile.DigestVer > 2 then frmCallGraph.ReloadProfile(openProfile.Name,openProfile)
-      else begin
-        frmCallGraph.ClearProfile;
-        frmCallGraph.Hide;
-      end;
     end;
   end;
 end; { TfrmMain.LoadProfile }
 
-procedure TfrmMain.WMReLoadProfile(var msg: TMessage);
-var
-  outDir: string;
-  vFName: String;
-begin
-  if assigned(openProject) then begin
-    outDir := GetOutputDir(openProject.Name);
-    vFName := MakeSmartBackslash(outDir)+ChangeFileExt(ExtractFileName(openProject.Name),'.prf');
-    if not FileExists(vFName) then
-    begin
-      if MessageDlg('Profiling file not found: ' + vFName + #13#10 +
-        'Choose file location manually?',
-        mtWarning, [mbYes, mbCancel], -1) = mrYes then
-        if OpenDialog1.Execute then
-          vFName := OpenDialog1.FileName;
-    end;
-
-    LoadProfile(vFName);
-  end;
-end; { TfrmMain.WMReLoadProfile }
-
-
 procedure TfrmMain.DelphiVerClick(Sender: TObject);
 begin
-  selectedDelphi := ButFirst(TMenuItem(Sender).Caption,Length('Delphi &'));
+  selectedDelphi := RemoveDelphiPrefix(TMenuItem(Sender).Caption);
   RebuildDelphiVer;
   SetProjectPref('DelphiVersion',selectedDelphi);
 end;
@@ -1339,7 +1290,6 @@ begin
   inLVResize := false;
   selectedProc := nil;
   Application.OnActivate := AppActivate;
-  Application.OnMessage  := AppMessage;
   Application.OnShortCut := AppShortcut;
   Application.HelpFile := ChangeFileExt(ParamStr(0),'.Chm');
   if not FileExists(Application.HelpFile) then Application.HelpFile := '';
@@ -1358,7 +1308,6 @@ begin
   DisablePC2;
   DisablePC;
   loadCanceled := false;
-  cmdMsg := RegisterWindowMessage(CMD_MESSAGE);
   openProject := nil;
   openProfile := nil;
   CurrentProjectName := '';
@@ -1865,7 +1814,7 @@ begin
       then s := clbProcs.Items[index]
       else s := clbClasses.Items[clbClasses.ItemIndex]+'.'+clbProcs.Items[index];
     openProject.InstrumentProc(clbUnits.Items[clbUnits.ItemIndex],s,clbProcs.Checked[index]); 
-    un := openProject.prUnits.Locate(clbUnits.Items[clbUnits.ItemIndex]);
+    un := openProject.LocateUnit(clbUnits.Items[clbUnits.ItemIndex]);
     if      un.unAllInst  then clbProcs.State[0] := cbChecked
     else if un.unNoneInst then clbProcs.State[0] := cbUnchecked
     else begin
@@ -2560,22 +2509,6 @@ begin
     vDProj := TDProj.Create(vDProjFN);
     try
       Result := vDProj.OutputDir;
-      XE2Pos:= Pos(cConfig,Result);
-      if XE2Pos <> 0 then begin
-        if (XE2ConfigOverride <> '') then
-          XE2Config:= XE2ConfigOverride
-        else
-          XE2Config:= vDProj.XE2Config;
-        Result:= ReplaceStr(Result, cConfig, XE2Config);
-      end;
-      XE2Pos:= Pos(cPlatform,Result);
-      if XE2Pos <> 0 then begin
-        if (XE2PlatformOverride <> '') then
-          XE2Platform:= XE2PlatformOverride
-        else
-          XE2Platform:= vDProj.XE2Platform;
-        Result:= ReplaceStr(Result, cPlatform, XE2Platform);
-      end;
     finally
       vDProj.Free;
     end;
@@ -3012,15 +2945,12 @@ begin
   FillViews(1);
   ClearBreakdown;
   actHideNotExecuted.Enabled   := false;
-  actJumpToCallGraph.Enabled   := false;
   actRescanProfile.Enabled     := false;
   actExportProfile.Enabled     := false;
   mnuExportProfile.Enabled     := false;
   actRenameMoveProfile.Enabled := false;
   actMakeCopyProfile.Enabled   := false;
   actProfileOptions.Enabled    := false;
-  frmCallGraph.ClearProfile;
-  frmCallGraph.Hide;
   DisablePC2;
 end;
 
@@ -3034,18 +2964,6 @@ begin
   // Maybe, Rescan in OnActivate is excessive (especially for large projects)
   actRescanChanged.Execute;
 end; { TfrmMain.AppActivate }
-
-procedure TfrmMain.AppMessage(var Msg: TMsg; var Handled: Boolean);
-begin
-  Handled := false;
-  if msg.HWND = Application.Handle then
-    if msg.message = cmdMsg then
-      if msg.WParam = CMD_DONE then
-      begin
-        PostMessage(Handle,WM_ReloadProfile,0,0);
-        Handled := true;
-      end;
-end; { TfrmMain.AppMessage }
 
 procedure TfrmMain.AppShortcut(var Msg: TWMKey; var Handled: boolean);
 begin
@@ -3424,6 +3342,7 @@ procedure TfrmMain.RedisplayCallees(resortOn: integer = -1);
 var
   callingPID: int64;
   i         : integer;
+  LInfo     : TCallGraphInfo;
 begin
   if pnlCallees.Visible and (vstProcs.SelectedCount>0) then
   begin
@@ -3439,18 +3358,19 @@ begin
         if cbxSelectThreadProc.ItemIndex >= 0 then
         begin
           callingPID := fvstProcsTools.GetSelectedId;
-          for i := Low(resCallGraph)+1 to High(resCallGraph) do begin
-            if assigned(resCallGraph[callingPID,i]) then begin
-              with resCallGraph[callingPID,i]^ do begin
-                if (not actHideNotExecuted.Checked) or (cgeProcCnt[cbxSelectThreadProc.ItemIndex] > 0) then
-                begin
-                  fvstProcsCalleesTools.AddEntry(callingPID,i);
-                end;
-              end; // with
-            end; // if
+          for i := 1 to CallGraphInfoCount-1 do
+          begin
+            LInfo := CallGraphInfo.GetGraphInfo(callingPID,i);
+            if assigned(LInfo) then
+            begin
+              if (not actHideNotExecuted.Checked) or (LInfo.ProcCnt[cbxSelectThreadProc.ItemIndex] > 0) then
+              begin
+                fvstProcsCalleesTools.AddEntry(callingPID,i);
+              end;
+            end; // with
+          end; // if
           end; // for
         end;
-      end;
     finally
       fvstProcsCalleesTools.EndUpdate;
     end;
@@ -3461,6 +3381,7 @@ procedure TfrmMain.RedisplayCallers(resortOn: integer = -1);
 var
   calledPID: int64;
   i        : integer;
+  LInfo    : TCallGraphInfo;
 begin
   if pnlCallers.Visible and (vstProcs.SelectedCount<>0) then
   begin
@@ -3476,14 +3397,15 @@ begin
         if cbxSelectThreadProc.ItemIndex >= 0 then
         begin
           calledPID := fvstProcsTools.GetSelectedId();
-          for i := Low(resCallGraph)+1 to High(resCallGraph) do begin
-            if assigned(resCallGraph[i,calledPID]) then
-            begin
-              fvstProcsCallersTools.AddEntry(calledPID, i);
-            end; // if
+          for i := 1 to CallGraphInfoCount-1 do
+          begin
+            LInfo := CallGraphInfo.GetGraphInfo(i,calledPID);
+            if assigned(LInfo) then
+              if (not actHideNotExecuted.Checked) or (LInfo.ProcCnt[cbxSelectThreadProc.ItemIndex] > 0) then
+                fvstProcsCallersTools.AddEntry(calledPID, i);
+          end; // if
           end; // for
         end;
-      end;
     finally
       fvstProcsCallersTools.EndUpdate;
     end;
@@ -3505,16 +3427,6 @@ begin
 
     end;
   end;
-(*  for i := 0 to .Count-1 do
-      if integer(Items[i].Data) = pid then begin
-        Selected := Items[i];
-        ItemFocused := Selected;
-        ActiveControl := lvProcs;
-        Selected.MakeVisible(false);
-        lvProcsSelectItem(lvProcs,Selected,true);
-        Exit;
-      end;
-  end;    *)
 end;
 
 procedure TfrmMain.ClearBrowser(popBrowser: TPopupMenu);
@@ -3617,12 +3529,6 @@ begin
   SelectProcs(jugglePID);
 end;
 
-procedure TfrmMain.actOpenCallGraphExecute(Sender: TObject);
-begin
-  frmCallGraph.ReloadProfile(openProfile.Name,openProfile);
-  frmCallGraph.Show;
-end;
-
 procedure TfrmMain.ZoomOnProcedure(procedureID, threadID: integer);
 begin
   PageControl2.ActivePage := tabProcedures;
@@ -3631,20 +3537,13 @@ begin
   frmMain.Show;
 end;
 
-procedure TfrmMain.actOpenCallGraphUpdate(Sender: TObject);
-begin
-  actOpenCallGraph.Enabled := assigned(openProfile) and (openProfile.DigestVer > 2);
-end;
 
-procedure TfrmMain.actJumpToCallGraphExecute(Sender: TObject);
+procedure TfrmMain.lvCalleesClick(Sender: TObject);
 begin
-  actOpenCallGraph.Execute;
-  frmCallGraph.ZoomOnProcedure(fvstProcsTools.GetSelectedId(),cbxSelectThreadProc.ItemIndex);
-end;
-
-procedure TfrmMain.actJumpToCallGraphUpdate(Sender: TObject);
-begin
-  actJumpToCallGraph.Enabled := assigned(fvstProcsTools.GetSelectedNode());
+  if assigned(openProfile) and (Sender is TListView) and assigned((Sender as TListView).Selected) then
+    with openProfile do
+      LoadSource(resUnits[resProcedures[integer((Sender as TListView).Selected.Data)].peUID].ueQual,
+                 resProcedures[integer((Sender as TListView).Selected.Data)].peFirstLn);
 end;
 
 function TfrmMain.GetDOFSetting(section, key, defval: string): string;

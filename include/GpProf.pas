@@ -93,7 +93,6 @@ var
   prfLock        : TRTLCriticalSection;
   prfFreq        : TLargeInteger;
   prfCounter     : TLargeInteger;
-  prfDoneMsg     : integer;
   prfModuleName  : string;
   prfName        : string;
   prfRunning     : boolean;
@@ -491,7 +490,6 @@ begin
       prfMaxThreadNum     := 256;
       prfThreadBytes      := 1;
       prfLastTick         := -1;
-      prfDoneMsg          := RegisterWindowMessage(CMD_MESSAGE);
       prfName             := CombineNames(prfModuleName, 'prf');
       if profPrfOutputFile <> '' then
         prfName := profPrfOutputFile + '.prf';
@@ -578,7 +576,6 @@ begin
   prfThreads.Free;
   prfThreadsInfo.free;
   DeleteCriticalSection(prfLock);
-  PostMessage(HWND_BROADCAST, prfDoneMsg, CMD_DONE, 0);
 end; { Finalize }
 
 procedure ProfilerTerminate;

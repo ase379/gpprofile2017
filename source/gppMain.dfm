@@ -326,6 +326,10 @@ object frmMain: TfrmMain
         object tabInstrumentation: TTabSheet
           Caption = 'Instrumentation'
           ImageIndex = 16
+          ExplicitLeft = 0
+          ExplicitTop = 0
+          ExplicitWidth = 0
+          ExplicitHeight = 0
           object Splitter1: TSplitter
             Left = 129
             Top = 25
@@ -751,7 +755,6 @@ object frmMain: TfrmMain
                   TreeOptions.PaintOptions = [toShowButtons, toShowDropmark, toThemeAware, toUseBlendedImages]
                   OnNodeClick = vstCalleesNodeClick
                   OnNodeDblClick = vstCalleesNodeDblClick
-                  ExplicitTop = 3
                   Columns = <
                     item
                       MinWidth = 200
@@ -816,6 +819,10 @@ object frmMain: TfrmMain
             object tabClasses: TTabSheet
               Caption = 'Classes'
               ImageIndex = -1
+              ExplicitLeft = 0
+              ExplicitTop = 0
+              ExplicitWidth = 0
+              ExplicitHeight = 0
               object vstClasses: TVirtualStringTree
                 Left = 0
                 Top = 33
@@ -885,6 +892,10 @@ object frmMain: TfrmMain
             object tabUnits: TTabSheet
               Caption = 'Units'
               ImageIndex = -1
+              ExplicitLeft = 0
+              ExplicitTop = 0
+              ExplicitWidth = 0
+              ExplicitHeight = 0
               object pnThreadUnits: TPanel
                 Left = 0
                 Top = 0
@@ -954,6 +965,10 @@ object frmMain: TfrmMain
             object tabThreads: TTabSheet
               Caption = 'Threads'
               ImageIndex = -1
+              ExplicitLeft = 0
+              ExplicitTop = 0
+              ExplicitWidth = 0
+              ExplicitHeight = 0
               object vstThreads: TVirtualStringTree
                 Left = 0
                 Top = 0
@@ -1043,7 +1058,6 @@ object frmMain: TfrmMain
         Lines.Strings = (
           'sourceCodeEdit')
         FontSmoothing = fsmNone
-        ExplicitTop = 3
       end
     end
   end
@@ -1402,16 +1416,12 @@ object frmMain: TfrmMain
       Enabled = False
       Hint = 'Open Call Graph Analyzer'
       ImageIndex = 28
-      OnExecute = actOpenCallGraphExecute
-      OnUpdate = actOpenCallGraphUpdate
     end
     object actJumpToCallGraph: TAction
       Category = 'Analysis'
       Caption = 'Jump to Call &Graph'
       Enabled = False
       Hint = 'Jump to Call Graph'
-      OnExecute = actJumpToCallGraphExecute
-      OnUpdate = actJumpToCallGraphUpdate
     end
     object actHelpOpenHome: TAction
       Category = 'Help'
