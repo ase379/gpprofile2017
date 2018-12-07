@@ -1428,15 +1428,6 @@ object frmMain: TfrmMain
       OnExecute = actBrowseNextExecute
       OnUpdate = actBrowseNextUpdate
     end
-    object actOpenCallGraph: TAction
-      Category = 'Profile'
-      Caption = 'Open Call &Graph Analyzer'
-      Enabled = False
-      Hint = 'Open Call Graph Analyzer'
-      ImageIndex = 28
-      OnExecute = actOpenCallGraphExecute
-      OnUpdate = actOpenCallGraphUpdate
-    end
     object actHelpOpenHome: TAction
       Category = 'Help'
       Caption = '&Home Page'

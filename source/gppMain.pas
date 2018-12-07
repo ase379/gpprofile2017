@@ -191,7 +191,6 @@ type
     actBrowseNext: TAction;
     popBrowsePrevious: TPopupMenu;
     popBrowseNext: TPopupMenu;
-    actOpenCallGraph: TAction;
     N8: TMenuItem;
     ToolButton21: TToolButton;
     actHelpOpenHome: TAction;
@@ -294,8 +293,6 @@ type
     procedure actBrowseNextExecute(Sender: TObject);
     procedure actBrowseNextUpdate(Sender: TObject);
     procedure actBrowsePreviousUpdate(Sender: TObject);
-    procedure actOpenCallGraphExecute(Sender: TObject);
-    procedure actOpenCallGraphUpdate(Sender: TObject);
     procedure lvCalleesClick(Sender: TObject);
     procedure splitCallersMoved(Sender: TObject);
     procedure clbUnitsKeyPress(Sender: TObject; var Key: Char);
@@ -427,7 +424,6 @@ uses
   gppLoadProgress,
   gppAbout,
   gppExport,
-  gppCallGraph,
   gpPrfPlaceholders,
   UITypes,
   StrUtils,
@@ -946,9 +942,6 @@ begin
   frmExport.expSelectThreadProc.Items.Add('Summary');
   frmExport.expSelectThreadProc.Enabled := (frmExport.expSelectThreadProc.Items.Count > 3);
   frmExport.expSelectThreadProc.ItemIndex := cbxSelectThreadProc.ItemIndex;
-  frmCallGraph.cbxSelectThreadCG.Items.Assign(cbxSelectThreadProc.Items);
-  frmCallGraph.cbxSelectThreadCG.Enabled   := cbxSelectThreadProc.Enabled;
-  frmCallGraph.cbxSelectThreadCG.ItemIndex := cbxSelectThreadProc.ItemIndex;
 end; { TfrmMain.FillThreadCombos }
 
 function TfrmMain.ParseProfile(profile: string): boolean;
@@ -1172,11 +1165,6 @@ begin
       actMakeCopyProfile.Enabled   := true;
       actDelUndelProfile.Enabled   := true;
       SwitchDelMode(true);
-      if openProfile.DigestVer > 2 then frmCallGraph.ReloadProfile(openProfile.Name,openProfile)
-      else begin
-        frmCallGraph.ClearProfile;
-        frmCallGraph.Hide;
-      end;
     end;
   end;
 end; { TfrmMain.LoadProfile }
@@ -2996,8 +2984,6 @@ begin
   actRenameMoveProfile.Enabled := false;
   actMakeCopyProfile.Enabled   := false;
   actProfileOptions.Enabled    := false;
-  frmCallGraph.ClearProfile;
-  frmCallGraph.Hide;
   DisablePC2;
 end;
 
@@ -3700,23 +3686,12 @@ begin
   SelectProcs(jugglePID);
 end;
 
-procedure TfrmMain.actOpenCallGraphExecute(Sender: TObject);
-begin
-  frmCallGraph.ReloadProfile(openProfile.Name,openProfile);
-  frmCallGraph.Show;
-end;
-
 procedure TfrmMain.ZoomOnProcedure(procedureID, threadID: integer);
 begin
   PageControl2.ActivePage := tabProcedures;
   if cbxSelectThreadProc.Enabled then cbxSelectThreadProc.ItemIndex := threadID;
   SelectProcs(procedureID);
   frmMain.Show;
-end;
-
-procedure TfrmMain.actOpenCallGraphUpdate(Sender: TObject);
-begin
-  actOpenCallGraph.Enabled := assigned(openProfile) and (openProfile.DigestVer > 2);
 end;
 
 procedure TfrmMain.lvCalleesClick(Sender: TObject);
