@@ -58,16 +58,14 @@ type
     unStartUses: TArray<Integer>;
     unEndUses: TArray<Integer>;
     unFileDate: Integer;
-    constructor Create(const aUnitName: String;
-      const aUnitLocation: String = ''; aExcluded: boolean = False);
+    constructor Create(const aUnitName: String;const aUnitLocation: String = ''; aExcluded: boolean = False);
     destructor Destroy; override;
-    procedure Parse(aProject: TProject; const aExclUnits, aSearchPath,
-      aDefaultDir, aConditionals: string; const aRescan, aParseAsm: boolean);
+    procedure Parse(aProject: TProject; const aExclUnits, aSearchPath,aDefaultDir, aConditionals: string;
+      const aRescan, aParseAsm: boolean);
     procedure CheckInstrumentedProcs;
     function LocateUnit(unitName: string): TUnit;
     function LocateProc(procName: string): TProc;
-    procedure Instrument(aProject: TProject; aIDT: TIDTable;
-      aKeepDate, aBackupFile: boolean);
+    procedure Instrument(aProject: TProject; aIDT: TIDTable;aKeepDate, aBackupFile: boolean);
     procedure ConstructNames(idt: TIDTable);
     function AnyInstrumented: boolean;
     function AnyChange: boolean;
@@ -112,8 +110,7 @@ type
     apiExitBegin: Integer;
     apiExitEnd: Integer;
     apiMeta: boolean;
-    constructor Create(apiCmd: string; apiBegin, apiEnd, apiExStart,
-      apiExEnd: Integer; apiIsMetaComment: boolean);
+    constructor Create(apiCmd: string; apiBegin, apiEnd, apiExStart,apiExEnd: Integer; apiIsMetaComment: boolean);
   end;
 
   TUnitList = class(TRootNode<TUnit>)
@@ -125,24 +122,20 @@ type
   public
     constructor Create(); reintroduce;
     function Locate(unitName: string): TUnit;
-    function LocateCreate(unitName, unitLocation: string;
-      excluded: boolean): TUnit;
+    function LocateCreate(unitName, unitLocation: string;excluded: boolean): TUnit;
   end;
 
   TProcList = class(TRootNode<TProc>)
     constructor Create; reintroduce;
-    procedure Add(var procName: string; pureAsm: boolean;
-      offset, lineNum, headerLineNum: Integer);
+    procedure Add(var procName: string; pureAsm: boolean;offset, lineNum, headerLineNum: Integer);
     procedure AddEnd(procName: string; offset, lineNum: Integer);
-    procedure AddInstrumented(procName: string;
-      cmtEnterBegin, cmtEnterEnd, cmtExitBegin, cmtExitEnd: Integer);
+    procedure AddInstrumented(procName: string;cmtEnterBegin, cmtEnterEnd, cmtExitBegin, cmtExitEnd: Integer);
   end;
 
   TAPIList = class(TRootNode<TAPI>)
     constructor Create; reintroduce;
     procedure AddMeta(apiCmd: string; apiBegin, apiEnd: Integer);
-    procedure AddExpanded(apiEnterBegin, apiEnterEnd, apiExitBegin,
-      apiExitEnd: Integer);
+    procedure AddExpanded(apiEnterBegin, apiEnterEnd, apiExitBegin,apiExitEnd: Integer);
   end;
 
   TProject = class
@@ -170,17 +163,13 @@ type
   public
     constructor Create(projName: string);
     destructor Destroy; override;
-    procedure Parse(aExclUnits: String;
-      const aSearchPath, aConditionals: String; aNotify: TNotifyProc;
+    procedure Parse(aExclUnits: String;const aSearchPath, aConditionals: String; aNotify: TNotifyProc;
       aCommentType: TCommentType; aParseAsm: boolean);
-    procedure Rescan(aExclUnits: String;
-      const aSearchPath, aConditionals: string; aNotify: TNotifyProc;
+    procedure Rescan(aExclUnits: String;const aSearchPath, aConditionals: string; aNotify: TNotifyProc;
       aCommentType: TCommentType; aIgnoreFileDate: boolean; aParseAsm: boolean);
     property Name: string read prName;
-    procedure GetUnitList(var aSL: TStringList;
-      const aProjectDirOnly, aGetInstrumented: boolean);
-    procedure GetProcList(unitName: string; s: TStringList;
-      getInstrumented: boolean);
+    procedure GetUnitList(var aSL: TStringList;const aProjectDirOnly, aGetInstrumented: boolean);
+    procedure GetProcList(unitName: string; s: TStringList;getInstrumented: boolean);
     function GetUnitPath(unitName: string): string;
     procedure InstrumentAll(Instrument, projectDirOnly: boolean);
     procedure InstrumentUnit(unitName: string; Instrument: boolean);
