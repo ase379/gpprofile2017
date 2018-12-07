@@ -46,7 +46,6 @@ type
     procedure AddToIntArray(var anArray: TArray<Integer>;const aValue: integer);
     procedure InstrumentUses(const aProject: TProject;const ed : TFileEdit;const anIndex : integer);
     procedure BackupInstrumentedFile(const aSrc : string);
-
   public
     unName           : AnsiString;
     unFullName       : AnsiString;
@@ -123,7 +122,8 @@ type
   end;
 
   TGlbUnitList = class(TRootNode<TUnit>)
-    constructor Create; reintroduce;
+  public
+    constructor Create(); reintroduce;
     function    Locate(unitName: string): TUnit;
     function    LocateCreate(unitName, unitLocation: string; excluded: boolean): TUnit;
   end;
@@ -143,6 +143,7 @@ type
 
 
   TProject = class
+  private
     prName            : string;
     prUnit            : TUnit;
     prUnits           : TGlbUnitList;
@@ -162,6 +163,8 @@ type
     prAPIIntro        : string;
     prNameThreadForDebugging : string;
     prGpprofDot : string;
+    procedure   PrepareComments(const aCommentType: TCommentType);
+  public
     constructor Create(projName: string);
     destructor  Destroy; override;
     procedure   Parse(aExclUnits: String; const aSearchPath, aConditionals: String;
@@ -184,8 +187,7 @@ type
       aIncFileName, aConditionals, aSearchPath: string; aParseAsm: boolean);
     function    GetFirstLine(unitName, procName: string): integer;
     function    AnyChange(projectDirOnly: boolean): boolean;
-  private
-    procedure   PrepareComments(const aCommentType: TCommentType);
+    function    LocateUnit(const aUnitName : string): TUnit;
   end;
 
 implementation
@@ -193,9 +195,7 @@ implementation
 uses
   Windows,
   IoUtils,
-{$IFDEF LogParser}
   GpIFF,
-{$ENDIF}
 {$IFDEF DebugParser}
   uDbg,
   uDbgIntf,
@@ -268,16 +268,10 @@ uses
 
 {========================= TGlbUnitList =========================}
 
-  procedure DisposeUnit(aData: pointer);
-  begin
-    TUnit(aData).Free;
-  end; { DisposeUnit }
-
-  constructor TGlbUnitList.Create;
+  constructor TGlbUnitList.Create();
   begin
     inherited Create(true);
     CompareFunc := @CompareUnit;
-    //DisposeData := @DisposeUnit;
   end; { TGlbUnitList.Create }
 
   function TGlbUnitList.Locate(unitName: string): TUnit;
@@ -297,15 +291,12 @@ uses
   var
     un    : TUnit;
   begin
-  {$IFDEF LogParser}GpLogEvent(Format('LocateCreate(%s,%s,%s)',[unitName,unitLocation,IFF(excluded,'true','false')]),FullLogName);{$ENDIF}
     result := Locate(unitName);
-    if Result = nil then begin
+    if Result = nil then
+    begin
       un := TUnit.Create(unitName,unitLocation,excluded);
       result := AppendNode(un).Data;
-  {$IFDEF LogParser}GpLogEvent('Created',FullLogName);{$ENDIF}
-    end
-  {$IFDEF LogParser}else GpLogEvent('Located',FullLogName);{$ENDIF}
-    ;
+    end;
   end; { TGlbUnitList.LocateCreate }
 
 {========================= TProcList =========================}
@@ -725,7 +716,6 @@ uses
     unParsed := true;
     parserStack := TList.Create;
     try
-{$IFDEF LogParser}GpLogEvent(Format('Locating: %s',[unFullName]),FullLogName);{$ENDIF}
       if not aRescan then
       begin
         // Anton Alisov: not sure, for what reason FindOnPath is called here with unFullName instead of unName
@@ -733,7 +723,6 @@ uses
           raise EUnitNotFoundException.Create('Unit not found in search path: ' + unFullName);
         unFullName := vUnitFullName;
         Assert(IsAbsolutePath(unFullName));
-{$IFDEF LogParser}GpLogEventEx(Format('FindOnPath(%s,%s)=%s', [searchPath, defaultDir, unFullName]), FullLogName);{$ENDIF}
         unInProjectDir := (self = aProject.prUnit) or AnsiSameText(ExtractFilePath(unFullName), ExtractFilePath(aProject.prUnit.unFullName));
       end
       else begin
@@ -747,7 +736,6 @@ uses
       
       parser := nil;
       CreateNewParser(unFullName, '');
-{$IFDEF LogParser}GpLogEvent(Format('Parsing: %s', [unFullName]), FullLogName);{$ENDIF}
       unFileDate        := FileAge(unFullName);
       state             := stScan;
       stateComment      := stNone;
@@ -787,9 +775,6 @@ uses
               tokenPos  := parser.TokenPos;
               tokenLN   := parser.LineNumber;
 
-              {$IFDEF DebugParser}
-                Debugger.LogFmtMsg('Token: %d %s %d %d', [Ord(tokenID),tokenData,tokenPos,tokenLN]);
-              {$ENDIF}
               if tokenID = ptCompDirect then begin
                 // Don't process conditional compilation directive if it is
                 // actually an instrumentation flag!
@@ -1398,7 +1383,7 @@ uses
 
   constructor TProject.Create(projName: string);
   begin
-    prUnits:= TGlbUnitList.Create;
+    prUnits:= TGlbUnitList.Create();
     prName := projName;
     prUnit := nil;
   end; { TProject.Create }
@@ -1813,6 +1798,11 @@ uses
     Result := false;
   end;
 
+  function TProject.LocateUnit(const aUnitName: string): TUnit;
+  begin
+    result := prUnits.Locate(aUnitName)
+  end;
+
 { TAPI }
 
   constructor TAPI.Create(apiCmd: string; apiBegin, apiEnd, apiExStart, apiExEnd: integer; apiIsMetaComment: boolean);
@@ -1827,11 +1817,6 @@ uses
   end;
 
 { TAPIList }
-
-  procedure DisposeAPI(api: TAPI);
-  begin
-    api.Free;
-  end; { DisposeAPI }
 
   procedure TAPIList.AddExpanded(apiEnterBegin, apiEnterEnd, apiExitBegin,
     apiExitEnd: integer);

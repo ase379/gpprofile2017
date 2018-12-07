@@ -1859,7 +1859,7 @@ begin
       then s := clbProcs.Items[index]
       else s := clbClasses.Items[clbClasses.ItemIndex]+'.'+clbProcs.Items[index];
     openProject.InstrumentProc(clbUnits.Items[clbUnits.ItemIndex],s,clbProcs.Checked[index]); 
-    un := openProject.prUnits.Locate(clbUnits.Items[clbUnits.ItemIndex]);
+    un := openProject.LocateUnit(clbUnits.Items[clbUnits.ItemIndex]);
     if      un.unAllInst  then clbProcs.State[0] := cbChecked
     else if un.unNoneInst then clbProcs.State[0] := cbUnchecked
     else begin
