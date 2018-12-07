@@ -11,8 +11,6 @@ uses
 type
   TfrmAbout = class(TForm)
     Panel1: TPanel;
-    PageControl1: TPageControl;
-    TabSheet1: TTabSheet;
     Image1: TImage;
     lblVersion: TLabel;
     Label3: TLabel;
@@ -47,7 +45,6 @@ var
   verInfo: TGpVersionInfo;
   stream : TResourceStream;
 begin
-  PageControl1.ActivePage := TabSheet1;
   verInfo := TGpVersionInfo.Create(ParamStr(0));
   try
     lblVersion.Caption := Format(lblVersion.Caption,[verInfo.GetVersion(verFullDotted)]);
