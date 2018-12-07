@@ -326,10 +326,6 @@ object frmMain: TfrmMain
         object tabInstrumentation: TTabSheet
           Caption = 'Instrumentation'
           ImageIndex = 16
-          ExplicitLeft = 0
-          ExplicitTop = 0
-          ExplicitWidth = 0
-          ExplicitHeight = 0
           object Splitter1: TSplitter
             Left = 129
             Top = 25
@@ -819,10 +815,6 @@ object frmMain: TfrmMain
             object tabClasses: TTabSheet
               Caption = 'Classes'
               ImageIndex = -1
-              ExplicitLeft = 0
-              ExplicitTop = 0
-              ExplicitWidth = 0
-              ExplicitHeight = 0
               object vstClasses: TVirtualStringTree
                 Left = 0
                 Top = 33
@@ -892,10 +884,6 @@ object frmMain: TfrmMain
             object tabUnits: TTabSheet
               Caption = 'Units'
               ImageIndex = -1
-              ExplicitLeft = 0
-              ExplicitTop = 0
-              ExplicitWidth = 0
-              ExplicitHeight = 0
               object pnThreadUnits: TPanel
                 Left = 0
                 Top = 0
@@ -965,10 +953,6 @@ object frmMain: TfrmMain
             object tabThreads: TTabSheet
               Caption = 'Threads'
               ImageIndex = -1
-              ExplicitLeft = 0
-              ExplicitTop = 0
-              ExplicitWidth = 0
-              ExplicitHeight = 0
               object vstThreads: TVirtualStringTree
                 Left = 0
                 Top = 0
@@ -1409,19 +1393,6 @@ object frmMain: TfrmMain
       ImageIndex = 27
       OnExecute = actBrowseNextExecute
       OnUpdate = actBrowseNextUpdate
-    end
-    object actOpenCallGraph: TAction
-      Category = 'Profile'
-      Caption = 'Open Call &Graph Analyzer'
-      Enabled = False
-      Hint = 'Open Call Graph Analyzer'
-      ImageIndex = 28
-    end
-    object actJumpToCallGraph: TAction
-      Category = 'Analysis'
-      Caption = 'Jump to Call &Graph'
-      Enabled = False
-      Hint = 'Jump to Call Graph'
     end
     object actHelpOpenHome: TAction
       Category = 'Help'
