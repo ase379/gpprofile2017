@@ -13,7 +13,7 @@ uses
   gpFileEdit;
 
 type
-  EUnitNotFoundException = Exception;
+  EUnitNotFoundException = class(Exception);
   TNotifyProc = procedure(const aUnitName: String) of object;
   TNotifyInstProc = procedure(const aFullName, aUnitName: String;aParse: boolean) of object;
 
