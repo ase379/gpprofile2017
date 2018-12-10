@@ -36,12 +36,15 @@ uses
   GpString;
 
   function TGpRegistry.ReadString (name,defval: string): string;
+  var
+    LLastError : cardinal;
   begin
     try
-      if GetDataSize(name) < 0 then Abort; // D4 does not generate an exception!
-      ReadString := inherited ReadString(name);
+      result := inherited ReadString(name);
+      if self.LastError <> S_OK then
+        result := defVal;
     except
-      ReadString := defval;
+      result := defVal;
     end;
   end; { TGpRegistry.ReadString }
 
