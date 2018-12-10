@@ -14,8 +14,8 @@ type
   TFileEdit = class
     constructor Create(const fileName: string);
     destructor  Destroy; override;
-    procedure   Insert(const atOffset: integer; what: ansistring);
-    procedure   Remove(const fromOffset, toOffset: integer);
+    procedure   Insert(const atOffset: int64; what: ansistring);
+    procedure   Remove(const fromOffset, toOffset: int64);
     procedure   Execute(const keepDate: boolean);
   private
     editFile: string;
@@ -25,6 +25,8 @@ type
 
 implementation
 
+{$WARN SYMBOL_PLATFORM OFF} // for FileSetDate
+
 uses
   Windows,
   SysUtils;
@@ -33,8 +35,8 @@ type
   PFECmd = ^TFECmd;
   TFECmd = record
     fecCmd : (cmdInsert, cmdRemove);
-    fecOfs1: integer;
-    fecOfs2: integer;
+    fecOfs1: int64;
+    fecOfs2: int64;
     fecTxt : ansistring;
   end;
 
@@ -65,16 +67,16 @@ type
 
     function MakeCurP: pointer;
     begin
-      Result := pointer(integer(stream.Memory)+stream.Position);
+      Result := pointer(NativeUInt(stream.Memory)+stream.Position);
     end; { MakeCurP }
 
-    procedure Remove(first,lastp1: integer);
+    procedure Remove(first,lastp1: int64);
     begin
       if first > stream.Position then BlockWrite(f,MakeCurP^,first-stream.Position);
       stream.Position := lastp1;
     end; { Remove }
 
-    procedure Insert(position: integer; key: ansistring);
+    procedure Insert(position: int64; key: ansistring);
     begin
       if position > stream.Position then begin
         BlockWrite(f,MakeCurP^,position-stream.Position);
@@ -84,49 +86,32 @@ type
     end; { Insert }
 
   begin { TFileEdit.Execute }
-  {$IFDEF LogFEExecute}
-    GpLogEvent(Format('TFileEdit.Execute: %s',[editFile]),FullLogName);
-    GpLogEvent(Format('Chk1: LastError = %d',[GetLastError]),FullLogName);
-  {$ENDIF}
+
     stream := TMemoryStream.Create;
     try
-  {$IFDEF LogFEExecute} GpLogEvent('Chk2',FullLogName); {$ENDIF}
       stream.LoadFromFile(editFile);
-  {$IFDEF LogFEExecute} GpLogEvent('Chk3',FullLogName); {$ENDIF}
       stream.Position := 0;
-  {$IFDEF LogFEExecute} GpLogEvent('Chk4',FullLogName); {$ENDIF}
       Assign(f,editFile);
-  {$IFDEF LogFEExecute} GpLogEvent('Chk5',FullLogName); {$ENDIF}
       Reset(f,1);
-  {$IFDEF LogFEExecute} GpLogEvent('Chk6',FullLogName); {$ENDIF}
+      fileDate := 0;
       if keepDate then
         fileDate := FileGetDate(TFileRec(f).Handle);
-  {$IFDEF LogFEExecute} GpLogEvent('Chk7',FullLogName); {$ENDIF}
       Rewrite(f,1);
-  {$IFDEF LogFEExecute} GpLogEvent('Chk8',FullLogName); {$ENDIF}
       try
-  {$IFDEF LogFEExecute} GpLogEvent('Chk9',FullLogName); {$ENDIF}
         for i := 0 to editList.Count-1 do
           with PFECmd(editList.Objects[i])^ do begin
             if fecCmd = cmdInsert
               then Insert(fecOfs1,fecTxt)
               else Remove(fecOfs1,fecOfs2+1);
           end;
-  {$IFDEF LogFEExecute} GpLogEvent('ChkA',FullLogName); {$ENDIF}
         BlockWrite(f,MakeCurP^,stream.Size-stream.Position);
-  {$IFDEF LogFEExecute} GpLogEvent('ChkB',FullLogName); {$ENDIF}
-        {$WARNINGS OFF}
         if keepDate then
           FileSetDate(TFileRec(f).Handle,fileDate);
-  {$IFDEF LogFEExecute} GpLogEvent('ChkC',FullLogName); {$ENDIF}
       finally Close(f); end;
-  {$IFDEF LogFEExecute} GpLogEvent('ChkD',FullLogName); {$ENDIF}
     finally stream.Free; end;
-  {$IFDEF LogFEExecute} GpLogEvent('TFileEdit.Execute out',FullLogName); {$ENDIF}
   end; { TFileEdit.Execute }
-  {$WARNINGS ON}
 
-  procedure TFileEdit.Insert(const atOffset: integer; what: ansistring);
+  procedure TFileEdit.Insert(const atOffset: int64; what: ansistring);
   var
     cmd: PFECmd;
   begin
@@ -139,7 +124,7 @@ type
     Schedule(cmd);
   end; { TFileEdit.Insert }
 
-  procedure TFileEdit.Remove(const fromOffset, toOffset: integer);
+  procedure TFileEdit.Remove(const fromOffset, toOffset: int64);
   var
     cmd: PFECmd;
   begin
