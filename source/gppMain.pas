@@ -422,6 +422,7 @@ uses
   gppCommon,
   gpPreferencesDlg,
   gppLoadProgress,
+  SimpleReportUnit,
   gppAbout,
   gppExport,
   gpPrfPlaceholders,
@@ -658,24 +659,42 @@ begin
 end; { TfrmMain.EnablePC }
 
 procedure TfrmMain.ParseProject(const aProject: string; aJustRescan: boolean);
+var
+  vErrList: TStringList;
+
 begin
   Enabled := False;
   try
     DisablePC;
     try
-      if not aJustRescan then begin
+      frmLoadProgress.Left := Left+((Width-frmLoadProgress.Width) div 2);
+      frmLoadProgress.Top := Top+((Height-frmLoadProgress.Height) div 2);
+      frmLoadProgress.Marquee := true;
+      frmLoadProgress.Show;
+
+      if not aJustRescan then
+      begin
         FreeAndNil(openProject);
         FillUnitTree(true); // clear all listboxes
         openProject := TProject.Create(aProject);
         CurrentProjectName := aProject;
         RebuildDefines;
+        vErrList := TStringList.Create;
         openProject.Parse(GetProjectPref('ExcludedUnits',prefExcludedUnits),
                           GetSearchPath(aProject),
                           frmPreferences.ExtractDefines, NotifyParse,
                           GetProjectPref('MarkerStyle', prefMarkerStyle),
-                          GetProjectPref('InstrumentAssembler', prefInstrumentAssembler));
+                          GetProjectPref('InstrumentAssembler', prefInstrumentAssembler),
+                          vErrList);
+        if vErrList.Count > 0 then
+        begin
+          frmLoadProgress.Hide;
+          TfmSimpleReport.Execute(CurrentProjectName + '- error list', vErrList);
+        end;
+        vErrList.Free;
       end
-      else begin
+      else
+      begin
         RebuildDefines;
         openProject.Rescan(GetProjectPref('ExcludedUnits', prefExcludedUnits),
                            GetSearchPath(aProject),
@@ -684,6 +703,8 @@ begin
                            GetProjectPref('UseFileDate', prefUseFileDate),
                            GetProjectPref('InstrumentAssembler', prefInstrumentAssembler));
       end;
+      frmLoadProgress.Hide;
+
       GetOutputDir(openProject.Name);
       StatusPanel0('Parsed', True);
     finally
@@ -955,6 +976,7 @@ begin
       FreeAndNil(openProfile);
       frmLoadProgress.Left := Left+((Width-frmLoadProgress.Width) div 2);
       frmLoadProgress.Top := Top+((Height-frmLoadProgress.Height) div 2);
+      frmLoadProgress.Marquee := false;
       frmLoadProgress.Show;
       try
         StatusPanel0('Loading '+profile,false);
