@@ -17,10 +17,13 @@ type
     procedure btnCancelLoadClick(Sender: TObject);
   private
     fMarquee : boolean;
+    fCancel : Boolean;
     procedure setMarquee(const Value: boolean);
+    procedure setCancel(const Value: boolean);
     { Private declarations }
   public
     property Marquee : boolean read fMarquee write setMarquee;
+    property Cancel : boolean read fCancel write setCancel;
   end;
 
 var
@@ -35,28 +38,22 @@ begin
   if Key = #27 then Hide;
 end;
 
+procedure TfrmLoadProgress.setCancel(const Value: boolean);
+begin
+  fCancel := Value;
+  if fCancel then
+    btnCancelLoad.Show
+  else
+    btnCancelLoad.Hide;
+end;
+
 procedure TfrmLoadProgress.setMarquee(const Value: boolean);
-const
-  PBS_MARQUEE = $08;
-  PBM_SETMARQUEE = WM_USER + 10;
-var
-  LOn : Integer;
-  LNewStyle : NativeInt;
 begin
   fMarquee := Value;
-  LNewStyle := GetWindowLong(ProgressBar1.Handle, GWL_STYLE);
-  LOn := Integer(FMarquee);
-
   if fMarquee then
-  begin
-    LNewStyle := LNewStyle Or PBS_MARQUEE;
-  end
+    ProgressBar1.Style := TProgressBarStyle.pbstMarquee
   else
-  begin
-    LNewStyle := LNewStyle AND PBS_MARQUEE;
-  end;
-  SetWindowLong(ProgressBar1.Handle, GWL_STYLE, LNewStyle Or PBS_MARQUEE);
-  SendMessage(ProgressBar1.Handle, PBM_SETMARQUEE, LOn, 40);
+    ProgressBar1.Style := TProgressBarStyle.pbstNormal;
 end;
 
 procedure TfrmLoadProgress.btnCancelLoadClick(Sender: TObject);
