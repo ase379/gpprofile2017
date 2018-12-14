@@ -7,7 +7,6 @@ uses
   System.Classes,
   System.SysUtils,
   gppIDT,
-  SimpleReportUnit,
   Dialogs,
   gppTree,
   gpFileEdit;
@@ -164,7 +163,7 @@ type
     constructor Create(projName: string);
     destructor Destroy; override;
     procedure Parse(aExclUnits: String;const aSearchPath, aConditionals: String; aNotify: TNotifyProc;
-      aCommentType: TCommentType; aParseAsm: boolean);
+      aCommentType: TCommentType; aParseAsm: boolean;const anErrorList : TStrings);
     procedure Rescan(aExclUnits: String;const aSearchPath, aConditionals: string; aNotify: TNotifyProc;
       aCommentType: TCommentType; aIgnoreFileDate: boolean; aParseAsm: boolean);
     property Name: string read prName;
@@ -1491,13 +1490,12 @@ end; { TProject.Destroy }
 
 procedure TProject.Parse(aExclUnits: String;
   const aSearchPath, aConditionals: string; aNotify: TNotifyProc;
-  aCommentType: TCommentType; aParseAsm: boolean);
+  aCommentType: TCommentType; aParseAsm: boolean; const anErrorList : TStrings);
 var
   un: TUnit;
   u1: TUnit;
   LNode: INode<TUnit>;
   vOldCurDir: string;
-  vErrList: TStringList;
 begin
   PrepareComments(aCommentType);
   if Last(aExclUnits, 2) <> #13#10 then
@@ -1508,44 +1506,36 @@ begin
   prUnit := prUnits.LocateCreate(prName, '', False);
   prUnit.unInProjectDir := true;
 
-  vErrList := TStringList.Create;
+  vOldCurDir := GetCurrentDir;
+  if not SetCurrentDir(ExtractFilePath(prUnit.unFullName)) then
+    Assert(False);
   try
-    vOldCurDir := GetCurrentDir;
-    if not SetCurrentDir(ExtractFilePath(prUnit.unFullName)) then
-      Assert(False);
-    try
-      un := prUnit;
-      repeat
-        if assigned(aNotify) then
-          aNotify(un.unName);
-        try
-          un.Parse(self, aExclUnits, aSearchPath, ExtractFilePath(prName),
-            aConditionals, False, aParseAsm);
-        except
-          on E: Exception do
-            vErrList.Add(E.Message);
-        end;
-        LNode := prUnits.FirstNode;
-        un := nil;
-        while assigned(LNode) do
+    un := prUnit;
+    repeat
+      if assigned(aNotify) then
+        aNotify(un.unName);
+      try
+        un.Parse(self, aExclUnits, aSearchPath, ExtractFilePath(prName),
+          aConditionals, False, aParseAsm);
+      except
+        on E: Exception do
+          anErrorList.Add(E.Message);
+      end;
+      LNode := prUnits.FirstNode;
+      un := nil;
+      while assigned(LNode) do
+      begin
+        u1 := LNode.Data;
+        if not(u1.unParsed or u1.unExcluded) then
         begin
-          u1 := LNode.Data;
-          if not(u1.unParsed or u1.unExcluded) then
-          begin
-            un := u1;
-            Break;
-          end;
-          LNode := LNode.NextNode;
+          un := u1;
+          Break;
         end;
-      until (un = nil);
-    finally
-      SetCurrentDir(vOldCurDir);
-    end;
+        LNode := LNode.NextNode;
+      end;
+    until (un = nil);
   finally
-    if vErrList.Count > 0 then
-      TfmSimpleReport.Execute(ExtractFileName(prUnit.unFullName) +
-        ' - error list', vErrList);
-    vErrList.Free;
+    SetCurrentDir(vOldCurDir);
   end;
 end; { TProject.Parse }
 
