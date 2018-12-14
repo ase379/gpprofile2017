@@ -670,6 +670,7 @@ begin
       frmLoadProgress.Left := Left+((Width-frmLoadProgress.Width) div 2);
       frmLoadProgress.Top := Top+((Height-frmLoadProgress.Height) div 2);
       frmLoadProgress.Marquee := true;
+      frmLoadProgress.Cancel := false;
       frmLoadProgress.Show;
 
       if not aJustRescan then
@@ -977,6 +978,7 @@ begin
       frmLoadProgress.Left := Left+((Width-frmLoadProgress.Width) div 2);
       frmLoadProgress.Top := Top+((Height-frmLoadProgress.Height) div 2);
       frmLoadProgress.Marquee := false;
+      frmLoadProgress.Cancel := true;
       frmLoadProgress.Show;
       try
         StatusPanel0('Loading '+profile,false);
