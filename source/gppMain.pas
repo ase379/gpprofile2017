@@ -751,7 +751,7 @@ begin
         RebuildDefines;
         openProject.Rescan(GetProjectPref('ExcludedUnits', prefExcludedUnits),
                            GetSearchPath(aProject),
-                           frmPreferences.ExtractDefines,NotifyParse,
+                           frmPreferences.ExtractDefines,
                            GetProjectPref('MarkerStyle', prefMarkerStyle),
                            GetProjectPref('UseFileDate', prefUseFileDate),
                            GetProjectPref('InstrumentAssembler', prefInstrumentAssembler));

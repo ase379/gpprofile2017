@@ -164,7 +164,7 @@ type
     destructor Destroy; override;
     procedure Parse(aExclUnits: String;const aSearchPath, aConditionals: String; aNotify: TNotifyProc;
       aCommentType: TCommentType; aParseAsm: boolean;const anErrorList : TStrings);
-    procedure Rescan(aExclUnits: String;const aSearchPath, aConditionals: string; aNotify: TNotifyProc;
+    procedure Rescan(aExclUnits: String;const aSearchPath, aConditionals: string;
       aCommentType: TCommentType; aIgnoreFileDate: boolean; aParseAsm: boolean);
     property Name: string read prName;
     procedure GetUnitList(var aSL: TStringList;const aProjectDirOnly, aGetInstrumented: boolean);
@@ -1911,7 +1911,7 @@ begin
 end; { TProject.AnyInstrumented }
 
 procedure TProject.Rescan(aExclUnits: String;
-  const aSearchPath, aConditionals: string; aNotify: TNotifyProc;
+  const aSearchPath, aConditionals: string;
   aCommentType: TCommentType; aIgnoreFileDate: boolean; aParseAsm: boolean);
 var
   un: TUnit;
