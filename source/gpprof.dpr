@@ -122,7 +122,6 @@ begin
     Application.Title := 'GpProfile';
     Application.CreateForm(TfrmMain, frmMain);
   Application.CreateForm(TfrmPreferences, frmPreferences);
-  Application.CreateForm(TfrmLoadProgress, frmLoadProgress);
   Application.CreateForm(TfrmAbout, frmAbout);
   Application.CreateForm(TfrmExport, frmExport);
   Application.CreateForm(TfrmPreferenceMacros, frmPreferenceMacros);
