@@ -300,7 +300,7 @@ type
   private
     openProject               : TProject;
     openProfile               : TResults;
-    currentProject            : string;               
+    currentProject            : string;
     currentProfile            : string;
     cancelLoading             : boolean;
     loadCanceled              : boolean;
@@ -334,7 +334,7 @@ type
     procedure RebuildDelphiVer;
     procedure DisablePC;
     procedure EnablePC;
-    procedure ShowProgressBar(const aMarquee, aCancel: Boolean);
+    procedure ShowProgressBar(const aMessage : string;const aMarquee, aCancel: Boolean);
     procedure HideProgressBar();
     procedure DisablePC2;
     procedure EnablePC2;
@@ -430,7 +430,8 @@ uses
   gpPrfPlaceholders,
   UITypes,
   StrUtils,
-  ioUtils;
+  ioUtils,
+  System.Threading;
 
 {$R *.DFM}
 
@@ -571,7 +572,7 @@ var
   nonei: boolean;
   allu : boolean;
   noneu: boolean;
-begin                         
+begin
   s := TStringList.Create;
   try
     clbUnits.Perform(WM_SETREDRAW,0,0);
@@ -588,7 +589,7 @@ begin
           for i := 0 to s.Count-1 do
           begin
             // Two last chars in each element of the list, returned by GetUnitList, are the two flags,
-            // ("0" and "1"): first indicates "All Instrumented", second - "None instrumented" state 
+            // ("0" and "1"): first indicates "All Instrumented", second - "None instrumented" state
             clbUnits.Items.Add(ButLast(s[i], 2));
             allu  := (s[i][Length(s[i])-1] = '1');
             noneu := (s[i][Length(s[i])] = '1');
@@ -660,45 +661,82 @@ begin
   SetSource;
 end; { TfrmMain.EnablePC }
 
-procedure TfrmMain.ShowProgressBar(const aMarquee, aCancel: Boolean);
+procedure TfrmMain.ShowProgressBar(const aMessage : string;const aMarquee, aCancel: Boolean);
 begin
+  if not assigned(frmLoadProgress) then
+    frmLoadProgress := TfrmLoadProgress.Create(self);
   frmLoadProgress.Left := Left+((Width-frmLoadProgress.Width) div 2);
   frmLoadProgress.Top := Top+((Height-frmLoadProgress.Height) div 2);
   frmLoadProgress.Marquee := aMarquee;
   frmLoadProgress.Cancel := aCancel;
+  frmLoadProgress.Text := aMessage;
   frmLoadProgress.Show;
+  Application.ProcessMessages;
 end;
 
 procedure TfrmMain.HideProgressBar();
 begin
-  frmLoadProgress.Hide;
+  FreeAndNil(frmLoadProgress);
 end;
 
 procedure TfrmMain.ParseProject(const aProject: string; aJustRescan: boolean);
 var
   vErrList: TStringList;
-
+  LException : string;
+  LDefines : string;
+  LTask : ITask;
 begin
   Enabled := False;
   try
     DisablePC;
     try
-      ShowProgressBar(true, false);
 
       if not aJustRescan then
       begin
+        ShowProgressBar('Parsing units...', true, false);
         FreeAndNil(openProject);
         FillUnitTree(true); // clear all listboxes
         openProject := TProject.Create(aProject);
         CurrentProjectName := aProject;
         RebuildDefines;
         vErrList := TStringList.Create;
-        openProject.Parse(GetProjectPref('ExcludedUnits',prefExcludedUnits),
+        LDefines := frmPreferences.ExtractDefines;
+        LTask := TTask.Create(procedure
+          begin
+            LException := '';
+            try
+              Coinitialize(nil);
+              try
+                openProject.Parse(GetProjectPref('ExcludedUnits',prefExcludedUnits),
                           GetSearchPath(aProject),
-                          frmPreferences.ExtractDefines, NotifyParse,
+                          LDefines, NotifyParse,
                           GetProjectPref('MarkerStyle', prefMarkerStyle),
                           GetProjectPref('InstrumentAssembler', prefInstrumentAssembler),
                           vErrList);
+              finally
+                CoUninitialize
+              end;
+            except
+              on E:Exception do
+              begin
+                LException := e.Message;
+              end;
+            end;
+          end);
+        LTask.Start;
+        while (LTask.Status in [TTaskStatus.WaitingToRun, TTaskStatus.Running]) do
+        begin
+          sleep(0);
+          Application.ProcessMessages;
+        end;
+        LTask.Wait();
+
+        if LException <> '' then
+        begin
+          StatusPanel0('Error while parsing: '+LException,false);
+          ShowError(LException);
+        end;
+
         if vErrList.Count > 0 then
         begin
           HideProgressBar;
@@ -708,6 +746,7 @@ begin
       end
       else
       begin
+        ShowProgressBar('Rescanning units...', true, false);
         RebuildDefines;
         openProject.Rescan(GetProjectPref('ExcludedUnits', prefExcludedUnits),
                            GetSearchPath(aProject),
@@ -725,7 +764,6 @@ begin
   finally
     Enabled := true;
   end;
-  
   actRescanProject.Enabled         := true;
   actRescanChanged.Enabled         := true;
   actInstrument.Enabled            := true;
@@ -791,7 +829,7 @@ begin
   found := false;
   with popDelphiVer do begin
     for i := 0 to Items.Count-2 do Items[i].Checked := false;
-    if Items.Count >= 1 then 
+    if Items.Count >= 1 then
       Items[Items.Count-1].Checked := true;
     for i := 0 to Items.Count-1 do begin
       if RemoveDelphiPrefix(Items[i].Caption) = selectedDelphi then
@@ -986,7 +1024,7 @@ begin
     DisablePC2;
     try
       FreeAndNil(openProfile);
-      ShowProgressBar(false, True);
+      ShowProgressBar('Parsing profiling results...',false, True);
       try
         StatusPanel0('Loading '+profile,false);
         openProfile := TResults.Create(profile,ParseProfileCallback);
@@ -1176,7 +1214,7 @@ begin
 end; { TfrmMain.FillViews }
 
 procedure TfrmMain.LoadProfile(fileName: string);
-begin 
+begin
   if not FileExists(fileName) then StatusPanel0('File '+fileName+' does not exist!',false,true)
   else begin
     MRUPrf.LatestFile := fileName;
@@ -1384,7 +1422,7 @@ begin
   pnlTopTwo.Color  := clPurple;
   pnlBottom.Color  := clYellow;
   splitCallers.Color := clLime;
-  splitCallees.Color := clRed; 
+  splitCallees.Color := clRed;
 {$ENDIF}
   inLVResize := false;
   selectedProc := nil;
@@ -1595,28 +1633,58 @@ procedure TfrmMain.DoInstrument;
 var
   fnm   : string;
   outDir: string;
+  LShowAll : Boolean;
+  LDefines : string;
+  LTask : ITask;
+  LException : string;
 begin
-  ShowProgressBar(true, false);
+  ShowProgressBar('Instrumenting units...',true, false);
   outDir := GetOutputDir(openProject.Name);
   fnm := MakeSmartBackslash(outDir)+ChangeFileExt(ExtractFileName(openProject.Name),'.gpi');
-  openProject.Instrument(not chkShowAll.Checked,NotifyInstrument,
-                         GetProjectPref('MarkerStyle',prefMarkerStyle),
-                         GetProjectPref('KeepFileDate',prefKeepFileDate),
-                         GetProjectPref('MakeBackupOfInstrumentedFile',prefKeepFileDate),
-                         fnm,frmPreferences.ExtractDefines,
-                         GetSearchPath(openProject.Name),
-                         GetProjectPref('InstrumentAssembler',prefInstrumentAssembler));
-
-  if FileExists(fnm) then
-    with TIniFile.Create(fnm) do
+  LShowAll := chkShowAll.Checked;
+  LDefines := frmPreferences.ExtractDefines;
+  LException := '';
+  LTask := TTask.Create(procedure
+    begin
       try
-        WriteBool('Performance','ProfilingAutostart',GetProjectPref('ProfilingAutostart',prefProfilingAutostart));
-        WriteBool('Performance','CompressTicks',GetProjectPref('SpeedSize',prefSpeedSize)>1);
-        WriteBool('Performance','CompressThreads',GetProjectPref('SpeedSize',prefSpeedSize)>2);
-        WriteString('Output','PrfOutputFilename',ResolvePrfProjectPlaceholders(GetProjectPref('PrfFilenameMakro',prefPrfFilenameMakro)));
-      finally
-        Free;
+        Coinitialize(nil);
+        try
+          openProject.Instrument(not LShowAll,NotifyInstrument,
+                             GetProjectPref('MarkerStyle',prefMarkerStyle),
+                             GetProjectPref('KeepFileDate',prefKeepFileDate),
+                             GetProjectPref('MakeBackupOfInstrumentedFile',prefKeepFileDate),
+                             fnm,LDefines,
+                             GetSearchPath(openProject.Name),
+                             GetProjectPref('InstrumentAssembler',prefInstrumentAssembler));
+
+          if FileExists(fnm) then
+            with TIniFile.Create(fnm) do
+              try
+                WriteBool('Performance','ProfilingAutostart',GetProjectPref('ProfilingAutostart',prefProfilingAutostart));
+                WriteBool('Performance','CompressTicks',GetProjectPref('SpeedSize',prefSpeedSize)>1);
+                WriteBool('Performance','CompressThreads',GetProjectPref('SpeedSize',prefSpeedSize)>2);
+                WriteString('Output','PrfOutputFilename',ResolvePrfProjectPlaceholders(GetProjectPref('PrfFilenameMakro',prefPrfFilenameMakro)));
+              finally
+                Free;
+              end;
+        finally
+          CoUninitialize
+        end;
+      except
+        on E:Exception do
+        begin
+          LException := e.Message;
+        end;
       end;
+    end);
+  LTask.Start;
+  LTask.Wait();
+  if LException <> '' then
+  begin
+    StatusPanel0('Error while instrumenting: '+LException,false);
+    ShowError(LException);
+  end;
+
 
   HideProgressBar();
   ReloadSource;
@@ -1849,13 +1917,13 @@ begin
   else begin
     un := TStringList.Create;
     try
-      openProject.GetProcList(clbUnits.Items[clbUnits.ItemIndex],un,false); 
+      openProject.GetProcList(clbUnits.Items[clbUnits.ItemIndex],un,false);
       cl := UpperCase(clbClasses.Items[clbClasses.ItemIndex]);
       for i := 0 to un.Count-1 do begin
         p := Pos('.',un[i]);
         if ((cl[1] = '<') and (p = 0)) or
            ((cl[1] <> '<') and (UpperCase(Copy(un[i],1,p-1)) = cl)) then begin
-          openProject.InstrumentProc(clbUnits.Items[clbUnits.ItemIndex],un[i],clbClasses.Checked[index]); 
+          openProject.InstrumentProc(clbUnits.Items[clbUnits.ItemIndex],un[i],clbClasses.Checked[index]);
         end;
       end;
     finally un.Free; end;
@@ -1885,7 +1953,7 @@ begin
           then s := clbProcs.Items[i]
           else s := clbClasses.Items[clbClasses.ItemIndex]+'.'+clbProcs.Items[i];
         clbProcs.Checked[i] := clbProcs.Checked[0];
-        openProject.InstrumentProc(clbUnits.Items[clbUnits.ItemIndex],s,clbProcs.Checked[i]); 
+        openProject.InstrumentProc(clbUnits.Items[clbUnits.ItemIndex],s,clbProcs.Checked[i]);
       end;
     finally clbProcs.Items.EndUpdate; end;
   end
@@ -1893,7 +1961,7 @@ begin
     if clbClasses.Items[clbClasses.ItemIndex][1] = '<'
       then s := clbProcs.Items[index]
       else s := clbClasses.Items[clbClasses.ItemIndex]+'.'+clbProcs.Items[index];
-    openProject.InstrumentProc(clbUnits.Items[clbUnits.ItemIndex],s,clbProcs.Checked[index]); 
+    openProject.InstrumentProc(clbUnits.Items[clbUnits.ItemIndex],s,clbProcs.Checked[index]);
     un := openProject.LocateUnit(clbUnits.Items[clbUnits.ItemIndex]);
     if      un.unAllInst  then clbProcs.State[0] := cbChecked
     else if un.unNoneInst then clbProcs.State[0] := cbUnchecked
@@ -2394,13 +2462,13 @@ var
   oldDefines   : string;
   LSettingsDict : TPrfPlaceholderValueDict;
 begin
-  with frmPreferences do 
+  with frmPreferences do
   begin
-    if ExecuteProjectSettings(chkShowAll.Checked) then 
+    if ExecuteProjectSettings(chkShowAll.Checked) then
     begin
       chkShowAll.Checked := cbShowAllFolders.Checked;
       RebuildDelphiVer;
-      if DefinesChanged then 
+      if DefinesChanged then
         actRescanProject.Execute;
     end;
   end;
@@ -2466,7 +2534,7 @@ begin
       p := Length(vMacros);
       SetLength(vMacros, p+1);
       vMacros[p] := Copy(Result, vMacroSt+2, i-1-(vMacroSt+2)+1);
-    end;             
+    end;
 
   for i := 0 to High(vMacros) do
   begin
@@ -2474,7 +2542,7 @@ begin
     // so simply skip this macro
     if AnsiUpperCase(vMacros[i]) = 'DCC_UNITSEARCHPATH' then
       Continue;
-    
+
     vMacroValue := GetEnvVar(vMacros[i]);
     if (vMacroValue = '') then vMacroValue:= GetDelphiXE2Var(vMacros[i]);
     // ToDo: Not all macros are possible to get throug environment variables
@@ -2643,7 +2711,7 @@ begin
 
   Result := ReplaceMacros(Result);
 
-  // If getting output dir was not successful - use project dir as output dir 
+  // If getting output dir was not successful - use project dir as output dir
   if Result = '' then
     Result := ExtractFilePath(aProject);
 
@@ -2665,7 +2733,7 @@ end; { TfrmMain.GetOutputDir }
 procedure TfrmMain.actRescanProfileExecute(Sender: TObject);
 begin
   LoadProfile(openProfile.Name);
-end;                      
+end;
 
 procedure TfrmMain.CloseDelphiHandles;
 begin
@@ -2680,7 +2748,7 @@ begin
     delphiAppWindow  := 0;
     delphiEditWindow := 0;
   end;
-end;        
+end;
 
 procedure TfrmMain.ReloadSource;
 var
@@ -2759,7 +2827,7 @@ begin
         end;
       end;
     end;
-  ClearSource;       
+  ClearSource;
 end;
 
 procedure TfrmMain.PageControl2Change(Sender: TObject);
@@ -2918,7 +2986,7 @@ begin
                 FormatDateTime('_ddmmyy',Now)+'.prf';
     SaveDialog1.Title := 'Make copy of '+openProfile.Name;
     if SaveDialog1.Execute then begin
-      if ExtractFileExt(SaveDialog1.FileName) = '' then 
+      if ExtractFileExt(SaveDialog1.FileName) = '' then
         SaveDialog1.FileName := SaveDialog1.FileName + '.prf';
     LSrc := openProfile.Name;
     TFile.Copy(LSrc,SaveDialog1.FileName,true);
@@ -3250,7 +3318,7 @@ procedure TfrmMain.actHelpAboutExecute(Sender: TObject);
 begin
   frmAbout.Left := Left+((Width-frmAbout.Width) div 2);
   frmAbout.Top := Top+((Height-frmAbout.Height) div 2);
-  frmAbout.ShowModal;   
+  frmAbout.ShowModal;
 end;
 
 procedure TfrmMain.actHelpShortcutKeysExecute(Sender: TObject);
@@ -3274,7 +3342,7 @@ begin
   with actChangeLayout do begin
     SetChangeLayout(Item.ImageIndex = 2);
   end;
-end; 
+end;
 
 procedure TfrmMain.SetChangeLayout(setRestore: boolean);
 begin
@@ -3387,7 +3455,7 @@ procedure TfrmMain.actShowHideCalleesExecute(Sender: TObject);
 begin
   if pnlCallees.Visible then begin
     pnlCallees.Hide;
-    splitCallees.Hide; 
+    splitCallees.Hide;
   end
   else begin
     pnlCallees.Show;
@@ -3475,7 +3543,7 @@ begin
                              else lvCallees.Resort;
           end;
         finally Items.EndUpdate; end;
-      finally lvCallees.Perform(WM_SETREDRAW,1,0); end;  
+      finally lvCallees.Perform(WM_SETREDRAW,1,0); end;
     end;
   end;
 end;
