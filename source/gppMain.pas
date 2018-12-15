@@ -334,6 +334,8 @@ type
     procedure RebuildDelphiVer;
     procedure DisablePC;
     procedure EnablePC;
+    procedure ShowProgressBar(const aMarquee, aCancel: Boolean);
+    procedure HideProgressBar();
     procedure DisablePC2;
     procedure EnablePC2;
     function  ParseProfile(profile: string): boolean;
@@ -658,6 +660,20 @@ begin
   SetSource;
 end; { TfrmMain.EnablePC }
 
+procedure TfrmMain.ShowProgressBar(const aMarquee, aCancel: Boolean);
+begin
+  frmLoadProgress.Left := Left+((Width-frmLoadProgress.Width) div 2);
+  frmLoadProgress.Top := Top+((Height-frmLoadProgress.Height) div 2);
+  frmLoadProgress.Marquee := aMarquee;
+  frmLoadProgress.Cancel := aCancel;
+  frmLoadProgress.Show;
+end;
+
+procedure TfrmMain.HideProgressBar();
+begin
+  frmLoadProgress.Hide;
+end;
+
 procedure TfrmMain.ParseProject(const aProject: string; aJustRescan: boolean);
 var
   vErrList: TStringList;
@@ -667,11 +683,7 @@ begin
   try
     DisablePC;
     try
-      frmLoadProgress.Left := Left+((Width-frmLoadProgress.Width) div 2);
-      frmLoadProgress.Top := Top+((Height-frmLoadProgress.Height) div 2);
-      frmLoadProgress.Marquee := true;
-      frmLoadProgress.Cancel := false;
-      frmLoadProgress.Show;
+      ShowProgressBar(true, false);
 
       if not aJustRescan then
       begin
@@ -689,7 +701,7 @@ begin
                           vErrList);
         if vErrList.Count > 0 then
         begin
-          frmLoadProgress.Hide;
+          HideProgressBar;
           TfmSimpleReport.Execute(CurrentProjectName + '- error list', vErrList);
         end;
         vErrList.Free;
@@ -704,8 +716,7 @@ begin
                            GetProjectPref('UseFileDate', prefUseFileDate),
                            GetProjectPref('InstrumentAssembler', prefInstrumentAssembler));
       end;
-      frmLoadProgress.Hide;
-
+      HideProgressBar;
       GetOutputDir(openProject.Name);
       StatusPanel0('Parsed', True);
     finally
@@ -975,11 +986,7 @@ begin
     DisablePC2;
     try
       FreeAndNil(openProfile);
-      frmLoadProgress.Left := Left+((Width-frmLoadProgress.Width) div 2);
-      frmLoadProgress.Top := Top+((Height-frmLoadProgress.Height) div 2);
-      frmLoadProgress.Marquee := false;
-      frmLoadProgress.Cancel := true;
-      frmLoadProgress.Show;
+      ShowProgressBar(false, True);
       try
         StatusPanel0('Loading '+profile,false);
         openProfile := TResults.Create(profile,ParseProfileCallback);
@@ -999,7 +1006,9 @@ begin
           StatusPanel0('Loaded',true);
           Result := true;
         end;
-      finally frmLoadProgress.Hide; end;
+      finally
+        HideProgressBar;
+      end;
       if assigned(openProfile) then actProfileOptions.Enabled := true;
       Show;
       FillThreadCombos;
@@ -1587,6 +1596,7 @@ var
   fnm   : string;
   outDir: string;
 begin
+  ShowProgressBar(true, false);
   outDir := GetOutputDir(openProject.Name);
   fnm := MakeSmartBackslash(outDir)+ChangeFileExt(ExtractFileName(openProject.Name),'.gpi');
   openProject.Instrument(not chkShowAll.Checked,NotifyInstrument,
@@ -1608,6 +1618,7 @@ begin
         Free;
       end;
 
+  HideProgressBar();
   ReloadSource;
   StatusPanel0('Instrumentation finished',false);
 end; { TfrmMain.DoInstrument }
