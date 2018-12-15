@@ -319,6 +319,7 @@ type
     selectedProc              : pointer;
     callersPerc               : real;
     calleesPerc               : real;
+    procedure ExecuteAsyncAndShowError(const aProc: System.Sysutils.TProc;const aActionName : string);
     procedure ParseProject(const aProject: string; aJustRescan: boolean);
     procedure LoadProject(fileName: string; defaultDelphi: string = '');
     procedure NotifyParse(const aUnitName: string);
@@ -683,9 +684,7 @@ end;
 procedure TfrmMain.ParseProject(const aProject: string; aJustRescan: boolean);
 var
   vErrList: TStringList;
-  LException : string;
   LDefines : string;
-  LTask : ITask;
 begin
   Enabled := False;
   try
@@ -702,41 +701,17 @@ begin
         RebuildDefines;
         vErrList := TStringList.Create;
         LDefines := frmPreferences.ExtractDefines;
-        LTask := TTask.Create(procedure
+        ExecuteAsyncAndShowError(
+          procedure
           begin
-            LException := '';
-            try
-              Coinitialize(nil);
-              try
-                openProject.Parse(GetProjectPref('ExcludedUnits',prefExcludedUnits),
-                          GetSearchPath(aProject),
-                          LDefines, NotifyParse,
-                          GetProjectPref('MarkerStyle', prefMarkerStyle),
-                          GetProjectPref('InstrumentAssembler', prefInstrumentAssembler),
-                          vErrList);
-              finally
-                CoUninitialize
-              end;
-            except
-              on E:Exception do
-              begin
-                LException := e.Message;
-              end;
-            end;
-          end);
-        LTask.Start;
-        while (LTask.Status in [TTaskStatus.WaitingToRun, TTaskStatus.Running]) do
-        begin
-          sleep(0);
-          Application.ProcessMessages;
-        end;
-        LTask.Wait();
+            openProject.Parse(GetProjectPref('ExcludedUnits',prefExcludedUnits),
+                      GetSearchPath(aProject),
+                      LDefines, NotifyParse,
+                      GetProjectPref('MarkerStyle', prefMarkerStyle),
+                      GetProjectPref('InstrumentAssembler', prefInstrumentAssembler),
+                      vErrList);
 
-        if LException <> '' then
-        begin
-          StatusPanel0('Error while parsing: '+LException,false);
-          ShowError(LException);
-        end;
+          end, 'parsing');
 
         if vErrList.Count > 0 then
         begin
@@ -747,14 +722,20 @@ begin
       end
       else
       begin
+        LDefines := frmPreferences.ExtractDefines;
         ShowProgressBar('Rescanning units...', true, false);
         RebuildDefines;
-        openProject.Rescan(GetProjectPref('ExcludedUnits', prefExcludedUnits),
-                           GetSearchPath(aProject),
-                           frmPreferences.ExtractDefines,
-                           GetProjectPref('MarkerStyle', prefMarkerStyle),
-                           GetProjectPref('UseFileDate', prefUseFileDate),
-                           GetProjectPref('InstrumentAssembler', prefInstrumentAssembler));
+        LDefines := frmPreferences.ExtractDefines;
+        ExecuteAsyncAndShowError(
+          procedure
+          begin
+            openProject.Rescan(GetProjectPref('ExcludedUnits', prefExcludedUnits),
+                       GetSearchPath(aProject),
+                       LDefines,
+                       GetProjectPref('MarkerStyle', prefMarkerStyle),
+                       GetProjectPref('UseFileDate', prefUseFileDate),
+                       GetProjectPref('InstrumentAssembler', prefInstrumentAssembler));
+          end,'rescanning');
       end;
       HideProgressBar;
       GetOutputDir(openProject.Name);
@@ -1630,44 +1611,18 @@ begin
   ClickProcs(index,true);
 end;
 
-procedure TfrmMain.DoInstrument;
+
+procedure TfrmMain.ExecuteAsyncAndShowError(const aProc: System.Sysutils.TProc; const aActionName : string);
 var
-  fnm   : string;
-  outDir: string;
-  LShowAll : Boolean;
-  LDefines : string;
   LTask : ITask;
   LException : string;
 begin
-  ShowProgressBar('Instrumenting units...',true, false);
-  outDir := GetOutputDir(openProject.Name);
-  fnm := MakeSmartBackslash(outDir)+ChangeFileExt(ExtractFileName(openProject.Name),'.gpi');
-  LShowAll := chkShowAll.Checked;
-  LDefines := frmPreferences.ExtractDefines;
-  LException := '';
   LTask := TTask.Create(procedure
     begin
       try
         Coinitialize(nil);
         try
-          openProject.Instrument(not LShowAll,NotifyInstrument,
-                             GetProjectPref('MarkerStyle',prefMarkerStyle),
-                             GetProjectPref('KeepFileDate',prefKeepFileDate),
-                             GetProjectPref('MakeBackupOfInstrumentedFile',prefKeepFileDate),
-                             fnm,LDefines,
-                             GetSearchPath(openProject.Name),
-                             GetProjectPref('InstrumentAssembler',prefInstrumentAssembler));
-
-          if FileExists(fnm) then
-            with TIniFile.Create(fnm) do
-              try
-                WriteBool('Performance','ProfilingAutostart',GetProjectPref('ProfilingAutostart',prefProfilingAutostart));
-                WriteBool('Performance','CompressTicks',GetProjectPref('SpeedSize',prefSpeedSize)>1);
-                WriteBool('Performance','CompressThreads',GetProjectPref('SpeedSize',prefSpeedSize)>2);
-                WriteString('Output','PrfOutputFilename',ResolvePrfProjectPlaceholders(GetProjectPref('PrfFilenameMakro',prefPrfFilenameMakro)));
-              finally
-                Free;
-              end;
+          aProc();
         finally
           CoUninitialize
         end;
@@ -1679,14 +1634,57 @@ begin
       end;
     end);
   LTask.Start;
+  while (LTask.Status in [TTaskStatus.WaitingToRun, TTaskStatus.Running]) do
+  begin
+    sleep(0);
+    Application.ProcessMessages;
+  end;
+
   LTask.Wait();
   if LException <> '' then
   begin
-    StatusPanel0('Error while instrumenting: '+LException,false);
+    StatusPanel0('Error while '+aActionName+': '+LException,false);
     ShowError(LException);
   end;
 
+end;
 
+
+procedure TfrmMain.DoInstrument;
+var
+  fnm   : string;
+  outDir: string;
+  LShowAll : Boolean;
+  LDefines : string;
+
+begin
+  ShowProgressBar('Instrumenting units...',true, false);
+  outDir := GetOutputDir(openProject.Name);
+  fnm := MakeSmartBackslash(outDir)+ChangeFileExt(ExtractFileName(openProject.Name),'.gpi');
+  LShowAll := chkShowAll.Checked;
+  LDefines := frmPreferences.ExtractDefines;
+  ExecuteAsyncAndShowError(
+    procedure
+    begin
+      openProject.Instrument(not LShowAll,NotifyInstrument,
+                         GetProjectPref('MarkerStyle',prefMarkerStyle),
+                         GetProjectPref('KeepFileDate',prefKeepFileDate),
+                         GetProjectPref('MakeBackupOfInstrumentedFile',prefKeepFileDate),
+                         fnm,LDefines,
+                         GetSearchPath(openProject.Name),
+                         GetProjectPref('InstrumentAssembler',prefInstrumentAssembler));
+
+      if FileExists(fnm) then
+        with TIniFile.Create(fnm) do
+          try
+            WriteBool('Performance','ProfilingAutostart',GetProjectPref('ProfilingAutostart',prefProfilingAutostart));
+            WriteBool('Performance','CompressTicks',GetProjectPref('SpeedSize',prefSpeedSize)>1);
+            WriteBool('Performance','CompressThreads',GetProjectPref('SpeedSize',prefSpeedSize)>2);
+            WriteString('Output','PrfOutputFilename',ResolvePrfProjectPlaceholders(GetProjectPref('PrfFilenameMakro',prefPrfFilenameMakro)));
+          finally
+            Free;
+          end;
+    end, 'instrumenting');
   HideProgressBar();
   ReloadSource;
   StatusPanel0('Instrumentation finished',false);
