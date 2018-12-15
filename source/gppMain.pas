@@ -431,6 +431,7 @@ uses
   UITypes,
   StrUtils,
   ioUtils,
+  Winapi.ActiveX,
   System.Threading;
 
 {$R *.DFM}
