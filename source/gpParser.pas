@@ -1491,6 +1491,25 @@ end; { TProject.Destroy }
 procedure TProject.Parse(aExclUnits: String;
   const aSearchPath, aConditionals: string; aNotify: TNotifyProc;
   aCommentType: TCommentType; aParseAsm: boolean; const anErrorList : TStrings);
+
+  procedure DoNotify(const aUnitName: string);
+  begin
+    if assigned(aNotify) then
+    begin
+      if GetCurrentThreadId() = MainThreadID then
+        aNotify(aUnitName)
+      else
+      begin
+        TThread.Queue(nil,
+          procedure
+          begin
+            aNotify(aUnitName)
+          end);
+      end;
+    end;
+  end;
+
+
 var
   un: TUnit;
   u1: TUnit;
@@ -1512,8 +1531,7 @@ begin
   try
     un := prUnit;
     repeat
-      if assigned(aNotify) then
-        aNotify(un.unName);
+      DoNotify(un.unName);
       try
         un.Parse(self, aExclUnits, aSearchPath, ExtractFilePath(prName),
           aConditionals, False, aParseAsm);
@@ -1689,6 +1707,24 @@ procedure TProject.Instrument(aProjectDirOnly: boolean;
   aNotify: TNotifyInstProc; aCommentType: TCommentType;
   aKeepDate, aBackupFile: boolean; aIncFileName, aConditionals,
   aSearchPath: string; aParseAsm: boolean);
+
+  procedure DoNotify(const aFullname, aUnitName: string; const aParse : Boolean);
+  begin
+    if assigned(aNotify) then
+    begin
+      if GetCurrentThreadId() = MainThreadID then
+        aNotify(aFullname,aUnitName,aParse)
+      else
+      begin
+        TThread.Queue(nil,
+          procedure
+          begin
+            aNotify(aFullname,aUnitName,aParse)
+          end);
+      end;
+    end;
+  end;
+
 var
   vOldCurDir: string;
   un: TUnit;
@@ -1717,8 +1753,7 @@ begin
             un := LNode.Data;
             if (not un.unExcluded) and (un.unProcs.Count > 0) then
             begin
-              if assigned(aNotify) then
-                aNotify(un.unFullName, un.unName, False);
+              DoNotify(un.unFullName, un.unName, False);
 
               unAny := un.AnyInstrumented;
               if unAny then
@@ -1753,8 +1788,7 @@ begin
     end;
     for i := 0 to Rescan.Count - 1 do
     begin
-      if assigned(aNotify) then
-        aNotify(TUnit(Rescan[i]).unFullName, TUnit(Rescan[i]).unName, true);
+      DoNotify(TUnit(Rescan[i]).unFullName, TUnit(Rescan[i]).unName, true);
       TUnit(Rescan[i]).Parse(self, '', aSearchPath, ExtractFilePath(prName),
         aConditionals, true, aParseAsm);
     end;
