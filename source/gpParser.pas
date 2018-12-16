@@ -1500,7 +1500,7 @@ procedure TProject.Parse(aExclUnits: String;
         aNotify(aUnitName)
       else
       begin
-        TThread.Queue(nil,
+        TThread.Synchronize(nil,
           procedure
           begin
             aNotify(aUnitName)
@@ -1716,7 +1716,7 @@ procedure TProject.Instrument(aProjectDirOnly: boolean;
         aNotify(aFullname,aUnitName,aParse)
       else
       begin
-        TThread.Queue(nil,
+        TThread.Synchronize(nil,
           procedure
           begin
             aNotify(aFullname,aUnitName,aParse)
