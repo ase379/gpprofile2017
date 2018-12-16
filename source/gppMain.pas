@@ -335,8 +335,6 @@ type
     procedure RebuildDelphiVer;
     procedure DisablePC;
     procedure EnablePC;
-    procedure ShowProgressBar(const aMessage : string;const aMarquee, aCancel: Boolean);
-    procedure HideProgressBar();
     procedure DisablePC2;
     procedure EnablePC2;
     function  ParseProfile(profile: string): boolean;
@@ -483,10 +481,14 @@ function EnumFindMyDelphi(window: HWND; lParam: PFind): boolean; stdcall;
 var
   name : array [0..256] of char;
   title: array [0..256] of char;
+  findTileW : string;
+  titleW : string;
 begin
   GetClassName(window,name,255);
   GetWindowText(window,title,255);
-  if (name = 'TAppBuilder') and (Pos(lParam^.findTitle,UpperCase(title)) > 0) then begin
+  titleW := title;
+  findTileW := UTF8ToUnicodeString(lParam^.findTitle);
+  if (name = 'TAppBuilder') and (Pos(findTileW,UpperCase(titleW)) > 0) then begin
     lParam^.findProcID := GetWindowThreadProcessID(window,nil);
     Result := false;
   end
@@ -523,7 +525,7 @@ begin
     New(find);
     try
       find^.findProcID := 0;
-      find^.findTitle := ' - '+UpperCase(FirstEl(ExtractFileName(ParamStr(1)),'.',-1));
+      find^.findTitle := UTF8Encode(' - '+UpperCase(FirstEl(ExtractFileName(ParamStr(1)),'.',-1)));
       EnumWindows(@EnumFindMyDelphi,integer(find));
       if find^.findProcID <> 0 then begin
         delphiThreadID := find^.findProcID;
@@ -663,24 +665,6 @@ begin
   SetSource;
 end; { TfrmMain.EnablePC }
 
-procedure TfrmMain.ShowProgressBar(const aMessage : string;const aMarquee, aCancel: Boolean);
-begin
-  if not assigned(frmLoadProgress) then
-    frmLoadProgress := TfrmLoadProgress.Create(self);
-  frmLoadProgress.Left := Left+((Width-frmLoadProgress.Width) div 2);
-  frmLoadProgress.Top := Top+((Height-frmLoadProgress.Height) div 2);
-  frmLoadProgress.Marquee := aMarquee;
-  frmLoadProgress.Cancel := aCancel;
-  frmLoadProgress.Text := aMessage;
-  frmLoadProgress.Show;
-  Application.ProcessMessages;
-end;
-
-procedure TfrmMain.HideProgressBar();
-begin
-  FreeAndNil(frmLoadProgress);
-end;
-
 procedure TfrmMain.ParseProject(const aProject: string; aJustRescan: boolean);
 var
   vErrList: TStringList;
@@ -693,7 +677,7 @@ begin
 
       if not aJustRescan then
       begin
-        ShowProgressBar('Parsing units...', true, false);
+        ShowProgressBar(self,'Parsing units...', true, false);
         FreeAndNil(openProject);
         FillUnitTree(true); // clear all listboxes
         openProject := TProject.Create(aProject);
@@ -723,7 +707,7 @@ begin
       else
       begin
         LDefines := frmPreferences.ExtractDefines;
-        ShowProgressBar('Rescanning units...', true, false);
+        ShowProgressBar(self,'Rescanning units...', true, false);
         RebuildDefines;
         LDefines := frmPreferences.ExtractDefines;
         ExecuteAsyncAndShowError(
@@ -1006,7 +990,7 @@ begin
     DisablePC2;
     try
       FreeAndNil(openProfile);
-      ShowProgressBar('Parsing profiling results...',false, True);
+      ShowProgressBar(Self,'Parsing profiling results...',false, True);
       try
         StatusPanel0('Loading '+profile,false);
         openProfile := TResults.Create(profile,ParseProfileCallback);
@@ -1658,7 +1642,7 @@ var
   LDefines : string;
 
 begin
-  ShowProgressBar('Instrumenting units...',true, false);
+  ShowProgressBar(self,'Instrumenting units...',true, false);
   outDir := GetOutputDir(openProject.Name);
   fnm := MakeSmartBackslash(outDir)+ChangeFileExt(ExtractFileName(openProject.Name),'.gpi');
   LShowAll := chkShowAll.Checked;
@@ -2455,11 +2439,6 @@ begin
 end;
 
 procedure TfrmMain.actProjectOptionsExecute(Sender: TObject);
-var
-  projMarker   : integer;
-  projSpeedSize: integer;
-  oldDefines   : string;
-  LSettingsDict : TPrfPlaceholderValueDict;
 begin
   with frmPreferences do
   begin
@@ -2670,8 +2649,6 @@ var
   vBdsProjFN: TFileName;
   vBdsProj: TBdsProj;
   vOldCurDir: String;
-  vXE2Platform: string;
-  XE2Pos: cardinal;
 begin
   Result := '';
 

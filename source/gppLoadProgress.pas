@@ -35,6 +35,11 @@ type
     property Text : string read getText write setText;
   end;
 
+
+  procedure ShowProgressBar(const aOwner : TForm;const aMessage : string;const aMarquee, aCancel: Boolean);
+  procedure HideProgressBar();
+
+
 var
   frmLoadProgress: TfrmLoadProgress;
 
@@ -42,6 +47,26 @@ implementation
 
 uses
   System.Win.ComObj;
+
+{ global helpers }
+
+procedure ShowProgressBar(const aOwner : TForm;const aMessage : string;const aMarquee, aCancel: Boolean);
+begin
+  if not assigned(frmLoadProgress) then
+    frmLoadProgress := TfrmLoadProgress.Create(aOwner);
+  frmLoadProgress.Left := aOwner.Left+((aOwner.Width-frmLoadProgress.Width) div 2);
+  frmLoadProgress.Top := aOwner.Top+((aOwner.Height-frmLoadProgress.Height) div 2);
+  frmLoadProgress.Marquee := aMarquee;
+  frmLoadProgress.Cancel := aCancel;
+  frmLoadProgress.Text := aMessage;
+  frmLoadProgress.Show;
+  Application.ProcessMessages;
+end;
+
+procedure HideProgressBar();
+begin
+  FreeAndNil(frmLoadProgress);
+end;
 
 {$R *.DFM}
 
@@ -110,7 +135,6 @@ destructor TfrmLoadProgress.Destroy;
 begin
   Taskbar1.ProgressState := TTaskBarProgressState.None;
   Taskbar1.free;
-
   inherited;
 end;
 
