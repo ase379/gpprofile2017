@@ -553,6 +553,7 @@ end; { TfrmMain.FormatPerc }
 procedure TfrmMain.NotifyParse(const aUnitName: string);
 begin
   StatusPanel0('Parsing ' + aUnitName, False);
+  frmLoadProgress.Text := 'Parsing ' + aUnitName;
   Application.ProcessMessages;
 end; { TfrmMain.NotifyParse }
 
@@ -562,6 +563,7 @@ begin
     StatusPanel0('Parsing ' + aUnitName, False)
   else begin
     StatusPanel0('Instrumenting ' + aUnitName, False);
+    frmLoadProgress.Text := 'Instrumenting ' + aUnitName;
     if AnsiSameText(aFullName, LoadedSource) then
       LoadedSource := ''; // force preview window reload
   end;
