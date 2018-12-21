@@ -1692,21 +1692,22 @@ end;
 procedure TfrmMain.actOpenExecute(Sender: TObject);
 var
   vFN: TFileName;
+  LFilename : string;
 begin
-  with OpenDialog do begin
-    DefaultExt := 'dpr';
-    if openProfile = nil then
-      FileName := ''
-    else
-      FileName := ChangeFileExt(openProfile.Name,'.dpr');
-    Filter := 'Delphi project (*.dpr)|*.dpr|Delphi package (*.dpk)|*.dpk|Any file (*.*)|*.*';
-    if Execute then begin
-      vFN := FileName;
-      if AnsiUpperCase(ExtractFileExt(FileName)) = '.DPROJ' then
-        vFN := ChangeFileExt(vFN, '.DPR');
-      CloseDelphiHandles;
-      LoadProject(vFN);
-    end;
+  OpenDialog.DefaultExt := 'dpr';
+  LFilename := '';
+  if assigned(openProfile) then
+    LFileName := ChangeFileExt(openProfile.Name,'.dpr');
+  OpenDialog.FileName := ExtractFilename(LFilename);
+  OpenDialog.InitialDir := ExtractFileDir(LFilename);
+  OpenDialog.Filter := 'Delphi project (*.dpr)|*.dpr|Delphi package (*.dpk)|*.dpk|Any file (*.*)|*.*';
+  if OpenDialog.Execute then
+  begin
+    vFN := OpenDialog.FileName;
+    if AnsiUpperCase(ExtractFileExt(OpenDialog.FileName)) = '.DPROJ' then
+      vFN := ChangeFileExt(vFN, '.DPR');
+    CloseDelphiHandles;
+    LoadProject(vFN);
   end;
 end;
 
@@ -2137,30 +2138,34 @@ end;
 
 procedure TfrmMain.btnLoadInstrumentationSelectionClick(Sender: TObject);
 var
-  LInstrumentedUnits : TUnitSelectionList;
+  LFilename : String;
 begin
   if openProject = nil then
     Exit;
+  LFilename := ChangeFileExt(openProject.Name,'.gis');
   OpenDialog.DefaultExt := 'gis';
-  OpenDialog.FileName := ChangeFileExt(openProject.Name,'.gis');
+  OpenDialog.FileName := ExtractFilename(LFilename);
+  OpenDialog.InitialDir := ExtractFileDir(LFilename);
   OpenDialog.Filter := 'GPProf instrumentation selection (*.gis)|*.gis|Any file (*.*)|*.*';
   if OpenDialog.Execute then
   begin
-    LInstrumentedUnits := TUnitSelectionList.Create();
-
-    openProject.LoadInstrumentalizationSelection(OpenDialog.FileName, LInstrumentedUnits);
-    LInstrumentedUnits.free;
-
+    openProject.LoadInstrumentalizationSelection(OpenDialog.FileName);
+    cbProfileChange(nil);
   end;
 end;
 
 procedure TfrmMain.btnSaveInstrumentationSelectionClick(Sender: TObject);
+var
+  LFilename : string;
 begin
   if openProject = nil then
     Exit;
   try
-    SaveDialog1.FileName := ChangeFileExt(openProject.Name,'.gis');
+    LFilename := ChangeFileExt(openProject.Name,'.gis');
+    SaveDialog1.FileName := ExtractFileName(LFilename);
+    SaveDialog1.InitialDir := ExtractFileDir(SaveDialog1.FileName);
     SaveDialog1.Title := 'Save instrumentation selection';
+    SaveDialog1.Filter := 'GPProf instrumentation selection (*.gis)|*.gis|Any file (*.*)|*.*';
     if SaveDialog1.Execute then begin
       if ExtractFileExt(SaveDialog1.FileName) = '' then
         SaveDialog1.FileName := SaveDialog1.FileName + '.gis';
@@ -3004,11 +3009,15 @@ end;
 
 procedure TfrmMain.actMakeCopyProfileExecute(Sender: TObject);
 var LSrc : string;
+  LFilename : string;
 begin
   try
-    SaveDialog1.FileName := ButLast(openProfile.Name,Length(ExtractFileExt(openProfile.Name)))+
+    LFilename := ButLast(openProfile.Name,Length(ExtractFileExt(openProfile.Name)))+
                 FormatDateTime('_ddmmyy',Now)+'.prf';
+    SaveDialog1.InitialDir := ExtractFileDir(LFilename);
+    SaveDialog1.FileName := ExtractFilename(LFilename);
     SaveDialog1.Title := 'Make copy of '+openProfile.Name;
+    SaveDialog1.Filter := 'Profile data|*.prf|Any file|*.*';
     if SaveDialog1.Execute then begin
       if ExtractFileExt(SaveDialog1.FileName) = '' then
         SaveDialog1.FileName := SaveDialog1.FileName + '.prf';
@@ -3071,11 +3080,16 @@ begin
 end;
 
 procedure TfrmMain.actRenameMoveProfileExecute(Sender: TObject);
+var
+  LFilename : string;
 begin
   try
-    SaveDialog1.FileName := ButLast(openProfile.Name,Length(ExtractFileExt(openProfile.Name)))+
+  LFilename := ButLast(openProfile.Name,Length(ExtractFileExt(openProfile.Name)))+
                 FormatDateTime('_ddmmyy',Now)+'.prf';
+    SaveDialog1.InitialDir := ExtractFileDir(LFilename);
+    SaveDialog1.FileName := ExtractFilename(LFilename);
     SaveDialog1.Title := 'Rename/Move '+openProfile.Name;
+    SaveDialog1.Filter := 'Profile data|*.prf|Any file|*.*';
     if SaveDialog1.Execute then begin
       if ExtractFileExt(SaveDialog1.FileName) = '' then
         SaveDialog1.FileName := SaveDialog1.FileName + '.prf';
