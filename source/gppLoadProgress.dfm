@@ -1,12 +1,11 @@
 object frmLoadProgress: TfrmLoadProgress
   Left = 324
   Top = 187
-  AutoSize = True
   BorderIcons = [biHelp]
   BorderStyle = bsNone
   Caption = 'frmLoadProgress'
-  ClientHeight = 49
-  ClientWidth = 441
+  ClientHeight = 62
+  ClientWidth = 438
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -22,24 +21,39 @@ object frmLoadProgress: TfrmLoadProgress
   object pnlLoadResults: TPanel
     Left = 0
     Top = 0
-    Width = 441
-    Height = 49
+    Width = 438
+    Height = 59
+    Align = alTop
     BevelInner = bvLowered
     BevelWidth = 2
-    Caption = 'pnlLoadResults'
     TabOrder = 0
+    object Label1: TLabel
+      AlignWithMargins = True
+      Left = 7
+      Top = 7
+      Width = 424
+      Height = 21
+      Align = alTop
+      AutoSize = False
+      Caption = 'Label1'
+      Layout = tlCenter
+    end
     object ProgressBar1: TProgressBar
-      Left = 16
-      Top = 15
-      Width = 337
-      Height = 20
+      AlignWithMargins = True
+      Left = 7
+      Top = 34
+      Width = 361
+      Height = 18
+      Align = alClient
       TabOrder = 0
     end
     object btnCancelLoad: TButton
-      Left = 368
-      Top = 15
+      AlignWithMargins = True
+      Left = 374
+      Top = 34
       Width = 57
-      Height = 20
+      Height = 18
+      Align = alRight
       Caption = 'Cancel'
       TabOrder = 1
       OnClick = btnCancelLoadClick

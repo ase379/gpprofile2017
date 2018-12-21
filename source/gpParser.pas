@@ -7,7 +7,6 @@ uses
   System.Classes,
   System.SysUtils,
   gppIDT,
-  SimpleReportUnit,
   Dialogs,
   gppTree,
   gpFileEdit;
@@ -164,8 +163,8 @@ type
     constructor Create(projName: string);
     destructor Destroy; override;
     procedure Parse(aExclUnits: String;const aSearchPath, aConditionals: String; aNotify: TNotifyProc;
-      aCommentType: TCommentType; aParseAsm: boolean);
-    procedure Rescan(aExclUnits: String;const aSearchPath, aConditionals: string; aNotify: TNotifyProc;
+      aCommentType: TCommentType; aParseAsm: boolean;const anErrorList : TStrings);
+    procedure Rescan(aExclUnits: String;const aSearchPath, aConditionals: string;
       aCommentType: TCommentType; aIgnoreFileDate: boolean; aParseAsm: boolean);
     property Name: string read prName;
     procedure GetUnitList(var aSL: TStringList;const aProjectDirOnly, aGetInstrumented: boolean);
@@ -1491,13 +1490,31 @@ end; { TProject.Destroy }
 
 procedure TProject.Parse(aExclUnits: String;
   const aSearchPath, aConditionals: string; aNotify: TNotifyProc;
-  aCommentType: TCommentType; aParseAsm: boolean);
+  aCommentType: TCommentType; aParseAsm: boolean; const anErrorList : TStrings);
+
+  procedure DoNotify(const aUnitName: string);
+  begin
+    if assigned(aNotify) then
+    begin
+      if GetCurrentThreadId() = MainThreadID then
+        aNotify(aUnitName)
+      else
+      begin
+        TThread.Synchronize(nil,
+          procedure
+          begin
+            aNotify(aUnitName)
+          end);
+      end;
+    end;
+  end;
+
+
 var
   un: TUnit;
   u1: TUnit;
   LNode: INode<TUnit>;
   vOldCurDir: string;
-  vErrList: TStringList;
 begin
   PrepareComments(aCommentType);
   if Last(aExclUnits, 2) <> #13#10 then
@@ -1508,44 +1525,35 @@ begin
   prUnit := prUnits.LocateCreate(prName, '', False);
   prUnit.unInProjectDir := true;
 
-  vErrList := TStringList.Create;
+  vOldCurDir := GetCurrentDir;
+  if not SetCurrentDir(ExtractFilePath(prUnit.unFullName)) then
+    Assert(False);
   try
-    vOldCurDir := GetCurrentDir;
-    if not SetCurrentDir(ExtractFilePath(prUnit.unFullName)) then
-      Assert(False);
-    try
-      un := prUnit;
-      repeat
-        if assigned(aNotify) then
-          aNotify(un.unName);
-        try
-          un.Parse(self, aExclUnits, aSearchPath, ExtractFilePath(prName),
-            aConditionals, False, aParseAsm);
-        except
-          on E: Exception do
-            vErrList.Add(E.Message);
-        end;
-        LNode := prUnits.FirstNode;
-        un := nil;
-        while assigned(LNode) do
+    un := prUnit;
+    repeat
+      DoNotify(un.unName);
+      try
+        un.Parse(self, aExclUnits, aSearchPath, ExtractFilePath(prName),
+          aConditionals, False, aParseAsm);
+      except
+        on E: Exception do
+          anErrorList.Add(E.Message);
+      end;
+      LNode := prUnits.FirstNode;
+      un := nil;
+      while assigned(LNode) do
+      begin
+        u1 := LNode.Data;
+        if not(u1.unParsed or u1.unExcluded) then
         begin
-          u1 := LNode.Data;
-          if not(u1.unParsed or u1.unExcluded) then
-          begin
-            un := u1;
-            Break;
-          end;
-          LNode := LNode.NextNode;
+          un := u1;
+          Break;
         end;
-      until (un = nil);
-    finally
-      SetCurrentDir(vOldCurDir);
-    end;
+        LNode := LNode.NextNode;
+      end;
+    until (un = nil);
   finally
-    if vErrList.Count > 0 then
-      TfmSimpleReport.Execute(ExtractFileName(prUnit.unFullName) +
-        ' - error list', vErrList);
-    vErrList.Free;
+    SetCurrentDir(vOldCurDir);
   end;
 end; { TProject.Parse }
 
@@ -1699,6 +1707,24 @@ procedure TProject.Instrument(aProjectDirOnly: boolean;
   aNotify: TNotifyInstProc; aCommentType: TCommentType;
   aKeepDate, aBackupFile: boolean; aIncFileName, aConditionals,
   aSearchPath: string; aParseAsm: boolean);
+
+  procedure DoNotify(const aFullname, aUnitName: string; const aParse : Boolean);
+  begin
+    if assigned(aNotify) then
+    begin
+      if GetCurrentThreadId() = MainThreadID then
+        aNotify(aFullname,aUnitName,aParse)
+      else
+      begin
+        TThread.Synchronize(nil,
+          procedure
+          begin
+            aNotify(aFullname,aUnitName,aParse)
+          end);
+      end;
+    end;
+  end;
+
 var
   vOldCurDir: string;
   un: TUnit;
@@ -1727,8 +1753,7 @@ begin
             un := LNode.Data;
             if (not un.unExcluded) and (un.unProcs.Count > 0) then
             begin
-              if assigned(aNotify) then
-                aNotify(un.unFullName, un.unName, False);
+              DoNotify(un.unFullName, un.unName, False);
 
               unAny := un.AnyInstrumented;
               if unAny then
@@ -1763,8 +1788,7 @@ begin
     end;
     for i := 0 to Rescan.Count - 1 do
     begin
-      if assigned(aNotify) then
-        aNotify(TUnit(Rescan[i]).unFullName, TUnit(Rescan[i]).unName, true);
+      DoNotify(TUnit(Rescan[i]).unFullName, TUnit(Rescan[i]).unName, true);
       TUnit(Rescan[i]).Parse(self, '', aSearchPath, ExtractFilePath(prName),
         aConditionals, true, aParseAsm);
     end;
@@ -1887,7 +1911,7 @@ begin
 end; { TProject.AnyInstrumented }
 
 procedure TProject.Rescan(aExclUnits: String;
-  const aSearchPath, aConditionals: string; aNotify: TNotifyProc;
+  const aSearchPath, aConditionals: string;
   aCommentType: TCommentType; aIgnoreFileDate: boolean; aParseAsm: boolean);
 var
   un: TUnit;
