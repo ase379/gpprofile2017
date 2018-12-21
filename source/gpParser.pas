@@ -147,6 +147,7 @@ type
     constructor Create(const aUnitName : string);
     destructor Destroy;override;
 
+    property UnitName : string read fUnitName;
     property SelectedProcedures : TStringList read FSelectedProcedures write FSelectedProcedures;
   end;
   TUnitSelectionList = TObjectList<TUnitSelection>;
@@ -173,6 +174,8 @@ type
     prNameThreadForDebugging: string;
     prGpprofDot: string;
     procedure PrepareComments(const aCommentType: TCommentType);
+    procedure ApplySelections(const aUnitSelections: TUnitSelectionList);
+
   public
     constructor Create(projName: string);
     destructor Destroy; override;
@@ -198,7 +201,7 @@ type
     function AnyChange(projectDirOnly: boolean): boolean;
     function LocateUnit(const aUnitName: string): TUnit;
 
-    procedure LoadInstrumentalizationSelection(const aFilename : string;const aUnitSelections: tUnitSelectionList);
+    procedure LoadInstrumentalizationSelection(const aFilename : string);
     procedure SaveInstrumentalizationSelection(const aFilename : string);
   end;
 
@@ -1962,7 +1965,7 @@ begin
   end;
 end;
 
-procedure TProject.LoadInstrumentalizationSelection(const aFilename: string; const aUnitSelections: TUnitSelectionList);
+procedure TProject.LoadInstrumentalizationSelection(const aFilename: string);
 
   procedure RaiseInvalidTagError(const anExpectedName,aFoundName : string);
   begin
@@ -1974,6 +1977,7 @@ procedure TProject.LoadInstrumentalizationSelection(const aFilename: string; con
     raise EReadError.Create('Error: Expected attribute "'+anAttributeName+'" for tag "'+anTagName+'".');
   end;
 var
+  LUnitSelections: TUnitSelectionList;
   LXmlDocument : IXMLDocument;
   LUnitsNode,
   LUnitNode,
@@ -1983,6 +1987,7 @@ var
   LAttributeName : string;
   LUnitSelection : TUnitSelection;
 begin
+  LUnitSelections := TUnitSelectionList.Create(true);
   LXmlDocument := LoadXMLDocument(aFilename);
   for I := 0 to LXmlDocument.DocumentElement.ChildNodes.Count-1 do
   begin
@@ -1999,7 +2004,7 @@ begin
       if LAttributeName = '' then
         RaiseMissingAttributeError('Unit','Name');
       LUnitSelection := TUnitSelection.Create(LAttributeName);
-      aUnitSelections.Add(LUnitSelection);
+      LUnitSelections.Add(LUnitSelection);
       for m := 0 to LUnitNode.ChildNodes.Count-1 do
       begin
         LProcNode := LUnitNode.ChildNodes[m];
@@ -2013,7 +2018,86 @@ begin
       end;
     end;
   end;
+  ApplySelections(LUnitSelections);
+  LUnitSelections.Free;
 end;
+
+
+procedure TProject.ApplySelections(const aUnitSelections: TUnitSelectionList);
+
+  function GetSelectionOrNil(const aUnitName : string): TUnitSelection;
+  var
+    LSelection : TUnitSelection;
+    LUnitName : string;
+
+  begin
+    result := nil;
+    LUnitName := aUnitName.ToUpper();
+    for LSelection in aUnitSelections do
+    begin
+      if LSelection.UnitName.ToUpper = LUnitName then
+        exit(LSelection);
+    end;
+  end;
+
+  function GetProcSelectionOrNil(const aUnit:TUnitSelection ;const aProcName : string): string;
+  var
+    LCurrentProcName : string;
+    LProcName : string;
+  begin
+    result := '';
+    if assigned(aUnit) then
+    begin
+      LProcName := aProcName.ToUpper();
+      for LCurrentProcName in aUnit.SelectedProcedures do
+      begin
+        if LCurrentProcName.ToUpper = LProcName then
+          exit(LCurrentProcName);
+      end;
+    end;
+  end;
+
+
+var
+  LUnitSelection : TUnitSelection;
+  LProcSelection : string;
+  un: TUnit;
+  LNode: INode<TUnit>;
+  LProcNode: INode<TProc>;
+  LAllCnt : integer;
+  LNone : boolean;
+begin
+  // update unit list selections
+  with prUnits do
+  begin
+    LNode := FirstNode;
+    while assigned(LNode) do
+    begin
+      un := LNode.Data;
+      LUnitSelection := GetSelectionOrNil(un.unName);
+      LAllCnt := 0;
+      LNone := true;
+      LProcNode := un.unProcs.FirstNode;
+      while assigned(LProcNode) do
+      begin
+        LProcSelection := '';
+        if assigned(LUnitSelection)  then
+          LProcSelection := GetProcSelectionOrNil(LUnitSelection,LProcNode.Data.prName);
+        LProcNode.Data.prInstrumented := LProcSelection <> '';
+        if LProcNode.Data.prInstrumented then
+        begin
+          inc(LAllCnt);
+          LNone := false;
+        end;
+        LProcNode := LProcNode.NextNode;
+      end;
+      un.unAllInst := LAllCnt = un.unProcs.Count;
+      un.unNoneInst := LNone;
+      LNode := LNode.NextNode;
+    end;
+  end;
+end; { TProject.ApplySelections }
+
 
 procedure TProject.SaveInstrumentalizationSelection(const aFilename: string);
 var
@@ -2024,8 +2108,10 @@ var
   LUnitsNode,
   LUnitNode,
   LProcNode : IXMLNode;
-  LUnitName : string;
-  LProcName : string;
+  LUnitName,LUnitNameWithInstr : string;
+  LProcName,LProcNameWithInstr : string;
+  LAllUnits : boolean;
+  LNoUnits : boolean;
 begin
   LXmlDocument := NewXMLDocument;
   LXmlDocument.Encoding := 'utf-8';
@@ -2033,18 +2119,28 @@ begin
   RootNode := LXmlDocument.AddChild('ISelection');
   LInstrumentedUnits := TStringList.Create();
   LInstrumentedProcs := TStringList.Create();
-  GetUnitList(LInstrumentedUnits,false, false);
+  GetUnitList(LInstrumentedUnits,false, true);
   LUnitsNode := RootNode.AddChild('Units');
-
-  for LUnitName in LInstrumentedUnits do
+  for LUnitNameWithInstr in LInstrumentedUnits do
   begin
-    LUnitNode := LUnitsNode.AddChild('Unit');
-    LUnitNode.Attributes['Name'] := LUnitName;
-    GetProcList(LUnitName,LInstrumentedProcs,false);
-    for LProcName in LInstrumentedProcs do
+    LUnitName := Copy(LUnitNameWithInstr,1,Length(LUnitNameWithInstr)-2);
+    LAllUnits := (LUnitNameWithInstr[Length(LUnitNameWithInstr)-1] = '1');
+    LNoUnits := (LUnitNameWithInstr[Length(LUnitNameWithInstr)] = '1');
+    if not LNoUnits then
     begin
-      LProcNode := LUnitNode.AddChild('Procedure');
-      LProcNode.Attributes['Name'] := LProcName;
+      LUnitNode := LUnitsNode.AddChild('Unit');
+      LUnitNode.Attributes['Name'] := LUnitName;
+      GetProcList(LUnitName,LInstrumentedProcs,true);
+      for LProcNameWithInstr in LInstrumentedProcs do
+      begin
+        // evaluate instrumented prefix
+        if LProcNameWithInstr.EndsWith('1') then
+        begin
+          LProcName := Copy(LProcNameWithInstr,1,Length(LProcNameWithInstr)-1);
+          LProcNode := LUnitNode.AddChild('Procedure');
+          LProcNode.Attributes['Name'] := LProcName;
+        end;
+      end;
     end;
   end;
   LInstrumentedUnits.free;
