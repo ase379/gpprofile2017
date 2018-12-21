@@ -202,8 +202,9 @@ type
     Forum1: TMenuItem;
     actHelpVisitForum: TAction;
     actHelpJoinMailingList: TAction;
-    OpenDialog1: TOpenDialog;
     SynPasSyn: TSynPasSyn;
+    btnLoadInstrumentationSelection: TButton;
+    btnSaveInstrumentationSelection: TButton;
     procedure FormCreate(Sender: TObject);
     procedure MRUClick(Sender: TObject; LatestFile: String);
     procedure FormDestroy(Sender: TObject);
@@ -297,6 +298,8 @@ type
     procedure splitCallersMoved(Sender: TObject);
     procedure clbUnitsKeyPress(Sender: TObject; var Key: Char);
     procedure clbClassesKeyPress(Sender: TObject; var Key: Char);
+    procedure btnLoadInstrumentationSelectionClick(Sender: TObject);
+    procedure btnSaveInstrumentationSelectionClick(Sender: TObject);
   private
     openProject               : TProject;
     openProfile               : TResults;
@@ -636,6 +639,8 @@ procedure TfrmMain.DisablePC;
 begin
   PageControl1.Font.Color            := clBtnShadow;
   chkShowAll.Enabled                 := false;
+  btnLoadInstrumentationSelection.Enabled := false;
+  btnSaveInstrumentationSelection.Enabled := false;
   lblUnits.Enabled                   := false;
   lblClasses.Enabled                 := false;
   lblProcs.Enabled                   := false;
@@ -653,6 +658,8 @@ procedure TfrmMain.EnablePC;
 begin
   PageControl1.Font.Color            := clWindowText;
   chkShowAll.Enabled                 := true;
+  btnLoadInstrumentationSelection.Enabled := true;
+  btnSaveInstrumentationSelection.Enabled := true;
   lblUnits.Enabled                   := true;
   lblClasses.Enabled                 := true;
   lblProcs.Enabled                   := true;
@@ -2126,6 +2133,45 @@ end;
 procedure TfrmMain.btnCancelLoadClick(Sender: TObject);
 begin
   cancelLoading := true;
+end;
+
+procedure TfrmMain.btnLoadInstrumentationSelectionClick(Sender: TObject);
+var
+  LInstrumentedUnits : TUnitSelectionList;
+begin
+  if openProject = nil then
+    Exit;
+  OpenDialog.DefaultExt := 'gis';
+  OpenDialog.FileName := ChangeFileExt(openProject.Name,'.gis');
+  OpenDialog.Filter := 'GPProf instrumentation selection (*.gis)|*.gis|Any file (*.*)|*.*';
+  if OpenDialog.Execute then
+  begin
+    LInstrumentedUnits := TUnitSelectionList.Create();
+
+    openProject.LoadInstrumentalizationSelection(OpenDialog.FileName, LInstrumentedUnits);
+    LInstrumentedUnits.free;
+
+  end;
+end;
+
+procedure TfrmMain.btnSaveInstrumentationSelectionClick(Sender: TObject);
+begin
+  if openProject = nil then
+    Exit;
+  try
+    SaveDialog1.FileName := ChangeFileExt(openProject.Name,'.gis');
+    SaveDialog1.Title := 'Save instrumentation selection';
+    if SaveDialog1.Execute then begin
+      if ExtractFileExt(SaveDialog1.FileName) = '' then
+        SaveDialog1.FileName := SaveDialog1.FileName + '.gis';
+    openProject.SaveInstrumentalizationSelection(SaveDialog1.FileName);
+  end;
+    except on e: Exception do
+    begin
+      ShowError(e.Message);
+    end;
+  end;
+
 end;
 
 procedure TfrmMain.lvProcsCompare(Sender: TObject; Item1, Item2: TListItem;

@@ -6,6 +6,7 @@ interface
 uses
   System.Classes,
   System.SysUtils,
+  System.Generics.Collections,
   gppIDT,
   Dialogs,
   gppTree,
@@ -137,6 +138,19 @@ type
     procedure AddExpanded(apiEnterBegin, apiEnterEnd, apiExitBegin,apiExitEnd: Integer);
   end;
 
+
+  TUnitSelection = class
+  private
+    fUnitName : string;
+    FSelectedProcedures : TStringList;
+  public
+    constructor Create(const aUnitName : string);
+    destructor Destroy;override;
+
+    property SelectedProcedures : TStringList read FSelectedProcedures write FSelectedProcedures;
+  end;
+  TUnitSelectionList = TObjectList<TUnitSelection>;
+
   TProject = class
   private
     prName: string;
@@ -183,6 +197,9 @@ type
     function GetFirstLine(unitName, procName: string): Integer;
     function AnyChange(projectDirOnly: boolean): boolean;
     function LocateUnit(const aUnitName: string): TUnit;
+
+    procedure LoadInstrumentalizationSelection(const aFilename : string;const aUnitSelections: tUnitSelectionList);
+    procedure SaveInstrumentalizationSelection(const aFilename : string);
   end;
 
 implementation
@@ -199,7 +216,9 @@ uses
   CastaliaPasLex,
   CastaliaPasLexTypes,
   gppCommon,
-  gppCurrentPrefs;
+  gppCurrentPrefs,
+  Xml.XMLIntf,
+  Xml.XMLDoc;
 
 { ========================= TDefineList ========================= }
 
@@ -1941,7 +1960,98 @@ begin
   finally
     SetCurrentDir(vOldCurDir);
   end;
-end; { TProject.Rescan }
+end;
+
+procedure TProject.LoadInstrumentalizationSelection(const aFilename: string; const aUnitSelections: TUnitSelectionList);
+
+  procedure RaiseInvalidTagError(const anExpectedName,aFoundName : string);
+  begin
+    raise EReadError.Create('Error: Expected "'+anExpectedName+'", but found "'+aFoundName+'".');
+  end;
+
+  procedure RaiseMissingAttributeError(const anTagName, anAttributeName : string);
+  begin
+    raise EReadError.Create('Error: Expected attribute "'+anAttributeName+'" for tag "'+anTagName+'".');
+  end;
+var
+  LXmlDocument : IXMLDocument;
+  LUnitsNode,
+  LUnitNode,
+  LProcNode: IXMLNode;
+  i,k,m : Integer;
+  LTagName : string;
+  LAttributeName : string;
+  LUnitSelection : TUnitSelection;
+begin
+  LXmlDocument := LoadXMLDocument(aFilename);
+  for I := 0 to LXmlDocument.DocumentElement.ChildNodes.Count-1 do
+  begin
+    LUnitsNode := LXmlDocument.DocumentElement.ChildNodes[I];
+    if LUnitsNode.LocalName <> 'Units' then
+      RaiseInvalidTagError('Units',LUnitsNode.LocalName);
+    for k := 0 to LUnitsNode.ChildNodes.Count-1 do
+    begin
+      LUnitNode := LUnitsNode.ChildNodes[k];
+      LTagName := LUnitNode.LocalName;
+      if LTagName <> 'Unit' then
+        RaiseInvalidTagError('Unit',LTagName);
+      LAttributeName := LUnitNode.Attributes['Name'];
+      if LAttributeName = '' then
+        RaiseMissingAttributeError('Unit','Name');
+      LUnitSelection := TUnitSelection.Create(LAttributeName);
+      aUnitSelections.Add(LUnitSelection);
+      for m := 0 to LUnitNode.ChildNodes.Count-1 do
+      begin
+        LProcNode := LUnitNode.ChildNodes[m];
+        LTagName := LProcNode.LocalName;
+        if LTagName <> 'Procedure' then
+          RaiseInvalidTagError('Unit',LTagName);
+        LAttributeName := LProcNode.Attributes['Name'];
+        if LAttributeName = '' then
+          RaiseMissingAttributeError('Procedure','Name');
+        LUnitSelection.SelectedProcedures.Add(LAttributeName);
+      end;
+    end;
+  end;
+end;
+
+procedure TProject.SaveInstrumentalizationSelection(const aFilename: string);
+var
+  LInstrumentedUnits : TStringList;
+  LInstrumentedProcs : TStringList;
+  LXmlDocument : IXMLDocument;
+  RootNode,
+  LUnitsNode,
+  LUnitNode,
+  LProcNode : IXMLNode;
+  LUnitName : string;
+  LProcName : string;
+begin
+  LXmlDocument := NewXMLDocument;
+  LXmlDocument.Encoding := 'utf-8';
+  LXmlDocument.Options := [doNodeAutoIndent]; // looks better in Editor ;)
+  RootNode := LXmlDocument.AddChild('ISelection');
+  LInstrumentedUnits := TStringList.Create();
+  LInstrumentedProcs := TStringList.Create();
+  GetUnitList(LInstrumentedUnits,false, false);
+  LUnitsNode := RootNode.AddChild('Units');
+
+  for LUnitName in LInstrumentedUnits do
+  begin
+    LUnitNode := LUnitsNode.AddChild('Unit');
+    LUnitNode.Attributes['Name'] := LUnitName;
+    GetProcList(LUnitName,LInstrumentedProcs,false);
+    for LProcName in LInstrumentedProcs do
+    begin
+      LProcNode := LUnitNode.AddChild('Procedure');
+      LProcNode.Attributes['Name'] := LProcName;
+    end;
+  end;
+  LInstrumentedUnits.free;
+  LXmlDocument.SaveToFile(aFilename);
+end;
+
+{ TProject.Rescan }
 
 function TProject.AnyChange(projectDirOnly: boolean): boolean;
 var
@@ -1964,6 +2074,8 @@ begin
   end;
   Result := False;
 end;
+
+
 
 function TProject.LocateUnit(const aUnitName: string): TUnit;
 begin
@@ -2025,6 +2137,21 @@ end;
 constructor TProcSetThreadNameList.Create;
 begin
   inherited Create(true);
+end;
+
+{ TUnitSelection }
+
+constructor TUnitSelection.Create(const aUnitName : string);
+begin
+  inherited Create();
+  FUnitName := aUnitName;
+  FSelectedProcedures := TStringList.Create();;
+end;
+
+destructor TUnitSelection.Destroy;
+begin
+  FSelectedProcedures.Free;
+  inherited;
 end;
 
 end.

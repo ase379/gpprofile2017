@@ -315,7 +315,7 @@ object frmMain: TfrmMain
         Top = 0
         Width = 612
         Height = 340
-        ActivePage = tabAnalysis
+        ActivePage = tabInstrumentation
         Align = alClient
         HotTrack = True
         Images = imglButtons
@@ -324,10 +324,6 @@ object frmMain: TfrmMain
         object tabInstrumentation: TTabSheet
           Caption = 'Instrumentation'
           ImageIndex = 16
-          ExplicitLeft = 0
-          ExplicitTop = 0
-          ExplicitWidth = 0
-          ExplicitHeight = 0
           object Splitter1: TSplitter
             Left = 129
             Top = 25
@@ -347,13 +343,43 @@ object frmMain: TfrmMain
             BevelOuter = bvNone
             TabOrder = 0
             object chkShowAll: TCheckBox
-              Left = 6
-              Top = 4
+              AlignWithMargins = True
+              Left = 3
+              Top = 3
               Width = 99
-              Height = 17
+              Height = 19
+              Align = alLeft
               Caption = '&Show all folders'
               TabOrder = 0
               OnClick = cbProfileChange
+              ExplicitLeft = 6
+              ExplicitTop = 4
+              ExplicitHeight = 17
+            end
+            object btnLoadInstrumentationSelection: TButton
+              AlignWithMargins = True
+              Left = 108
+              Top = 3
+              Width = 99
+              Height = 19
+              Align = alLeft
+              Caption = 'Load Selection...'
+              TabOrder = 1
+              OnClick = btnLoadInstrumentationSelectionClick
+              ExplicitTop = 4
+            end
+            object btnSaveInstrumentationSelection: TButton
+              AlignWithMargins = True
+              Left = 213
+              Top = 3
+              Width = 99
+              Height = 19
+              Align = alLeft
+              Caption = 'Save Selection...'
+              TabOrder = 2
+              OnClick = btnSaveInstrumentationSelectionClick
+              ExplicitLeft = 274
+              ExplicitTop = 0
             end
           end
           object pnlUnits: TPanel
@@ -471,10 +497,6 @@ object frmMain: TfrmMain
             object tabProcedures: TTabSheet
               Caption = 'Procedures'
               ImageIndex = -1
-              ExplicitLeft = 0
-              ExplicitTop = 0
-              ExplicitWidth = 0
-              ExplicitHeight = 0
               object splitCallees: TSplitter
                 Left = 0
                 Top = 186
@@ -845,10 +867,6 @@ object frmMain: TfrmMain
             object tabClasses: TTabSheet
               Caption = 'Classes'
               ImageIndex = -1
-              ExplicitLeft = 0
-              ExplicitTop = 0
-              ExplicitWidth = 0
-              ExplicitHeight = 0
               DesignSize = (
                 596
                 283)
@@ -915,10 +933,6 @@ object frmMain: TfrmMain
             object tabUnits: TTabSheet
               Caption = 'Units'
               ImageIndex = -1
-              ExplicitLeft = 0
-              ExplicitTop = 0
-              ExplicitWidth = 0
-              ExplicitHeight = 0
               DesignSize = (
                 596
                 283)
@@ -2876,11 +2890,5 @@ object frmMain: TfrmMain
   object popBrowseNext: TPopupMenu
     Left = 197
     Top = 314
-  end
-  object OpenDialog1: TOpenDialog
-    Filter = '????? ??????? (*.prf)|*.prf'
-    Options = [ofHideReadOnly, ofNoChangeDir, ofFileMustExist, ofEnableSizing]
-    Left = 168
-    Top = 208
   end
 end
