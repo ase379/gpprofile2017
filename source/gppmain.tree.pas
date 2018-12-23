@@ -271,7 +271,7 @@ begin
   end
   else if LData.ProfilingType = pit_proc then
   begin
-    totalTime := fProfileResults.resProcedures[LData.ProcId].peProcTime[fThreadIndex];
+    totalTime := fProfileResults.resProcedures[0].peProcTime[fThreadIndex];
     case Column of
       0:
       begin
