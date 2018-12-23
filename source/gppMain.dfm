@@ -347,13 +347,43 @@ object frmMain: TfrmMain
             BevelOuter = bvNone
             TabOrder = 0
             object chkShowAll: TCheckBox
-              Left = 6
-              Top = 4
+              AlignWithMargins = True
+              Left = 3
+              Top = 3
               Width = 99
-              Height = 17
+              Height = 19
+              Align = alLeft
               Caption = '&Show all folders'
               TabOrder = 0
               OnClick = cbProfileChange
+              ExplicitLeft = 6
+              ExplicitTop = 4
+              ExplicitHeight = 17
+            end
+            object btnLoadInstrumentationSelection: TButton
+              AlignWithMargins = True
+              Left = 108
+              Top = 3
+              Width = 99
+              Height = 19
+              Align = alLeft
+              Caption = 'Load Selection...'
+              TabOrder = 1
+              OnClick = btnLoadInstrumentationSelectionClick
+              ExplicitTop = 4
+            end
+            object btnSaveInstrumentationSelection: TButton
+              AlignWithMargins = True
+              Left = 213
+              Top = 3
+              Width = 99
+              Height = 19
+              Align = alLeft
+              Caption = 'Save Selection...'
+              TabOrder = 2
+              OnClick = btnSaveInstrumentationSelectionClick
+              ExplicitLeft = 274
+              ExplicitTop = 0
             end
           end
           object pnlUnits: TPanel
@@ -2842,11 +2872,5 @@ object frmMain: TfrmMain
   object popBrowseNext: TPopupMenu
     Left = 197
     Top = 314
-  end
-  object OpenDialog1: TOpenDialog
-    Filter = '????? ??????? (*.prf)|*.prf'
-    Options = [ofHideReadOnly, ofNoChangeDir, ofFileMustExist, ofEnableSizing]
-    Left = 168
-    Top = 208
   end
 end

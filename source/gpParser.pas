@@ -6,14 +6,14 @@ interface
 uses
   System.Classes,
   System.SysUtils,
+  System.Generics.Collections,
   gppIDT,
-  SimpleReportUnit,
   Dialogs,
   gppTree,
   gpFileEdit;
 
 type
-  EUnitNotFoundException = Exception;
+  EUnitNotFoundException = class(Exception);
   TNotifyProc = procedure(const aUnitName: String) of object;
   TNotifyInstProc = procedure(const aFullName, aUnitName: String;aParse: boolean) of object;
 
@@ -138,6 +138,20 @@ type
     procedure AddExpanded(apiEnterBegin, apiEnterEnd, apiExitBegin,apiExitEnd: Integer);
   end;
 
+
+  TUnitSelection = class
+  private
+    fUnitName : string;
+    FSelectedProcedures : TStringList;
+  public
+    constructor Create(const aUnitName : string);
+    destructor Destroy;override;
+
+    property UnitName : string read fUnitName;
+    property SelectedProcedures : TStringList read FSelectedProcedures write FSelectedProcedures;
+  end;
+  TUnitSelectionList = TObjectList<TUnitSelection>;
+
   TProject = class
   private
     prName: string;
@@ -160,12 +174,14 @@ type
     prNameThreadForDebugging: string;
     prGpprofDot: string;
     procedure PrepareComments(const aCommentType: TCommentType);
+    procedure ApplySelections(const aUnitSelections: TUnitSelectionList);
+
   public
     constructor Create(projName: string);
     destructor Destroy; override;
     procedure Parse(aExclUnits: String;const aSearchPath, aConditionals: String; aNotify: TNotifyProc;
-      aCommentType: TCommentType; aParseAsm: boolean);
-    procedure Rescan(aExclUnits: String;const aSearchPath, aConditionals: string; aNotify: TNotifyProc;
+      aCommentType: TCommentType; aParseAsm: boolean;const anErrorList : TStrings);
+    procedure Rescan(aExclUnits: String;const aSearchPath, aConditionals: string;
       aCommentType: TCommentType; aIgnoreFileDate: boolean; aParseAsm: boolean);
     property Name: string read prName;
     procedure GetUnitList(var aSL: TStringList;const aProjectDirOnly, aGetInstrumented: boolean);
@@ -184,6 +200,9 @@ type
     function GetFirstLine(unitName, procName: string): Integer;
     function AnyChange(projectDirOnly: boolean): boolean;
     function LocateUnit(const aUnitName: string): TUnit;
+
+    procedure LoadInstrumentalizationSelection(const aFilename : string);
+    procedure SaveInstrumentalizationSelection(const aFilename : string);
   end;
 
 implementation
@@ -200,7 +219,9 @@ uses
   CastaliaPasLex,
   CastaliaPasLexTypes,
   gppCommon,
-  gppCurrentPrefs;
+  gppCurrentPrefs,
+  Xml.XMLIntf,
+  Xml.XMLDoc;
 
 { ========================= TDefineList ========================= }
 
@@ -1491,13 +1512,20 @@ end; { TProject.Destroy }
 
 procedure TProject.Parse(aExclUnits: String;
   const aSearchPath, aConditionals: string; aNotify: TNotifyProc;
-  aCommentType: TCommentType; aParseAsm: boolean);
+  aCommentType: TCommentType; aParseAsm: boolean; const anErrorList : TStrings);
+
+  procedure DoNotify(const aUnitName: string);
+  begin
+    if assigned(aNotify) then
+      aNotify(aUnitName)
+  end;
+
+
 var
   un: TUnit;
   u1: TUnit;
   LNode: INode<TUnit>;
   vOldCurDir: string;
-  vErrList: TStringList;
 begin
   PrepareComments(aCommentType);
   if Last(aExclUnits, 2) <> #13#10 then
@@ -1508,44 +1536,35 @@ begin
   prUnit := prUnits.LocateCreate(prName, '', False);
   prUnit.unInProjectDir := true;
 
-  vErrList := TStringList.Create;
+  vOldCurDir := GetCurrentDir;
+  if not SetCurrentDir(ExtractFilePath(prUnit.unFullName)) then
+    Assert(False);
   try
-    vOldCurDir := GetCurrentDir;
-    if not SetCurrentDir(ExtractFilePath(prUnit.unFullName)) then
-      Assert(False);
-    try
-      un := prUnit;
-      repeat
-        if assigned(aNotify) then
-          aNotify(un.unName);
-        try
-          un.Parse(self, aExclUnits, aSearchPath, ExtractFilePath(prName),
-            aConditionals, False, aParseAsm);
-        except
-          on E: Exception do
-            vErrList.Add(E.Message);
-        end;
-        LNode := prUnits.FirstNode;
-        un := nil;
-        while assigned(LNode) do
+    un := prUnit;
+    repeat
+      DoNotify(un.unName);
+      try
+        un.Parse(self, aExclUnits, aSearchPath, ExtractFilePath(prName),
+          aConditionals, False, aParseAsm);
+      except
+        on E: Exception do
+          anErrorList.Add(E.Message);
+      end;
+      LNode := prUnits.FirstNode;
+      un := nil;
+      while assigned(LNode) do
+      begin
+        u1 := LNode.Data;
+        if not(u1.unParsed or u1.unExcluded) then
         begin
-          u1 := LNode.Data;
-          if not(u1.unParsed or u1.unExcluded) then
-          begin
-            un := u1;
-            Break;
-          end;
-          LNode := LNode.NextNode;
+          un := u1;
+          Break;
         end;
-      until (un = nil);
-    finally
-      SetCurrentDir(vOldCurDir);
-    end;
+        LNode := LNode.NextNode;
+      end;
+    until (un = nil);
   finally
-    if vErrList.Count > 0 then
-      TfmSimpleReport.Execute(ExtractFileName(prUnit.unFullName) +
-        ' - error list', vErrList);
-    vErrList.Free;
+    SetCurrentDir(vOldCurDir);
   end;
 end; { TProject.Parse }
 
@@ -1699,6 +1718,13 @@ procedure TProject.Instrument(aProjectDirOnly: boolean;
   aNotify: TNotifyInstProc; aCommentType: TCommentType;
   aKeepDate, aBackupFile: boolean; aIncFileName, aConditionals,
   aSearchPath: string; aParseAsm: boolean);
+
+  procedure DoNotify(const aFullname, aUnitName: string; const aParse : Boolean);
+  begin
+    if assigned(aNotify) then
+      aNotify(aFullname,aUnitName,aParse);
+  end;
+
 var
   vOldCurDir: string;
   un: TUnit;
@@ -1727,8 +1753,7 @@ begin
             un := LNode.Data;
             if (not un.unExcluded) and (un.unProcs.Count > 0) then
             begin
-              if assigned(aNotify) then
-                aNotify(un.unFullName, un.unName, False);
+              DoNotify(un.unFullName, un.unName, False);
 
               unAny := un.AnyInstrumented;
               if unAny then
@@ -1763,8 +1788,7 @@ begin
     end;
     for i := 0 to Rescan.Count - 1 do
     begin
-      if assigned(aNotify) then
-        aNotify(TUnit(Rescan[i]).unFullName, TUnit(Rescan[i]).unName, true);
+      DoNotify(TUnit(Rescan[i]).unFullName, TUnit(Rescan[i]).unName, true);
       TUnit(Rescan[i]).Parse(self, '', aSearchPath, ExtractFilePath(prName),
         aConditionals, true, aParseAsm);
     end;
@@ -1887,7 +1911,7 @@ begin
 end; { TProject.AnyInstrumented }
 
 procedure TProject.Rescan(aExclUnits: String;
-  const aSearchPath, aConditionals: string; aNotify: TNotifyProc;
+  const aSearchPath, aConditionals: string;
   aCommentType: TCommentType; aIgnoreFileDate: boolean; aParseAsm: boolean);
 var
   un: TUnit;
@@ -1917,7 +1941,191 @@ begin
   finally
     SetCurrentDir(vOldCurDir);
   end;
-end; { TProject.Rescan }
+end;
+
+procedure TProject.LoadInstrumentalizationSelection(const aFilename: string);
+
+  procedure RaiseInvalidTagError(const anExpectedName,aFoundName : string);
+  begin
+    raise EReadError.Create('Error: Expected "'+anExpectedName+'", but found "'+aFoundName+'".');
+  end;
+
+  procedure RaiseMissingAttributeError(const anTagName, anAttributeName : string);
+  begin
+    raise EReadError.Create('Error: Expected attribute "'+anAttributeName+'" for tag "'+anTagName+'".');
+  end;
+var
+  LUnitSelections: TUnitSelectionList;
+  LXmlDocument : IXMLDocument;
+  LUnitsNode,
+  LUnitNode,
+  LProcNode: IXMLNode;
+  i,k,m : Integer;
+  LTagName : string;
+  LAttributeName : string;
+  LUnitSelection : TUnitSelection;
+begin
+  LUnitSelections := TUnitSelectionList.Create(true);
+  LXmlDocument := LoadXMLDocument(aFilename);
+  for I := 0 to LXmlDocument.DocumentElement.ChildNodes.Count-1 do
+  begin
+    LUnitsNode := LXmlDocument.DocumentElement.ChildNodes[I];
+    if LUnitsNode.LocalName <> 'Units' then
+      RaiseInvalidTagError('Units',LUnitsNode.LocalName);
+    for k := 0 to LUnitsNode.ChildNodes.Count-1 do
+    begin
+      LUnitNode := LUnitsNode.ChildNodes[k];
+      LTagName := LUnitNode.LocalName;
+      if LTagName <> 'Unit' then
+        RaiseInvalidTagError('Unit',LTagName);
+      LAttributeName := LUnitNode.Attributes['Name'];
+      if LAttributeName = '' then
+        RaiseMissingAttributeError('Unit','Name');
+      LUnitSelection := TUnitSelection.Create(LAttributeName);
+      LUnitSelections.Add(LUnitSelection);
+      for m := 0 to LUnitNode.ChildNodes.Count-1 do
+      begin
+        LProcNode := LUnitNode.ChildNodes[m];
+        LTagName := LProcNode.LocalName;
+        if LTagName <> 'Procedure' then
+          RaiseInvalidTagError('Unit',LTagName);
+        LAttributeName := LProcNode.Attributes['Name'];
+        if LAttributeName = '' then
+          RaiseMissingAttributeError('Procedure','Name');
+        LUnitSelection.SelectedProcedures.Add(LAttributeName);
+      end;
+    end;
+  end;
+  ApplySelections(LUnitSelections);
+  LUnitSelections.Free;
+end;
+
+
+procedure TProject.ApplySelections(const aUnitSelections: TUnitSelectionList);
+
+  function GetSelectionOrNil(const aUnitName : string): TUnitSelection;
+  var
+    LSelection : TUnitSelection;
+    LUnitName : string;
+
+  begin
+    result := nil;
+    LUnitName := aUnitName.ToUpper();
+    for LSelection in aUnitSelections do
+    begin
+      if LSelection.UnitName.ToUpper = LUnitName then
+        exit(LSelection);
+    end;
+  end;
+
+  function GetProcSelectionOrNil(const aUnit:TUnitSelection ;const aProcName : string): string;
+  var
+    LCurrentProcName : string;
+    LProcName : string;
+  begin
+    result := '';
+    if assigned(aUnit) then
+    begin
+      LProcName := aProcName.ToUpper();
+      for LCurrentProcName in aUnit.SelectedProcedures do
+      begin
+        if LCurrentProcName.ToUpper = LProcName then
+          exit(LCurrentProcName);
+      end;
+    end;
+  end;
+
+
+var
+  LUnitSelection : TUnitSelection;
+  LProcSelection : string;
+  un: TUnit;
+  LNode: INode<TUnit>;
+  LProcNode: INode<TProc>;
+  LAllCnt : integer;
+  LNone : boolean;
+begin
+  // update unit list selections
+  with prUnits do
+  begin
+    LNode := FirstNode;
+    while assigned(LNode) do
+    begin
+      un := LNode.Data;
+      LUnitSelection := GetSelectionOrNil(un.unName);
+      LAllCnt := 0;
+      LNone := true;
+      LProcNode := un.unProcs.FirstNode;
+      while assigned(LProcNode) do
+      begin
+        LProcSelection := '';
+        if assigned(LUnitSelection)  then
+          LProcSelection := GetProcSelectionOrNil(LUnitSelection,LProcNode.Data.prName);
+        LProcNode.Data.prInstrumented := LProcSelection <> '';
+        if LProcNode.Data.prInstrumented then
+        begin
+          inc(LAllCnt);
+          LNone := false;
+        end;
+        LProcNode := LProcNode.NextNode;
+      end;
+      un.unAllInst := LAllCnt = un.unProcs.Count;
+      un.unNoneInst := LNone;
+      LNode := LNode.NextNode;
+    end;
+  end;
+end; { TProject.ApplySelections }
+
+
+procedure TProject.SaveInstrumentalizationSelection(const aFilename: string);
+var
+  LInstrumentedUnits : TStringList;
+  LInstrumentedProcs : TStringList;
+  LXmlDocument : IXMLDocument;
+  RootNode,
+  LUnitsNode,
+  LUnitNode,
+  LProcNode : IXMLNode;
+  LUnitName,LUnitNameWithInstr : string;
+  LProcName,LProcNameWithInstr : string;
+  LAllUnits : boolean;
+  LNoUnits : boolean;
+begin
+  LXmlDocument := NewXMLDocument;
+  LXmlDocument.Encoding := 'utf-8';
+  LXmlDocument.Options := [doNodeAutoIndent]; // looks better in Editor ;)
+  RootNode := LXmlDocument.AddChild('ISelection');
+  LInstrumentedUnits := TStringList.Create();
+  LInstrumentedProcs := TStringList.Create();
+  GetUnitList(LInstrumentedUnits,false, true);
+  LUnitsNode := RootNode.AddChild('Units');
+  for LUnitNameWithInstr in LInstrumentedUnits do
+  begin
+    LUnitName := Copy(LUnitNameWithInstr,1,Length(LUnitNameWithInstr)-2);
+    LAllUnits := (LUnitNameWithInstr[Length(LUnitNameWithInstr)-1] = '1');
+    LNoUnits := (LUnitNameWithInstr[Length(LUnitNameWithInstr)] = '1');
+    if not LNoUnits then
+    begin
+      LUnitNode := LUnitsNode.AddChild('Unit');
+      LUnitNode.Attributes['Name'] := LUnitName;
+      GetProcList(LUnitName,LInstrumentedProcs,true);
+      for LProcNameWithInstr in LInstrumentedProcs do
+      begin
+        // evaluate instrumented prefix
+        if LProcNameWithInstr.EndsWith('1') then
+        begin
+          LProcName := Copy(LProcNameWithInstr,1,Length(LProcNameWithInstr)-1);
+          LProcNode := LUnitNode.AddChild('Procedure');
+          LProcNode.Attributes['Name'] := LProcName;
+        end;
+      end;
+    end;
+  end;
+  LInstrumentedUnits.free;
+  LXmlDocument.SaveToFile(aFilename);
+end;
+
+{ TProject.Rescan }
 
 function TProject.AnyChange(projectDirOnly: boolean): boolean;
 var
@@ -1940,6 +2148,8 @@ begin
   end;
   Result := False;
 end;
+
+
 
 function TProject.LocateUnit(const aUnitName: string): TUnit;
 begin
@@ -2001,6 +2211,21 @@ end;
 constructor TProcSetThreadNameList.Create;
 begin
   inherited Create(true);
+end;
+
+{ TUnitSelection }
+
+constructor TUnitSelection.Create(const aUnitName : string);
+begin
+  inherited Create();
+  FUnitName := aUnitName;
+  FSelectedProcedures := TStringList.Create();;
+end;
+
+destructor TUnitSelection.Destroy;
+begin
+  FSelectedProcedures.Free;
+  inherited;
 end;
 
 end.

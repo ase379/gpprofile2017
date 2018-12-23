@@ -115,7 +115,7 @@ procedure Register;
 
 implementation
     
-uses Consts;
+uses Consts, System.Types, System.UITypes;
 
 type
   TGpCheckListBoxDataWrapper = class

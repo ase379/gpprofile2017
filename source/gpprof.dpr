@@ -53,79 +53,13 @@ uses
 
 {$R *.RES}
 
-  function Execute(const prog, params: string): boolean;
-  var
-    dir        : string;
-    startupInfo: TStartupInfo;
-    processInfo: TProcessInformation;
-  begin
-    with startupInfo do begin
-      cb          := SizeOf(startupInfo);
-      lpReserved  := nil;
-      lpDesktop   := nil;
-      lpTitle     := nil;
-      dwFlags     := STARTF_USESHOWWINDOW+STARTF_FORCEOFFFEEDBACK;
-      wShowWindow := SW_HIDE;
-      cbReserved2 := 0;
-      lpReserved2 := nil;
-    end;
-    dir := ExtractFilePath(prog);
-    Result := CreateProcess(nil,PChar('"'+prog+'" '+params),nil,nil,false,
-      CREATE_DEFAULT_ERROR_MODE+CREATE_NEW_PROCESS_GROUP+NORMAL_PRIORITY_CLASS,
-      nil,PChar(dir),startupInfo, processInfo);
-    if Result then begin
-      CloseHandle(processInfo.hProcess);
-      CloseHandle(processInfo.hThread);
-    end
-    else RaiseLastOSError;
-  end; { Execute }
-
-  function ProcessParameters: boolean;
-  var
-    i     : integer;
-    oldGpp: string;
-    cmd   : string;
-  begin
-    Result := false;
-    for i := 1 to ParamCount do begin
-      cmd := UpperCase(ParamStr(i));
-      if cmd = '/REGISTER' then begin
-        // upgrade from pre-1.0.1 version
-        oldGpp := MakeSmartBackslash(ExtractFilePath(ParamStr(0)))+'GPPROF~1.EXE';
-        if FileExists(oldGpp) then begin
-          try
-            WinExecAndWait32(oldGpp+' /unregister',SW_HIDE);
-            KillFile(oldGpp);
-            KillFile(ChangeFileExt(oldGpp,'.hlp'));
-            KillFile(ChangeFileExt(oldGpp,'.cnt'));
-            KillFile(ChangeFileExt(oldGpp,'.fts'));
-            KillFile(ChangeFileExt(oldGpp,'.gid'));
-          except end;
-        end;
-        RegisterGpProfile;
-        Result := true;
-      end
-      else if cmd = '/UNREGISTER' then begin
-        UnregisterGpProfile(ParamStr(0));
-        Result := true;
-      end
-      else if cmd = '/FIRSTTIME_BG' then begin
-        Execute(ParamStr(0),'/FIRSTTIME'); // bypass some stupid installer limitations
-        Result := true;
-      end;
-    end;
-  end; { ProcessParameters }
-
 begin
-  if not ProcessParameters then begin
-    Application.Initialize;
-    Application.Title := 'GpProfile';
-    Application.CreateForm(TfrmMain, frmMain);
+  Application.Initialize;
+  Application.Title := 'GpProfile';
+  Application.CreateForm(TfrmMain, frmMain);
   Application.CreateForm(TfrmPreferences, frmPreferences);
-  Application.CreateForm(TfrmLoadProgress, frmLoadProgress);
   Application.CreateForm(TfrmAbout, frmAbout);
   Application.CreateForm(TfrmExport, frmExport);
   Application.CreateForm(TfrmPreferenceMacros, frmPreferenceMacros);
   Application.Run;
-  end;
 end.

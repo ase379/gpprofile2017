@@ -25,12 +25,6 @@ var
   selectedDelphi            : string;
   // the output dir as defined in the project
   ProjectOutputDir          : string;
-  // the selected platform in the project
-  XE2Platform               : string;
-  XE2PlatformOverride       : string;
-  // the selected config in the project
-  XE2Config                 : string;
-  XE2ConfigOverride         : string;
 
 procedure SetProjectPref(name: string; value: variant); overload;
 function  GetProjectPref(name: string; defval: variant): variant; overload;
