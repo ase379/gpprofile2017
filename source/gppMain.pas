@@ -254,7 +254,6 @@ type
     procedure actDelUndelProfileExecute(Sender: TObject);
     procedure actRenameMoveProfileExecute(Sender: TObject);
     procedure actRescanChangedExecute(Sender: TObject);
-    procedure AppActivate(Sender: TObject);
     procedure AppShortcut(var Msg: TWMKey; var Handled: boolean);
     procedure actChangeLayoutExecute(Sender: TObject);
     procedure actLayoutManagerExecute(Sender: TObject);
@@ -1401,7 +1400,6 @@ begin
 {$ENDIF}
   inLVResize := false;
   selectedProc := nil;
-  Application.OnActivate := AppActivate;
   Application.OnShortCut := AppShortcut;
   Application.HelpFile := ChangeFileExt(ParamStr(0),'.Chm');
   if not FileExists(Application.HelpFile) then Application.HelpFile := '';
@@ -3132,12 +3130,6 @@ procedure TfrmMain.actRescanChangedExecute(Sender: TObject);
 begin
   RescanProject;
 end;
-
-procedure TfrmMain.AppActivate(Sender: TObject);
-begin
-  // Maybe, Rescan in OnActivate is excessive (especially for large projects)
-  actRescanChanged.Execute;
-end; { TfrmMain.AppActivate }
 
 procedure TfrmMain.AppShortcut(var Msg: TWMKey; var Handled: boolean);
 begin
