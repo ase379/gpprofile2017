@@ -238,7 +238,7 @@ end;
 
 class function TSimpleStatsListTools.FormatPerc(const per: real): string;
 begin
-  Result := Format('%2.1f %%',[per*100]);
+  Result := Format('%2.2f %%',[per*100]);
 end;
 
 /// Events
@@ -366,9 +366,6 @@ begin
   Result := aColRenderType <> TColumnInfoType.undefined;
 end;
 
-
-
-
 procedure TSimpleStatsListTools.OnGetText(Sender: TBaseVirtualTree; Node: PVirtualNode;
   Column: TColumnIndex; TextType: TVSTTextType; var CellText: string);
 var
@@ -387,9 +384,9 @@ begin
     totalTime := fProfileResults.resUnits[0].ueTotalTime[fThreadIndex];
     case Column of
       COL_UNIT_NAME: CellText := fProfileResults.resUnits[LData.UnitId].ueName;
-      (*COL_UNIT_TOTAL_PERC: CellText := FormatPerc(fProfileResults.resUnits[LData.UnitId].ueTotalTime[fThreadIndex]/totalTime);
+      COL_UNIT_TOTAL_PERC: CellText := FormatPerc(fProfileResults.resUnits[LData.UnitId].ueTotalTime[fThreadIndex]/totalTime);
       COL_UNIT_TOTAL_TIME: CellText := FormatTime(fProfileResults.resUnits[LData.UnitId].ueTotalTime[fThreadIndex],fProfileResults.resFrequency);
-      COL_UNIT_TOTAL_CALLS: CellText := FormatCnt(fProfileResults.resUnits[LData.UnitId].ueTotalCnt[fThreadIndex]);*)
+      COL_UNIT_TOTAL_CALLS: CellText := FormatCnt(fProfileResults.resUnits[LData.UnitId].ueTotalCnt[fThreadIndex]);
     end;
 
   end
@@ -401,7 +398,7 @@ begin
       begin
         CellText :=IFF(Last(fProfileResults.resClasses[LData.ClassId].ceName,2)='<>',ButLast(fProfileResults.resClasses[LData.ClassId].ceName,1)+'classless procedures>',fProfileResults.resClasses[LData.ClassId].ceName);
       end;
-      (*COL_CLASS_TOTAL_PERC:
+      COL_CLASS_TOTAL_PERC:
       begin
         if totalTime = 0  then
           CellText := FormatPerc(0)
@@ -409,7 +406,7 @@ begin
           CellText := FormatPerc(fProfileResults.resClasses[LData.ClassId].ceTotalTime[fThreadIndex]/totalTime);
       end;
       COL_CLASS_TOTAL_TIME: CellText := FormatTime(fProfileResults.resClasses[LData.ClassId].ceTotalTime[fThreadIndex],fProfileResults.resFrequency);
-      COL_CLASS_TOTAL_CALLS: CellText := FormatCnt(fProfileResults.resClasses[LData.ClassId].ceTotalCnt[fThreadIndex]);*)
+      COL_CLASS_TOTAL_CALLS: CellText := FormatCnt(fProfileResults.resClasses[LData.ClassId].ceTotalCnt[fThreadIndex]);
     end;
   end
   else if LData.ProfilingType = pit_proc then
@@ -420,7 +417,7 @@ begin
       begin
         CellText := fProfileResults.resProcedures[LData.ProcId].peName;
       end;
-      (*COL_PROC_TOTAL_PERC:
+      COL_PROC_TOTAL_PERC:
       begin
         if totalTime = 0  then
           CellText := FormatPerc(0)
@@ -432,7 +429,7 @@ begin
       COL_PROC_TOTAL_CALLS: CellText := FormatCnt(fProfileResults.resProcedures[LData.ProcId].peProcCnt[fThreadIndex]);
       COL_PROC_MIN_TIME_PER_CALL: CellText := FormatTime(fProfileResults.resProcedures[LData.ProcId].peProcTimeMin[fThreadIndex],fProfileResults.resFrequency);
       COL_PROC_MAX_TIME_PER_CALL: CellText := FormatTime(fProfileResults.resProcedures[LData.ProcId].peProcTimeMax[fThreadIndex],fProfileResults.resFrequency);
-      COL_PROC_AVG_TIME_PER_CALL: CellText := FormatTime(fProfileResults.resProcedures[LData.ProcId].peProcTimeAvg[fThreadIndex],fProfileResults.resFrequency);*)
+      COL_PROC_AVG_TIME_PER_CALL: CellText := FormatTime(fProfileResults.resProcedures[LData.ProcId].peProcTimeAvg[fThreadIndex],fProfileResults.resFrequency);
     end;
   end
   else if LData.ProfilingType = pit_proc_callers then
@@ -548,23 +545,24 @@ begin
   LRenderCell := GetValue(LData, Column, LValue, LMax, LCellInfo);
   if LRenderCell then
   begin
-    if LCellInfo = TColumnInfoType.Percent then
-    begin
-      PBRect := Rect(CellRect.Left + 1,
-        CellRect.Top + 1,
-        CellRect.Left + Round((CellRect.Right - CellRect.Left - 2) * (LValue / LMax)),
-        CellRect.Bottom - 1);
-    end
-    else
-    begin
-      PBRect := TRect.Empty();
-    end;
+    if LCellInfo <> TColumnInfoType.Percent then
+      exit;
 
+    PBRect := Rect(CellRect.Left + 1,
+                CellRect.Top + 1,
+                CellRect.Left + Round((CellRect.Right - CellRect.Left - 2) * (LValue / LMax)),
+                CellRect.Bottom - 1);
+    
     with TargetCanvas do
     begin
+      Pen.Color := fList.Colors.BackGroundColor;
+      Brush.Color := fList.Colors.BackGroundColor;
+      FillRect(CellRect);
+
       Pen.Color := RGB(226, 194, 95);
       Pen.Style := psSolid;
       Brush.Style := bsClear;
+
       if PBRect.Right > PBRect.Left then
        Rectangle(PBRect);
 
@@ -588,7 +586,6 @@ begin
       TextOut(CellRect.Left + ((CellRect.Right - CellRect.Left) div 2) - (TextWidth(Text) div 2),
               CellRect.Top + ((CellRect.Bottom - CellRect.Top) div 2) - (TextHeight(Text) div 2),
               Text);
-
     end;
   end;
 end;
