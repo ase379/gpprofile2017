@@ -50,12 +50,10 @@ uses
   gpPrfPlaceholders in 'gpPrfPlaceholders.pas',
   gpPrfPlaceholderDlg in 'gpPrfPlaceholderDlg.pas' {frmPreferenceMacros},
   gppCurrentPrefs in 'gppCurrentPrefs.pas';
-
 {$R *.RES}
 
 begin
   Application.Initialize;
-  Application.Title := 'GpProfile';
   Application.CreateForm(TfrmMain, frmMain);
   Application.CreateForm(TfrmPreferences, frmPreferences);
   Application.CreateForm(TfrmAbout, frmAbout);

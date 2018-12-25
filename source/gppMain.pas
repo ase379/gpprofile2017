@@ -420,6 +420,7 @@ uses
   GpIFF,
   GpRegistry,
   gppCommon,
+  gpversion,
   gpPreferencesDlg,
   gppLoadProgress,
   SimpleReportUnit,
@@ -1374,6 +1375,7 @@ begin
   fvstProcsCalleesTools := TSimpleStatsListTools.Create(vstCallees,TProfilingInfoTypeEnum.pit_proc_callees);
 
   fvstThreadsTools := TSimpleStatsListTools.Create(vstThreads,TProfilingInfoTypeEnum.pit_thread);
+  SetCaption();
 end;
 
 procedure TfrmMain.MRUClick(Sender: TObject; LatestFile: String);
@@ -2042,9 +2044,12 @@ end;
 
 procedure TfrmMain.SetCaption;
 begin
-  if PageControl1.ActivePage = tabInstrumentation
-    then Caption := 'GpProfile 2017'+IFF(currentProject <> '',' - '+currentProject,'')
-    else Caption := 'GpProfile 2017'+IFF(currentProfile <> '',' - '+currentProfile,'')+IFF(loadCanceled,' (incomplete)','');
+  Caption := 'GpProfile 2017 '+ GetVersion(verShort2to3)+' ';
+  if PageControl1.ActivePage = tabInstrumentation then
+    Caption := Caption+IFF(currentProject <> '',' - '+currentProject,'')
+  else
+    Caption := Caption+IFF(currentProfile <> '',' - '+currentProfile,'')+IFF(loadCanceled,' (incomplete)','');
+  Application.Title := Caption;
 end;
 
 procedure TfrmMain.SetSource;
