@@ -3,12 +3,15 @@ unit gppmain.tree;
 interface
 
 uses
+  System.Types,
+  vcl.Graphics,
   VirtualTrees,
 
   gppmain.tree.types,
   gppresults;
 
 type
+  TColumnInfoType = (undefined,Text,Percent, Time, Count);
   TSimpleStatsListTools = class
   private
     fList: TVirtualStringTree;
@@ -17,14 +20,14 @@ type
     fThreadIndex : Integer;
     fSortcols: array of TColumnIndex;
     function  GetThreadName(index: integer): string;
-
+    function GetValue(const aData : PProfilingInfoRec; const aColumnIndex: integer; out aValue, aMax : double;out aColRenderType:TColumnInfoType): boolean;
     procedure OnFreeNode(Sender: TBaseVirtualTree;Node: PVirtualNode);
     procedure OnGetText(Sender: TBaseVirtualTree; Node: PVirtualNode;
       Column: TColumnIndex; TextType: TVSTTextType; var CellText: string);
     procedure OnCompareNodes(Sender: TBaseVirtualTree; Node1, Node2: PVirtualNode;
       Column: TColumnIndex; var Result: Integer);
     procedure OnHeaderClick(Sender: TVTHeader; HitInfo: TVTHeaderHitInfo);
-
+    procedure OnAftercellPaint(Sender: TBaseVirtualTree; TargetCanvas: TCanvas; Node: PVirtualNode; Column: TColumnIndex; CellRect: TRect);
   public
     constructor Create(const aList: TVirtualStringTree;const aListType : TProfilingInfoTypeEnum);
 
@@ -56,6 +59,7 @@ type
 implementation
 
 uses
+  winapi.windows,
   System.SysUtils,
   GpIFF,
   gpString;
@@ -75,6 +79,7 @@ begin
   fList.OnCompareNodes := self.OnCompareNodes;
   fList.ongettext := OnGetText;
   fList.OnHeaderClick := self.OnHeaderClick;
+  fList.OnAfterCellPaint := OnAftercellPaint;
 end;
 
 procedure TSimpleStatsListTools.BeginUpdate;
@@ -229,6 +234,120 @@ begin
     Finalize(Data^);
 end;
 
+function TSimpleStatsListTools.GetValue(const aData : PProfilingInfoRec;const aColumnIndex: integer;out aValue, aMax : double; out aColRenderType:TColumnInfoType): boolean;
+var
+  LTotalTime : int64;
+begin
+  aValue := 0.0;
+  aMax := 1.0;
+  aColRenderType := undefined;
+  if aData.ProfilingType = pit_unit then
+  begin
+    LTotalTime := fProfileResults.resUnits[0].ueTotalTime[fThreadIndex];
+    if LTotalTime = 0  then
+      Exit(false);
+
+    case aColumnIndex of
+      1:
+      begin
+        aValue := fProfileResults.resUnits[aData.UnitId].ueTotalTime[fThreadIndex];
+        aMax := LTotalTime;
+        aColRenderType := TColumnInfoType.Percent;
+      end;
+      2:
+      begin
+        aValue := fProfileResults.resUnits[aData.UnitId].ueTotalTime[fThreadIndex];
+        aMax := fProfileResults.resFrequency;
+        aColRenderType := TColumnInfoType.Time;
+      end;
+      3:
+      begin
+        aValue := fProfileResults.resUnits[aData.UnitId].ueTotalCnt[fThreadIndex];
+        aColRenderType := TColumnInfoType.Count;
+      end;
+    end;
+  end
+  else if aData.ProfilingType = pit_class then
+  begin
+    LTotalTime := fProfileResults.resClasses[0].ceTotalTime[fThreadIndex];
+    if LTotalTime = 0  then
+      Exit(false);
+     case aColumnIndex of
+      1:
+      begin
+        aValue := fProfileResults.resClasses[aData.ClassId].ceTotalTime[fThreadIndex];
+        aMax := LTotalTime;
+        aColRenderType := TColumnInfoType.Percent;
+      end;
+      2:
+      begin
+        aValue := fProfileResults.resClasses[aData.ClassId].ceTotalTime[fThreadIndex];
+        aMax := fProfileResults.resFrequency;
+        aColRenderType := TColumnInfoType.Time;
+      end;
+      3:
+      begin
+        aValue := fProfileResults.resClasses[aData.ClassId].ceTotalCnt[fThreadIndex];
+        aColRenderType := TColumnInfoType.Count;
+      end;
+    end;
+  end
+  else if aData.ProfilingType = pit_proc then
+  begin
+    LTotalTime := fProfileResults.resProcedures[0].peProcTime[fThreadIndex];
+    if LTotalTime = 0  then
+      Exit(false);
+
+    case aColumnIndex of
+      1:
+      begin
+        aValue := fProfileResults.resProcedures[aData.ProcId].peProcTime[fThreadIndex];
+        aMax := LTotalTime;
+        aColRenderType := TColumnInfoType.Percent;
+      end;
+      2:
+      begin
+        aValue := fProfileResults.resProcedures[aData.ProcId].peProcTime[fThreadIndex] / fProfileResults.resFrequency;
+        aMax := LTotalTime / fProfileResults.resFrequency;
+        aColRenderType := TColumnInfoType.Time;
+      end;
+      3:
+      begin
+        aValue := fProfileResults.resProcedures[aData.ProcId].peProcChildTime[fThreadIndex] / fProfileResults.resFrequency;
+        aMax := LTotalTime / fProfileResults.resFrequency;
+        aColRenderType := TColumnInfoType.Time;
+      end;
+      4:
+      begin
+        aValue := fProfileResults.resProcedures[aData.ProcId].peProcCnt[fThreadIndex];
+        aColRenderType := TColumnInfoType.Count;
+      end;
+      5:
+      begin
+        aValue := fProfileResults.resProcedures[aData.ProcId].peProcTimeMin[fThreadIndex] / fProfileResults.resFrequency;
+        aMax := LTotalTime / fProfileResults.resFrequency;
+        aColRenderType := TColumnInfoType.Time;
+      end;
+      6:
+      begin
+        aValue := fProfileResults.resProcedures[aData.ProcId].peProcTimeMax[fThreadIndex]/ fProfileResults.resFrequency;
+        aMax := LTotalTime / fProfileResults.resFrequency;
+        aColRenderType := TColumnInfoType.Time;
+      end;
+      7:
+      begin
+        aValue := fProfileResults.resProcedures[aData.ProcId].peProcTimeAvg[fThreadIndex]/ fProfileResults.resFrequency;
+        aMax := LTotalTime / fProfileResults.resFrequency;
+        aColRenderType := TColumnInfoType.Time;
+      end;
+    end;
+  end;
+  Result := aColRenderType <> TColumnInfoType.undefined;
+end;
+
+
+
+
 procedure TSimpleStatsListTools.OnGetText(Sender: TBaseVirtualTree; Node: PVirtualNode;
   Column: TColumnIndex; TextType: TVSTTextType; var CellText: string);
 var
@@ -237,16 +356,19 @@ var
 begin
   LData := node.GetData;
   if not assigned(fProfileResults) then
+  begin
+    CellText := '-';
     exit;
+  end;
   CellText := '';
   if LData.ProfilingType = pit_unit then
   begin
     totalTime := fProfileResults.resUnits[0].ueTotalTime[fThreadIndex];
     case Column of
       0: CellText := fProfileResults.resUnits[LData.UnitId].ueName;
-      1: CellText := FormatPerc(fProfileResults.resUnits[LData.UnitId].ueTotalTime[fThreadIndex]/totalTime);
+      (*1: CellText := FormatPerc(fProfileResults.resUnits[LData.UnitId].ueTotalTime[fThreadIndex]/totalTime);
       2: CellText := FormatTime(fProfileResults.resUnits[LData.UnitId].ueTotalTime[fThreadIndex],fProfileResults.resFrequency);
-      3: CellText := FormatCnt(fProfileResults.resUnits[LData.UnitId].ueTotalCnt[fThreadIndex]);
+      3: CellText := FormatCnt(fProfileResults.resUnits[LData.UnitId].ueTotalCnt[fThreadIndex]);*)
     end;
 
   end
@@ -258,7 +380,7 @@ begin
       begin
         CellText :=IFF(Last(fProfileResults.resClasses[LData.ClassId].ceName,2)='<>',ButLast(fProfileResults.resClasses[LData.ClassId].ceName,1)+'classless procedures>',fProfileResults.resClasses[LData.ClassId].ceName);
       end;
-      1:
+      (*1:
       begin
         if totalTime = 0  then
           CellText := FormatPerc(0)
@@ -266,7 +388,7 @@ begin
           CellText := FormatPerc(fProfileResults.resClasses[LData.ClassId].ceTotalTime[fThreadIndex]/totalTime);
       end;
       2: CellText := FormatTime(fProfileResults.resClasses[LData.ClassId].ceTotalTime[fThreadIndex],fProfileResults.resFrequency);
-      3: CellText := FormatCnt(fProfileResults.resClasses[LData.ClassId].ceTotalCnt[fThreadIndex]);
+      3: CellText := FormatCnt(fProfileResults.resClasses[LData.ClassId].ceTotalCnt[fThreadIndex]);*)
     end;
   end
   else if LData.ProfilingType = pit_proc then
@@ -277,7 +399,7 @@ begin
       begin
         CellText := fProfileResults.resProcedures[LData.ProcId].peName;
       end;
-      1:
+      (*1:
       begin
         if totalTime = 0  then
           CellText := FormatPerc(0)
@@ -289,7 +411,7 @@ begin
       4: CellText := FormatCnt(fProfileResults.resProcedures[LData.ProcId].peProcCnt[fThreadIndex]);
       5: CellText := FormatTime(fProfileResults.resProcedures[LData.ProcId].peProcTimeMin[fThreadIndex],fProfileResults.resFrequency);
       6: CellText := FormatTime(fProfileResults.resProcedures[LData.ProcId].peProcTimeMax[fThreadIndex],fProfileResults.resFrequency);
-      7: CellText := FormatTime(fProfileResults.resProcedures[LData.ProcId].peProcTimeAvg[fThreadIndex],fProfileResults.resFrequency);
+      7: CellText := FormatTime(fProfileResults.resProcedures[LData.ProcId].peProcTimeAvg[fThreadIndex],fProfileResults.resFrequency);*)
     end;
   end
   else if LData.ProfilingType = pit_proc_callers then
@@ -364,10 +486,6 @@ end;
 procedure TSimpleStatsListTools.OnHeaderClick(Sender: TVTHeader;
   HitInfo: TVTHeaderHitInfo);
 begin
-(*  if not CtrlDown then //function I have to test Ctrl state.
-  begin
-    setlength(fSortCols,0);
-  end;*)
   SetLength(fSortCols,length(fSortCols)+1);
   fSortCols[Length(fSortCols)-1] := HitInfo.Column;
   fList.SortTree(HitInfo.Column,Sender.SortDirection,True);
@@ -402,4 +520,57 @@ begin
   end;
 end;
 
+procedure TSimpleStatsListTools.OnAftercellPaint(Sender: TBaseVirtualTree; TargetCanvas: TCanvas; Node: PVirtualNode;
+  Column: TColumnIndex; CellRect: TRect);
+var
+  PBRect : TRect;
+  Text : String;
+  LData : PProfilingInfoRec;
+  LValue, LMax : double;
+  LCellInfo : TColumnInfoType;
+  LRenderCell : Boolean;
+begin
+  LData := node.GetData;
+  if not assigned(fProfileResults) then
+    exit;
+  LRenderCell := GetValue(LData, Column, LValue, LMax, LCellInfo);
+  if LRenderCell then
+  begin
+    PBRect := Rect(CellRect.Left + 1,
+                   CellRect.Top + 1,
+                   CellRect.Left + Round((CellRect.Right - CellRect.Left - 2) * (LValue / LMax)),
+                   CellRect.Bottom - 1);
+
+    with TargetCanvas do
+    begin
+      Pen.Color := RGB(226, 194, 95);
+      Pen.Style := psSolid;
+      Brush.Style := bsClear;
+      Rectangle(PBRect);
+
+      Brush.Color := RGB(246, 224, 123);
+      Brush.Style := bsSolid;
+      FillRect(Rect(PBRect.Left + 2,
+                    PBRect.Top + 2,
+                    PBRect.Right - 2,
+                    PBRect.Bottom - 2));
+
+      case LCellInfo of
+        TColumnInfoType.Text : Text := 'Value :'+LValue.ToString()+' , max:'+LMax.ToString();
+        TColumnInfoType.Percent : Text := FormatPerc(LValue/LMax);
+        TColumnInfoType.Time : Text := FormatTime(LValue);
+        TColumnInfoType.Count : Text := FormatCnt(Round(LValue));
+      end;
+      Font.Color := clBlack;
+      Brush.Style := bsClear;
+
+      TextOut(CellRect.Left + ((CellRect.Right - CellRect.Left) div 2) - (TextWidth(Text) div 2),
+              CellRect.Top + ((CellRect.Bottom - CellRect.Top) div 2) - (TextHeight(Text) div 2),
+              Text);
+
+    end;
+  end;
+end;
+
 end.
+
