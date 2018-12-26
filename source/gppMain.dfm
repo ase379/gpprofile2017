@@ -640,6 +640,7 @@ object frmMain: TfrmMain
                         Width = 75
                       end
                       item
+                        MinWidth = 100
                         Position = 2
                         Text = '% Time w/Child'
                         Width = 100
@@ -718,6 +719,7 @@ object frmMain: TfrmMain
                         Width = 75
                       end
                       item
+                        MinWidth = 100
                         Position = 2
                         Text = '% Time w/Child'
                         Width = 100
@@ -805,6 +807,7 @@ object frmMain: TfrmMain
                       Width = 75
                     end
                     item
+                      MinWidth = 100
                       Position = 2
                       Text = '% Time w/Child'
                       Width = 100
