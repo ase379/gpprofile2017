@@ -367,6 +367,7 @@ type
 
     procedure SwitchDelMode(delete: boolean);
     procedure NoProfile;
+    procedure ResetProfile();
     procedure DoOnUnitCheck(index: integer; instrument: boolean);
     procedure DoInstrument;
     procedure RescanProject;
@@ -976,7 +977,7 @@ begin
   try
     DisablePC2;
     try
-      FreeAndNil(openProfile);
+      ResetProfile();
       ShowProgressBar(Self,'Parsing profiling results...',false, True);
       try
         StatusPanel0('Loading '+profile,false);
@@ -1358,8 +1359,6 @@ begin
   DisablePC2;
   DisablePC;
   loadCanceled := false;
-  openProject := nil;
-  openProfile := nil;
   CurrentProjectName := '';
 
   MRU.RegistryKey := cRegistryRoot+'\MRU\DPR';
@@ -1469,7 +1468,7 @@ begin
   MRU.SaveToRegistry;
   MRUPrf.SaveToRegistry;
   FreeAndNil(openProject);
-  FreeAndNil(openProfile);
+  ResetProfile();
   FreeAndNil(fvstUnitsTools);
   FreeAndNil(fvstClassesTools);
   FreeAndNil(fvstProcsTools);
@@ -3081,10 +3080,20 @@ begin
   end;
 end;
 
+procedure TfrmMain.ResetProfile();
+begin
+  fvstUnitsTools.ProfileResults := nil;
+  fvstClassesTools.ProfileResults := nil;
+  fvstProcsTools.ProfileResults := nil;
+  fvstProcsCallersTools.ProfileResults := nil;
+  fvstProcsCalleesTools.ProfileResults := nil;
+  fvstThreadsTools.ProfileResults := nil;
+  FreeAndNil(openProfile);
+end;
+
 procedure TfrmMain.NoProfile;
 begin
-  openProfile.Free;
-  openProfile := nil;
+  ResetProfile();
   FillThreadCombos;
   currentProfile := '';
   PageControl1.ActivePage := tabInstrumentation;
