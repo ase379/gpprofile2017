@@ -2738,8 +2738,10 @@ end;
 procedure TfrmMain.LoadSource(fileName: AnsiString; focusOn: integer);
 begin
   try
-    if fileName <> '' then begin
-      if fileName <> loadedSource then begin
+    if fileName <> '' then
+    begin
+      if fileName <> loadedSource then
+      begin
         sourceCodeEdit.Lines.LoadFromFile(fileName);
         loadedSource := fileName;
       end;
@@ -3575,8 +3577,10 @@ begin
     LData := PProfilingInfoRec(LEnumor.Current.GetData());
     if LData.ProcId = pid then
     begin
+      vstProcs.SetFocus;
       vstProcs.Selected[LEnumor.Current] := True;
-
+      lvProcsClick(vstProcs);
+      break;
     end;
   end;
 end;
