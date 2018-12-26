@@ -19,14 +19,34 @@ type
     fProfileResults : TResults;
     fThreadIndex : Integer;
     function  GetThreadName(index: integer): string;
+    /// <summary>
+    ///   Gets the raw values. The values are returned as double. Thus, false is returned if not double compatible
+    ///  type is stored for the cell (e.g. a string).
+    /// </summary>
     function GetValue(const aData : PProfilingInfoRec; const aColumnIndex: integer; out aValue, aMax : double;out aColRenderType:TColumnInfoType): boolean;
+    /// <summary>
+    /// Returns the type of the column content.
+    /// </summary>
     function GetColInfoType(const aData : PProfilingInfoRec;const aColumnIndex: integer): TColumnInfoType;
+
     procedure OnFreeNode(Sender: TBaseVirtualTree;Node: PVirtualNode);
+    /// <summary>
+    /// Gets the column content as a string.
+    /// </summary>
     procedure OnGetText(Sender: TBaseVirtualTree; Node: PVirtualNode;
       Column: TColumnIndex; TextType: TVSTTextType; var CellText: string);
+    /// <summary>
+    /// Compares the nodes for sorting.
+    /// </summary>
     procedure OnCompareNodes(Sender: TBaseVirtualTree; Node1, Node2: PVirtualNode;
       Column: TColumnIndex; var Result: Integer);
+    /// <summary>
+    /// Resorts the headers.
+    /// </summary>
     procedure OnHeaderClick(Sender: TVTHeader; HitInfo: TVTHeaderHitInfo);
+    /// <summary>
+    /// Adds the bar overlays to columns supporting the overlays.
+    /// </summary>
     procedure OnAftercellPaint(Sender: TBaseVirtualTree; TargetCanvas: TCanvas; Node: PVirtualNode; Column: TColumnIndex; CellRect: TRect);
   public
     constructor Create(const aList: TVirtualStringTree;const aListType : TProfilingInfoTypeEnum);
@@ -596,8 +616,11 @@ begin
   LRenderCell := GetValue(LData, Column, LValue, LMax, LCellInfo);
   if LRenderCell then
   begin
-    if LCellInfo <> TColumnInfoType.Percent then
-      exit;
+    case LCellInfo of
+      TColumnInfoType.Percent: { process it};
+      else
+        exit;
+    end;
 
     PBRect := Rect(CellRect.Left + 1,
                 CellRect.Top + 1,
