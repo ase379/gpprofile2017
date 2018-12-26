@@ -98,12 +98,13 @@ const
   // col index for Proc
   COL_PROC_NAME = 0;
   COL_PROC_TOTAL_PERC = 1;
-  COL_PROC_TOTAL_TIME = 2;
-  COL_PROC_TOTAL_CHILD_TIME = 3;
-  COL_PROC_TOTAL_CALLS = 4;
-  COL_PROC_MIN_TIME_PER_CALL = 5;
-  COL_PROC_MAX_TIME_PER_CALL = 6;
-  COL_PROC_AVG_TIME_PER_CALL = 7;
+  COL_PROC_TOTAL_CHILD_PERC = 2;
+  COL_PROC_TOTAL_TIME = 3;
+  COL_PROC_TOTAL_CHILD_TIME = 4;
+  COL_PROC_TOTAL_CALLS = 5;
+  COL_PROC_MIN_TIME_PER_CALL = 6;
+  COL_PROC_MAX_TIME_PER_CALL = 7;
+  COL_PROC_AVG_TIME_PER_CALL = 8;
 
 
 procedure TSimpleStatsListTools.Clear;
@@ -308,6 +309,8 @@ begin
     case aColumnIndex of
       COL_PROC_TOTAL_PERC:
         result := TColumnInfoType.Percent;
+      COL_PROC_TOTAL_CHILD_PERC:
+        result := TColumnInfoType.Percent;
       COL_PROC_TOTAL_TIME:
         result := TColumnInfoType.Time;
       COL_PROC_TOTAL_CHILD_TIME:
@@ -386,6 +389,11 @@ begin
       COL_PROC_TOTAL_PERC:
       begin
         aValue := fProfileResults.resProcedures[aData.ProcId].peProcTime[fThreadIndex];
+        aMax := LTotalTime;
+      end;
+      COL_PROC_TOTAL_CHILD_PERC:
+      begin
+        aValue := fProfileResults.resProcedures[aData.ProcId].peProcChildTime[fThreadIndex];
         aMax := LTotalTime;
       end;
       COL_PROC_TOTAL_TIME:
@@ -479,6 +487,13 @@ begin
           CellText := FormatPerc(0)
         else
           CellText := FormatPerc(fProfileResults.resProcedures[LData.ProcId].peProcTime[fThreadIndex]/totalTime);
+      end;
+      COL_PROC_TOTAL_CHILD_PERC:
+      begin
+        if totalTime = 0  then
+          CellText := FormatPerc(0)
+        else
+          CellText := FormatPerc(fProfileResults.resProcedures[LData.ProcId].peProcChildTime[fThreadIndex]/totalTime);
       end;
       COL_PROC_TOTAL_TIME: CellText := FormatTime(fProfileResults.resProcedures[LData.ProcId].peProcTime[fThreadIndex],fProfileResults.resFrequency);
       COL_PROC_TOTAL_CHILD_TIME: CellText := FormatTime(fProfileResults.resProcedures[LData.ProcId].peProcChildTime[fThreadIndex],fProfileResults.resFrequency);
