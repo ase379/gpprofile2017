@@ -26,7 +26,7 @@ Small changes to make it work with Delphi 2009, 2010, XE: Anton Alisov (alan008@
 
 Small changes to make it work with Delphi XE2, XE3: Johan Bontes (johan@digitsolutions.nl)
 
-Note: source code must be compiled with Delphi XE or higher, as generics are used.
+Note: source code must be compiled with Delphi XE7 or higher, as generics and tasks are used.
 
 The original project gpprof2011 can be found here: https://code.google.com/archive/p/gpprofile2011/.
 
@@ -36,7 +36,7 @@ It was released under the GPLv2.
 
 GpProfile is a source code instrumenting profiler for Delphi.
 
-Source codes for gpprofile2017 can be compiled using Delphi XE and higher.
+Source codes for gpprofile2017 can be compiled using Delphi XE7 and higher.
 
 Executable file (gpprof.exe) is able to work and profile sources for Delphi XE and higher.
 
