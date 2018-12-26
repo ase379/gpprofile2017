@@ -36,7 +36,7 @@ It was released under the GPLv2.
 
 GpProfile is a source code instrumenting profiler for Delphi.
 
-Source codes for gpprofile2017 can be compiled using Delphi XE and higher.
+Source codes for gpprofile2017 can be compiled using Delphi XE7 and higher.
 
 Executable file (gpprof.exe) is able to work and profile sources for Delphi XE and higher.
 
