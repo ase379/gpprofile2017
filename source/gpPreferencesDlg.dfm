@@ -14,7 +14,6 @@ object frmPreferences: TfrmPreferences
   KeyPreview = True
   OldCreateOrder = True
   Position = poDefault
-  Scaled = False
   OnCreate = FormCreate
   OnKeyPress = FormKeyPress
   PixelsPerInch = 96
@@ -230,56 +229,6 @@ object frmPreferences: TfrmPreferences
         TabOrder = 2
         OnClick = btnInstrumentationDefaultsClick
       end
-      object GroupBox6: TGroupBox
-        Left = 8
-        Top = 199
-        Width = 361
-        Height = 90
-        Caption = 'XE2 and up only'
-        TabOrder = 3
-        object Label3: TLabel
-          Left = 16
-          Top = 23
-          Width = 80
-          Height = 13
-          Caption = 'Override platform'
-        end
-        object Label5: TLabel
-          Left = 16
-          Top = 55
-          Width = 72
-          Height = 13
-          Caption = 'Override config'
-        end
-        object cbbXE2Platform: TComboBox
-          Left = 104
-          Top = 20
-          Width = 145
-          Height = 21
-          DropDownCount = 3
-          ItemIndex = 0
-          TabOrder = 0
-          Text = '(Read from .dproj file)'
-          Items.Strings = (
-            '(Read from .dproj file)'
-            'Win32'
-            'Win64')
-        end
-        object cbbXE2Config: TComboBox
-          Left = 104
-          Top = 52
-          Width = 145
-          Height = 21
-          DropDownCount = 3
-          ItemIndex = 0
-          TabOrder = 1
-          Text = 'Read from .dproj file'
-          Items.Strings = (
-            'Read from .dproj file'
-            'Release'
-            'Debug')
-        end
-      end
     end
     object tabAnalysis: TTabSheet
       Caption = 'Analysis'
@@ -334,6 +283,7 @@ object frmPreferences: TfrmPreferences
           Margins.Bottom = 8
           Align = alTop
           Caption = 'Performance output file name: (without extension)'
+          ExplicitWidth = 232
         end
         object Panel2: TPanel
           AlignWithMargins = True
@@ -458,8 +408,8 @@ object frmPreferences: TfrmPreferences
           OnClick = lvDefinesClick
         end
         object cbStandardDefines: TCheckBox
-          Left = 240
-          Top = 22
+          Left = 239
+          Top = 47
           Width = 105
           Height = 17
           Caption = '&Compiler defines'
@@ -467,8 +417,8 @@ object frmPreferences: TfrmPreferences
           OnClick = cbStandardDefinesClick
         end
         object cbProjectDefines: TCheckBox
-          Left = 240
-          Top = 58
+          Left = 239
+          Top = 79
           Width = 121
           Height = 17
           Caption = '&Project defines'
@@ -476,8 +426,8 @@ object frmPreferences: TfrmPreferences
           OnClick = cbProjectDefinesClick
         end
         object cbConsoleDefines: TCheckBox
-          Left = 240
-          Top = 40
+          Left = 239
+          Top = 63
           Width = 121
           Height = 17
           Caption = 'C&onsole application'
@@ -516,9 +466,9 @@ object frmPreferences: TfrmPreferences
           TabOrder = 5
         end
         object cbxDelphiDefines: TComboBox
-          Left = 352
+          Left = 231
           Top = 20
-          Width = 89
+          Width = 146
           Height = 21
           Style = csDropDownList
           TabOrder = 2
@@ -534,8 +484,8 @@ object frmPreferences: TfrmPreferences
           TabOrder = 9
         end
         object cbDisableUserDefines: TCheckBox
-          Left = 240
-          Top = 76
+          Left = 239
+          Top = 95
           Width = 121
           Height = 17
           Caption = 'Disable &user defines'

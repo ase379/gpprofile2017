@@ -64,11 +64,6 @@ type
     cbDisableUserDefines: TCheckBox;
     btnClearAllDefines: TButton;
     cbInstrumentAssembler: TCheckBox;
-    GroupBox6: TGroupBox;
-    cbbXE2Platform: TComboBox;
-    cbbXE2Config: TComboBox;
-    Label3: TLabel;
-    Label5: TLabel;
     GroupBox7: TGroupBox;
     Label6: TLabel;
     Panel2: TPanel;
@@ -139,8 +134,8 @@ function ResolvePrfProjectPlaceholders(const aFilenameWithPh: string): string;
 implementation
 
 uses
+  bdsVersions,
   GpString,
-  gppComCtl,
   gppMain,
   gpRegistry,
   gppCurrentPrefs,
@@ -258,8 +253,6 @@ end;
 procedure TfrmPreferences.btnInstrumentationDefaultsClick(Sender: TObject);
 begin
   ResetDefaults(0);
-  cbbXE2Platform.ItemIndex:= 0;
-  cbbXE2Config.ItemIndex:= 0;
 end;
 
 procedure TfrmPreferences.btnAnalysisDefaultsClick(Sender: TObject);
@@ -308,9 +301,7 @@ begin
   if cbStandardDefines.Checked then begin
     AddDefine('WIN32',DEF_DELPHI);
     AddDefine('CPU386',DEF_DELPHI);
-    if Pos('2',cbxDelphiDefines.Text) > 0 then AddDefine('VER90',DEF_DELPHI)
-    else if Pos('3',cbxDelphiDefines.Text) > 0 then AddDefine('VER100',DEF_DELPHI)
-    else if Pos('4',cbxDelphiDefines.Text) > 0 then AddDefine('VER120',DEF_DELPHI);
+    AddDefine(DelphiVerToCompilerVersion(RemoveDelphiPrefix(cbxDelphiDefines.Text)), DEF_DELPHI);
   end
   else RemoveTag(DEF_DELPHI);
   cbxDelphiDefines.Enabled := cbStandardDefines.Checked;
@@ -518,24 +509,15 @@ procedure TfrmPreferences.cbDisableUserDefinesClick(Sender: TObject);
 var
   image: TBitmap;
 begin
+  image := TBitmap.Create;
   try
-    image := TBitmap.Create;
-    try
-      if cbDisableUserDefines.Checked
-        then imgDefines.GetBitmap(DEF_USER+1,image)
-        else imgDefines.GetBitmap(DEF_USER+2,image);
+    if cbDisableUserDefines.Checked then
+      imgDefines.GetBitmap(DEF_USER+1,image)
+    else imgDefines.GetBitmap(DEF_USER+2,image);
       imgDefines.Replace(DEF_USER,Image,nil);
-    finally image.Free; end;
-  except
-    on E:EInvalidOperation do begin
-      if not TGpRegistryTools.GetPref('System','ShownComCtl32',false) then begin
-        Application.CreateForm(TfrmComCtl, frmComCtl);
-        frmComCtl.ShowModal;
-        frmComCtl.Free;
-        TGpRegistryTools.SetPref('System','ShownComCtl32',true);
-      end;
+    finally
+      image.Free;
     end;
-  end;
 end;
 
 procedure TfrmPreferences.btnClearUserDefinesClick(Sender: TObject);
@@ -573,7 +555,7 @@ begin
     else begin
       cbxCompilerVersion.ItemIndex := cbxCompilerVersion.Items.Count-1;
       cbxDelphiDefines.ItemIndex   := cbxCompilerVersion.Items.Count-1;
-      selectedDelphi := ButFirst(cbxCompilerVersion.Items[cbxCompilerVersion.ItemIndex],Length('Delphi '));
+      selectedDelphi := RemoveDelphiPrefix(cbxCompilerVersion.Items[cbxCompilerVersion.ItemIndex]);
     end;
 end; { TfrmPreferences.ReselectCompilerVersion }
 
@@ -665,10 +647,6 @@ begin
   Left := frmMain.Left+((frmMain.Width-Width) div 2);
   Top := frmMain.Top+((frmMain.Height-Height) div 2);
   if ShowModal = mrOK then begin
-    if (cbbXE2Platform.ItemIndex <> 0) then XE2PlatformOverride:= cbbXE2Platform.Text
-    else XE2PlatformOverride:= '';
-    if (cbbXE2Config.ItemIndex <> 0) then XE2ConfigOverride:= cbbXE2Config.Text
-    else XE2ConfigOverride:= '';
     prefMarkerStyle        := cbxMarker.ItemIndex;
     prefCompilerVersion    := cbxCompilerVersion.ItemIndex;
     prefHideNotExecuted    := cbHideNotExecuted.Checked;
@@ -687,7 +665,7 @@ begin
     prefInstrumentAssembler:= cbInstrumentAssembler.Checked;
     prefMakeBackupOfInstrumentedFile := cbMakeBackupOfInstrumentedFile.Checked;
     SavePreferences;
-    selectedDelphi := ButFirst(cbxCompilerVersion.Items[prefCompilerVersion],Length('Delphi '));
+    selectedDelphi := RemoveDelphiPrefix(cbxCompilerVersion.Items[prefCompilerVersion]);
   end;
 end;
 
@@ -755,7 +733,7 @@ begin
       SetProjectPref('ProfilingAutostart',cbProfilingAutostart.Checked);
       SetProjectPref('InstrumentAssembler',cbInstrumentAssembler.Checked);
       SetProjectPref('MakeBackupOfInstrumentedFile',cbMakeBackupOfInstrumentedFile.Checked);
-      selectedDelphi := ButFirst(cbxCompilerVersion.Items[cbxCompilerVersion.ItemIndex],Length('Delphi '));
+      selectedDelphi := RemoveDelphiPrefix(cbxCompilerVersion.Items[cbxCompilerVersion.ItemIndex]);
       if memoExclUnits.Text = prefExcludedUnits
         then DelProjectPref('ExcludedUnits')
         else SetProjectPref('ExcludedUnits',memoExclUnits.Text);

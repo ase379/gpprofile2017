@@ -327,6 +327,10 @@ object frmMain: TfrmMain
         object tabInstrumentation: TTabSheet
           Caption = 'Instrumentation'
           ImageIndex = 16
+          ExplicitLeft = 0
+          ExplicitTop = 0
+          ExplicitWidth = 0
+          ExplicitHeight = 0
           object Splitter1: TSplitter
             Left = 129
             Top = 25
@@ -348,13 +352,37 @@ object frmMain: TfrmMain
             BevelOuter = bvNone
             TabOrder = 0
             object chkShowAll: TCheckBox
-              Left = 6
-              Top = 4
+              AlignWithMargins = True
+              Left = 3
+              Top = 3
               Width = 99
-              Height = 17
+              Height = 19
+              Align = alLeft
               Caption = '&Show all folders'
               TabOrder = 0
               OnClick = cbProfileChange
+            end
+            object btnLoadInstrumentationSelection: TButton
+              AlignWithMargins = True
+              Left = 108
+              Top = 3
+              Width = 99
+              Height = 19
+              Align = alLeft
+              Caption = 'Load Selection...'
+              TabOrder = 1
+              OnClick = btnLoadInstrumentationSelectionClick
+            end
+            object btnSaveInstrumentationSelection: TButton
+              AlignWithMargins = True
+              Left = 213
+              Top = 3
+              Width = 99
+              Height = 19
+              Align = alLeft
+              Caption = 'Save Selection...'
+              TabOrder = 2
+              OnClick = btnSaveInstrumentationSelectionClick
             end
           end
           object pnlUnits: TPanel
@@ -369,7 +397,7 @@ object frmMain: TfrmMain
               AlignWithMargins = True
               Left = 3
               Top = 3
-              Width = 123
+              Width = 37
               Height = 17
               Align = alTop
               Caption = '&Units:'
@@ -406,7 +434,7 @@ object frmMain: TfrmMain
               AlignWithMargins = True
               Left = 3
               Top = 3
-              Width = 131
+              Width = 49
               Height = 17
               Align = alTop
               Caption = '&Classes:'
@@ -428,7 +456,6 @@ object frmMain: TfrmMain
               TreeOptions.PaintOptions = [toShowButtons, toShowDropmark, toThemeAware, toUseBlendedImages]
               OnAddToSelection = vstSelectClassesAddToSelection
               OnChecked = vstSelectClassesChecked
-              ExplicitTop = 21
               Columns = <>
             end
           end
@@ -463,12 +490,17 @@ object frmMain: TfrmMain
               Align = alTop
               Caption = 'P&rocedures:'
               TabOrder = 1
+              ExplicitWidth = 67
             end
           end
         end
         object tabAnalysis: TTabSheet
           Caption = 'Analysis'
           ImageIndex = 17
+          ExplicitLeft = 0
+          ExplicitTop = 0
+          ExplicitWidth = 0
+          ExplicitHeight = 0
           object PageControl2: TPageControl
             Left = 0
             Top = 0
@@ -482,6 +514,10 @@ object frmMain: TfrmMain
             object tabProcedures: TTabSheet
               Caption = 'Procedures'
               ImageIndex = -1
+              ExplicitLeft = 0
+              ExplicitTop = 0
+              ExplicitWidth = 0
+              ExplicitHeight = 0
               object splitCallees: TSplitter
                 Left = 0
                 Top = 312
@@ -617,50 +653,56 @@ object frmMain: TfrmMain
                       item
                         MinWidth = 200
                         Position = 0
+                        Text = 'Procedure (Callers)'
                         Width = 200
-                        WideText = 'Procedure (Callers)'
                       end
                       item
                         MinWidth = 75
                         Position = 1
+                        Text = '% Time'
                         Width = 75
-                        WideText = '% Time'
                       end
                       item
-                        MinWidth = 75
+                        MinWidth = 100
                         Position = 2
-                        Width = 75
-                        WideText = 'Time'
+                        Text = '% Time w/Child'
+                        Width = 100
                       end
                       item
                         MinWidth = 75
                         Position = 3
+                        Text = 'Time'
                         Width = 75
-                        WideText = 'w/Child'
                       end
                       item
                         MinWidth = 75
                         Position = 4
+                        Text = 'Time w/Child'
                         Width = 75
-                        WideText = 'Calls'
                       end
                       item
                         MinWidth = 75
                         Position = 5
+                        Text = 'Calls'
                         Width = 75
-                        WideText = 'Min/Call'
                       end
                       item
                         MinWidth = 75
                         Position = 6
+                        Text = 'Min/Call'
                         Width = 75
-                        WideText = 'Max/Call'
                       end
                       item
                         MinWidth = 75
                         Position = 7
+                        Text = 'Max/Call'
                         Width = 75
-                        WideText = 'Avg/Call'
+                      end
+                      item
+                        MinWidth = 75
+                        Position = 8
+                        Text = 'Avg/Call'
+                        Width = 75
                       end>
                   end
                 end
@@ -688,52 +730,64 @@ object frmMain: TfrmMain
                     OnNodeClick = vstProcsNodeClick
                     Columns = <
                       item
-                        MinWidth = 200
+                        MinWidth = 50
                         Position = 0
-                        Width = 200
-                        WideText = 'Procedure (Callers)'
+                        Text = 'Procedure (Callers)'
                       end
                       item
                         MinWidth = 75
+                        Options = [coAllowClick, coDraggable, coEnabled, coParentBidiMode, coParentColor, coResizable, coShowDropMark, coVisible, coSmartResize, coAllowFocus, coEditable]
                         Position = 1
+                        Text = '% Time'
                         Width = 75
-                        WideText = '% Time'
                       end
                       item
-                        MinWidth = 75
+                        MinWidth = 100
                         Position = 2
-                        Width = 75
-                        WideText = 'Time'
+                        Text = '% Time w/Child'
+                        Width = 100
                       end
                       item
                         MinWidth = 75
+                        Options = [coAllowClick, coDraggable, coEnabled, coParentBidiMode, coParentColor, coResizable, coShowDropMark, coVisible, coSmartResize, coAllowFocus, coEditable]
                         Position = 3
+                        Text = 'Time'
                         Width = 75
-                        WideText = 'w/Child'
                       end
                       item
                         MinWidth = 75
+                        Options = [coAllowClick, coDraggable, coEnabled, coParentBidiMode, coParentColor, coResizable, coShowDropMark, coVisible, coSmartResize, coAllowFocus, coEditable]
                         Position = 4
+                        Text = 'Time w/Child'
                         Width = 75
-                        WideText = 'Calls'
                       end
                       item
                         MinWidth = 75
+                        Options = [coAllowClick, coDraggable, coEnabled, coParentBidiMode, coParentColor, coResizable, coShowDropMark, coVisible, coSmartResize, coAllowFocus, coEditable]
                         Position = 5
+                        Text = 'Calls'
                         Width = 75
-                        WideText = 'Min/Call'
                       end
                       item
                         MinWidth = 75
+                        Options = [coAllowClick, coDraggable, coEnabled, coParentBidiMode, coParentColor, coResizable, coShowDropMark, coVisible, coSmartResize, coAllowFocus, coEditable]
                         Position = 6
+                        Text = 'Min/Call'
                         Width = 75
-                        WideText = 'Max/Call'
                       end
                       item
                         MinWidth = 75
+                        Options = [coAllowClick, coDraggable, coEnabled, coParentBidiMode, coParentColor, coResizable, coShowDropMark, coVisible, coSmartResize, coAllowFocus, coEditable]
                         Position = 7
+                        Text = 'Max/Call'
                         Width = 75
-                        WideText = 'Avg/Call'
+                      end
+                      item
+                        MinWidth = 75
+                        Options = [coAllowClick, coDraggable, coEnabled, coParentBidiMode, coParentColor, coResizable, coShowDropMark, coVisible, coSmartResize, coAllowFocus, coEditable]
+                        Position = 8
+                        Text = 'Avg/Call'
+                        Width = 75
                       end>
                   end
                 end
@@ -766,50 +820,56 @@ object frmMain: TfrmMain
                     item
                       MinWidth = 200
                       Position = 0
+                      Text = 'Procedure (Callees)'
                       Width = 200
-                      WideText = 'Procedure (Callees)'
                     end
                     item
                       MinWidth = 75
                       Position = 1
+                      Text = '% Time'
                       Width = 75
-                      WideText = '% Time'
                     end
                     item
-                      MinWidth = 75
+                      MinWidth = 100
                       Position = 2
-                      Width = 75
-                      WideText = 'Time'
+                      Text = '% Time w/Child'
+                      Width = 100
                     end
                     item
                       MinWidth = 75
                       Position = 3
+                      Text = 'Time'
                       Width = 75
-                      WideText = 'w/Child'
                     end
                     item
                       MinWidth = 75
                       Position = 4
+                      Text = 'Time w/Child'
                       Width = 75
-                      WideText = 'Calls'
                     end
                     item
                       MinWidth = 75
                       Position = 5
+                      Text = 'Calls'
                       Width = 75
-                      WideText = 'Min/Call'
                     end
                     item
                       MinWidth = 75
                       Position = 6
+                      Text = 'Min/Call'
                       Width = 75
-                      WideText = 'Max/Call'
                     end
                     item
                       MinWidth = 75
                       Position = 7
+                      Text = 'Max/Call'
                       Width = 75
-                      WideText = 'Avg/Call'
+                    end
+                    item
+                      MinWidth = 75
+                      Position = 8
+                      Text = 'Avg/Call'
+                      Width = 75
                     end>
                 end
               end
@@ -826,6 +886,10 @@ object frmMain: TfrmMain
             object tabClasses: TTabSheet
               Caption = 'Classes'
               ImageIndex = -1
+              ExplicitLeft = 0
+              ExplicitTop = 0
+              ExplicitWidth = 0
+              ExplicitHeight = 0
               object vstClasses: TVirtualStringTree
                 Left = 0
                 Top = 33
@@ -843,26 +907,26 @@ object frmMain: TfrmMain
                   item
                     MinWidth = 200
                     Position = 0
+                    Text = 'Class'
                     Width = 200
-                    WideText = 'Class'
                   end
                   item
                     MinWidth = 150
                     Position = 1
+                    Text = '% Time'
                     Width = 150
-                    WideText = '% Time'
                   end
                   item
                     MinWidth = 150
                     Position = 2
+                    Text = 'Time'
                     Width = 150
-                    WideText = 'Time'
                   end
                   item
                     MinWidth = 150
                     Position = 3
+                    Text = 'Calls'
                     Width = 150
-                    WideText = 'Calls'
                   end>
               end
               object pnThreadClass: TPanel
@@ -895,6 +959,10 @@ object frmMain: TfrmMain
             object tabUnits: TTabSheet
               Caption = 'Units'
               ImageIndex = -1
+              ExplicitLeft = 0
+              ExplicitTop = 0
+              ExplicitWidth = 0
+              ExplicitHeight = 0
               object pnThreadUnits: TPanel
                 Left = 0
                 Top = 0
@@ -938,32 +1006,36 @@ object frmMain: TfrmMain
                   item
                     MinWidth = 200
                     Position = 0
+                    Text = 'Unit'
                     Width = 200
-                    WideText = 'Unit'
                   end
                   item
                     MinWidth = 150
                     Position = 1
+                    Text = '% Time'
                     Width = 150
-                    WideText = '% Time'
                   end
                   item
                     MinWidth = 150
                     Position = 2
+                    Text = 'Time'
                     Width = 150
-                    WideText = 'Time'
                   end
                   item
                     MinWidth = 150
                     Position = 3
+                    Text = 'Calls'
                     Width = 150
-                    WideText = 'Calls'
                   end>
               end
             end
             object tabThreads: TTabSheet
               Caption = 'Threads'
               ImageIndex = -1
+              ExplicitLeft = 0
+              ExplicitTop = 0
+              ExplicitWidth = 0
+              ExplicitHeight = 0
               object vstThreads: TVirtualStringTree
                 Left = 0
                 Top = 0
@@ -982,32 +1054,32 @@ object frmMain: TfrmMain
                   item
                     MinWidth = 90
                     Position = 0
+                    Text = 'ThreadID'
                     Width = 90
-                    WideText = 'ThreadID'
                   end
                   item
                     MinWidth = 275
                     Position = 1
+                    Text = 'Thread'
                     Width = 275
-                    WideText = 'Thread'
                   end
                   item
                     MinWidth = 75
                     Position = 2
+                    Text = '% Time'
                     Width = 75
-                    WideText = '% Time'
                   end
                   item
                     MinWidth = 75
                     Position = 3
+                    Text = 'Time'
                     Width = 75
-                    WideText = 'Time'
                   end
                   item
                     MinWidth = 75
                     Position = 4
+                    Text = 'Calls'
                     Width = 75
-                    WideText = 'Calls'
                   end>
               end
             end
@@ -1404,23 +1476,6 @@ object frmMain: TfrmMain
       ImageIndex = 27
       OnExecute = actBrowseNextExecute
       OnUpdate = actBrowseNextUpdate
-    end
-    object actOpenCallGraph: TAction
-      Category = 'Profile'
-      Caption = 'Open Call &Graph Analyzer'
-      Enabled = False
-      Hint = 'Open Call Graph Analyzer'
-      ImageIndex = 28
-      OnExecute = actOpenCallGraphExecute
-      OnUpdate = actOpenCallGraphUpdate
-    end
-    object actJumpToCallGraph: TAction
-      Category = 'Analysis'
-      Caption = 'Jump to Call &Graph'
-      Enabled = False
-      Hint = 'Jump to Call Graph'
-      OnExecute = actJumpToCallGraphExecute
-      OnUpdate = actJumpToCallGraphUpdate
     end
     object actHelpOpenHome: TAction
       Category = 'Help'
@@ -2870,11 +2925,5 @@ object frmMain: TfrmMain
   object popBrowseNext: TPopupMenu
     Left = 197
     Top = 314
-  end
-  object OpenDialog1: TOpenDialog
-    Filter = '????? ??????? (*.prf)|*.prf'
-    Options = [ofHideReadOnly, ofNoChangeDir, ofFileMustExist, ofEnableSizing]
-    Left = 168
-    Top = 208
   end
 end

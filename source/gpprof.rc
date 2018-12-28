@@ -1,8 +1,8 @@
 MAINICON ICON "gpprof_Icon.ico"
 
 VS_VERSION_INFO VERSIONINFO
-FILEVERSION      1, 3, 3, 5
-PRODUCTVERSION   1, 3, 3, 5
+FILEVERSION      1, 4, 1, 0
+PRODUCTVERSION   1, 4, 1, 0
 FILEFLAGSMASK  VS_FFI_FILEFLAGSMASK
 FILEFLAGS  0
 FILEOS   VFT_APP
@@ -16,21 +16,14 @@ BEGIN
   BEGIN
     BLOCK "040904E4"
     BEGIN
-     VALUE "CompanyName", " \0"
-     VALUE "FileDescription", "Profiler for Delphi 2, 3, and 4. \0"
-     VALUE "FileVersion", "1.4.0.1 \0"
+     VALUE "FileDescription", "Performance Profiler for Delphi \0"
+     VALUE "FileVersion", "1.4.3.0 \0"
      VALUE "InternalName", "GpProfile \0"
      VALUE "LegalCopyright", "(c) 1998, 1999 Primoz Gabrijelcic \0"
      VALUE "LegalTrademarks", " \0"
      VALUE "OriginalFileName", " \0"
      VALUE "ProductName", "GpProfile \0"
-     VALUE "ProductVersion", "1.4.0.1 \0"
-     VALUE "Comments", " \0"
-     VALUE "Key1", " \0"
-     VALUE "Key2", " \0"
-     VALUE "Key3", " \0"
-     VALUE "Key4", " \0"
-     VALUE "Key5", " \0"
+     VALUE "ProductVersion", "1.4.3.0 \0"
     END
   END
 END

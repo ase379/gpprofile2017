@@ -258,10 +258,8 @@ end;
 
 procedure TGPMRUFiles.DeleteFromMenu(const aRecentFile: string);
 var
-  LRegistry : TRegistry;
   n         : integer;
   LDividerPos: integer;
-  S : string;
 begin
   if (Menu <> nil) then
   begin
