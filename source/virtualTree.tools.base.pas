@@ -17,7 +17,14 @@ type
     fList: TVirtualStringTree;
     fSortcols: array of TColumnIndex;
 
+    /// <summary>
+    /// Resorts the headers.
+    /// </summary>
     procedure OnHeaderClick(Sender: TVTHeader; HitInfo: TVTHeaderHitInfo);
+    /// <summary>
+    /// processes the input for fast searching
+    /// </summary>
+    procedure OnIncrementalSearch(Sender: TBaseVirtualTree; Node: PVirtualNode;const SearchText: string;var Result: Integer);
 
   public
     constructor Create(const aList: TVirtualStringTree);
@@ -50,6 +57,8 @@ constructor TVirtualTreeBaseTools.Create(const aList: TVirtualStringTree);
 begin
   fList := aList;
   fList.OnHeaderClick := self.OnHeaderClick;
+  fList.IncrementalSearch := isAll;
+  fList.OnIncrementalSearch := self.OnIncrementalSearch;
 end;
 
 destructor TVirtualTreeBaseTools.Destroy;
@@ -119,7 +128,6 @@ end;
 
 function TVirtualTreeBaseTools.GetNode(const anIndex: Cardinal): PVirtualNode;
 var
-  I : Cardinal;
   LEnumor : TVTVirtualNodeEnumerator;
 begin
   result := nil;
@@ -134,7 +142,6 @@ end;
 
 function TVirtualTreeBaseTools.GetNodeByName(const aName: string): PVirtualNode;
 var
-  I : Cardinal;
   LEnumor : TVTVirtualNodeEnumerator;
 begin
   result := nil;
@@ -165,10 +172,12 @@ begin
   fList.Header.SortColumn := HitInfo.Column;
 end;
 
+
+procedure TVirtualTreeBaseTools.OnIncrementalSearch(Sender: TBaseVirtualTree; Node: PVirtualNode;
+  const SearchText: string; var Result: Integer);
+begin
+  result := AnsiStrLIComp(pWidechar(GetName(node.Index)),PWideChar(SearchText), Length(SearchText));
+end;
+
 end.
 
-interface
-
-implementation
-
-end.
