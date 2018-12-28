@@ -41,10 +41,6 @@ type
     procedure OnCompareNodes(Sender: TBaseVirtualTree; Node1, Node2: PVirtualNode;
       Column: TColumnIndex; var Result: Integer);
     /// <summary>
-    /// Resorts the headers.
-    /// </summary>
-    procedure OnHeaderClick(Sender: TVTHeader; HitInfo: TVTHeaderHitInfo);
-    /// <summary>
     /// Adds the bar overlays to columns supporting the overlays.
     /// </summary>
     procedure OnAftercellPaint(Sender: TBaseVirtualTree; TargetCanvas: TCanvas; Node: PVirtualNode; Column: TColumnIndex; CellRect: TRect);
@@ -115,13 +111,12 @@ var
   i : integer;
   LScaledWidth : integer;
 begin
-  fList := aList;
+  inherited Create(AList);
   fListType := aListType;
   fList.NodeDataSize := SizeOf(TProfilingInfoRec);
   fList.OnFreeNode := self.OnFreeNode;
   fList.OnCompareNodes := self.OnCompareNodes;
   fList.ongettext := OnGetText;
-  fList.OnHeaderClick := self.OnHeaderClick;
   fList.OnAfterCellPaint := OnAftercellPaint;
 end;
 
@@ -700,20 +695,6 @@ begin
     end;
   end;
 end;
-
-procedure TSimpleStatsListTools.OnHeaderClick(Sender: TVTHeader;
-  HitInfo: TVTHeaderHitInfo);
-begin
-  fList.SortTree(HitInfo.Column,Sender.SortDirection,True);
-
-  if Sender.SortDirection=sdAscending then
-    Sender.SortDirection:=sdDescending
-  else
-    Sender.SortDirection:=sdAscending;
-  fList.Header.SortDirection := Sender.SortDirection;
-  fList.Header.SortColumn := HitInfo.Column;
-end;
-
 
 
 procedure TSimpleStatsListTools.OnCompareNodes(Sender: TBaseVirtualTree;

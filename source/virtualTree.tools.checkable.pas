@@ -29,8 +29,6 @@ type
       Column: TColumnIndex; TextType: TVSTTextType; var CellText: string);
     procedure OnCompareNodes(Sender: TBaseVirtualTree; Node1, Node2: PVirtualNode;
       Column: TColumnIndex; var Result: Integer);
-    procedure OnHeaderClick(Sender: TVTHeader; HitInfo: TVTHeaderHitInfo);
-
   public
     constructor Create(const aList: TVirtualStringTree; const aListType : TCheckableItemDataEnum);
     destructor Destroy;override;
@@ -52,13 +50,12 @@ uses
 
 constructor TCheckableListTools.Create(const aList: TVirtualStringTree; const aListType : TCheckableItemDataEnum);
 begin
-  fList := aList;
+  inherited Create(aList);
   fListType := aListType;
   fList.NodeDataSize := SizeOf(TCheckableItemData);
   fList.OnFreeNode := self.OnFreeNode;
   fList.OnCompareNodes := self.OnCompareNodes;
   fList.ongettext := OnGetText;
-  fList.OnHeaderClick := self.OnHeaderClick;
 end;
 
 destructor TCheckableListTools.Destroy;
@@ -171,21 +168,6 @@ begin
       CellText := LData.Name;
     end;
   end;
-end;
-
-procedure TCheckableListTools.OnHeaderClick(Sender: TVTHeader;
-  HitInfo: TVTHeaderHitInfo);
-begin
-  SetLength(fSortCols,length(fSortCols)+1);
-  fSortCols[Length(fSortCols)-1] := HitInfo.Column;
-  fList.SortTree(HitInfo.Column,Sender.SortDirection,True);
-
-  if Sender.SortDirection=sdAscending then
-    Sender.SortDirection:=sdDescending
-  else
-    Sender.SortDirection:=sdAscending;
-  fList.Header.SortDirection := Sender.SortDirection;
-  fList.Header.SortColumn := HitInfo.Column;
 end;
 
 procedure TCheckableListTools.OnCompareNodes(Sender: TBaseVirtualTree;
