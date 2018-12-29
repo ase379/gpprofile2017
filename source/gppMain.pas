@@ -1822,6 +1822,7 @@ begin
     fVstSelectClassTools.BeginUpdate;
     try
       try
+        LFoundNode := nil;
         if not recheck then
           fVstSelectClassTools.Clear;
         for i := 0 to LInfoList.Count - 1 do
@@ -1898,10 +1899,10 @@ begin
         begin
           if fVstSelectClassTools.GetSelectedIndex = 0 then
             clbProcs.Items.insert(0, '<all procedures>')
-          else if GetSelectedClassName = '<' then
+          else if GetSelectedClassName.StartsWith('<') then
             clbProcs.Items.insert(0, '<all classless procedures>')
           else
-            clbProcs.Items.insert(0, '<all ' + GetSelectedUnitName + ' methods>');
+            clbProcs.Items.insert(0, '<all ' + GetSelectedClassName + ' methods>');
           ConfigureCheckBox(0,LInfoList.AllInstrumented, LInfoList.NoneInstrumented);
         end;
         LInfoList.free;
