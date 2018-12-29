@@ -1747,6 +1747,8 @@ begin
   LEnum := vstSelectClasses.Nodes().GetEnumerator;
   while(LEnum.MoveNext) do
   begin
+    if LEnum.Current.Index = 0 then
+      continue;
     LCheckedState := fVstSelectClassTools.GetCheckedState(LEnum.Current.Index);
     if (LCheckedState = TCheckedState.checked) or (LCheckedState = TCheckedState.greyed) then
       none := false;
@@ -2457,6 +2459,7 @@ begin
        clbClassesClick(nil);
     end
   );
+  vstSelectClasses.Selected[node] := true;
 end;
 
 procedure TfrmMain.vstSelectUnitsAddToSelection(Sender: TBaseVirtualTree;
@@ -2475,6 +2478,7 @@ begin
        clbUnitsClick(nil);
     end
   );
+  vstSelectUnits.Selected[node] := true;
 end;
 
 { TfrmMain.UseDelphiSettings }
