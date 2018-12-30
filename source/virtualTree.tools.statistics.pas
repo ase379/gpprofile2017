@@ -1,4 +1,4 @@
-unit gppmain.tree;
+unit virtualTree.tools.statistics;
 
 interface
 
@@ -8,13 +8,13 @@ uses
   VirtualTrees,
 
   gppmain.tree.types,
-  gppresults;
+  gppresults,
+  virtualTree.tools.base;
 
 type
   TColumnInfoType = (undefined,Text,Percent, Time, Count);
-  TSimpleStatsListTools = class
+  TSimpleStatsListTools = class(TVirtualTreeBaseTools)
   private
-    fList: TVirtualStringTree;
     fListType : TProfilingInfoTypeEnum;
     fProfileResults : TResults;
     fThreadIndex : Integer;
@@ -41,19 +41,12 @@ type
     procedure OnCompareNodes(Sender: TBaseVirtualTree; Node1, Node2: PVirtualNode;
       Column: TColumnIndex; var Result: Integer);
     /// <summary>
-    /// Resorts the headers.
-    /// </summary>
-    procedure OnHeaderClick(Sender: TVTHeader; HitInfo: TVTHeaderHitInfo);
-    /// <summary>
     /// Adds the bar overlays to columns supporting the overlays.
     /// </summary>
     procedure OnAftercellPaint(Sender: TBaseVirtualTree; TargetCanvas: TCanvas; Node: PVirtualNode; Column: TColumnIndex; CellRect: TRect);
   public
     constructor Create(const aList: TVirtualStringTree;const aListType : TProfilingInfoTypeEnum);
 
-    procedure BeginUpdate;
-    procedure EndUpdate;
-    procedure Clear;
     procedure AddEntry(const anEntryId : Cardinal);overload;
     procedure AddEntry(const anEntryId, anIndex : Cardinal);overload;
 
@@ -113,39 +106,19 @@ const
   COL_THREAD_TOTAL_CALLS = 4;
 
 
-procedure TSimpleStatsListTools.Clear;
-begin
-  fList.Clear();
-end;
-
 constructor TSimpleStatsListTools.Create(const aList: TVirtualStringTree; const aListType : TProfilingInfoTypeEnum);
 var
   i : integer;
   LScaledWidth : integer;
 begin
-  fList := aList;
+  inherited Create(AList);
   fListType := aListType;
   fList.NodeDataSize := SizeOf(TProfilingInfoRec);
   fList.OnFreeNode := self.OnFreeNode;
   fList.OnCompareNodes := self.OnCompareNodes;
   fList.ongettext := OnGetText;
-  fList.OnHeaderClick := self.OnHeaderClick;
   fList.OnAfterCellPaint := OnAftercellPaint;
 end;
-
-procedure TSimpleStatsListTools.BeginUpdate;
-begin
-  FList.BeginUpdate;
-  fList.TreeOptions.MiscOptions := fList.TreeOptions.MiscOptions - [toReadOnly];
-end;
-
-procedure TSimpleStatsListTools.EndUpdate;
-begin
-  fList.TreeOptions.MiscOptions := fList.TreeOptions.MiscOptions + [toReadOnly];
-  FList.EndUpdate;
-end;
-
-
 
 procedure TSimpleStatsListTools.AddEntry(const anEntryId : Cardinal);
 var
@@ -722,20 +695,6 @@ begin
     end;
   end;
 end;
-
-procedure TSimpleStatsListTools.OnHeaderClick(Sender: TVTHeader;
-  HitInfo: TVTHeaderHitInfo);
-begin
-  fList.SortTree(HitInfo.Column,Sender.SortDirection,True);
-
-  if Sender.SortDirection=sdAscending then
-    Sender.SortDirection:=sdDescending
-  else
-    Sender.SortDirection:=sdAscending;
-  fList.Header.SortDirection := Sender.SortDirection;
-  fList.Header.SortColumn := HitInfo.Column;
-end;
-
 
 
 procedure TSimpleStatsListTools.OnCompareNodes(Sender: TBaseVirtualTree;

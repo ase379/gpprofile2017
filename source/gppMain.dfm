@@ -1,6 +1,7 @@
 object frmMain: TfrmMain
   Left = 312
   Top = 179
+  ActiveControl = vstSelectUnits
   Caption = 'GpProfile 2017'
   ClientHeight = 640
   ClientWidth = 1109
@@ -317,7 +318,7 @@ object frmMain: TfrmMain
         Top = 0
         Width = 1109
         Height = 466
-        ActivePage = tabAnalysis
+        ActivePage = tabInstrumentation
         Align = alClient
         HotTrack = True
         Images = imglButtons
@@ -326,6 +327,10 @@ object frmMain: TfrmMain
         object tabInstrumentation: TTabSheet
           Caption = 'Instrumentation'
           ImageIndex = 16
+          ExplicitLeft = 0
+          ExplicitTop = 0
+          ExplicitWidth = 0
+          ExplicitHeight = 0
           object Splitter1: TSplitter
             Left = 129
             Top = 25
@@ -388,30 +393,33 @@ object frmMain: TfrmMain
             Align = alLeft
             BevelOuter = bvNone
             TabOrder = 1
-            DesignSize = (
-              129
-              412)
-            object clbUnits: TGpCheckListBox
-              Tag = 258
-              Left = 5
-              Top = 26
-              Width = 123
-              Height = 384
-              OnClickCheck = clbUnitsClickCheck
-              AllowGrayed = True
-              Anchors = [akLeft, akTop, akRight, akBottom]
-              ItemHeight = 13
-              TabOrder = 0
-              OnClick = clbUnitsClick
-              OnKeyPress = clbUnitsKeyPress
-            end
             object lblUnits: TStaticText
-              Left = 4
-              Top = 4
+              AlignWithMargins = True
+              Left = 3
+              Top = 3
               Width = 37
               Height = 17
+              Align = alTop
               Caption = '&Units:'
+              TabOrder = 0
+            end
+            object vstSelectUnits: TVirtualStringTree
+              Left = 0
+              Top = 23
+              Width = 129
+              Height = 389
+              Align = alClient
+              Header.AutoSizeIndex = -1
+              Header.Height = 20
+              Header.MainColumn = -1
+              Header.MinHeight = 20
+              PopupMenu = popAnalysisListview
               TabOrder = 1
+              TreeOptions.MiscOptions = [toAcceptOLEDrop, toCheckSupport, toFullRepaintOnResize, toInitOnSave, toToggleOnDblClick, toWheelPanning]
+              TreeOptions.PaintOptions = [toShowButtons, toShowDropmark, toThemeAware, toUseBlendedImages]
+              OnAddToSelection = vstSelectUnitsAddToSelection
+              OnChecked = vstSelectUnitsChecked
+              Columns = <>
             end
           end
           object pnlClasses: TPanel
@@ -422,29 +430,33 @@ object frmMain: TfrmMain
             Align = alLeft
             BevelOuter = bvNone
             TabOrder = 2
-            DesignSize = (
-              137
-              412)
-            object clbClasses: TGpCheckListBox
-              Left = 3
-              Top = 26
-              Width = 133
-              Height = 384
-              OnClickCheck = clbClassesClickCheck
-              AllowGrayed = True
-              Anchors = [akLeft, akTop, akRight, akBottom]
-              ItemHeight = 13
-              TabOrder = 0
-              OnClick = clbClassesClick
-              OnKeyPress = clbClassesKeyPress
-            end
             object lblClasses: TStaticText
+              AlignWithMargins = True
               Left = 3
-              Top = 4
+              Top = 3
               Width = 49
               Height = 17
+              Align = alTop
               Caption = '&Classes:'
+              TabOrder = 0
+            end
+            object vstSelectClasses: TVirtualStringTree
+              Left = 0
+              Top = 23
+              Width = 137
+              Height = 389
+              Align = alClient
+              Header.AutoSizeIndex = -1
+              Header.Height = 20
+              Header.MainColumn = -1
+              Header.MinHeight = 20
+              PopupMenu = popAnalysisListview
               TabOrder = 1
+              TreeOptions.MiscOptions = [toAcceptOLEDrop, toCheckSupport, toFullRepaintOnResize, toInitOnSave, toToggleOnDblClick, toWheelPanning]
+              TreeOptions.PaintOptions = [toShowButtons, toShowDropmark, toThemeAware, toUseBlendedImages]
+              OnAddToSelection = vstSelectClassesAddToSelection
+              OnChecked = vstSelectClassesChecked
+              Columns = <>
             end
           end
           object pnlProcs: TPanel
@@ -470,18 +482,25 @@ object frmMain: TfrmMain
               OnClick = clbProcsClick
             end
             object lblProcs: TStaticText
-              Left = 2
-              Top = 4
-              Width = 67
+              AlignWithMargins = True
+              Left = 3
+              Top = 3
+              Width = 823
               Height = 17
+              Align = alTop
               Caption = 'P&rocedures:'
               TabOrder = 1
+              ExplicitWidth = 67
             end
           end
         end
         object tabAnalysis: TTabSheet
           Caption = 'Analysis'
           ImageIndex = 17
+          ExplicitLeft = 0
+          ExplicitTop = 0
+          ExplicitWidth = 0
+          ExplicitHeight = 0
           object PageControl2: TPageControl
             Left = 0
             Top = 0
@@ -495,6 +514,10 @@ object frmMain: TfrmMain
             object tabProcedures: TTabSheet
               Caption = 'Procedures'
               ImageIndex = -1
+              ExplicitLeft = 0
+              ExplicitTop = 0
+              ExplicitWidth = 0
+              ExplicitHeight = 0
               object splitCallees: TSplitter
                 Left = 0
                 Top = 312
@@ -863,6 +886,10 @@ object frmMain: TfrmMain
             object tabClasses: TTabSheet
               Caption = 'Classes'
               ImageIndex = -1
+              ExplicitLeft = 0
+              ExplicitTop = 0
+              ExplicitWidth = 0
+              ExplicitHeight = 0
               object vstClasses: TVirtualStringTree
                 Left = 0
                 Top = 33
@@ -932,6 +959,10 @@ object frmMain: TfrmMain
             object tabUnits: TTabSheet
               Caption = 'Units'
               ImageIndex = -1
+              ExplicitLeft = 0
+              ExplicitTop = 0
+              ExplicitWidth = 0
+              ExplicitHeight = 0
               object pnThreadUnits: TPanel
                 Left = 0
                 Top = 0
@@ -1001,6 +1032,10 @@ object frmMain: TfrmMain
             object tabThreads: TTabSheet
               Caption = 'Threads'
               ImageIndex = -1
+              ExplicitLeft = 0
+              ExplicitTop = 0
+              ExplicitWidth = 0
+              ExplicitHeight = 0
               object vstThreads: TVirtualStringTree
                 Left = 0
                 Top = 0

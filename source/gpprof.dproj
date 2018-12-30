@@ -104,6 +104,7 @@
         <VerInfo_AutoIncVersion>false</VerInfo_AutoIncVersion>
         <AppEnableHighDPI>true</AppEnableHighDPI>
         <AppEnableRuntimeThemes>true</AppEnableRuntimeThemes>
+        <BT_BuildType>Debug</BT_BuildType>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_1_Win64)'!=''">
         <VerInfo_Build>1</VerInfo_Build>
@@ -111,6 +112,7 @@
         <DCC_ExeOutput>..\bin64</DCC_ExeOutput>
         <AppEnableRuntimeThemes>true</AppEnableRuntimeThemes>
         <AppEnableHighDPI>true</AppEnableHighDPI>
+        <BT_BuildType>Debug</BT_BuildType>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_2)'!=''">
         <Version>7.0</Version>
@@ -237,6 +239,8 @@
             <Form>frmPreferenceMacros</Form>
         </DCCReference>
         <DCCReference Include="gppCurrentPrefs.pas"/>
+        <DCCReference Include="virtualTree.tools.base.pas"/>
+        <DCCReference Include="gpParser.analysis.pas"/>
         <BuildConfiguration Include="Debug">
             <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>

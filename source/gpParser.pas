@@ -4,8 +4,8 @@ unit gpParser;
 interface
 
 uses
-  System.Classes,
   System.SysUtils,
+  System.Classes,
   System.Generics.Collections,
   gppIDT,
   Dialogs,
@@ -13,8 +13,8 @@ uses
   gpFileEdit;
 
 type
-  EUnitNotFoundException = class(Exception);
   TNotifyProc = procedure(const aUnitName: String) of object;
+  EUnitInSearchPathNotFoundError = class(Exception);
   TNotifyInstProc = procedure(const aFullName, aUnitName: String;aParse: boolean) of object;
 
   // Do not change order
@@ -636,8 +636,8 @@ var
       parserStack.Add(stream);
     end;
 
-    if not FindOnPath(aUnitFN, aSearchPath, aDefaultDir, vUnitFullName) then
-      raise EUnitNotFoundException.Create('Unit not found in search path: '
+    if not FindOnPath(aUnitFN, aSearchPath, aDefaultDir, vUnitFullName) then
+      raise EUnitInSearchPathNotFoundError.Create('Unit not found in search path: '
         + aUnitFN);
 
     parser := TmwPasLex.Create;
@@ -745,10 +745,7 @@ var
     Result := False;
     for i := Low(compareWith) to High(compareWith) do
       if key = compareWith[i] then
-      begin
-        Result := true;
-        Exit;
-      end;
+        exit(true);
   end; { IsOneOf }
 
 var
@@ -764,8 +761,7 @@ begin
       // Anton Alisov: not sure, for what reason FindOnPath is called here with unFullName instead of unName
       if not FindOnPath(unFullName, aSearchPath, aDefaultDir, vUnitFullName)
       then
-        raise EUnitNotFoundException.Create('Unit not found in search path: ' +
-          unFullName);
+        raise EUnitInSearchPathNotFoundError.Create('Unit not found in search path: ' + unFullName);
       unFullName := vUnitFullName;
       Assert(IsAbsolutePath(unFullName));
       unInProjectDir := (self = aProject.prUnit) or
