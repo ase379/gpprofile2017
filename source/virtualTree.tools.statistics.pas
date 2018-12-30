@@ -107,9 +107,6 @@ const
 
 
 constructor TSimpleStatsListTools.Create(const aList: TVirtualStringTree; const aListType : TProfilingInfoTypeEnum);
-var
-  i : integer;
-  LScaledWidth : integer;
 begin
   inherited Create(AList);
   fListType := aListType;
@@ -250,12 +247,12 @@ end;
 
 procedure TSimpleStatsListTools.OnFreeNode(Sender: TBaseVirtualTree;
   Node: PVirtualNode);
-var
-  Data: Pointer;
+//var
+//  Data: Pointer;
 begin
-  Data := Node.GetData();
-  if data <> nil then
-    Finalize(Data^);
+//  Data := Node.GetData();
+//  if data <> nil then
+//    Finalize(Data^);
 end;
 
 function TSimpleStatsListTools.GetColInfoType(const aData : PProfilingInfoRec;const aColumnIndex: integer): TColumnInfoType;

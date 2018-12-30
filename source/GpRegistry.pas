@@ -36,8 +36,6 @@ uses
   GpString;
 
   function TGpRegistry.ReadString (name,defval: string): string;
-  var
-    LLastError : cardinal;
   begin
     try
       result := inherited ReadString(name);

@@ -103,7 +103,9 @@ type
 
 	  function KeyHash: Integer;
     function KeyComp(const aKey: AnsiString): Boolean;
+    {$IFDEF D8_NEWER}
     function Func9: tptTokenKind;
+    {$ENDIF}
     function Func15: TptTokenKind;
     function Func19: TptTokenKind;
     function Func20: TptTokenKind;
@@ -621,12 +623,14 @@ begin
   else Result := False;
 end; { KeyComp }
 
+{$IFDEF D8_NEWER}
 function TmwBasePasLex.Func9: tptTokenKind;
 begin
   Result := ptIdentifier;
   if KeyComp('Add') then
     FExID := ptAdd;
 end;
+{$ENDIF}
 
 function TmwBasePasLex.Func15: TptTokenKind;
 begin

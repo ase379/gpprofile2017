@@ -43,7 +43,6 @@ uses
 procedure TfrmAbout.FormCreate(Sender: TObject);
 var
   verInfo: TGpVersionInfo;
-  stream : TResourceStream;
 begin
   verInfo := TGpVersionInfo.Create(ParamStr(0));
   try
