@@ -6,11 +6,7 @@ object frmPreferenceMacros: TfrmPreferenceMacros
   ClientHeight = 110
   ClientWidth = 483
   Color = clBtnFace
-  Font.Charset = DEFAULT_CHARSET
-  Font.Color = clWindowText
-  Font.Height = -11
-  Font.Name = 'MS Sans Serif'
-  Font.Style = []
+  ParentFont = True
   KeyPreview = True
   OldCreateOrder = True
   Position = poScreenCenter
@@ -31,13 +27,7 @@ object frmPreferenceMacros: TfrmPreferenceMacros
       Height = 27
       Caption = 'OK'
       Default = True
-      Font.Charset = DEFAULT_CHARSET
-      Font.Color = clBlack
-      Font.Height = -11
-      Font.Name = 'MS Sans Serif'
-      Font.Style = []
       ModalResult = 1
-      ParentFont = False
       TabOrder = 0
     end
     object oxButton2: TButton
@@ -75,7 +65,7 @@ object frmPreferenceMacros: TfrmPreferenceMacros
       Margins.Top = 5
       Align = alTop
       Caption = 'Please select the macro to be added....'
-      ExplicitWidth = 185
+      ExplicitWidth = 190
     end
     object cbAvailableMacros: TComboBox
       AlignWithMargins = True

@@ -6,11 +6,7 @@ object frmMain: TfrmMain
   ClientHeight = 640
   ClientWidth = 1109
   Color = clBtnFace
-  Font.Charset = DEFAULT_CHARSET
-  Font.Color = clWindowText
-  Font.Height = -11
-  Font.Name = 'MS Sans Serif'
-  Font.Style = []
+  ParentFont = True
   KeyPreview = True
   Menu = MainMenu1
   OldCreateOrder = True
@@ -32,9 +28,11 @@ object frmMain: TfrmMain
       item
         Width = 0
       end>
+    ParentFont = True
+    UseSystemFont = False
     OnResize = StatusBarResize
   end
-  object Panel3: TPanel
+  object pnlToolbar: TPanel
     Left = 0
     Top = 0
     Width = 1109
@@ -398,6 +396,7 @@ object frmMain: TfrmMain
               Align = alTop
               Caption = '&Units:'
               TabOrder = 0
+              ExplicitWidth = 39
             end
             object vstSelectUnits: TVirtualStringTree
               Left = 0
@@ -435,6 +434,7 @@ object frmMain: TfrmMain
               Align = alTop
               Caption = '&Classes:'
               TabOrder = 0
+              ExplicitWidth = 51
             end
             object vstSelectClasses: TVirtualStringTree
               Left = 0
@@ -452,7 +452,6 @@ object frmMain: TfrmMain
               TreeOptions.PaintOptions = [toShowButtons, toShowDropmark, toThemeAware, toUseBlendedImages]
               OnAddToSelection = vstSelectClassesAddToSelection
               OnChecked = vstSelectClassesChecked
-              ExplicitTop = 24
               Columns = <>
             end
           end
@@ -473,6 +472,7 @@ object frmMain: TfrmMain
               Align = alTop
               Caption = 'P&rocedures:'
               TabOrder = 0
+              ExplicitWidth = 69
             end
             object vstSelectProcs: TVirtualStringTree
               Left = 0
@@ -490,7 +490,6 @@ object frmMain: TfrmMain
               TreeOptions.PaintOptions = [toShowButtons, toShowDropmark, toThemeAware, toUseBlendedImages]
               OnAddToSelection = vstSelectProcsAddToSelection
               OnChecked = vstSelectProcsChecked
-              ExplicitWidth = 129
               Columns = <>
             end
           end
@@ -539,7 +538,7 @@ object frmMain: TfrmMain
                 object lblSelectThreadProc: TLabel
                   Left = 0
                   Top = 10
-                  Width = 66
+                  Width = 68
                   Height = 13
                   Caption = '&Select thread:'
                   FocusControl = cbxSelectThreadProc
@@ -929,7 +928,7 @@ object frmMain: TfrmMain
                 object Label1: TLabel
                   Left = 0
                   Top = 10
-                  Width = 66
+                  Width = 68
                   Height = 13
                   Caption = '&Select thread:'
                   FocusControl = cbxSelectThreadClass
@@ -959,7 +958,7 @@ object frmMain: TfrmMain
                 object Label2: TLabel
                   Left = 8
                   Top = 10
-                  Width = 66
+                  Width = 68
                   Height = 13
                   Caption = '&Select thread:'
                   FocusControl = cbxSelectThreadUnit

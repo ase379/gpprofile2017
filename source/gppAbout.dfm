@@ -7,11 +7,7 @@ object frmAbout: TfrmAbout
   ClientHeight = 378
   ClientWidth = 404
   Color = clBtnFace
-  Font.Charset = DEFAULT_CHARSET
-  Font.Color = clWindowText
-  Font.Height = -11
-  Font.Name = 'MS Sans Serif'
-  Font.Style = []
+  ParentFont = True
   KeyPreview = True
   OldCreateOrder = False
   Position = poDefault
@@ -66,14 +62,14 @@ object frmAbout: TfrmAbout
     object lblVersion: TLabel
       Left = 72
       Top = 16
-      Width = 104
+      Width = 110
       Height = 13
       Caption = 'GpProfile 2017 (v. %s)'
     end
     object Label3: TLabel
       Left = 72
       Top = 32
-      Width = 120
+      Width = 122
       Height = 13
       Caption = 'Author: Primoz Gabrijelcic'
     end
@@ -352,18 +348,12 @@ object frmAbout: TfrmAbout
     object Label11: TLabel
       Left = 24
       Top = 124
-      Width = 325
+      Width = 318
       Height = 39
       Caption = 
         'This program is distributed in the hope that it will be useful, ' +
         'but WITHOUT ANY WARRANTY; without even the implied warranty of M' +
         'ERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.'
-      Font.Charset = DEFAULT_CHARSET
-      Font.Color = clBlack
-      Font.Height = -11
-      Font.Name = 'MS Sans Serif'
-      Font.Style = []
-      ParentFont = False
       WordWrap = True
     end
     object oxGraphicButton1: TBitBtn

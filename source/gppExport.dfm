@@ -7,11 +7,7 @@ object frmExport: TfrmExport
   ClientHeight = 217
   ClientWidth = 292
   Color = clBtnFace
-  Font.Charset = DEFAULT_CHARSET
-  Font.Color = clWindowText
-  Font.Height = -11
-  Font.Name = 'MS Sans Serif'
-  Font.Style = []
+  ParentFont = True
   KeyPreview = True
   OldCreateOrder = False
   Position = poDefault
@@ -72,7 +68,6 @@ object frmExport: TfrmExport
       Width = 145
       Height = 21
       Style = csDropDownList
-      ItemHeight = 13
       TabOrder = 4
       Visible = False
     end

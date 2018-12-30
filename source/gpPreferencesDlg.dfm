@@ -6,11 +6,7 @@ object frmPreferences: TfrmPreferences
   ClientHeight = 368
   ClientWidth = 483
   Color = clBtnFace
-  Font.Charset = DEFAULT_CHARSET
-  Font.Color = clWindowText
-  Font.Height = -11
-  Font.Name = 'MS Sans Serif'
-  Font.Style = []
+  ParentFont = True
   KeyPreview = True
   OldCreateOrder = True
   Position = poDefault
@@ -33,13 +29,7 @@ object frmPreferences: TfrmPreferences
       Height = 27
       Caption = 'OK'
       Default = True
-      Font.Charset = DEFAULT_CHARSET
-      Font.Color = clBlack
-      Font.Height = -11
-      Font.Name = 'MS Sans Serif'
-      Font.Style = []
       ModalResult = 1
-      ParentFont = False
       TabOrder = 0
     end
     object oxButton2: TButton
@@ -48,13 +38,7 @@ object frmPreferences: TfrmPreferences
       Width = 77
       Height = 27
       Caption = 'Cancel'
-      Font.Charset = DEFAULT_CHARSET
-      Font.Color = clBlack
-      Font.Height = -11
-      Font.Name = 'MS Sans Serif'
-      Font.Style = []
       ModalResult = 2
-      ParentFont = False
       TabOrder = 1
     end
   end
@@ -80,7 +64,7 @@ object frmPreferences: TfrmPreferences
         object Label1: TLabel
           Left = 16
           Top = 24
-          Width = 60
+          Width = 63
           Height = 13
           Caption = '&Marker style:'
           FocusControl = cbxMarker
@@ -88,7 +72,7 @@ object frmPreferences: TfrmPreferences
         object Label2: TLabel
           Left = 16
           Top = 48
-          Width = 80
+          Width = 83
           Height = 13
           Caption = '&Compiler version:'
           FocusControl = cbxCompilerVersion
@@ -96,7 +80,7 @@ object frmPreferences: TfrmPreferences
         object Label4: TLabel
           Left = 248
           Top = 24
-          Width = 59
+          Width = 57
           Height = 13
           Caption = '&Speed/Size:'
           FocusControl = tbSpeedSize
@@ -104,7 +88,7 @@ object frmPreferences: TfrmPreferences
         object lblFasterTarget: TLabel
           Left = 340
           Top = 24
-          Width = 56
+          Width = 62
           Height = 13
           Caption = 'faster target'
           OnClick = lblFasterTargetClick
@@ -113,7 +97,7 @@ object frmPreferences: TfrmPreferences
         object lblSmallerFile: TLabel
           Left = 340
           Top = 54
-          Width = 87
+          Width = 91
           Height = 13
           Caption = 'smaller profiling file'
           OnClick = lblSmallerFileClick
@@ -283,7 +267,7 @@ object frmPreferences: TfrmPreferences
           Margins.Bottom = 8
           Align = alTop
           Caption = 'Performance output file name: (without extension)'
-          ExplicitWidth = 232
+          ExplicitWidth = 243
         end
         object Panel2: TPanel
           AlignWithMargins = True
