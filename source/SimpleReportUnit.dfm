@@ -6,11 +6,7 @@ object fmSimpleReport: TfmSimpleReport
   Color = clBtnFace
   Constraints.MinHeight = 230
   Constraints.MinWidth = 440
-  Font.Charset = RUSSIAN_CHARSET
-  Font.Color = clWindowText
-  Font.Height = -11
-  Font.Name = 'MS Sans Serif'
-  Font.Style = []
+  ParentFont = True
   KeyPreview = True
   OldCreateOrder = False
   Position = poScreenCenter
@@ -24,16 +20,10 @@ object fmSimpleReport: TfmSimpleReport
     Width = 617
     Height = 445
     Align = alClient
-    Font.Charset = RUSSIAN_CHARSET
-    Font.Color = clWindowText
-    Font.Height = -13
-    Font.Name = 'Arial'
-    Font.Style = []
-    ParentFont = False
     ReadOnly = True
     ScrollBars = ssVertical
     TabOrder = 0
-    ExplicitHeight = 404
+    Zoom = 100
   end
   object ActionManager1: TActionManager
     Left = 272
