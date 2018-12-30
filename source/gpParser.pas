@@ -57,7 +57,7 @@ type
     unImplementOffset: TArray<Integer>;
     unStartUses: TArray<Integer>;
     unEndUses: TArray<Integer>;
-    unFileDate: Integer;
+    unFileDate: TDateTime;
     constructor Create(const aUnitName: String;const aUnitLocation: String = ''; aExcluded: boolean = False);
     destructor Destroy; override;
     procedure Parse(aProject: TProject; const aExclUnits, aSearchPath,aDefaultDir, aConditionals: string;
@@ -69,12 +69,13 @@ type
     procedure ConstructNames(idt: TIDTable);
     function AnyInstrumented: boolean;
     function AnyChange: boolean;
+    function DidFileTimestampChange(): boolean;
   end;
 
   TProcSetThreadName = class
   const
   public
-    tpstnPos: Cardinal;
+    tpstnPos: Integer;
     tpstnWithSelf: string;
   end;
 
@@ -208,7 +209,8 @@ type
 implementation
 
 uses
-  Windows,
+  System.AnsiStrings,
+  Winapi.Windows,
   IoUtils,
   GpIFF,
 {$IFDEF DebugParser}
@@ -271,7 +273,7 @@ end;
 
 function CompareUnit(node1, node2: INode<TUnit>): Integer;
 begin
-  Result := StrIComp(pAnsichar(node1.Data.unName),
+  Result := System.AnsiStrings.StrIComp(pAnsichar(node1.Data.unName),
     pAnsichar(node2.Data.unName));
 end; { CompareUnit }
 
@@ -329,7 +331,7 @@ end; { DisposeProc }
 
 function CompareProc(node1, node2: INode<TProc>): Integer;
 begin
-  Result := StrIComp(pAnsichar(node1.Data.prName),
+  Result := System.AnsiStrings.StrIComp(pAnsichar(node1.Data.prName),
     pAnsichar(node2.Data.prName));
 end; { CompareProc }
 
@@ -465,7 +467,7 @@ begin
   SetLength(unImplementOffset, 0);
   SetLength(unStartUses, 0);
   SetLength(unEndUses, 0);
-  unFileDate := -1;
+  unFileDate := -1.0;
 end; { TUnit.Create }
 
 destructor TUnit.Destroy;
@@ -473,7 +475,18 @@ begin
   unUnits.Free;
   unProcs.Free;
   unAPIs.Free;
-end; { TUnit.Destroy }
+end;
+
+function TUnit.DidFileTimestampChange: boolean;
+var
+  LOutDateTime : TDateTime;
+begin
+  if not FileAge(unFullName,LOutDateTime) then
+    LOutDateTime := 0.0;
+  result := unFileDate <> LOutDateTime;
+end;
+
+{ TUnit.Destroy }
 
 // Get full path to unit having short unit name or relative path
 // NB!!! This path can differ from location, which Delphi will use for this unit during compilation!
@@ -636,7 +649,8 @@ var
       parserStack.Add(stream);
     end;
 
-    if not FindOnPath(aUnitFN, aSearchPath, aDefaultDir, vUnitFullName) then
+
+    if not FindOnPath(aUnitFN, aSearchPath, aDefaultDir, vUnitFullName) then
       raise EUnitInSearchPathNotFoundError.Create('Unit not found in search path: '
         + aUnitFN);
 
@@ -694,8 +708,7 @@ var
     // Fix Delphi stupidity - Delphi parses {$ENDIF.} (where '.' is any
     // non-ident character (alpha, number, underscore)) as {$ENDIF}
     while (Result <> '') and
-      (not(Result[Length(Result)] in ['a' .. 'z', 'A' .. 'Z', '0' .. '9', '_',
-      '+', '-'])) do
+      (not(CharInSet(Result[Length(Result)],['a'..'z','A'..'Z','0'..'9','_','+', '-']))) do
       Delete(Result, Length(Result), 1);
   end; { ExtractDirective }
 
@@ -780,7 +793,8 @@ begin
 
     parser := nil;
     CreateNewParser(unFullName, '');
-    unFileDate := FileAge(unFullName);
+    if not FileAge(unFullName,unFileDate) then
+      unFileDate := 0.0;
     state := stScan;
     stateComment := stNone;
     implement := False;
@@ -1928,7 +1942,7 @@ begin
       begin
         un := LNode.Data;
         if (not un.unExcluded) and (un.unProcs.Count > 0) and
-          (aIgnoreFileDate or (un.unFileDate <> FileAge(un.unFullName))) then
+          (aIgnoreFileDate or (un.DidFileTimestampChange())) then
           un.Parse(self, aExclUnits, aSearchPath, ExtractFilePath(prName),
             aConditionals, true, aParseAsm);
         LNode := LNode.NextNode;
@@ -2038,7 +2052,7 @@ var
   un: TUnit;
   LNode: INode<TUnit>;
   LProcNode: INode<TProc>;
-  LAllCnt : integer;
+  LAllCnt : Cardinal;
   LNone : boolean;
 begin
   // update unit list selections
@@ -2084,7 +2098,6 @@ var
   LProcNode : IXMLNode;
   LUnitName,LUnitNameWithInstr : string;
   LProcName,LProcNameWithInstr : string;
-  LAllUnits : boolean;
   LNoUnits : boolean;
 begin
   LXmlDocument := NewXMLDocument;
@@ -2098,7 +2111,6 @@ begin
   for LUnitNameWithInstr in LInstrumentedUnits do
   begin
     LUnitName := Copy(LUnitNameWithInstr,1,Length(LUnitNameWithInstr)-2);
-    LAllUnits := (LUnitNameWithInstr[Length(LUnitNameWithInstr)-1] = '1');
     LNoUnits := (LUnitNameWithInstr[Length(LUnitNameWithInstr)] = '1');
     if not LNoUnits then
     begin
@@ -2137,7 +2149,7 @@ begin
       un := LNode.Data;
       if (not un.unExcluded) and (un.unProcs.Count > 0) and
         (un.unInProjectDir or (not projectDirOnly)) then
-        if un.unFileDate <> FileAge(un.unFullName) then
+        if un.DidFileTimestampChange() then
           Exit;
       LNode := LNode.NextNode;
     end;
