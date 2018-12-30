@@ -71,7 +71,7 @@ type
     SaveAs1: TMenuItem;
     actRenameMoveProfile: TAction;
     RenameMove1: TMenuItem;
-    Panel3: TPanel;
+    pnlToolbar: TPanel;
     Panel4: TPanel;
     Panel5: TPanel;
     tbrProject: TToolBar;
@@ -1353,6 +1353,8 @@ begin
   splitCallers.Color := clLime;
   splitCallees.Color := clRed;
 {$ENDIF}
+  Application.DefaultFont.Name :=  'Segoe UI';
+  Application.DefaultFont.Size :=  8;
   inLVResize := false;
   selectedProc := nil;
   Application.OnShortCut := AppShortcut;
