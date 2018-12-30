@@ -87,7 +87,8 @@ function TGpVersionInfo.GetVersion(formatString: string): string;
     if formatString[1] <> '%' then Result := formatString[1]
     else begin
       i := 2;
-      while (i < Length(formatString)) and (not (UpCase(formatString[i]) in ['A','D','T'])) do Inc(i);
+      while (i < Length(formatString)) and (not (CharInSet(UpCase(formatString[i]),['A','D','T']))) do
+        Inc(i);
       Result := Copy(formatString,1,i);
     end;
     formatString := Copy(formatString,Length(Result)+1,Length(formatString)-Length(Result));
@@ -179,7 +180,7 @@ var
   tmp: int64;
 begin
   tmp := 0;
-  if not HasVersionInfo then Exit;
+  if not HasVersionInfo then Exit(0);
   Int64Rec(tmp).Lo := viFixedFileInfo^.dwFileVersionLS;
   Int64Rec(tmp).Hi := viFixedFileInfo^.dwFileVersionMS;
   Result := tmp;

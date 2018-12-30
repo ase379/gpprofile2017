@@ -27,6 +27,9 @@ type
 
 implementation
 
+uses
+  System.Types;
+
 {$R *.dfm}
 
 { TfmSimpleReport }
