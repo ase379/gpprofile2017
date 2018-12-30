@@ -10,7 +10,7 @@ uses
 
 
 type
-  TCheckableItemDataEnum = (cid_Unit, cid_Class);
+  TCheckableItemDataEnum = (cid_Unit, cid_Class, cid_Procs);
   PCheckableItemData = ^TCheckableItemData;
   TCheckableItemData = record
     Name : string;
@@ -38,6 +38,8 @@ type
     function GetCheckedState(const anIndex: Cardinal): TCheckedState;
     procedure SetCheckedState(const anIndex: Cardinal;const aCheckedState : TCheckedState); overload;
     procedure SetCheckedState(const aNode: PVirtualNode;const aCheckedState : TCheckedState); overload;
+
+    function IsChecked(const anIndex : Cardinal): boolean;
   end;
 
 implementation
@@ -56,6 +58,7 @@ begin
   fList.OnFreeNode := self.OnFreeNode;
   fList.OnCompareNodes := self.OnCompareNodes;
   fList.ongettext := OnGetText;
+  fList.TreeOptions.SelectionOptions := fList.TreeOptions.SelectionOptions + [toSyncCheckboxesWithSelection];
 end;
 
 destructor TCheckableListTools.Destroy;
@@ -115,7 +118,8 @@ begin
   LData := PCheckableItemData(result.GetData);
   case fListType of
     cid_unit,
-    cid_Class :
+    cid_Class,
+    cid_Procs :
     begin
       LData.Name := aName;
     end;
@@ -134,11 +138,17 @@ begin
   LData := PCheckableItemData(result.GetData);
   case fListType of
     cid_unit,
-    cid_Class :
+    cid_Class,
+    cid_Procs :
     begin
       LData.Name := aName;
     end;
   end;
+end;
+
+function TCheckableListTools.IsChecked(const anIndex: Cardinal): boolean;
+begin
+  result := Self.GetCheckedState(anIndex) = TCheckedState.checked;
 end;
 
 /// Events
@@ -163,7 +173,8 @@ begin
   CellText := '';
   case fListType of
     cid_Unit,
-    cid_Class:
+    cid_Class,
+    cid_Procs:
     begin
       CellText := LData.Name;
     end;
