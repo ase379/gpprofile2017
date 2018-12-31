@@ -53,18 +53,29 @@ type
   end;
 
   TThreadEntry = record
+  private
+    function GetName: String;
+  public
     teThread     : integer;
-    teName       : AnsiString; 
+    teName       : AnsiString;
     teTotalTime  : int64;
     teTotalCnt   : integer;
-    teActiveProcs: TActiveProcList; 
+    teActiveProcs: TActiveProcList;
+
+    property Name : String read GetName;
   end;
 
   TUnitEntry = record
+  private
+    function GetPath: String;
+  public
     ueName     : AnsiString;
     ueQual     : AnsiString;
     ueTotalTime: array {thread} of int64;   // 0 = sum
     ueTotalCnt : array {thread} of integer; // 0 = sum
+
+    property FilePath : String read GetPath;
+
   end;
 
   TClassEntry = record
@@ -510,7 +521,7 @@ begin
       begin
         if Length(resThreads[k].teName) > 0 then
           resThreads[k].teName := resThreads[k].teName + '; ';
-        resThreads[k].teName := resThreads[k].teName + utf8Decode(LThreadName);
+        resThreads[k].teName := resThreads[k].teName + LThreadName;
       end;
     end;
   end;
@@ -1447,5 +1458,19 @@ begin
   end;
 end;
 
+
+{ TUnitEntry }
+
+function TUnitEntry.GetPath: String;
+begin
+  result := String(ueQual);
+end;
+
+{ TThreadEntry }
+
+function TThreadEntry.GetName: String;
+begin
+  result := String(teName);
+end;
 
 end.

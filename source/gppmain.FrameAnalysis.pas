@@ -203,10 +203,10 @@ begin
           begin
             // first entries is handle 0 for unknown procs, skip it...
             LCaption := uintToStr(resThreads[i].teThread) + ' - ';
-            if resThreads[i].teName = '' then
+            if resThreads[i].Name = '' then
               LCaption := LCaption + 'Thread '+IntToStr(i)
             else
-              LCaption := LCaption + resThreads[i].teName;
+              LCaption := LCaption + resThreads[i].Name;
             Items.Add(LCaption)
           end;
         end;
@@ -272,7 +272,7 @@ begin
     begin
       if LProfilingType in [TProfilingInfoTypeEnum.pit_proc_callers,TProfilingInfoTypeEnum.pit_proc_callees] then
       begin
-        OnReloadSource(resUnits[resProcedures[LGraphId].peUID].ueQual,
+        OnReloadSource(resUnits[resProcedures[LGraphId].peUID].FilePath,
                    resProcedures[LGraphId].peFirstLn);
       end;
     end;
@@ -471,19 +471,19 @@ begin
             if ActivePage = tabProcedures then begin
               RedisplayCallers;
               RedisplayCallees;
-              OnReloadSource(resUnits[resProcedures[LSelectedID].peUID].ueQual,
+              OnReloadSource(resUnits[resProcedures[LSelectedID].peUID].FilePath,
                          resProcedures[LSelectedID].peFirstLn);
               Exit;
             end
             else if ActivePage = tabClasses then begin
               uid := resClasses[LSelectedID].ceUID;
               if uid >= 0 then
-                OnReloadSource(resUnits[uid].ueQual,resClasses[LSelectedID].ceFirstLn);
+                OnReloadSource(resUnits[uid].FilePath,resClasses[LSelectedID].ceFirstLn);
               Exit;
             end
             else if ActivePage = tabUnits then
             begin
-              OnReloadSource(resUnits[LSelectedID].ueQual,0);
+              OnReloadSource(resUnits[LSelectedID].FilePath,0);
               Exit;
             end;
 

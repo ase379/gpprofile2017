@@ -2503,7 +2503,7 @@ procedure TfrmMain.lvCalleesClick(Sender: TObject);
 begin
   if assigned(openProfile) and (Sender is TListView) and assigned((Sender as TListView).Selected) then
     with openProfile do
-      LoadSource(resUnits[resProcedures[integer((Sender as TListView).Selected.Data)].peUID].ueQual,
+      LoadSource(resUnits[resProcedures[integer((Sender as TListView).Selected.Data)].peUID].FilePath,
                  resProcedures[integer((Sender as TListView).Selected.Data)].peFirstLn);
 end;
 

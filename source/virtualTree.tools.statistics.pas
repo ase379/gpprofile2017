@@ -237,10 +237,10 @@ function TSimpleStatsListTools.GetThreadName(index: integer): string;
 begin
   with fProfileResults.resThreads[index] do
   begin
-    if teName = '' then
+    if Name = '' then
       Result := 'Thread '+IntToStr(index)
     else
-      Result := teName;
+      Result := Name;
   end;
 end; { TfrmMain.GetThreadName }
 
