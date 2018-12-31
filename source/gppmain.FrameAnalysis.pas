@@ -117,7 +117,7 @@ type
 implementation
 
 uses
-  gppExport, GpIFF,gppmain.tree.types;
+  gppExport, GpIFF;
 
 {$R *.dfm}
 

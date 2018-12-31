@@ -310,7 +310,6 @@ uses
   BdsProjUnit,
   BdsVersions,
   IniFiles,
-  gppmain.tree.types,
   GpString,
   GpProfH,
   GpIFF,

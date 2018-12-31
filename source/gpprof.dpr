@@ -51,7 +51,6 @@ uses
   gpPrfPlaceholderDlg in 'gpPrfPlaceholderDlg.pas' {frmPreferenceMacros},
   gppCurrentPrefs in 'gppCurrentPrefs.pas',
   gpParser.analysis in 'gpParser.analysis.pas',
-  gppmain.tree.types in 'gppmain.tree.types.pas',
   virtualTree.tools.base in 'virtualTree.tools.base.pas',
   virtualTree.tools.checkable in 'virtualTree.tools.checkable.pas',
   virtualTree.tools.statistics in 'virtualTree.tools.statistics.pas',
