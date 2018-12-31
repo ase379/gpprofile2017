@@ -15,8 +15,8 @@ type
   public
     constructor Create;
     destructor  Destroy; override;
-    function    ConstructName(unitName, unitFullName, procName: AnsiString; firstLn: integer): integer;
-    procedure   Dump(fileName: string);
+    function    ConstructName(const unitName, unitFullName, procName: String; firstLn: integer): integer;
+    procedure   Dump(const fileName: string);
   end;
 
 implementation
@@ -32,31 +32,31 @@ uses
 
 type
   TIDTE = class
-    eName: AnsiString;
+    eName: String;
     eID  : integer;
-    constructor Create(name: ansistring; id: integer);
+    constructor Create(const name: String; id: integer);
   end;
 
   TIDTUE = class(TIDTE)
-    eQual: AnsiString;
-    constructor Create(name, qual: ansistring; id: integer); reintroduce;
+    eQual: String;
+    constructor Create(const name, qual: String; id: integer); reintroduce;
   end;
 
   TIDTCE = class(TIDTE)
     eUID: integer;
-    constructor Create(name: AnsiString; id, uid: integer);
+    constructor Create(const name: String; id, uid: integer);
   end;
 
   TIDTPE = class(TIDTE)
     eUID    : integer;
     eCID    : integer;
     eFirstLn: integer;
-    constructor Create(name: AnsiString; id, uid, cid, firstLn: integer);
+    constructor Create(const name: String; id, uid, cid, firstLn: integer);
   end;
 
   TIDTU = class(TRootNode<TIDTUE>)
     constructor Create; reintroduce;
-    function    Insert(key, qual: AnsiString): integer;
+    function    Insert(const key, qual: String): integer;
     procedure   Dump(var f: TGpHugeFile);
   private
     idCnt : integer;
@@ -64,7 +64,7 @@ type
 
   TIDTC = class(TRootNode<TIDTCE>)
     constructor Create; reintroduce;
-    function    Insert(key: AnsiString; uid: integer): integer;
+    function    Insert(const key: String; uid: integer): integer;
     procedure   Dump(var f: TGpHugeFile);
   private
     idCnt : integer;
@@ -72,26 +72,26 @@ type
 
   TIDTP = class(TRootNode<TIDTPE>)
     constructor Create; reintroduce;
-    function    Insert(key: AnsiString; uid, cid, firstLn: integer): integer;
+    function    Insert(const key: String; uid, cid, firstLn: integer): integer;
     procedure   Dump(var f: TGpHugeFile);
-    procedure   WriteProcSize(fileName: string);
+    procedure   WriteProcSize(const fileName: string);
   private
     idCnt: integer;
   end;
 
 function TIDTCompare(data1,data2: INode<TIDTUE>): integer; overload;
 begin
-  Result := StrIComp(pAnsiChar(data1.Data.eName),pAnsiChar(data2.data.eName));
+  Result := String.Compare(data1.Data.eName,data2.data.eName,true);
 end; { TIDTCompare }
 
 function TIDTCompare(data1,data2: INode<TIDTCE>): integer; overload;
 begin
-  Result := StrIComp(pAnsiChar(data1.Data.eName),pAnsiChar(data2.data.eName));
+  Result := String.Compare(data1.Data.eName,data2.data.eName,true);
 end; { TIDTCompare }
 
 function TIDTCompare(data1,data2: INode<TIDTPE>): integer; overload;
 begin
-  Result := StrIComp(pAnsiChar(data1.Data.eName),pAnsiChar(data2.data.eName));
+  Result := String.Compare(data1.Data.eName,data2.data.eName,true);
 end; { TIDTCompare }
 
 
@@ -112,7 +112,7 @@ end; { TIDTCompare }
 
 { TIDTable }
 
-function TIDTable.ConstructName(unitName, unitFullName, procName: AnsiString; firstLn: integer): integer;
+function TIDTable.ConstructName(const unitName, unitFullName, procName: String; firstLn: integer): integer;
 var
   unitID: integer;
   clasID: integer;
@@ -141,7 +141,7 @@ begin
   idProcs.Free;
 end;
 
-procedure TIDTable.Dump(fileName: string);
+procedure TIDTable.Dump(const fileName: string);
 var
   fnm: string;
   f  : TGpHugeFile;
@@ -198,7 +198,7 @@ begin
   end;
 end;
 
-function TIDTU.Insert(key, qual: AnsiString): integer;
+function TIDTU.Insert(const key, qual: String): integer;
 var
   LSearchNode,
   LResultNode : INode<TIDTUE>;
@@ -243,7 +243,7 @@ begin
   end;
 end;
 
-function TIDTC.Insert(key: AnsiString; uid: integer): integer;
+function TIDTC.Insert(const key: String; uid: integer): integer;
 var
   LSearchNode,
   LResultNode : INode<TIDTCE>;
@@ -288,7 +288,7 @@ begin
   end;
 end;
 
-function TIDTP.Insert(key: AnsiString; uid, cid, firstLn: integer): integer;
+function TIDTP.Insert(const key: String; uid, cid, firstLn: integer): integer;
 var
   LSearchNode,
   LResultNode : INode<TIDTPE>;
@@ -305,7 +305,7 @@ begin
     result := LResultNode.Data.eID;
 end;
 
-procedure TIDTP.WriteProcSize(fileName: string);
+procedure TIDTP.WriteProcSize(const fileName: string);
 begin
   with TIniFile.Create(fileName) do begin
     try
@@ -319,7 +319,7 @@ end;
 
 { TIDTE }
 
-constructor TIDTE.Create(name: ansistring; id: integer);
+constructor TIDTE.Create(const name: String; id: integer);
 begin
   inherited Create;
   eName := name;
@@ -329,7 +329,7 @@ end;
 
 { TIDTPE }
 
-constructor TIDTPE.Create(name: AnsiString; id, uid, cid, firstLn: integer);
+constructor TIDTPE.Create(const name: String; id, uid, cid, firstLn: integer);
 begin
   inherited Create(name,id);
   eUID     := uid;
@@ -339,7 +339,7 @@ end;
 
 { TIDTUE }
 
-constructor TIDTUE.Create(name, qual: ansistring; id: integer);
+constructor TIDTUE.Create(const name, qual: String; id: integer);
 begin
   eQual := qual;
   inherited Create(name, id);
@@ -348,7 +348,7 @@ end;
 
 { TIDTCE }
 
-constructor TIDTCE.Create(name: AnsiString; id, uid: integer);
+constructor TIDTCE.Create(const name: String; id, uid: integer);
 begin
   eUID := uid;
   inherited Create(name, id);

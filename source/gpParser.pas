@@ -39,14 +39,12 @@ type
 
   TUnit = class
   private
-    unName: AnsiString;
-    unFullName: AnsiString;
     procedure AddToIntArray(var anArray: TArray<Integer>;const aValue: Integer);
     procedure InstrumentUses(const aProject: TProject; const ed: TFileEdit;const anIndex: Integer);
     procedure BackupInstrumentedFile(const aSrc: string);
-    function GetName: string;
-    function GetFullName: string;
   public
+    unName: TFilename;
+    unFullName: TFileName;
     unUnits: TUnitList;
     unProcs: TProcList;
     unAPIs: TAPIList;
@@ -73,8 +71,6 @@ type
     function AnyChange: boolean;
     function DidFileTimestampChange(): boolean;
 
-    property Name : string read GetName;
-    property FullName : string read GetFullName;
   end;
 
   TProcSetThreadName = class
@@ -91,7 +87,7 @@ type
 
   TProc = class
   private
-    prName: AnsiString;
+    prName: String;
     prHeaderLineNum: Integer;
     prStartOffset: Integer;
     prStartLineNum: Integer;
@@ -158,7 +154,7 @@ type
     constructor Create(const aUnitName : string);
     destructor Destroy;override;
 
-    property UnitName : string read fUnitName;
+    property Name : string read fUnitName;
     property SelectedProcedures : TStringList read FSelectedProcedures write FSelectedProcedures;
   end;
   TUnitSelectionList = TObjectList<TUnitSelection>;
@@ -279,8 +275,7 @@ end;
 
 function CompareUnit(node1, node2: INode<TUnit>): Integer;
 begin
-  Result := System.AnsiStrings.StrIComp(pAnsichar(node1.Data.unName),
-    pAnsichar(node2.Data.unName));
+  Result := String.Compare(node1.Data.unName,node2.Data.unName,true);
 end; { CompareUnit }
 
 constructor TUnitList.Create;
@@ -337,8 +332,7 @@ end; { DisposeProc }
 
 function CompareProc(node1, node2: INode<TProc>): Integer;
 begin
-  Result := System.AnsiStrings.StrIComp(pAnsichar(node1.Data.prName),
-    pAnsichar(node2.Data.prName));
+  Result := String.Compare(node1.Data.Name, node2.Data.prName,true);
 end; { CompareProc }
 
 constructor TProcList.Create;
@@ -495,16 +489,6 @@ begin
   if not FileAge(unFullName,LOutDateTime) then
     LOutDateTime := 0.0;
   result := unFileDate <> LOutDateTime;
-end;
-
-function TUnit.GetFullName: string;
-begin
-  result := String(unFullName);
-end;
-
-function TUnit.GetName: string;
-begin
-  result := string(unName);
 end;
 
 { TUnit.Destroy }
@@ -1255,7 +1239,7 @@ begin
   while assigned(LCurrentEntry) do
   begin
     if LCurrentEntry.Data.prInstrumented then
-      idt.ConstructName(unName, unFullName, LCurrentEntry.Data.prName,
+      idt.ConstructName(unName, unFullName, LCurrentEntry.Data.Name,
         LCurrentEntry.Data.prHeaderLineNum);
     LCurrentEntry := LCurrentEntry.NextNode;
   end;
@@ -1333,7 +1317,7 @@ var
   any: boolean;
   haveInst: boolean;
   ed: TFileEdit;
-  name: Integer;
+  nameId: Integer;
   api: TAPI;
   LCurrentApi: INode<TAPI>;
   LCurrentProc: INode<TProc>;
@@ -1417,7 +1401,7 @@ begin { TUnit.Instrument }
       end
       else
       begin
-        name := aIDT.ConstructName(unName, unFullName, pr.prName,
+        nameId := aIDT.ConstructName(unName, unFullName, pr.Name,
           pr.prHeaderLineNum);
 
         if haveInst then
@@ -1426,10 +1410,10 @@ begin { TUnit.Instrument }
 
         if pr.prPureAsm then
           ed.Insert(pr.prStartOffset + Length('asm'),
-            Format(aProject.prProfileEnterAsm, [name]))
+            Format(aProject.prProfileEnterAsm, [nameId]))
         else
           ed.Insert(pr.prStartOffset + Length('begin'),
-            Format(aProject.prProfileEnterProc, [name]));
+            Format(aProject.prProfileEnterProc, [nameId]));
 
         if haveInst then
         begin
@@ -1462,9 +1446,9 @@ begin { TUnit.Instrument }
             Length(aProject.prConditEnd) - 1);
 
         if pr.prPureAsm then
-          ed.Insert(pr.prEndOffset, Format(aProject.prProfileExitAsm, [name]))
+          ed.Insert(pr.prEndOffset, Format(aProject.prProfileExitAsm, [nameId]))
         else
-          ed.Insert(pr.prEndOffset, Format(aProject.prProfileExitProc, [name]));
+          ed.Insert(pr.prEndOffset, Format(aProject.prProfileExitProc, [nameId]));
       end;
       LCurrentProc := LCurrentProc.NextNode;
     end;
@@ -1568,12 +1552,12 @@ begin
   prUnit.unInProjectDir := true;
 
   vOldCurDir := GetCurrentDir;
-  if not SetCurrentDir(ExtractFilePath(prUnit.FullName)) then
+  if not SetCurrentDir(ExtractFilePath(prUnit.unFullName)) then
     Assert(False);
   try
     un := prUnit;
     repeat
-      DoNotify(un.Name);
+      DoNotify(un.unName);
       try
         un.Parse(self, aExclUnits, aSearchPath, ExtractFilePath(prName),
           aConditionals, False, aParseAsm);
@@ -1616,7 +1600,7 @@ begin
       if (not un.unExcluded) and (un.unProcs.Count > 0) and
         ((not aProjectDirOnly) or un.unInProjectDir) then
       begin
-        s := un.Name;
+        s := un.unName;
 
         if aGetInstrumented then
           // Add 2 char flags to indicate, whether unit is fully instrumented or nothing is instrumented
@@ -1772,7 +1756,7 @@ begin
     idt := TIDTable.Create;
     try
       vOldCurDir := GetCurrentDir;
-      if not SetCurrentDir(ExtractFileDir(prUnit.FullName)) then
+      if not SetCurrentDir(ExtractFileDir(prUnit.unFullName)) then
         Assert(False);
       try
         with prUnits do
@@ -1784,7 +1768,7 @@ begin
             un := LNode.Data;
             if (not un.unExcluded) and (un.unProcs.Count > 0) then
             begin
-              DoNotify(un.FullName, un.Name, False);
+              DoNotify(un.unFullName, un.unName, False);
 
               unAny := un.AnyInstrumented;
               if unAny then
@@ -1819,7 +1803,7 @@ begin
     end;
     for i := 0 to Rescan.Count - 1 do
     begin
-      DoNotify(TUnit(Rescan[i]).FullName, TUnit(Rescan[i]).Name, true);
+      DoNotify(TUnit(Rescan[i]).unFullName, TUnit(Rescan[i]).unName, true);
       TUnit(Rescan[i]).Parse(self, '', aSearchPath, ExtractFilePath(prName),
         aConditionals, true, aParseAsm);
     end;
@@ -1858,7 +1842,7 @@ begin
   if un = nil then
     raise Exception.Create('Trying to get name of unexistent unit!')
   else
-    Result := un.FullName;
+    Result := un.unFullName;
 end; { TProject.GetUnitPath }
 
 procedure TProject.PrepareComments(const aCommentType: TCommentType);
@@ -1951,7 +1935,7 @@ var
 begin
   PrepareComments(aCommentType);
   vOldCurDir := GetCurrentDir;
-  if not SetCurrentDir(ExtractFilePath(prUnit.FullName)) then
+  if not SetCurrentDir(ExtractFilePath(prUnit.unFullName)) then
     Assert(False);
   try
     if Last(aExclUnits, 2) <> #13#10 then
@@ -2044,7 +2028,7 @@ procedure TProject.ApplySelections(const aUnitSelections: TUnitSelectionList);
     LUnitName := aUnitName.ToUpper();
     for LSelection in aUnitSelections do
     begin
-      if LSelection.UnitName.ToUpper = LUnitName then
+      if LSelection.Name.ToUpper = LUnitName then
         exit(LSelection);
     end;
   end;
@@ -2083,7 +2067,7 @@ begin
     while assigned(LNode) do
     begin
       un := LNode.Data;
-      LUnitSelection := GetSelectionOrNil(un.Name);
+      LUnitSelection := GetSelectionOrNil(un.unName);
       LAllCnt := 0;
       LNone := true;
       LProcNode := un.unProcs.FirstNode;

@@ -14,7 +14,7 @@ type
   TFileEdit = class
     constructor Create(const fileName: string);
     destructor  Destroy; override;
-    procedure   Insert(const atOffset: int64; what: ansistring);
+    procedure   Insert(const atOffset: int64; what: string);
     procedure   Remove(const fromOffset, toOffset: int64);
     procedure   Execute(const keepDate: boolean);
   private
@@ -37,7 +37,7 @@ type
     fecCmd : (cmdInsert, cmdRemove);
     fecOfs1: int64;
     fecOfs2: int64;
-    fecTxt : ansistring;
+    fecTxt : string;
   end;
 
 { TFileEdit }
@@ -111,7 +111,7 @@ type
     finally stream.Free; end;
   end; { TFileEdit.Execute }
 
-  procedure TFileEdit.Insert(const atOffset: int64; what: ansistring);
+  procedure TFileEdit.Insert(const atOffset: int64; what: string);
   var
     cmd: PFECmd;
   begin
