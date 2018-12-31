@@ -269,7 +269,6 @@ type
     procedure CloseDelphiHandles;
     procedure LoadSource(const fileName: String; focusOn: integer);
     procedure ClearSource;
-    procedure ExportTo(fileName: string; exportProcs, exportClasses, exportUnits, exportThreads, exportCSV: boolean);
     procedure QueryExport;
     procedure StatusPanel0(const msg: string; const beep: boolean);
     procedure ShowError(const Msg : string);
@@ -1198,12 +1197,6 @@ begin
 end;
 
 
-procedure TfrmMain.ExportTo(fileName: string; exportProcs, exportClasses, exportUnits, exportThreads,
-  exportCSV: boolean);
-begin
-
-end;
-
 procedure TfrmMain.DoInstrument;
 var
   fnm   : string;
@@ -2058,7 +2051,7 @@ begin
     Top := frmMain.Top+((frmMain.Height-Height) div 2);
     if ShowModal = mrOK then begin
       if inpWhere.Text <> '' then
-        ExportTo(inpWhere.Text,cbProcedures.Checked,cbClasses.Checked,
+        FProfilingFrame.ExportTo(inpWhere.Text,cbProcedures.Checked,cbClasses.Checked,
                  cbUnits.Checked,cbThreads.Checked,rbCSV.Checked);
     end;
   end;
@@ -2086,7 +2079,7 @@ end;
 
 procedure TfrmMain.SlidersMoved;
 begin
-
+  FProfilingFrame.SlidersMoved;
 end;
 
 procedure TfrmMain.actMakeCopyProfileExecute(Sender: TObject);
