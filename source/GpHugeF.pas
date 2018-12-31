@@ -494,10 +494,10 @@ const
     if not condition then begin
       LastError := GetLastError;
       if LastError <> ERROR_SUCCESS then
-        Error := EOSError.CreateFmt('TGpHugeFile.%s(%s) failed. '+SWin32Error, [method,hfName,LastError,
+        Error := EOSError.CreateFmt('TGpHugeFile.%s(%s) failed. '+SOSError, [method,hfName,LastError,
          SysErrorMessage(LastError)])
       else
-        Error := EOSError.CreateFmt('TGpHugeFile.%s(%s) failed. '+SUnkWin32Error, [method,hfName]);
+        Error := EOSError.CreateFmt('TGpHugeFile.%s(%s) failed. '+SUnkOSError, [method,hfName]);
        Error.ErrorCode := LastError;
       raise Error;
     end;

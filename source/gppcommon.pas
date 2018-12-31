@@ -150,8 +150,8 @@ end; { HasParameter }
 
 function IsAbsolutePath(const aPath: String): Boolean;
 begin
-  Result := ((Length(aPath) > 0) and (aPath[1] in ['/','\'])) or
-            ((Length(aPath) > 1) and (aPath[2] = ':'));
+  Result := ((Length(aPath) > 0) and (charInSet(aPath[1],['/','\']))) or
+            ((Length(aPath) > 1) and (CharInSet(aPath[2],[':'])));
 end; { TfrmMain.IsAbsolutePath }
 
 end.

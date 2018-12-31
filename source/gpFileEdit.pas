@@ -67,7 +67,7 @@ type
 
     function MakeCurP: pointer;
     begin
-      Result := pointer(NativeUInt(stream.Memory)+stream.Position);
+      Result := pointer(NativeUInt(stream.Memory)+NativeUInt(stream.Position));
     end; { MakeCurP }
 
     procedure Remove(first,lastp1: int64);

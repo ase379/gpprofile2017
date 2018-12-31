@@ -1638,7 +1638,8 @@ const
         ddel := ParamStr(ParamCount);
         if UpperCase(Copy(ddel,1,8)) = '/DELPHI=' then begin
           ddel := ButFirst(ddel,8);
-          if (Length(ddel) > 0) and (ddel[1] in ['2'..'9']) then begin
+          if (Length(ddel) > 0) and (CharInSet(ddel[1],['2'..'9'])) then
+          begin
             defDelphi := ddel;
             delphiVer := Ord(ddel[1])-Ord('0');
           end;

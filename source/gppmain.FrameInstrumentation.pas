@@ -417,6 +417,7 @@ const
   CLASSLESS_PROCEUDURES = '<classless procedures>';
   ALL_CLASSES = '<all classes>';
 begin
+  LInfoList := nil;
   LUnitProcsList := TStringList.Create;
   try
     LInfoList := nil; // in case of exception
