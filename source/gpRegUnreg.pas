@@ -33,12 +33,10 @@ uses
     rootDir: string;
     path   : string;
   begin
-{$IFDEF LogRegister}GpLogEventEx(Format('RegisterWithDelphi(%s)',[delName]),FullLogName); {$ENDIF}  
     with TGpRegistry.Create do begin
       try
         RootKey := HKEY_CURRENT_USER;
         if OpenKey('\SOFTWARE\Borland\Delphi\'+delName+'\Transfer',false) then begin
-{$IFDEF LogRegister}GpLogEventEx('Key opened',FullLogName); {$ENDIF}
           if GetDataSize('Count') < 0 then begin
             ctype := rdString; // works with all Delphis
             count := 0;
@@ -49,7 +47,6 @@ uses
             else if ctype = rdInteger then count := ReadInteger('Count',0)
             else Exit; // very weird key
           end;
-{$IFDEF LogRegister}GpLogEventEx(Format('Count = %d',[count]),FullLogName); {$ENDIF}  
           gotgpp:= 0;
           uexe := UpperCase(ParamStr(0));
           for i := 0 to count-1 do begin
@@ -99,7 +96,6 @@ uses
         end;
       finally Free; end;
     end;
-{$IFDEF LogRegister}GpLogEventEx('RegisterWithDelphi out',FullLogName); {$ENDIF}  
   end; { RegisterWithDelphi }
 
   procedure RegisterGpProfile;
@@ -107,7 +103,6 @@ uses
     s: TStringList;
     i: integer;
   begin
-{$IFDEF LogRegister}GpLogEventEx('RegisterGpProfile',FullLogName); {$ENDIF}  
     with TGpRegistry.Create do begin
       try
         RootKey := HKEY_LOCAL_MACHINE;
@@ -115,7 +110,6 @@ uses
         try
           RootKey := HKEY_LOCAL_MACHINE;
           if OpenKeyReadOnly('\SOFTWARE\Borland\Delphi') then GetKeyNames(s);
-{$IFDEF LogRegister}GpLogEventEx(Format('HKLM count = %d',[s.Count]),FullLogName); {$ENDIF}  
           for i := 0 to s.Count-1 do RegisterWithDelphi(s[i]);
         finally
           s.Free;
@@ -124,7 +118,6 @@ uses
         Free;
       end;
     end;
-{$IFDEF LogRegister}GpLogEventEx('RegisterGpProfile out',FullLogName); {$ENDIF}  
   end; { RegisterGPProfile }
 
   procedure UnregisterFromDelphi(delName: string; exeName: string);
