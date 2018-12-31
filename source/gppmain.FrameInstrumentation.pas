@@ -83,7 +83,7 @@ implementation
 
 uses
   GpString,
-  gpParser.analysis;
+  gppMain.FrameInstrumentation.SelectionInfo;
 
 {$R *.dfm}
 

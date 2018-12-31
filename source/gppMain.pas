@@ -320,7 +320,7 @@ uses
   gpPrfPlaceholders,
   UITypes,
   StrUtils,
-  ioUtils, gpParser.Analysis,
+  ioUtils,
   Winapi.ActiveX,
   System.Threading;
 

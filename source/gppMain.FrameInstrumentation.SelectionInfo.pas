@@ -1,4 +1,4 @@
-unit gpParser.analysis;
+unit gppMain.FrameInstrumentation.SelectionInfo;
 
 interface
 

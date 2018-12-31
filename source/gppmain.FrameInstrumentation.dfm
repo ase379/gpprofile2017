@@ -73,12 +73,11 @@ object frmMainInstrumentation: TfrmMainInstrumentation
       AlignWithMargins = True
       Left = 3
       Top = 3
-      Width = 123
+      Width = 39
       Height = 17
       Align = alTop
       Caption = '&Units:'
       TabOrder = 0
-      ExplicitWidth = 39
     end
     object vstSelectUnits: TVirtualStringTree
       Left = 0
@@ -113,12 +112,11 @@ object frmMainInstrumentation: TfrmMainInstrumentation
       AlignWithMargins = True
       Left = 3
       Top = 3
-      Width = 131
+      Width = 51
       Height = 17
       Align = alTop
       Caption = '&Classes:'
       TabOrder = 0
-      ExplicitWidth = 51
     end
     object vstSelectClasses: TVirtualStringTree
       Left = 0
@@ -155,12 +153,11 @@ object frmMainInstrumentation: TfrmMainInstrumentation
       AlignWithMargins = True
       Left = 3
       Top = 3
-      Width = 713
+      Width = 69
       Height = 17
       Align = alTop
       Caption = 'P&rocedures:'
       TabOrder = 0
-      ExplicitWidth = 69
     end
     object vstSelectProcs: TVirtualStringTree
       Left = 0

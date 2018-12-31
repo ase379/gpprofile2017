@@ -50,7 +50,7 @@ uses
   gpPrfPlaceholders in 'gpPrfPlaceholders.pas',
   gpPrfPlaceholderDlg in 'gpPrfPlaceholderDlg.pas' {frmPreferenceMacros},
   gppCurrentPrefs in 'gppCurrentPrefs.pas',
-  gpParser.analysis in 'gpParser.analysis.pas',
+  gppMain.FrameInstrumentation.SelectionInfo in 'gppMain.FrameInstrumentation.SelectionInfo.pas',
   virtualTree.tools.base in 'virtualTree.tools.base.pas',
   virtualTree.tools.checkable in 'virtualTree.tools.checkable.pas',
   virtualTree.tools.statistics in 'virtualTree.tools.statistics.pas',
