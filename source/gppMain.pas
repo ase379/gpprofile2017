@@ -12,7 +12,7 @@ uses
   SynEditHighlighter, SynEditCodeFolding, SynHighlighterPas, System.ImageList,
   System.Actions,gppCurrentPrefs, VirtualTrees,
   virtualTree.tools.checkable,
-  gppmain.FrameInstrumentation, gppmain.FrameProfiling;
+  gppmain.FrameInstrumentation, gppmain.FrameAnalysis;
 
 type
 

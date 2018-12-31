@@ -56,7 +56,7 @@ uses
   virtualTree.tools.checkable in 'virtualTree.tools.checkable.pas',
   virtualTree.tools.statistics in 'virtualTree.tools.statistics.pas',
   gppmain.FrameInstrumentation in 'gppmain.FrameInstrumentation.pas' {frmMainInstrumentation: TFrame},
-  gppmain.FrameProfiling in 'gppmain.FrameProfiling.pas' {frmMainProfiling: TFrame};
+  gppmain.FrameAnalysis in 'gppmain.FrameAnalysis.pas' {frmMainProfiling: TFrame};
 
 {$R *.RES}
 
