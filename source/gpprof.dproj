@@ -98,7 +98,7 @@
         <DCC_DebugInfoInExe>True</DCC_DebugInfoInExe>
         <DCC_DebugVN>True</DCC_DebugVN>
         <DCC_ResourcePath>x:\mstpl\ezdsl;$(DELPHI)\components;x:\mstpl\ddp\source;x:\mstpl\pkg\mwedit;$(DCC_ResourcePath)</DCC_ResourcePath>
-        <DCC_Define>xDebugPanels;DDP;xLogFEExecute;LogAccessFile;xLogParser;xLogRegister;xDebugParser;RELEASE;$(DCC_Define)</DCC_Define>
+        <DCC_Define>RELEASE;$(DCC_Define)</DCC_Define>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_1_Win32)'!=''">
         <VerInfo_AutoIncVersion>false</VerInfo_AutoIncVersion>
@@ -126,7 +126,7 @@
         <DCC_ResourcePath>$(BDS)\Lib\Debug\Indy10;$(BDS)\lib\Debug;OutSources\EZDSL;OutSources\CastaliaDelphiParser;..\GPComponents\GPNative\source;..\GPComponents\mwEdit;$(DCC_ResourcePath)</DCC_ResourcePath>
         <DCC_ObjPath>$(BDS)\Lib\Debug\Indy10;$(BDS)\lib\Debug;OutSources\EZDSL;OutSources\CastaliaDelphiParser;..\GPComponents\GPNative\source;..\GPComponents\mwEdit;$(DCC_ObjPath)</DCC_ObjPath>
         <DCC_IncludePath>$(BDS)\Lib\Debug\Indy10;$(BDS)\lib\Debug;OutSources\EZDSL;OutSources\CastaliaDelphiParser;..\GPComponents\GPNative\source;..\GPComponents\mwEdit;$(DCC_IncludePath)</DCC_IncludePath>
-        <DCC_Define>xDebugPanels;DDP;xLogFEExecute;LogAccessFile;xLogParser;xLogRegister;xDebugParser;DEBUG;$(DCC_Define)</DCC_Define>
+        <DCC_Define>DEBUG;$(DCC_Define)</DCC_Define>
         <DCC_IntegerOverflowCheck>True</DCC_IntegerOverflowCheck>
         <DCC_SymbolReferenceInfo>2</DCC_SymbolReferenceInfo>
         <DCC_ExeOutput>..\BIN</DCC_ExeOutput>
@@ -239,8 +239,20 @@
             <Form>frmPreferenceMacros</Form>
         </DCCReference>
         <DCCReference Include="gppCurrentPrefs.pas"/>
+        <DCCReference Include="gppMain.FrameInstrumentation.SelectionInfo.pas"/>
         <DCCReference Include="virtualTree.tools.base.pas"/>
-        <DCCReference Include="gpParser.analysis.pas"/>
+        <DCCReference Include="virtualTree.tools.checkable.pas"/>
+        <DCCReference Include="virtualTree.tools.statistics.pas"/>
+        <DCCReference Include="gppmain.FrameInstrumentation.pas">
+            <Form>frmMainInstrumentation</Form>
+            <FormType>dfm</FormType>
+            <DesignClass>TFrame</DesignClass>
+        </DCCReference>
+        <DCCReference Include="gppmain.FrameAnalysis.pas">
+            <Form>frmMainProfiling</Form>
+            <FormType>dfm</FormType>
+            <DesignClass>TFrame</DesignClass>
+        </DCCReference>
         <BuildConfiguration Include="Debug">
             <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>
