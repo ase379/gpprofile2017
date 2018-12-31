@@ -11,8 +11,8 @@ uses
   gpArrowListView, DProjUnit, SynEdit,
   SynEditHighlighter, SynEditCodeFolding, SynHighlighterPas, System.ImageList,
   System.Actions,gppCurrentPrefs, VirtualTrees,
-  virtualTree.tools.statistics,virtualTree.tools.checkable,
-  gppmain.FrameInstrumentation;
+  virtualTree.tools.checkable,
+  gppmain.FrameInstrumentation, gppmain.FrameProfiling;
 
 type
 
@@ -105,11 +105,6 @@ type
     PageControl1: TPageControl;
     tabInstrumentation: TTabSheet;
     tabAnalysis: TTabSheet;
-    PageControl2: TPageControl;
-    tabProcedures: TTabSheet;
-    tabClasses: TTabSheet;
-    tabUnits: TTabSheet;
-    tabThreads: TTabSheet;
     pnlSourcePreview: TPanel;
     splitSourcePreview: TSplitter;
     actRescanChanged: TAction;
@@ -152,23 +147,7 @@ type
     HideCalled1: TMenuItem;
     btnShowHideCallers: TToolButton;
     btnShowHideCallees: TToolButton;
-    pnThreadProcs: TPanel;
-    pnlTopTwo: TPanel;
-    pnlCallers: TPanel;
-    splitCallers: TSplitter;
-    pnlCurrent: TPanel;
-    splitCallees: TSplitter;
-    pnlCallees: TPanel;
-    pnlBottom: TPanel;
     sourceCodeEdit: TSynEdit;
-    pnlBrowser: TPanel;
-    ToolBar3: TToolBar;
-    ToolButton18: TToolButton;
-    ToolButton19: TToolButton;
-    actBrowsePrevious: TAction;
-    actBrowseNext: TAction;
-    popBrowsePrevious: TPopupMenu;
-    popBrowseNext: TPopupMenu;
     N8: TMenuItem;
     ToolButton21: TToolButton;
     actHelpOpenHome: TAction;
@@ -181,20 +160,6 @@ type
     actHelpVisitForum: TAction;
     actHelpJoinMailingList: TAction;
     SynPasSyn: TSynPasSyn;
-    vstClasses: TVirtualStringTree;
-    pnThreadClass: TPanel;
-    Label1: TLabel;
-    cbxSelectThreadClass: TComboBox;
-    lblSelectThreadProc: TLabel;
-    cbxSelectThreadProc: TComboBox;
-    vstThreads: TVirtualStringTree;
-    pnThreadUnits: TPanel;
-    Label2: TLabel;
-    cbxSelectThreadUnit: TComboBox;
-    vstUnits: TVirtualStringTree;
-    vstProcs: TVirtualStringTree;
-    vstCallers: TVirtualStringTree;
-    vstCallees: TVirtualStringTree;
     procedure FormCreate(Sender: TObject);
     procedure MRUClick(Sender: TObject; LatestFile: String);
     procedure FormDestroy(Sender: TObject);
@@ -211,16 +176,12 @@ type
     procedure MRUPrfClick(Sender: TObject; LatestFile: String);
     procedure actInstrumentRunExecute(Sender: TObject);
     procedure btnCancelLoadClick(Sender: TObject);
-    procedure cbxSelectThreadProcChange(Sender: TObject);
-    procedure cbxSelectThreadClassChange(Sender: TObject);
     procedure FormShow(Sender: TObject);
     procedure StatusBarResize(Sender: TObject);
     procedure actHideNotExecutedExecute(Sender: TObject);
     procedure actProjectOptionsExecute(Sender: TObject);
     procedure actProfileOptionsExecute(Sender: TObject);
     procedure actRescanProfileExecute(Sender: TObject);
-    procedure lvProcsClick(Sender: TObject);
-    procedure PageControl2Change(Sender: TObject);
     procedure actExportProfileExecute(Sender: TObject);
     procedure mnuExportProfileClick(Sender: TObject);
     procedure actMakeCopyProfileExecute(Sender: TObject);
@@ -255,21 +216,10 @@ type
     procedure actShowHideCallersUpdate(Sender: TObject);
     procedure actShowHideCalleesExecute(Sender: TObject);
     procedure actShowHideCalleesUpdate(Sender: TObject);
-    procedure actBrowsePreviousExecute(Sender: TObject);
-    procedure actBrowseNextExecute(Sender: TObject);
-    procedure actBrowseNextUpdate(Sender: TObject);
-    procedure actBrowsePreviousUpdate(Sender: TObject);
     procedure lvCalleesClick(Sender: TObject);
     procedure splitCallersMoved(Sender: TObject);
     procedure clbUnitsKeyPress(Sender: TObject; var Key: Char);
     procedure clbClassesKeyPress(Sender: TObject; var Key: Char);
-    procedure cbxSelectThreadUnitChange(Sender: TObject);
-    procedure vstProcsNodeClick(Sender: TBaseVirtualTree;
-      const HitInfo: THitInfo);
-    procedure vstCalleesNodeClick(Sender: TBaseVirtualTree;
-      const HitInfo: THitInfo);
-    procedure vstCalleesNodeDblClick(Sender: TBaseVirtualTree;
-      const HitInfo: THitInfo);
     procedure btnLoadInstrumentationSelectionClick(Sender: TObject);
     procedure btnSaveInstrumentationSelectionClick(Sender: TObject);
   private
@@ -290,16 +240,8 @@ type
     previewVisibleInstr       : boolean;
     previewVisibleAnalysis    : boolean;
     inLVResize                : boolean;
-    selectedProc              : pointer;
-    callersPerc               : real;
-    calleesPerc               : real;
     FInstrumentationFrame     : TfrmMainInstrumentation;
-    fvstUnitsTools            : TSimpleStatsListTools;
-    fvstClassesTools          : TSimpleStatsListTools;
-    fvstProcsTools             : TSimpleStatsListTools;
-    fvstProcsCallersTools     : TSimpleStatsListTools;
-    fvstProcsCalleesTools     : TSimpleStatsListTools;
-    fvstThreadsTools          : TSimpleStatsListTools;
+    FProfilingFrame           : TfrmMainProfiling;
     procedure ExecuteAsyncAndShowError(const aProc: System.Sysutils.TProc;const aActionName : string);
     procedure ParseProject(const aProject: string; const aJustRescan: boolean);
     procedure LoadProject(fileName: string; defaultDelphi: string = '');
@@ -308,7 +250,6 @@ type
 
     procedure DelphiVerClick(Sender: TObject);
     procedure LayoutClick(Sender: TObject);
-    procedure BrowserClick(Sender: TObject);
     procedure RebuildDelphiVer;
     procedure DisablePC;
     procedure EnablePC;
@@ -319,12 +260,6 @@ type
     procedure SetCaption;
     procedure SetSource;
     function  ParseProfileCallback(percent: integer): boolean;
-    procedure FillThreadCombos;
-    procedure FillViews(resortOn: integer = -1);
-    procedure FillProcView(resortOn: integer = -1);
-    procedure FillClassView(resortOn: integer = -1);
-    procedure FillUnitView(resortOn: integer = -1);
-    procedure FillThreadView(resortOn: integer = -1);
 
     procedure EnumUserSettings(settings: TStrings);
     procedure FillDelphiVer;
@@ -352,27 +287,14 @@ type
     function  IsLayout(layout: string): boolean;
     procedure SetChangeLayout(setRestore: boolean);
     function  CountLiveLayouts: integer;
-    procedure ResetSourcePreview(reposition: boolean);
-    procedure ResetCallers;
-    procedure ResetCallees;
-    procedure RedisplayCallers(resortOn: integer = -1);
-    procedure RedisplayCallees(resortOn: integer = -1);
-    procedure SelectProcs(pid: integer);
-    procedure ClearBrowser(popBrowser: TPopupMenu);
-    procedure PushBrowser(popBrowser: TPopupMenu; description: string; procID: integer);
-    procedure PopBrowser(popBrowser: TPopupMenu; var description: string; var procID: integer);
-    procedure ClearBreakdown;
-    procedure Restack(fromPop, toPop: TPopupMenu; menuItem: TMenuItem);
-    procedure RestackOne(fromPop, toPop: TPopupMenu);
     procedure LoadLayouts;
     procedure UseDelphiSettings(delphiVer: integer);
     procedure RebuildDefines;
-    procedure RepositionSliders;
     procedure SlidersMoved;
     function  IsProjectConsole: boolean;
     function  ReplaceMacros(s: string): string;
+    procedure ResetSourcePreview(reposition: boolean);
  public
-    procedure ZoomOnProcedure(procedureID, threadID: integer);
     function  GetDOFSetting(section,key,defval: string): string;
  end;
 
@@ -716,10 +638,7 @@ end; { TfrmMain.RebuildDelphiVer }
 procedure TfrmMain.DisablePC2;
 begin
   tabAnalysis.Font.Color             := clBtnShadow;
-  PageControl2.Font.Color            := clBtnShadow;
-  cbxSelectThreadProc.Color          := clBtnFace;
-  cbxSelectThreadClass.Color         := clBtnFace;
-  cbxSelectThreadUnit.Color          := clBtnFace;
+  FProfilingFrame.Disable();
   if PageControl1.ActivePage = tabAnalysis then
     sourceCodeEdit.Color := clBtnFace;
 end; { TfrmMain.DisablePC2 }
@@ -727,12 +646,10 @@ end; { TfrmMain.DisablePC2 }
 procedure TfrmMain.EnablePC2;
 begin
   tabAnalysis.Font.Color             := clWindowText;
-  PageControl2.Font.Color            := clWindowText;
   StatusPanel0('',false);
-  if cbxSelectThreadProc.Items.Count > 2 then begin
-    cbxSelectThreadProc.Color  := clWindow;
-    cbxSelectThreadClass.Color := clWindow;
-    cbxSelectThreadUnit.Color  := clWindow;
+  FProfilingFrame.Enable();
+  if FProfilingFrame.Enable then
+  begin
     if PageControl1.ActivePage = tabAnalysis then
       sourceCodeEdit.Color := SynPasSyn.SpaceAttri.Background;
     SetSource;
@@ -824,46 +741,6 @@ begin
   Result := frmLoadProgress.Visible;
 end; { TfrmMain.ParseProfileCallback }
 
-procedure TfrmMain.FillThreadCombos;
-var
-  i: integer;
-  LCaption : String;
-begin
-  with cbxSelectThreadProc do begin
-    Items.BeginUpdate;
-    try
-      Items.Clear;
-      if openProfile <> nil then begin
-        Items.Add('All threads');
-        with openProfile do begin
-          for i := Low(resThreads)+1 to High(resThreads) do
-          begin
-            // first entries is handle 0 for unknown procs, skip it...
-            LCaption := uintToStr(resThreads[i].teThread) + ' - ';
-            if resThreads[i].teName = '' then
-              LCaption := LCaption + 'Thread '+IntToStr(i)
-            else
-              LCaption := LCaption + resThreads[i].teName;
-            Items.Add(LCaption)
-          end;
-        end;
-      end;
-      Enabled := (Items.Count > 2);
-      ItemIndex := IFF(Enabled,0,1);
-    finally Items.EndUpdate; end;
-  end;
-  cbxSelectThreadClass.Items.Assign(cbxSelectThreadProc.Items);
-  cbxSelectThreadClass.Enabled   := cbxSelectThreadProc.Enabled;
-  cbxSelectThreadClass.ItemIndex := cbxSelectThreadProc.ItemIndex;
-  cbxSelectThreadUnit.Items.Assign(cbxSelectThreadProc.Items);
-  cbxSelectThreadUnit.Enabled   := cbxSelectThreadProc.Enabled;
-  cbxSelectThreadUnit.ItemIndex := cbxSelectThreadProc.ItemIndex;
-  frmExport.expSelectThreadProc.Items.Assign(cbxSelectThreadProc.Items);
-  frmExport.expSelectThreadProc.Items.Add('Summary');
-  frmExport.expSelectThreadProc.Enabled := (frmExport.expSelectThreadProc.Items.Count > 3);
-  frmExport.expSelectThreadProc.ItemIndex := cbxSelectThreadProc.ItemIndex;
-end; { TfrmMain.FillThreadCombos }
-
 function TfrmMain.ParseProfile(profile: string): boolean;
 begin
   Result := false;
@@ -896,128 +773,19 @@ begin
       finally
         HideProgressBar;
       end;
-      if assigned(openProfile) then actProfileOptions.Enabled := true;
+      if assigned(openProfile) then
+      begin
+        actProfileOptions.Enabled := true;
+        FProfilingFrame.OpenProfile := openProfile;
+      end;
       Show;
-      FillThreadCombos;
+      FProfilingFrame.FillThreadCombos;
     finally if assigned(openProfile) then EnablePC2; end;
   finally Enabled := true; end;
 end; { TfrmMain.ParseProfile }
 
-procedure TfrmMain.FillProcView(resortOn: integer = -1);
-var
-  i        : integer;
-begin
-  fvstProcsTools.BeginUpdate;
-  fvstProcsTools.Clear();
-  fvstProcsTools.ThreadIndex := cbxSelectThreadClass.ItemIndex;
-  fvstProcsTools.ProfileResults := openProfile;
-  with openProfile do begin
-    try
-      if cbxSelectThreadProc.ItemIndex >= 0 then
-      begin
-        for i := Low(resProcedures)+1 to High(resProcedures) do begin
-          with resProcedures[i] do begin
-            if (not actHideNotExecuted.Checked) or (peProcCnt[cbxSelectThreadProc.ItemIndex] > 0) then begin
-              fvstProcsTools.AddEntry(i);
-            end;
-          end;
-        end;
-      end;
-    finally
-      fvstProcsTools.EndUpdate;
-    end;
-  end;
-end; { TfrmMain.FillProcView }
-
-procedure TfrmMain.FillClassView(resortOn: integer = -1);
-var
-  i        : integer;
-begin
-  fvstClassesTools.BeginUpdate;
-  fvstClassesTools.Clear();
-  fvstClassesTools.ThreadIndex := cbxSelectThreadClass.ItemIndex;
-  fvstClassesTools.ProfileResults := openProfile;
-  with openProfile do begin
-    try
-      if cbxSelectThreadClass.ItemIndex >= 0 then
-      begin
-        for i := Low(resClasses)+1 to High(resClasses) do begin
-          with resClasses[i] do begin
-            if (not actHideNotExecuted.Checked) or (ceTotalCnt[cbxSelectThreadClass.ItemIndex] > 0) then
-            begin
-              fvstClassesTools.AddEntry(i);
-            end;
-          end;
-        end;
-      end;
-    finally
-      fvstClassesTools.EndUpdate;
-    end;
-  end;
-end; { TfrmMain.FillClassView }
 
 
-
-procedure TfrmMain.FillUnitView(resortOn: integer = -1);
-var
-  i        : integer;
-begin
-  fvstUnitsTools.BeginUpdate;
-  fvstUnitsTools.Clear();
-  fvstUnitsTools.ThreadIndex := cbxSelectThreadUnit.ItemIndex;
-  fvstUnitsTools.ProfileResults := openProfile;
-  with openProfile do begin
-    try
-      if cbxSelectThreadUnit.ItemIndex >= 0 then 
-	  begin
-        for i := Low(resUnits)+1 to High(resUnits) do begin
-          with resUnits[i] do begin
-            if (not actHideNotExecuted.Checked) or (ueTotalCnt[cbxSelectThreadUnit.ItemIndex] > 0) then begin
-              fvstUnitsTools.AddEntry(i);
-            end;
-          end;
-        end;
-      end;
-    finally
-      fvstUnitsTools.EndUpdate;
-    end;
-  end;
-end; { TfrmMain.FillUnitView }
-
-
-procedure TfrmMain.FillThreadView(resortOn: integer = -1);
-var
-  i        : integer;
-begin
-  fvstThreadsTools.BeginUpdate;
-  fvstThreadsTools.Clear();
-  fvstThreadsTools.ThreadIndex := 0; // not needed
-
-  fvstThreadsTools.ProfileResults := openProfile;
-  with openProfile do begin
-    try
-      if openProfile <> nil then begin
-        for i := Low(resThreads)+1 to High(resThreads) do begin
-          with resThreads[i] do begin
-            if (not actHideNotExecuted.Checked) or (teTotalCnt > 0) then begin
-              fvstThreadsTools.AddEntry(i);
-            end;
-          end;
-        end;
-      end;
-    finally
-      fvstThreadsTools.EndUpdate;
-    end;
-  end;
-end; { TfrmMain.FillThreadView }
-
-procedure TfrmMain.FillViews(resortOn: integer = -1);
-begin
-  FillProcView(resortOn);
-  FillClassView(resortOn);
-  FillUnitView(resortOn);
-  FillThreadView(resortOn);
-end; { TfrmMain.FillViews }
 
 procedure TfrmMain.LoadProfile(fileName: string);
 begin
@@ -1027,13 +795,12 @@ begin
     currentProfile := ExtractFileName(fileName);
     PageControl1.ActivePage := tabAnalysis;
     ClearSource;
-    selectedProc := nil;
     if ParseProfile(fileName) then begin
       SetCaption;
       SetSource;
       actHideNotExecuted.Checked := GetProfilePref('HideNotExecuted', prefHideNotExecuted);
-      FillViews(1);
-      ClearBreakdown;
+      FProfilingFrame.FillViews(1);
+      FProfilingFrame.ClearBreakdown;
       actHideNotExecuted.Enabled   := true;
       actRescanProfile.Enabled     := true;
       actExportProfile.Enabled     := true;
@@ -1166,7 +933,10 @@ begin
     BtnLayoutManager.DropdownMenu := popLayout;
     BtnLayoutManager.Perform(CM_RECREATEWND, 0, 0);
   end;
-end; { TfrmMain.RebuildLayoutPopup }
+end;
+
+
+{ TfrmMain.RebuildLayoutPopup }
 
 function TfrmMain.IsLayout(layout: string): boolean;
 var
@@ -1218,27 +988,22 @@ end; { TfrmMain.LoadLayouts }
 
 procedure TfrmMain.FormCreate(Sender: TObject);
 begin
-{$IFDEF DebugParser}
-  NxStartDebug;
-{$ENDIF}
-{$IFDEF DebugPanels}
-  pnlCallers.Color := clGreen;
-  pnlCurrent.Color := clOlive;
-  pnlCallees.Color := clBlue;
-  pnlTopTwo.Color  := clPurple;
-  pnlBottom.Color  := clYellow;
-  splitCallers.Color := clLime;
-  splitCallees.Color := clRed;
-{$ENDIF}
   FInstrumentationFrame := TfrmMainInstrumentation.Create(self);
   FInstrumentationFrame.Parent := tabInstrumentation;
   FInstrumentationFrame.Align := alClient;
+  FInstrumentationFrame.chkShowAll.OnClick := cbProfileChange;;
   FInstrumentationFrame.OnReloadSource := LoadSource;
   FInstrumentationFrame.OnShowStatusBarMessage := StatusPanel0;
+  fProfilingFrame := TfrmMainProfiling.Create(self);
+  fProfilingFrame.Parent := tabAnalysis;
+  fProfilingFrame.Align := alClient;
+  FProfilingFrame.actHideNotExecuted := actHideNotExecuted;
+  FProfilingFrame.actShowHideCallers := actShowHideCallers;
+  FProfilingFrame.actShowHideCallees := actShowHideCallees;
+  fProfilingFrame.OnReloadSource := LoadSource;
   Application.DefaultFont.Name :=  'Segoe UI';
   Application.DefaultFont.Size :=  8;
   inLVResize := false;
-  selectedProc := nil;
   Application.OnShortCut := AppShortcut;
   Application.HelpFile := ChangeFileExt(ParamStr(0),'.Chm');
   if not FileExists(Application.HelpFile) then Application.HelpFile := '';
@@ -1252,7 +1017,6 @@ begin
   end;
   LoadPreferences;
   PageControl1.ActivePage := tabInstrumentation;
-  PageControl2.ActivePage := tabProcedures;
   DisablePC2;
   DisablePC;
   loadCanceled := false;
@@ -1264,13 +1028,7 @@ begin
   MRUPrf.LoadFromRegistry;
   undelProject := '';
   SlidersMoved;
-  fvstUnitsTools   := TSimpleStatsListTools.Create(vstUnits,TProfilingInfoTypeEnum.pit_unit);
-  fvstClassesTools := TSimpleStatsListTools.Create(vstClasses,TProfilingInfoTypeEnum.pit_class);
-  fvstProcsTools   := TSimpleStatsListTools.Create(vstProcs,TProfilingInfoTypeEnum.pit_proc);
-  fvstProcsCallersTools := TSimpleStatsListTools.Create(vstCallers,TProfilingInfoTypeEnum.pit_proc_callers);
-  fvstProcsCalleesTools := TSimpleStatsListTools.Create(vstCallees,TProfilingInfoTypeEnum.pit_proc_callees);
-
-  fvstThreadsTools := TSimpleStatsListTools.Create(vstThreads,TProfilingInfoTypeEnum.pit_thread);
+  
   SetCaption();
 end;
 
@@ -1328,16 +1086,16 @@ begin
       WriteInteger('Panel2Height',pnlSourcePreview.Height);
       WriteBool('previewVisibleInstr',previewVisibleInstr);
       WriteBool('previewVisibleAnalysis',previewVisibleAnalysis);
-      WriteInteger('pnlCallersHeight',pnlCallers.Height);
-      WriteInteger('pnlCalleesHeight',pnlCallees.Height);
-      WriteBool('pnlCallersVisible',pnlCallers.Visible);
-      WriteBool('pnlCalleesVisible',pnlCallees.Visible);
-      PutHeader(reg,vstProcs,'lvProcs');
-      PutHeader(reg,vstClasses,'lvClasses');
-      PutHeader(reg,vstUnits,'lvUnits');
-      PutHeader(reg,vstThreads,'lvThreads');
-      PutHeader(reg,vstCallers,'lvCallers');
-      PutHeader(reg,vstCallees,'lvCallees');
+      WriteInteger('pnlCallersHeight',FProfilingFrame.pnlCallers.Height);
+      WriteInteger('pnlCalleesHeight',FProfilingFrame.pnlCallees.Height);
+      WriteBool('pnlCallersVisible',FProfilingFrame.pnlCallers.Visible);
+      WriteBool('pnlCalleesVisible',FProfilingFrame.pnlCallees.Visible);
+      PutHeader(reg,FProfilingFrame.vstProcs,'lvProcs');
+      PutHeader(reg,FProfilingFrame.vstClasses,'lvClasses');
+      PutHeader(reg,FProfilingFrame.vstUnits,'lvUnits');
+      PutHeader(reg,FProfilingFrame.vstThreads,'lvThreads');
+      PutHeader(reg,FProfilingFrame.vstCallers,'lvCallers');
+      PutHeader(reg,FProfilingFrame.vstCallees,'lvCallees');
     end;
   finally reg.Free; end;
 end; { TfrmMain.SaveMetrics }
@@ -1366,12 +1124,6 @@ begin
   MRUPrf.SaveToRegistry;
   FreeAndNil(openProject);
   ResetProfile();
-  FreeAndNil(fvstUnitsTools);
-  FreeAndNil(fvstClassesTools);
-  FreeAndNil(fvstProcsTools);
-  FreeAndNil(fvstProcsCallersTools);
-  FreeAndNil(fvstProcsCalleesTools);
-  FreeAndNil(fvstThreadsTools);
 end;
 
 
@@ -1445,6 +1197,12 @@ begin
 
 end;
 
+
+procedure TfrmMain.ExportTo(fileName: string; exportProcs, exportClasses, exportUnits, exportThreads,
+  exportCSV: boolean);
+begin
+
+end;
 
 procedure TfrmMain.DoInstrument;
 var
@@ -1610,6 +1368,23 @@ begin
   end;
 end;
 
+procedure TfrmMain.ResetSourcePreview(reposition: boolean);
+begin
+  with actShowHideSourcePreview do begin
+    Tag := 1-Ord(pnlSourcePreview.Visible);
+    if Tag = 1 then begin
+      Caption := 'Show &Source Preview';
+      Hint    := 'Show source preview';
+    end
+    else begin
+      Caption := 'Hide &Source Preview';
+      Hint    := 'Hide source preview';
+    end;
+    ImageIndex := 20+Tag;
+  end;
+  if reposition then FProfilingFrame.RepositionSliders;
+end; { TfrmMain.ResetSourcePreview }
+
 procedure TfrmMain.PageControl1Change(Sender: TObject);
 begin
   SetCaption;
@@ -1622,17 +1397,14 @@ begin
     ResetSourcePreview(true);
   end
   else begin
-    with PageControl2 do
-      if      ActivePage = tabProcedures then vstProcs.SetFocus
-      else if ActivePage = tabClasses    then vstClasses.SetFocus
-      else if ActivePage = tabUnits      then vstUnits.SetFocus
-      else if ActivePage = tabThreads    then vstThreads.SetFocus;
-    lvProcsClick(Sender);
+    FProfilingFrame.updatefocus;
+    FProfilingFrame.lvProcsClick(Sender);
     pnlSourcePreview.Visible := previewVisibleAnalysis;
     splitSourcePreview.Visible := previewVisibleAnalysis;
     ResetSourcePreview(true);
   end;
 end;
+
 
 procedure TfrmMain.SetCaption;
 begin
@@ -1735,22 +1507,6 @@ begin
 end;
 
 
-procedure TfrmMain.cbxSelectThreadProcChange(Sender: TObject);
-begin
-  FillProcView;
-end;
-
-procedure TfrmMain.cbxSelectThreadUnitChange(Sender: TObject);
-begin
-  FillUnitView();
-end;
-
-procedure TfrmMain.cbxSelectThreadClassChange(Sender: TObject);
-begin
-  FillClassView;
-end;
-
-
 procedure TfrmMain.LoadMetrics(layoutName: string);
 
   procedure GetHeaders(reg: TGpRegistry; aVST: TVirtualStringTree; prefix: string);
@@ -1819,26 +1575,26 @@ begin
         pnlSourcePreview.Height := ReadInteger('Panel2Height',pnlSourcePreview.Height);
         previewVisibleInstr     := ReadBool('previewVisibleInstr',true);
         previewVisibleAnalysis  := ReadBool('previewVisibleAnalysis',true);
-        pnlCallers.Height       := ReadInteger('pnlCallersHeight',pnlCallers.Height);
-        pnlCallees.Height       := ReadInteger('pnlCalleesHeight',pnlCallees.Height);
-        splitCallers.Visible    := ReadBool('pnlCalleesVisible',false);
-        splitCallees.Visible    := ReadBool('pnlCallersVisible',false);
-        pnlCallees.Visible      := splitCallers.Visible;
-        pnlCallers.Visible      := splitCallees.Visible;
-        pnlBottom.Top           := 99999;
+        FProfilingFrame.pnlCallers.Height       := ReadInteger('pnlCallersHeight',FProfilingFrame.pnlCallers.Height);
+        FProfilingFrame.pnlCallees.Height       := ReadInteger('pnlCalleesHeight',FProfilingFrame.pnlCallees.Height);
+        FProfilingFrame.splitCallers.Visible    := ReadBool('pnlCalleesVisible',false);
+        FProfilingFrame.splitCallees.Visible    := ReadBool('pnlCallersVisible',false);
+        FProfilingFrame.pnlCallees.Visible      := FProfilingFrame.splitCallers.Visible;
+        FProfilingFrame.pnlCallers.Visible      := FProfilingFrame.splitCallees.Visible;
+        FProfilingFrame.pnlBottom.Top           := 99999;
         if PageControl1.ActivePage = tabInstrumentation
           then pnlSourcePreview.Visible := previewVisibleInstr
           else pnlSourcePreview.Visible := previewVisibleAnalysis;
         splitSourcePreview.Visible := pnlSourcePreview.Visible;
-        GetHeaders(reg,vstProcs,'lvProcs');
-        GetHeaders(reg,vstClasses,'lvClasses');
-        GetHeaders(reg,vstUnits,'lvUnits');
-        GetHeaders(reg,vstThreads,'lvThreads');
-        GetHeaders(reg,vstCallers,'lvCallers');
-        GetHeaders(reg,vstCallees,'lvCallees');
+        GetHeaders(reg,FProfilingFrame.vstProcs,'lvProcs');
+        GetHeaders(reg,FProfilingFrame.vstClasses,'lvClasses');
+        GetHeaders(reg,FProfilingFrame.vstUnits,'lvUnits');
+        GetHeaders(reg,FProfilingFrame.vstThreads,'lvThreads');
+        GetHeaders(reg,FProfilingFrame.vstCallers,'lvCallers');
+        GetHeaders(reg,FProfilingFrame.vstCallees,'lvCallees');
         ResetSourcePreview(false);
-        ResetCallers;
-        ResetCallees;
+        FProfilingFrame.ResetCallers;
+        FProfilingFrame.ResetCallees;
       end;
     finally reg.Free; end;
   finally EnableAlign; end;
@@ -1872,78 +1628,6 @@ begin
 end;
 
 
-
-procedure TfrmMain.vstCalleesNodeClick(Sender: TBaseVirtualTree;
-  const HitInfo: THitInfo);
-var
-  LProfilingType : TProfilingInfoTypeEnum;
-  LEnum : TVTVirtualNodeEnumerator;
-  LProcId : Int64;
-  LGraphId : int16;
-begin
-  LProcId := -1;
-  LGraphId := -1;
-  LProfilingType := TProfilingInfoTypeEnum.pit_proc; // unused here..
-  if assigned(openProfile) and (Sender is TVirtualStringTree) and ((Sender as TVirtualStringTree).SelectedCount>0) then
-  begin
-    LEnum := (Sender as TVirtualStringTree).SelectedNodes(false).GetEnumerator();
-    while(LEnum.MoveNext) do
-    begin
-      LProfilingType := PProfilingInfoRec(LEnum.Current.GetData).ProfilingType;
-      PProfilingInfoRec(LEnum.Current.GetData).GetCallStackInfo(LProcId,LGraphId);
-      Break;
-    end;
-    with openProfile do
-    begin
-      if LProfilingType in [TProfilingInfoTypeEnum.pit_proc_callers,TProfilingInfoTypeEnum.pit_proc_callees] then
-      begin
-        LoadSource(resUnits[resProcedures[LGraphId].peUID].ueQual,
-                   resProcedures[LGraphId].peFirstLn);
-      end;
-    end;
-  end;
-
-
-end;
-
-procedure TfrmMain.vstCalleesNodeDblClick(Sender: TBaseVirtualTree;
-  const HitInfo: THitInfo);
-var
-  LProfilingType : TProfilingInfoTypeEnum;
-  LEnum : TVTVirtualNodeEnumerator;
-  LCaption : string;
-  LSelectedProcID : Int64;
-  LCallStackID : Int16;
-begin
-  LSelectedProcID := -1;
-  LCallStackID := -1;
-  LProfilingType := TProfilingInfoTypeEnum.pit_proc; // unused here..
-  with Sender as TVirtualStringTree do
-    if (Sender as TVirtualStringTree).SelectedCount>0 then
-    begin
-      ClearBrowser(popBrowseNext);
-      LEnum := (Sender as TVirtualStringTree).SelectedNodes(false).GetEnumerator();
-      while(LEnum.MoveNext) do
-      begin
-        LProfilingType := PProfilingInfoRec(LEnum.Current.GetData).ProfilingType;
-        PProfilingInfoRec(LEnum.Current.GetData).GetCallStackInfo(LSelectedProcID,LCallStackID);
-        Break;
-      end;
-      if LCallStackID<>-1 then
-        if LProfilingType in [TProfilingInfoTypeEnum.pit_proc_callers,TProfilingInfoTypeEnum.pit_proc_callees] then
-        begin
-          LCaption := openProfile.resProcedures[LCallStackID].peName;
-          PushBrowser(popBrowsePrevious,LCaption,LCallStackID);
-        end;
-      SelectProcs(LCallStackID);
-    end;
-end;
-
-procedure TfrmMain.vstProcsNodeClick(Sender: TBaseVirtualTree;
-  const HitInfo: THitInfo);
-begin
-  lvProcsClick(Sender);
-end;
 
 { TfrmMain.UseDelphiSettings }
 
@@ -2017,7 +1701,7 @@ end;
 procedure TfrmMain.actHideNotExecutedExecute(Sender: TObject);
 begin
   actHideNotExecuted.Checked := not actHideNotExecuted.Checked;
-  FillViews;
+  FProfilingFrame.FillViews;
   SetProfilePref('HideNotExecuted', actHideNotExecuted.Checked);
 end;
 
@@ -2338,73 +2022,6 @@ begin
   StatusPanel0('',true);
 end; { TfrmMain.ClearSource }
 
-procedure TfrmMain.lvProcsClick(Sender: TObject);
-var
-  uid: integer;
-  LVST : TVirtualStringTree;
-  LEnum : TVTVirtualNodeEnumerator;
-  LData : PProfilingInfoRec;
-  LSelectedID : integer;
-begin
-  LSelectedID := -1;
-  if openProfile <> nil then
-    with PageControl2, ActivePage do begin
-      if ActivePage <> tabThreads then
-      begin
-        if ActivePage = tabProcedures then
-          LVST := vstProcs
-        else if ActivePage = tabClasses then
-          LVST := vstClasses
-        else
-          LVST := vstUnits;
-
-        if Assigned(LVST) then
-        begin
-          LEnum := LVST.SelectedNodes(false).GetEnumerator();
-          while(LEnum.MoveNext) do
-          begin
-            LData := PProfilingInfoRec(LEnum.Current.GetData);
-            LSelectedID := LData.GetId;
-          end;
-        end;
-        with openProfile do begin
-        begin
-          if LSelectedID >= 0 then
-          begin
-            if ActivePage = tabProcedures then begin
-              RedisplayCallers;
-              RedisplayCallees;
-              LoadSource(resUnits[resProcedures[LSelectedID].peUID].ueQual,
-                         resProcedures[LSelectedID].peFirstLn);
-              Exit;
-            end
-            else if ActivePage = tabClasses then begin
-              uid := resClasses[LSelectedID].ceUID;
-              if uid >= 0 then LoadSource(resUnits[uid].ueQual,resClasses[LSelectedID].ceFirstLn);
-              Exit;
-            end
-            else if ActivePage = tabUnits then begin
-              LoadSource(resUnits[LSelectedID].ueQual,0);
-              Exit;
-            end;
-
-          end;
-        end;
-      end;
-    end;
-  end;
-  ClearSource;
-end;
-
-procedure TfrmMain.PageControl2Change(Sender: TObject);
-begin
-  selectedProc := nil;
-  if PageControl2.ActivePage = tabThreads then
-    ClearSource
-  else
-    lvProcsClick(Sender);
-end;
-
 procedure TfrmMain.actExportProfileExecute(Sender: TObject);
 begin
   with frmExport do begin
@@ -2423,109 +2040,16 @@ begin
     cbClasses.Checked    := false;
     cbUnits.Checked      := false;
     cbThreads.Checked    := false;
-    with PageControl2 do begin
-      if      ActivePage = tabProcedures then cbProcedures.Checked := true
-      else if ActivePage = tabClasses    then cbClasses.Checked    := true
-      else if ActivePage = tabUnits      then cbUnits.Checked      := true
-      else if ActivePage = tabThreads    then cbThreads.Checked    := true;
+    with FProfilingFrame.PageControl2 do begin
+      if      ActivePage = FProfilingFrame.tabProcedures then cbProcedures.Checked := true
+      else if ActivePage = FProfilingFrame.tabClasses    then cbClasses.Checked    := true
+      else if ActivePage = FProfilingFrame.tabUnits      then cbUnits.Checked      := true
+      else if ActivePage = FProfilingFrame.tabThreads    then cbThreads.Checked    := true;
     end;
     QueryExport;
   end;
 end;
 
-procedure TfrmMain.ExportTo(fileName: string; exportProcs, exportClasses,
-  exportUnits, exportThreads, exportCSV: boolean);
-
-  procedure LExport(var f: textfile; aLvTools:TSimpleStatsListTools; delim: char);
-  var
-    i   : integer;
-    header: string;
-    line  : string;
-    lEnum : TVTVirtualNodeEnumerator;
-  begin
-    header := '';
-    for i := 0 to aLvTools.ListView.Header.Columns.Count-1 do begin
-      if header <> '' then header := header + delim;
-      header := header + aLvTools.ListView.Header.Columns[i].Text;
-    end;
-    Writeln(f,header);
-    lEnum := aLvTools.ListView.ChildNodes(nil).GetEnumerator;
-    while(lEnum.MoveNext) do
-    begin
-      line := aLVTools.GetRowAsCsv(lEnum.Current,delim);
-      Writeln(f,line);
-    end;
-    Writeln(f,delim);
-  end; { _Export }
-
-  procedure _Export(var f: textfile; listView: TGpArrowListView; delim: char);
-  var
-    i,j   : integer;
-    header: string;
-    line  : string;
-  begin
-    with listView do begin
-      header := '';
-      for i := 0 to Columns.Count-1 do begin
-        if header <> '' then header := header + delim;
-        header := header + Columns[i].Caption;
-      end;
-      Writeln(f,header);
-      for j := 0 to Items.Count-1 do begin
-        with Items[j] do begin
-          line := Caption;
-          for i := 0 to Subitems.Count-1 do
-            line := line + delim + StringReplace(Subitems[i], ',', '.', [rfReplaceAll]);
-          Writeln(f,line);
-        end;
-      end;
-      Writeln(f,delim);
-    end;
-  end; { _Export }
-
-  procedure ExpProcedures(var f: textfile; delim: char);
-  begin
-    LExport(f,fvstProcsTools,delim);
-  end; { ExpProcedures }
-
-  procedure ExpClasses(var f: textfile; delim: char);
-  begin
-   // TODO ASE: add classes
-
-    LExport(f,fvstClassesTools, delim);
-  end; { ExpClasses }
-
-  procedure ExpUnits(var f: textfile; delim: char);
-  begin
-    LExport(f,fvstUnitsTools,delim);
-  end; { ExpUnits }
-
-  procedure ExpThreads(var f: textfile; delim: char);
-  begin
-    LExport(f,fvstThreadsTools,delim);
-  end; { ExpThreads }
-
-var
-  f    : textfile;
-  delim: char;
-
-begin
-//  kaj pa threadi?
-  try
-    if ExtractFileExt(fileName) = '' then
-      if exportCSV then fileName := fileName + '.csv'
-                   else fileName := fileName + '.txt';
-    AssignFile(f,fileName);
-    Rewrite(f);
-    try
-      if exportCSV then delim := ';' else delim := #9;
-      if exportProcs   then ExpProcedures(f,delim);
-      if exportClasses then ExpClasses(f,delim);
-      if exportUnits   then ExpUnits(f,delim);
-      if exportThreads then ExpThreads(f,delim);
-    finally CloseFile(f); end;
-  except Application.MessageBox(PChar('Cannot write to file '+fileName),'Export error',MB_OK); end;
-end;
 
 procedure TfrmMain.QueryExport;
 begin
@@ -2558,6 +2082,11 @@ end;
 function TfrmMain.ShowErrorYesNo(const Msg : string): integer;
 begin
   result := MessageDlg(msg,TMsgDlgType.mtConfirmation,[TMsgDlgBtn.mbYes ,TMsgDlgBtn.mbNo],0,mbYes);
+end;
+
+procedure TfrmMain.SlidersMoved;
+begin
+
 end;
 
 procedure TfrmMain.actMakeCopyProfileExecute(Sender: TObject);
@@ -2661,26 +2190,21 @@ end;
 
 procedure TfrmMain.ResetProfile();
 begin
-  fvstUnitsTools.ProfileResults := nil;
-  fvstClassesTools.ProfileResults := nil;
-  fvstProcsTools.ProfileResults := nil;
-  fvstProcsCallersTools.ProfileResults := nil;
-  fvstProcsCalleesTools.ProfileResults := nil;
-  fvstThreadsTools.ProfileResults := nil;
+  FProfilingFrame.resetprofile();
   FreeAndNil(openProfile);
 end;
 
 procedure TfrmMain.NoProfile;
 begin
   ResetProfile();
-  FillThreadCombos;
+  FProfilingFrame.FillThreadCombos;
   currentProfile := '';
   PageControl1.ActivePage := tabInstrumentation;
   PageControl1Change(self);
   SetCaption;
   SetSource;
-  FillViews(1);
-  ClearBreakdown;
+  FProfilingFrame.FillViews(1);
+  FProfilingFrame.ClearBreakdown;
   actHideNotExecuted.Enabled   := false;
   actRescanProfile.Enabled     := false;
   actExportProfile.Enabled     := false;
@@ -2746,23 +2270,10 @@ begin
   pnlLayout.Hide;
 end;
 
-procedure TfrmMain.RepositionSliders;
-begin
-  pnlCallees.Height := Round(calleesPerc*tabProcedures.Height);
-  pnlBottom.Top := 99999;
-  pnlCallers.Height := Round(callersPerc*tabProcedures.Height);
-end;
-
-procedure TfrmMain.SlidersMoved;
-begin
-  callersPerc := pnlCallers.Height/tabProcedures.Height;
-  calleesPerc := pnlCallees.Height/tabProcedures.Height;
-end;
-
 procedure TfrmMain.FormResize(Sender: TObject);
 begin
   if pnlLayout.Visible then RepositionLayout;
-  RepositionSliders;
+  FProfilingFrame.RepositionSliders;
 end;
 
 procedure TfrmMain.RepositionLayout;
@@ -2944,58 +2455,7 @@ begin
   Application.HelpContext(_Handson);
 end;
 
-procedure TfrmMain.ResetSourcePreview(reposition: boolean);
-begin
-  with actShowHideSourcePreview do begin
-    Tag := 1-Ord(pnlSourcePreview.Visible);
-    if Tag = 1 then begin
-      Caption := 'Show &Source Preview';
-      Hint    := 'Show source preview';
-    end
-    else begin
-      Caption := 'Hide &Source Preview';
-      Hint    := 'Hide source preview';
-    end;
-    ImageIndex := 20+Tag;
-  end;
-  if reposition then RepositionSliders;
-end; { TfrmMain.ResetSourcePreview }
 
-procedure TfrmMain.ResetCallers;
-begin
-  with actShowHideCallers do begin
-    Tag := 1-Ord(pnlCallers.Visible);
-    if Tag = 1 then begin
-      Caption := 'Show &Callers';
-      Hint    := 'Show callers';
-    end
-    else begin
-      Caption := 'Hide &Callers';
-      Hint    := 'Hide callers';
-    end;
-    ImageIndex := 22+Tag;
-  end;
-  RedisplayCallers;
-  SlidersMoved;
-end; { TfrmMain.ResetCallers }
-
-procedure TfrmMain.ResetCallees;
-begin
-  with actShowHideCallees do begin
-    Tag := 1-Ord(pnlCallees.Visible);
-    if Tag = 1 then begin
-      Caption := 'Show Calle&d';
-      Hint    := 'Show called';
-    end
-    else begin
-      Caption := 'Hide Calle&d';
-      Hint    := 'Hide called';
-    end;
-    ImageIndex := 24+Tag;
-  end;
-  RedisplayCallees;
-  SlidersMoved;
-end; { TfrmMain.ResetCallers }
 
 procedure TfrmMain.actShowHideSourcePreviewExecute(Sender: TObject);
 begin
@@ -3005,250 +2465,48 @@ begin
     then previewVisibleInstr := pnlSourcePreview.Visible
     else previewVisibleAnalysis := pnlSourcePreview.Visible;
   ResetSourcePreview(true);
-  if pnlCallers.Height > pnlTopTwo.Height then pnlCallers.Height := pnlTopTwo.Height div 2;
+  if FProfilingFrame.pnlCallers.Height > FProfilingFrame.pnlTopTwo.Height then
+    FProfilingFrame.pnlCallers.Height := FProfilingFrame.pnlTopTwo.Height div 2;
 end;
 
 procedure TfrmMain.actShowHideCallersExecute(Sender: TObject);
 begin
-  if pnlCallers.Visible then begin
-    pnlCallers.Hide;
-    splitCallers.Hide;
+  if FProfilingFrame.pnlCallers.Visible then begin
+    FProfilingFrame.pnlCallers.Hide;
+    FProfilingFrame.splitCallers.Hide;
   end
   else begin
-    splitCallers.Show;
-    pnlCallers.Show;
+    FProfilingFrame.splitCallers.Show;
+    FProfilingFrame.pnlCallers.Show;
   end;
-  ResetCallers;
+  FProfilingFrame.ResetCallers;
 end;
 
 procedure TfrmMain.actShowHideCallersUpdate(Sender: TObject);
 begin
   actShowHideCallers.Enabled := (PageControl1.ActivePage = tabAnalysis) and
-                                (PageControl2.ActivePage = tabProcedures);
+                                (FProfilingFrame.PageControl2.ActivePage = FProfilingFrame.tabProcedures);
 end;
 
 procedure TfrmMain.actShowHideCalleesExecute(Sender: TObject);
 begin
-  if pnlCallees.Visible then begin
-    pnlCallees.Hide;
-    splitCallees.Hide;
+  if FProfilingFrame.pnlCallees.Visible then begin
+    FProfilingFrame.pnlCallees.Hide;
+    FProfilingFrame.splitCallees.Hide;
   end
   else begin
-    pnlCallees.Show;
-    splitCallees.Show;
+    FProfilingFrame.pnlCallees.Show;
+    FProfilingFrame.splitCallees.Show;
   end;
-  pnlCallees.Top := 99999;
-  pnlBottom.Top := 99999;
-  ResetCallees;
+  FProfilingFrame.pnlCallees.Top := 99999;
+  FProfilingFrame.pnlBottom.Top := 99999;
+  FProfilingFrame.ResetCallees;
 end;
 
 procedure TfrmMain.actShowHideCalleesUpdate(Sender: TObject);
 begin
   actShowHideCallees.Enabled := (PageControl1.ActivePage = tabAnalysis) and
-                                (PageControl2.ActivePage = tabProcedures);
-end;
-
-
-
-procedure TfrmMain.RedisplayCallees(resortOn: integer = -1);
-var
-  callingPID: int64;
-  i         : integer;
-  LInfo     : TCallGraphInfo;
-begin
-  if pnlCallees.Visible and (vstProcs.SelectedCount>0) then
-  begin
-    fvstProcsCalleesTools.BeginUpdate;
-    fvstProcsCalleesTools.Clear();
-    fvstProcsCalleesTools.ThreadIndex := cbxSelectThreadClass.ItemIndex;
-    fvstProcsCalleesTools.ProfileResults := openProfile;
-    try
-      with openProfile do
-      begin
-        if DigestVer < 3 then
-          Exit;
-        if cbxSelectThreadProc.ItemIndex >= 0 then
-        begin
-          callingPID := fvstProcsTools.GetSelectedId;
-          for i := 1 to CallGraphInfoCount-1 do
-          begin
-            LInfo := CallGraphInfo.GetGraphInfo(callingPID,i);
-            if assigned(LInfo) then
-            begin
-              if (not actHideNotExecuted.Checked) or (LInfo.ProcCnt[cbxSelectThreadProc.ItemIndex] > 0) then
-              begin
-                fvstProcsCalleesTools.AddEntry(callingPID,i);
-              end;
-            end; // with
-          end; // if
-          end; // for
-        end;
-    finally
-      fvstProcsCalleesTools.EndUpdate;
-    end;
-  end;
-end;
-
-procedure TfrmMain.RedisplayCallers(resortOn: integer = -1);
-var
-  calledPID: int64;
-  i        : integer;
-  LInfo    : TCallGraphInfo;
-begin
-  if pnlCallers.Visible and (vstProcs.SelectedCount<>0) then
-  begin
-    fvstProcsCallersTools.BeginUpdate;
-    fvstProcsCallersTools.Clear();
-    fvstProcsCallersTools.ThreadIndex := cbxSelectThreadClass.ItemIndex;
-    fvstProcsCallersTools.ProfileResults := openProfile;
-    try
-      with openProfile do
-      begin
-        if DigestVer < 3 then
-          Exit;
-        if cbxSelectThreadProc.ItemIndex >= 0 then
-        begin
-          calledPID := fvstProcsTools.GetSelectedId();
-          for i := 1 to CallGraphInfoCount-1 do
-          begin
-            LInfo := CallGraphInfo.GetGraphInfo(i,calledPID);
-            if assigned(LInfo) then
-              if (not actHideNotExecuted.Checked) or (LInfo.ProcCnt[cbxSelectThreadProc.ItemIndex] > 0) then
-                fvstProcsCallersTools.AddEntry(calledPID, i);
-          end; // if
-          end; // for
-        end;
-    finally
-      fvstProcsCallersTools.EndUpdate;
-    end;
-  end;
-end;
-
-procedure TfrmMain.SelectProcs(pid: integer);
-var
-  LEnumor : TVTVirtualNodeEnumerator;
-  LData : PProfilingInfoRec;
-begin
-  LEnumor := vstProcs.Nodes().GetEnumerator();
-  while(LEnumor.MoveNext) do
-  begin
-    LData := PProfilingInfoRec(LEnumor.Current.GetData());
-    if LData.ProcId = pid then
-    begin
-      vstProcs.SetFocus;
-      vstProcs.Selected[LEnumor.Current] := True;
-      lvProcsClick(vstProcs);
-      break;
-    end;
-  end;
-end;
-
-procedure TfrmMain.ClearBrowser(popBrowser: TPopupMenu);
-begin
-  while popBrowser.Items.Count > 0 do popBrowser.Items.Remove(popBrowser.Items[0]);
-end;
-
-procedure TfrmMain.PushBrowser(popBrowser: TPopupMenu; description: string;
-  procID: integer);
-var
-  mn: TMenuItem;
-begin
-  mn := TMenuItem.Create(self);
-  mn.Caption := description;
-  mn.HelpContext := procID;
-  mn.OnClick := BrowserClick;
-  popBrowser.Items.Insert(0,mn);
-  if popBrowser = popBrowseNext then actBrowseNext.Hint := description
-                                else actBrowsePrevious.Hint := description;
-end;
-
-procedure TfrmMain.BrowserClick(Sender: TObject);
-begin
-  if (Sender as TMenuItem).Parent = popBrowsePrevious.Items
-    then Restack(popBrowsePrevious,popBrowseNext,Sender as TMenuItem)
-    else Restack(popBrowseNext,popBrowsePrevious,Sender as TMenuItem);
-end;
-
-procedure TfrmMain.actBrowsePreviousExecute(Sender: TObject);
-begin
-  RestackOne(popBrowsePrevious,popBrowseNext);
-end;
-
-procedure TfrmMain.actBrowseNextExecute(Sender: TObject);
-begin
-  RestackOne(popBrowseNext,popBrowsePrevious);
-end;
-
-procedure TfrmMain.actBrowseNextUpdate(Sender: TObject);
-begin
-  actBrowseNext.Enabled := popBrowseNext.Items.Count > 0;
-end;
-
-procedure TfrmMain.actBrowsePreviousUpdate(Sender: TObject);
-begin
-  actBrowsePrevious.Enabled := popBrowsePrevious.Items.Count > 0;
-end;
-
-procedure TfrmMain.PopBrowser(popBrowser: TPopupMenu; var description: string;
-  var procID: integer);
-var
-  newDesc: string;
-begin
-  with popBrowser.Items[0] do begin
-    description := Caption;
-    procID := HelpContext;
-  end;
-  popBrowser.Items.Remove(popBrowser.Items[0]);
-  if popBrowser.Items.Count = 0 then newDesc := ''
-                                else newDesc := popBrowser.Items[0].Caption;
-  if popBrowser = popBrowseNext then actBrowseNext.Hint := newDesc
-                                else actBrowsePrevious.Hint := newDesc;
-end;
-
-procedure TfrmMain.ClearBreakdown;
-begin
-  ClearBrowser(popBrowseNext);
-  ClearBrowser(popBrowsePrevious);
-  fvstProcsCallersTools.Clear;
-  fvstProcsCalleesTools.Clear();
-end;
-
-procedure TfrmMain.RestackOne(fromPop, toPop: TPopupMenu);
-var
-  description: string;
-  procID     : integer;
-  LNode : PVirtualNode;
-begin
-  LNode := fvstProcsTools.GetSelectedNode;
-  if assigned(LNode) then
-    PushBrowser(toPop,fvstProcsTools.GetSelectedCaption(),fvstProcsTools.GetSelectedId());
-  PopBrowser(fromPop,description,procID);
-  SelectProcs(procID);
-end;
-
-procedure TfrmMain.Restack(fromPop, toPop: TPopupMenu;
-  menuItem: TMenuItem);
-var
-  mustStop  : boolean;
-  juggleDesc: string;
-  jugglePID : integer;
-begin
-  juggleDesc := fvstProcsTools.GetSelectedCaption();
-  jugglePID  := fvstProcsTools.GetSelectedId();
-  repeat
-    mustStop := (fromPop.Items[0] = menuItem);
-    PushBrowser(toPop,juggleDesc,jugglePID);
-    PopBrowser(fromPop,juggleDesc,jugglePID);
-  until mustStop;
-  SelectProcs(jugglePID);
-end;
-
-procedure TfrmMain.ZoomOnProcedure(procedureID, threadID: integer);
-begin
-  PageControl2.ActivePage := tabProcedures;
-  if cbxSelectThreadProc.Enabled then cbxSelectThreadProc.ItemIndex := threadID;
-  SelectProcs(procedureID);
-  frmMain.Show;
+                                (FProfilingFrame.PageControl2.ActivePage = FProfilingFrame.tabProcedures);
 end;
 
 
@@ -3280,6 +2538,7 @@ procedure TfrmMain.splitCallersMoved(Sender: TObject);
 begin
   SlidersMoved;
 end;
+
 
 
 end.
