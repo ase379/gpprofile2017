@@ -308,7 +308,7 @@ begin
     if LCallStackID<>-1 then
       if LProfilingType in [TProfilingInfoTypeEnum.pit_proc_callers,TProfilingInfoTypeEnum.pit_proc_callees] then
       begin
-        LCaption := openProfile.resProcedures[LCallStackID].peName;
+        LCaption := openProfile.resProcedures[LCallStackID].Name;
         PushBrowser(popBrowsePrevious,LCaption,LCallStackID);
       end;
     SelectProcs(LCallStackID);

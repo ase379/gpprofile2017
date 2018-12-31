@@ -566,7 +566,7 @@ begin
   begin
     totalTime := fProfileResults.resUnits[0].ueTotalTime[fThreadIndex];
     case Column of
-      COL_UNIT_NAME: CellText := fProfileResults.resUnits[LData.UnitId].ueName;
+      COL_UNIT_NAME: CellText := fProfileResults.resUnits[LData.UnitId].Name;
       COL_UNIT_TOTAL_PERC: CellText := FormatPerc(fProfileResults.resUnits[LData.UnitId].ueTotalTime[fThreadIndex]/totalTime);
       COL_UNIT_TOTAL_TIME: CellText := FormatTime(fProfileResults.resUnits[LData.UnitId].ueTotalTime[fThreadIndex],fProfileResults.resFrequency);
       COL_UNIT_TOTAL_CALLS: CellText := FormatCnt(fProfileResults.resUnits[LData.UnitId].ueTotalCnt[fThreadIndex]);
@@ -579,7 +579,7 @@ begin
     case Column of
       COL_CLASS_NAME:
       begin
-        CellText :=IFF(Last(fProfileResults.resClasses[LData.ClassId].ceName,2)='<>',ButLast(fProfileResults.resClasses[LData.ClassId].ceName,1)+'classless procedures>',fProfileResults.resClasses[LData.ClassId].ceName);
+        CellText :=IFF(Last(fProfileResults.resClasses[LData.ClassId].Name,2)='<>',ButLast(fProfileResults.resClasses[LData.ClassId].Name,1)+'classless procedures>',fProfileResults.resClasses[LData.ClassId].Name);
       end;
       COL_CLASS_TOTAL_PERC:
       begin
@@ -598,7 +598,7 @@ begin
     case Column of
       COL_PROC_NAME:
       begin
-        CellText := fProfileResults.resProcedures[LData.ProcId].peName;
+        CellText := fProfileResults.resProcedures[LData.ProcId].Name;
       end;
       COL_PROC_TOTAL_PERC:
       begin
@@ -628,7 +628,7 @@ begin
     case Column of
       COL_PROC_NAME:
       begin
-        CellText :=fProfileResults.resProcedures[LData.CallerGraphIndex].peName;
+        CellText :=fProfileResults.resProcedures[LData.CallerGraphIndex].Name;
       end;
       COL_PROC_TOTAL_PERC:
       begin
@@ -659,7 +659,7 @@ begin
     case Column of
       COL_PROC_NAME:
       begin
-        CellText :=fProfileResults.resProcedures[LData.CalleeGraphIndex].peName;
+        CellText :=fProfileResults.resProcedures[LData.CalleeGraphIndex].Name;
       end;
       COL_PROC_TOTAL_PERC:
       begin

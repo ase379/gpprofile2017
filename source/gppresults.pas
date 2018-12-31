@@ -68,6 +68,7 @@ type
   TUnitEntry = record
   private
     function GetPath: String;
+    function GetName: String;
   public
     ueName     : AnsiString;
     ueQual     : AnsiString;
@@ -75,18 +76,26 @@ type
     ueTotalCnt : array {thread} of integer; // 0 = sum
 
     property FilePath : String read GetPath;
-
+    property Name : String read GetName;
   end;
 
   TClassEntry = record
+  private
+    function GetName: String;
+  public
     ceName     : AnsiString;
     ceUID      : integer;
     ceFirstLn  : integer;
     ceTotalTime: array {thread} of int64;   // 0 = sum
     ceTotalCnt : array {thread} of integer; // 0 = sum
+
+    property Name : String read GetName;
   end;
 
   TProcEntry = record
+  private
+    function GetName: String;
+  public
     peName         : AnsiString;
     peUID          : integer;
     peCID          : integer;
@@ -98,6 +107,8 @@ type
     peProcChildTime: array {thread} of int64;   // 0 = sum
     peProcCnt      : array {thread} of integer; // 0 = sum
     peRecLevel     : array {thread} of integer; // 0 = unused
+
+    property Name : String read GetName;
   end;
 
   TCallGraphKey = record
@@ -1461,6 +1472,11 @@ end;
 
 { TUnitEntry }
 
+function TUnitEntry.GetName: String;
+begin
+  result := String(ueName);
+end;
+
 function TUnitEntry.GetPath: String;
 begin
   result := String(ueQual);
@@ -1471,6 +1487,20 @@ end;
 function TThreadEntry.GetName: String;
 begin
   result := String(teName);
+end;
+
+{ TProcEntry }
+
+function TProcEntry.GetName: String;
+begin
+  result := string(peName);
+end;
+
+{ TClassEntry }
+
+function TClassEntry.GetName: String;
+begin
+  result := String(ceName);
 end;
 
 end.
