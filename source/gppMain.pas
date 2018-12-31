@@ -303,10 +303,6 @@ var
 implementation
 
 uses
-{$IFDEF DebugParser}
-  uDbg,
-  uDbgIntf,
-{$ENDIF}
   BdsProjUnit,
   BdsVersions,
   IniFiles,

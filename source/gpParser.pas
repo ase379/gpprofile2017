@@ -213,10 +213,6 @@ uses
   Winapi.Windows,
   IoUtils,
   GpIFF,
-{$IFDEF DebugParser}
-  uDbg,
-  uDbgIntf,
-{$ENDIF}
   GpString,
   CastaliaPasLex,
   CastaliaPasLexTypes,
