@@ -1233,6 +1233,7 @@ begin
   FInstrumentationFrame := TfrmMainInstrumentation.Create(self);
   FInstrumentationFrame.Parent := tabInstrumentation;
   FInstrumentationFrame.Align := alClient;
+  FInstrumentationFrame.chkShowAll.OnClick := cbProfileChange;;
   FInstrumentationFrame.OnReloadSource := LoadSource;
   FInstrumentationFrame.OnShowStatusBarMessage := StatusPanel0;
   Application.DefaultFont.Name :=  'Segoe UI';
