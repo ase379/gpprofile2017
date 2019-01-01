@@ -30,7 +30,6 @@ uses
   Windows,
   Vcl.HtmlHelpViewer,
   GpString,
-  gpArrowListView,
   gppMain in 'gppMain.pas' {frmMain},
   gpPreferencesDlg in 'gpPreferencesDlg.pas' {frmPreferences},
   gpParser in 'gpParser.pas',
