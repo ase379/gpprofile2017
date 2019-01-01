@@ -413,7 +413,7 @@ var
 begin
   fvstProcsTools.BeginUpdate;
   fvstProcsTools.Clear();
-  fvstProcsTools.ThreadIndex := cbxSelectThreadClass.ItemIndex;
+  fvstProcsTools.ThreadIndex := cbxSelectThreadProc.ItemIndex;
   fvstProcsTools.ProfileResults := openProfile;
   with openProfile do begin
     try
@@ -537,7 +537,7 @@ begin
   begin
     fvstProcsCalleesTools.BeginUpdate;
     fvstProcsCalleesTools.Clear();
-    fvstProcsCalleesTools.ThreadIndex := cbxSelectThreadClass.ItemIndex;
+    fvstProcsCalleesTools.ThreadIndex := cbxSelectThreadProc.ItemIndex;
     fvstProcsCalleesTools.ProfileResults := openProfile;
     try
       with openProfile do
@@ -576,7 +576,7 @@ begin
   begin
     fvstProcsCallersTools.BeginUpdate;
     fvstProcsCallersTools.Clear();
-    fvstProcsCallersTools.ThreadIndex := cbxSelectThreadClass.ItemIndex;
+    fvstProcsCallersTools.ThreadIndex := cbxSelectThreadProc.ItemIndex;
     fvstProcsCallersTools.ProfileResults := openProfile;
     try
       with openProfile do
