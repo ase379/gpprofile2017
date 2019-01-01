@@ -124,14 +124,16 @@ type
   /// </summary>
   TCallGraphInfo = class
   public
-    ProcTime     : TList<int64>;   // nil = sum
-    ProcTimeMin  : TList<int64>;   // nil = unused
-    ProcTimeMax  : TList<int64>;   // nil = unused
-    ProcTimeAvg  : TList<int64>;   // nil = unused
-    ProcChildTime: TList<int64>;   // nil = sum
-    ProcCnt      : TList<integer>; // nil = sum
+    ProcTime     : TList<int64>;   // 0 = sum
+    ProcTimeMin  : TList<int64>;   // 0 = unused
+    ProcTimeMax  : TList<int64>;   // 0 = unused
+    ProcTimeAvg  : TList<int64>;   // 0 = unused
+    ProcChildTime: TList<int64>;   // 0 = sum
+    ProcCnt      : TList<integer>; // 0 = sum
     constructor Create(const aThreadCount: Integer);
     destructor Destroy; override;
+
+    function ToInfoString(): string;
   end;
 
   /// <summary>
@@ -1424,6 +1426,44 @@ begin
   ProcChildTime.free;
   ProcCnt.free;
   inherited;
+end;
+
+function TCallGraphInfo.ToInfoString: string;
+
+  procedure OutputList(const aBuilder : TStringBuilder;const aListName : string;const aList : TList<Int64>); overload;
+  var
+    i : integer;
+  begin
+    aBuilder.Append(' '+aListName);
+    for i  := 0 to ProcTimeMin.Count-1 do
+      aBuilder.Append(aList[i].ToString()+',');
+    aBuilder.AppendLine();
+  end;
+
+  procedure OutputList(const aBuilder : TStringBuilder;const aListName : string;const aList : TList<Integer>);overload;
+  var
+    i : integer;
+  begin
+    aBuilder.Append(' '+aListName);
+    for i  := 0 to ProcTimeMin.Count-1 do
+      aBuilder.Append(aList[i].ToString()+',');
+    aBuilder.AppendLine();
+  end;
+
+var
+  LBuilder : TStringBuilder;
+begin
+  LBuilder := TStringBuilder.Create(512);
+  LBuilder.AppendLine('CallGraphInfo:');
+
+  OutputList(LBuilder,'ProcTime:', ProcTime);
+  OutputList(LBuilder,'ProcChildTime:', ProcChildTime);
+  OutputList(LBuilder,'ProcTimeMin:', ProcTimeMin);
+  OutputList(LBuilder,'ProcTimeMax:', ProcTimeMax);
+  OutputList(LBuilder,'ProcTimeAvg:', ProcTimeAvg);
+  OutputList(LBuilder,'ProcCnt:', ProcCnt);
+  result := LBuilder.ToString();
+  LBuilder.free;
 end;
 
 { TCallGraphKey }
