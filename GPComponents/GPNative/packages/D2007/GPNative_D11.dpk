@@ -29,8 +29,6 @@ requires
   vcl;
 
 contains
-  gpArrowListView in '..\..\source\gpArrowListView.pas',
-  GpCheckLst in '..\..\source\GpCheckLst.pas',
   gpMRU in '..\..\source\gpMRU.pas',
   gpString in '..\..\source\gpString.pas';
 
