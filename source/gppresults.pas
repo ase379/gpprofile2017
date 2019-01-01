@@ -616,15 +616,17 @@ var
 begin
   // update resProcedures, resActiveProcs, and CallGraph
   // other structures will be recalculated at the end
-  with resProcedures[proxy.ppProcID] do begin
-    if assigned(parent)
-      then parent.ppChildTime := parent.ppChildTime + proxy.ppTotalTime + proxy.ppChildTime;
+  with resProcedures[proxy.ppProcID] do
+  begin
+    if assigned(parent) then
+      parent.ppChildTime := parent.ppChildTime + proxy.ppTotalTime + proxy.ppChildTime;
     Inc(peProcTime[proxy.ppThreadID],proxy.ppTotalTime);
     if proxy.ppTotalTime < peProcTimeMin[proxy.ppThreadID] then
       peProcTimeMin[proxy.ppThreadID] := proxy.ppTotalTime;
     if proxy.ppTotalTime > peProcTimeMax[proxy.ppThreadID] then
       peProcTimeMax[proxy.ppThreadID] := proxy.ppTotalTime;
-    if peRecLevel[proxy.ppThreadID] = 0 then begin
+    if peRecLevel[proxy.ppThreadID] = 0 then
+    begin
       Inc(peProcChildTime[proxy.ppThreadID],proxy.ppChildTime);
       Inc(peProcChildTime[proxy.ppThreadID],proxy.ppTotalTime);
     end;
