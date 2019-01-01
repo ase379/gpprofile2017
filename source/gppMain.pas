@@ -6,9 +6,9 @@ interface
 
 uses
   Registry, Messages, Classes, Forms, Windows, SysUtils, Graphics, Controls,
-  Dialogs, StdCtrls, Menus, ComCtrls, GpParser, ExtCtrls, GpCheckLst, gpMRU,
+  Dialogs, StdCtrls, Menus, ComCtrls, GpParser, ExtCtrls, gpMRU,
   ActnList, ImgList, Buttons, ToolWin, gppResults, Grids,
-  gpArrowListView, DProjUnit, SynEdit,
+  DProjUnit, SynEdit,
   SynEditHighlighter, SynEditCodeFolding, SynHighlighterPas, System.ImageList,
   System.Actions,gppCurrentPrefs, VirtualTrees,
   virtualTree.tools.checkable,
@@ -1045,17 +1045,6 @@ procedure TfrmMain.SaveMetrics(layoutName: string);
   end; { PutColumns }
 
 
-  procedure PutColumns(reg: TGpRegistry; lv: TGpArrowListView; prefix: string);
-  var
-    i: integer;
-  begin
-    with lv do begin
-      for i := 0 to Columns.Count-1 do begin
-        reg.WriteInteger(prefix+'Column'+IntToStr(i)+'Width',Column[i].Width);
-      end;
-    end;
-  end; { PutColumns }
-
 var
   reg: TGpRegistry;
   wp : TWindowPlacement;
@@ -1506,17 +1495,6 @@ procedure TfrmMain.LoadMetrics(layoutName: string);
     end;
   end; { GetColumns }
 
-
-  procedure GetColumns(reg: TGpRegistry; lv: TGpArrowListView; prefix: string);
-  var
-    i: integer;
-  begin
-    with lv do begin
-      for i := 0 to Columns.Count-1 do begin
-        Columns[i].Width := reg.ReadInteger(prefix+'Column'+IntToStr(i)+'Width',Column[i].Width);
-      end;
-    end;
-  end; { GetColumns }
 
   function CheckCorrectUIVer: boolean;
   begin
