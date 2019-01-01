@@ -118,18 +118,50 @@ type
     constructor Create(aParentId, aChildId : integer);
   end;
 
+
+  /// <summary>
+  /// A list for counting the proc calls.
+  /// The index is the thread number. 0 means "All Threads".
+  /// </summary>
+  tProcTimeList = class(TList<int64>)
+  public
+    /// <summary>
+    /// Adds a time to the given index.
+    /// If the anIndex is not 0, the sum(index 0) is incremented as well.
+    /// </summary>
+    procedure AddTime(const anIndex : integer;const aValueToBeAdded: int64);
+    /// <summary>
+    /// Set a time value for a given index.
+    /// If the anIndex is not 0, the sum(index 0) is adjusted as well.
+    /// </summary>
+  procedure AssignTime(const anIndex : integer; const aValueToBeAssigned: int64);
+  end;
+
+  /// <summary>
+  /// A list for counting the proc calls.
+  /// The index is the thread number. 0 means "All Threads".
+  /// </summary>
+  tProcCountList = class(TList<integer>)
+  public
+    /// <summary>
+    /// Adds a count to the given index.
+    /// If the anIndex is not 0, the sum(index 0) is incremented as well.
+    /// </summary>
+    procedure AddCount(const anIndex : integer;const aValueToBeAdded: integer);
+
+  end;
   /// <summary>
   /// The class describes the call graph info (which parent proc calls which child proc).
   /// The lists are as long as the number of threads.
   /// </summary>
   TCallGraphInfo = class
   public
-    ProcTime     : TList<int64>;   // 0 = sum
-    ProcTimeMin  : TList<int64>;   // 0 = unused
-    ProcTimeMax  : TList<int64>;   // 0 = unused
-    ProcTimeAvg  : TList<int64>;   // 0 = unused
-    ProcChildTime: TList<int64>;   // 0 = sum
-    ProcCnt      : TList<integer>; // 0 = sum
+    ProcTime     : tProcTimeList;   // 0 = sum
+    ProcTimeMin  : tProcTimeList;   // 0 = unused
+    ProcTimeMax  : tProcTimeList;   // 0 = unused
+    ProcTimeAvg  : tProcTimeList;   // 0 = unused
+    ProcChildTime: tProcTimeList;   // 0 = sum
+    ProcCnt      : tProcCountList; // 0 = sum
     constructor Create(const aThreadCount: Integer);
     destructor Destroy; override;
 
@@ -613,47 +645,52 @@ end; { TResults.LoadHeader }
 procedure TResults.UpdateRunningTime(proxy,parent: TProcProxy);
 var
   LInfo : TCallGraphInfo;
+  LThreadID : integer;
 begin
+  LThreadID := proxy.ppThreadID;
   // update resProcedures, resActiveProcs, and CallGraph
   // other structures will be recalculated at the end
   with resProcedures[proxy.ppProcID] do
   begin
     if assigned(parent) then
       parent.ppChildTime := parent.ppChildTime + proxy.ppTotalTime + proxy.ppChildTime;
-    Inc(peProcTime[proxy.ppThreadID],proxy.ppTotalTime);
-    if proxy.ppTotalTime < peProcTimeMin[proxy.ppThreadID] then
-      peProcTimeMin[proxy.ppThreadID] := proxy.ppTotalTime;
-    if proxy.ppTotalTime > peProcTimeMax[proxy.ppThreadID] then
-      peProcTimeMax[proxy.ppThreadID] := proxy.ppTotalTime;
-    if peRecLevel[proxy.ppThreadID] = 0 then
+    Inc(peProcTime[LThreadID],proxy.ppTotalTime);
+    if proxy.ppTotalTime < peProcTimeMin[LThreadID] then
+      peProcTimeMin[LThreadID] := proxy.ppTotalTime;
+    if proxy.ppTotalTime > peProcTimeMax[LThreadID] then
+      peProcTimeMax[LThreadID] := proxy.ppTotalTime;
+    if peRecLevel[LThreadID] = 0 then
     begin
-      Inc(peProcChildTime[proxy.ppThreadID],proxy.ppChildTime);
-      Inc(peProcChildTime[proxy.ppThreadID],proxy.ppTotalTime);
+      Inc(peProcChildTime[LThreadID],proxy.ppChildTime);
+      Inc(peProcChildTime[LThreadID],proxy.ppTotalTime);
     end;
-    Inc(peProcCnt[proxy.ppThreadID],1);
+    Inc(peProcCnt[LThreadID],1);
   end;
+
+  // update all callstack related data.
+
   if assigned(parent) then
   begin
+    // assemble callstack information
     LInfo := fCallGraphInfoDict.GetOrCreateGraphInfo(parent.ppProcID,proxy.ppProcID,High(resThreads));
-      LInfo.ProcTime[proxy.ppThreadID] := LInfo.ProcTime[proxy.ppThreadID]+proxy.ppTotalTime;
-      LInfo.ProcTime[0] := LInfo.ProcTime[0] + proxy.ppTotalTime;
-      if proxy.ppTotalTime < LInfo.ProcTimeMin[proxy.ppThreadID] then
-        LInfo.ProcTimeMin[proxy.ppThreadID] := proxy.ppTotalTime;
-      if proxy.ppTotalTime > LInfo.ProcTimeMax[proxy.ppThreadID] then
-        LInfo.ProcTimeMax[proxy.ppThreadID] := proxy.ppTotalTime;
-      if resProcedures[proxy.ppProcID].peRecLevel[proxy.ppThreadID] = 0 then
-      begin
-        LInfo.ProcChildTime[proxy.ppThreadID] := LInfo.ProcChildTime[proxy.ppThreadID] + proxy.ppChildTime;
-        LInfo.ProcChildTime[proxy.ppThreadID] := LInfo.ProcChildTime[proxy.ppThreadID] + proxy.ppTotalTime;
-      end
-      else if (resProcedures[proxy.ppProcID].peRecLevel[proxy.ppThreadID] = 1) and
-              (parent.ppProcID = proxy.ppProcID) then
-      begin
-        LInfo.ProcChildTime[proxy.ppThreadID] := LInfo.ProcChildTime[proxy.ppThreadID] + proxy.ppChildTime;
-        LInfo.ProcChildTime[proxy.ppThreadID] := LInfo.ProcChildTime[proxy.ppThreadID] + proxy.ppTotalTime;
-      end;
-      LInfo.ProcCnt[proxy.ppThreadID] := LInfo.ProcCnt[proxy.ppThreadID] + 1;
-      LInfo.ProcCnt[0] := LInfo.ProcCnt[0] + 1;
+
+    LInfo.ProcTime.AddTime(LThreadID,proxy.ppTotalTime);
+    if proxy.ppTotalTime < LInfo.ProcTimeMin[LThreadID] then
+      LInfo.ProcTimeMin.AssignTime(LThreadID,proxy.ppTotalTime);
+    if proxy.ppTotalTime > LInfo.ProcTimeMax[LThreadID] then
+      LInfo.ProcTimeMax.AssignTime(LThreadID, proxy.ppTotalTime);
+    if resProcedures[proxy.ppProcID].peRecLevel[LThreadID] = 0 then
+    begin
+      LInfo.ProcChildTime.AddTime(LThreadID,proxy.ppChildTime);
+      LInfo.ProcChildTime.AddTime(LThreadID,proxy.ppTotalTime);
+    end
+    else if (resProcedures[proxy.ppProcID].peRecLevel[LThreadID] = 1) and
+            (parent.ppProcID = proxy.ppProcID) then
+    begin
+      LInfo.ProcChildTime.AddTime(LThreadID,proxy.ppChildTime);
+      LInfo.ProcChildTime.AddTime(LThreadID,proxy.ppTotalTime);
+    end;
+    LInfo.ProcCnt.AddCount(LThreadID,1);
   end;
 end; { TResults.UpdateRunningTime }
 
@@ -732,6 +769,7 @@ var
   LInfo : TCallGraphInfo;
   LInfoChild : TCallGraphInfo;
   LChildrenDict : TCallGraphInfoDict;
+  LProcTimeAvgAllThreads : int64;
 begin
   numth := High(resThreads);
   // resize resUnits and resClasses
@@ -848,6 +886,8 @@ begin
     LInfo := LPair.Value;
     if assigned(LInfo) then
     begin
+      // collect all avg times....
+      LProcTimeAvgAllThreads := 0;
       for j := 0 + 1 to LInfo.ProcTime.count - 1 do
       begin
         if LInfo.ProcTimeMin[j] = High(int64) then
@@ -856,8 +896,11 @@ begin
           LInfo.ProcTimeAvg[j] := 0
         else
           LInfo.ProcTimeAvg[j] := LInfo.ProcTime[j] div LInfo.ProcCnt[j];
+        LProcTimeAvgAllThreads := LProcTimeAvgAllThreads + LInfo.ProcTimeAvg[j];
       end;
+      LInfo.ProcTimeAvg[0] := LProcTimeAvgAllThreads;
     end;
+
   end;
 
   // fCallGraphInfo: calculate proc time for each thread
@@ -1402,14 +1445,16 @@ end; { TActiveProcList.UpdateRunningTime }
 { TCallGraphInfo }
 
 constructor TCallGraphInfo.Create(const aThreadCount: Integer);
+var
+  i : integer;
 begin
   inherited Create();
-  ProcTime := TList<int64>.Create();
-  ProcTimeMin := TList<int64>.Create();
-  ProcTimeMax := TList<int64>.Create();
-  ProcTimeAvg := TList<int64>.Create();
-  ProcChildTime:= TList<int64>.Create();
-  ProcCnt := TList<integer>.Create();
+  ProcTime := tProcTimeList.Create();
+  ProcTimeMin := tProcTimeList.Create();
+  ProcTimeMax := tProcTimeList.Create();
+  ProcTimeAvg := tProcTimeList.Create();
+  ProcChildTime:= tProcTimeList.Create();
+  ProcCnt := tProcCountList.Create();
 
   ProcTime.Count := aThreadCount;
   ProcTimeMin.Count := aThreadCount;
@@ -1417,6 +1462,11 @@ begin
   ProcTimeAvg.Count := aThreadCount;
   ProcChildTime.Count := aThreadCount;
   ProcCnt.Count := aThreadCount;
+
+  // procTimeMin starts with the high value and is assigned with
+  // the first lower value.
+  for I := 0 to ProcTimeMin.Count-1 do
+    ProcTimeMin[i] := High(int64);
 end;
 
 destructor TCallGraphInfo.Destroy;
@@ -1430,9 +1480,10 @@ begin
   inherited;
 end;
 
+
 function TCallGraphInfo.ToInfoString: string;
 
-  procedure OutputList(const aBuilder : TStringBuilder;const aListName : string;const aList : TList<Int64>); overload;
+  procedure OutputList(const aBuilder : TStringBuilder;const aListName : string;const aList : TProcTimeList); overload;
   var
     i : integer;
   begin
@@ -1543,6 +1594,38 @@ end;
 function TClassEntry.GetName: String;
 begin
   result := String(ceName);
+end;
+
+{ tProcTimeList }
+
+
+procedure tProcTimeList.AddTime(const anIndex : integer;const aValueToBeAdded: int64);
+begin
+  self[anIndex] := self[anIndex] + aValueToBeAdded;
+  if anIndex <> 0 then
+    self[0] := self[0] + aValueToBeAdded;
+end;
+
+procedure tProcTimeList.AssignTime(const anIndex: integer; const aValueToBeAssigned: int64);
+var
+  LOldValue : int64;
+begin
+  LOldValue := self[anIndex];
+  self[anIndex] := aValueToBeAssigned;
+  if anIndex <> 0 then
+  begin
+    // subtract the subtracted value and add the new to have the proper sum.
+    self[0] := self[0] - LOldValue + aValueToBeAssigned;
+  end;
+end;
+
+{ tProcCountList }
+
+procedure tProcCountList.AddCount(const anIndex, aValueToBeAdded: integer);
+begin
+  self[anIndex] := self[anIndex] + aValueToBeAdded;
+  if anIndex <> 0 then
+    self[0] := self[0] + aValueToBeAdded;
 end;
 
 end.
