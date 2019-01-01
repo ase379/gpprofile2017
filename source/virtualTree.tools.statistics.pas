@@ -63,6 +63,7 @@ type
     procedure AddEntry(const anEntryId, anIndex : Cardinal);overload;
 
     function GetSelectedId(): Int64;
+    function SetSelectedId(const anId : Int64) : boolean;
     function GetSelectedCaption(): string;
 
     function GetSelectedNode: PVirtualNode;
@@ -221,6 +222,24 @@ begin
   LNode := self.GetSelectedNode;
   if assigned(LNode) then
     Result := PProfilingInfoRec(LNode.GetData).GetId;
+end;
+
+function TSimpleStatsListTools.SetSelectedId(const anId: Int64): boolean;
+var
+  LEnumor : TVTVirtualNodeEnumerator;
+begin
+  result := false;
+  LEnumor := fList.Nodes().GetEnumerator();
+  while(LEnumor.MoveNext) do
+  begin
+    if PProfilingInfoRec(LEnumor.Current.GetData).GetId = anId then
+    begin
+      fList.Selected[LEnumor.Current] := true;
+      result := true;
+    end
+    else
+      fList.Selected[LEnumor.Current] := false;
+  end;
 end;
 
 function TSimpleStatsListTools.GetSelectedCaption(): string;
@@ -704,6 +723,8 @@ begin
     end;
   end;
 end;
+
+
 
 
 procedure TSimpleStatsListTools.OnCompareNodes(Sender: TBaseVirtualTree;
