@@ -735,8 +735,18 @@ begin
 end;
 
 procedure TfrmMainProfiling.cbxSelectThreadProcChange(Sender: TObject);
+var
+  LSelectedId : int64;
 begin
+  LSelectedId := fvstProcsTools.GetSelectedId();
   FillProcView();
+  if fvstProcsTools.SetSelectedId(LSelectedId) then
+  begin
+    RedisplayCallees();
+    RedisplayCallers();
+  end
+  else
+    ClearCallersNCallees;
 end;
 
 procedure TfrmMainProfiling.cbxSelectThreadUnitChange(Sender: TObject);
