@@ -242,7 +242,7 @@ type
     inLVResize                : boolean;
     FInstrumentationFrame     : TfrmMainInstrumentation;
     FProfilingFrame           : TfrmMainProfiling;
-    procedure ExecuteAsyncAndShowError(const aProc: System.Sysutils.TProc;const aActionName : string);
+    procedure ExecuteAsync(const aProc,aOnFinishedProc: System.Sysutils.TProc;const aActionName : string);
     procedure ParseProject(const aProject: string; const aJustRescan: boolean);
     procedure LoadProject(fileName: string; defaultDelphi: string = '');
     procedure NotifyParse(const aUnitName: string);
@@ -293,6 +293,7 @@ type
     function  IsProjectConsole: boolean;
     function  ReplaceMacros(s: string): string;
     procedure ResetSourcePreview(reposition: boolean);
+    procedure RestoreUIAfterParseProject;
  public
     function  GetDOFSetting(section,key,defval: string): string;
  end;
@@ -473,72 +474,12 @@ begin
   SetSource;
 end; { TfrmMain.EnablePC }
 
-procedure TfrmMain.ParseProject(const aProject: string; const aJustRescan: boolean);
-var
-  vErrList: TStringList;
-  LDefines : string;
+procedure TFrmMain.RestoreUIAfterParseProject();
 begin
-  Enabled := False;
-  try
-    DisablePC;
-    try
-
-      if not aJustRescan then
-      begin
-        ShowProgressBar(self,'Parsing units...', true, false);
-        FInstrumentationFrame.openProject := nil;
-        FreeAndNil(openProject);
-        FInstrumentationFrame.FillUnitTree(true); // clear all listboxes
-        openProject := TProject.Create(aProject);
-        CurrentProjectName := aProject;
-        RebuildDefines;
-        vErrList := TStringList.Create;
-        LDefines := frmPreferences.ExtractDefines;
-        ExecuteAsyncAndShowError(
-          procedure
-          begin
-            openProject.Parse(GetProjectPref('ExcludedUnits',prefExcludedUnits),
-                      GetSearchPath(aProject),
-                      LDefines, NotifyParse,
-                      GetProjectPref('MarkerStyle', prefMarkerStyle),
-                      GetProjectPref('InstrumentAssembler', prefInstrumentAssembler),
-                      vErrList);
-
-          end, 'parsing');
-
-        if vErrList.Count > 0 then
-        begin
-          HideProgressBar;
-          TfmSimpleReport.Execute(CurrentProjectName + '- error list', vErrList);
-        end;
-        vErrList.Free;
-      end
-      else
-      begin
-        LDefines := frmPreferences.ExtractDefines;
-        ShowProgressBar(self,'Rescanning units...', true, false);
-        RebuildDefines;
-        LDefines := frmPreferences.ExtractDefines;
-        ExecuteAsyncAndShowError(
-          procedure
-          begin
-            openProject.Rescan(GetProjectPref('ExcludedUnits', prefExcludedUnits),
-                       GetSearchPath(aProject),
-                       LDefines,
-                       GetProjectPref('MarkerStyle', prefMarkerStyle),
-                       GetProjectPref('UseFileDate', prefUseFileDate),
-                       GetProjectPref('InstrumentAssembler', prefInstrumentAssembler));
-          end,'rescanning');
-      end;
-      HideProgressBar;
-      GetOutputDir(openProject.Name);
-      StatusPanel0('Parsed', True);
-    finally
-      EnablePC;
-    end;
-  finally
-    Enabled := true;
-  end;
+  GetOutputDir(openProject.Name);
+  StatusPanel0('Parsed', True);
+  EnablePC;
+  Enabled := true;
 
   actRescanProject.Enabled         := true;
   actRescanChanged.Enabled         := true;
@@ -549,6 +490,78 @@ begin
   actProjectOptions.Enabled        := true;
   FInstrumentationFrame.openProject := openProject;
   FInstrumentationFrame.FillUnitTree(not FInstrumentationFrame.chkShowAll.Checked);
+end;
+
+procedure TfrmMain.ParseProject(const aProject: string; const aJustRescan: boolean);
+var
+  vErrList: TStringList;
+  LDefines : string;
+begin
+  Enabled := False;
+  DisablePC;
+  if not aJustRescan then
+  begin
+    FInstrumentationFrame.openProject := nil;
+    FreeAndNil(openProject);
+    InitProgressBar(self,'Parsing units...', true, false);
+    FInstrumentationFrame.FillUnitTree(true); // clear all listboxes
+    openProject := TProject.Create(aProject);
+    CurrentProjectName := aProject;
+    RebuildDefines;
+    vErrList := TStringList.Create;
+    LDefines := frmPreferences.ExtractDefines;
+    ExecuteAsync(
+      procedure
+      begin
+        openProject.Parse(GetProjectPref('ExcludedUnits',prefExcludedUnits),
+                  GetSearchPath(aProject),
+                  LDefines, NotifyParse,
+                  GetProjectPref('MarkerStyle', prefMarkerStyle),
+                  GetProjectPref('InstrumentAssembler', prefInstrumentAssembler),
+                  vErrList);
+
+      end,
+      procedure
+      begin
+        TThread.Synchronize(nil, procedure
+        begin
+          HideProgressBar;
+          if vErrList.Count > 0 then
+          begin
+            TfmSimpleReport.Execute(CurrentProjectName + '- error list', vErrList);
+          end;
+          vErrList.Free;
+          RestoreUIAfterParseProject();
+        end);
+      end,
+      'parsing');
+  end
+  else
+  begin
+    LDefines := frmPreferences.ExtractDefines;
+    InitProgressBar(self,'Rescanning units...', true, false);
+    RebuildDefines;
+    LDefines := frmPreferences.ExtractDefines;
+    ExecuteAsync(
+      procedure
+      begin
+        openProject.Rescan(GetProjectPref('ExcludedUnits', prefExcludedUnits),
+                   GetSearchPath(aProject),
+                   LDefines,
+                   GetProjectPref('MarkerStyle', prefMarkerStyle),
+                   GetProjectPref('UseFileDate', prefUseFileDate),
+                   GetProjectPref('InstrumentAssembler', prefInstrumentAssembler));
+      end,
+      procedure
+      begin
+        TThread.Synchronize(nil, procedure
+        begin
+          HideProgressBar;
+          RestoreUIAfterParseProject();
+        end);
+      end,'rescanning');
+  end;
+  ShowProgressBar;
 end; { TfrmMain.ParseProject }
 
 
@@ -744,7 +757,7 @@ begin
     DisablePC2;
     try
       ResetProfile();
-      ShowProgressBar(Self,'Parsing profiling results...',false, True);
+      InitProgressBar(Self,'Parsing profiling results...',false, True);
       try
         StatusPanel0('Loading '+profile,false);
         openProfile := TResults.Create(profile,ParseProfileCallback);
@@ -1143,12 +1156,12 @@ begin
   inherited;
 end;
 
-procedure TfrmMain.ExecuteAsyncAndShowError(const aProc: System.Sysutils.TProc; const aActionName : string);
+procedure TfrmMain.ExecuteAsync(const aProc, aOnFinishedProc: System.Sysutils.TProc;const aActionName : string);
 var
   LTask : ITask;
   LException : string;
 begin
-  LTask := TTask.Create(procedure
+  LTask := tTask.Create(procedure
     begin
       try
         Coinitialize(nil);
@@ -1160,24 +1173,21 @@ begin
       except
         on E:Exception do
         begin
+          TThread.Synchronize(nil,procedure
+            begin
+              StatusPanel0('Error while '+aActionName+': '+LException,false);
+              ShowError(LException);
+            end
+          );
           LException := e.Message;
         end;
       end;
+      if assigned(aOnFinishedProc) then
+      begin
+        aOnFinishedProc;
+      end;
     end);
   LTask.Start;
-  while (LTask.Status in [TTaskStatus.WaitingToRun, TTaskStatus.Running]) do
-  begin
-    sleep(0);
-    Application.ProcessMessages;
-  end;
-
-  LTask.Wait();
-  if LException <> '' then
-  begin
-    StatusPanel0('Error while '+aActionName+': '+LException,false);
-    ShowError(LException);
-  end;
-
 end;
 
 
@@ -1189,12 +1199,12 @@ var
   LDefines : string;
 
 begin
-  ShowProgressBar(self,'Instrumenting units...',true, false);
+  InitProgressBar(self,'Instrumenting units...',true, false);
   outDir := GetOutputDir(openProject.Name);
   fnm := MakeSmartBackslash(outDir)+ChangeFileExt(ExtractFileName(openProject.Name),'.gpi');
   LShowAll := FInstrumentationFrame.chkShowAll.Checked;
   LDefines := frmPreferences.ExtractDefines;
-  ExecuteAsyncAndShowError(
+  ExecuteAsync(
     procedure
     begin
       openProject.Instrument(not LShowAll,NotifyInstrument,
@@ -1215,10 +1225,21 @@ begin
           finally
             Free;
           end;
-    end, 'instrumenting');
-  HideProgressBar();
-  FInstrumentationFrame.ReloadSource;
-  StatusPanel0('Instrumentation finished',false);
+    end,
+    procedure
+    begin
+      TThread.Synchronize(nil,
+      procedure
+        begin
+          HideProgressBar();
+          FInstrumentationFrame.ReloadSource;
+          StatusPanel0('Instrumentation finished',false);
+        end
+      );
+    end,
+     'instrumenting');
+  ShowProgressBar();
+
 end; { TfrmMain.DoInstrument }
 
 procedure TfrmMain.actInstrumentExecute(Sender: TObject);

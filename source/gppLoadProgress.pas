@@ -36,7 +36,8 @@ type
   end;
 
 
-  procedure ShowProgressBar(const aOwner : TForm;const aMessage : string;const aMarquee, aCancel: Boolean);
+  procedure InitProgressBar(const aOwner : TForm;const aMessage : string;const aMarquee, aCancel: Boolean);
+  procedure ShowProgressBar();
   procedure HideProgressBar();
 
 
@@ -50,17 +51,18 @@ uses
 
 { global helpers }
 
-procedure ShowProgressBar(const aOwner : TForm;const aMessage : string;const aMarquee, aCancel: Boolean);
+procedure InitProgressBar(const aOwner : TForm;const aMessage : string;const aMarquee, aCancel: Boolean);
 begin
   if not assigned(frmLoadProgress) then
     frmLoadProgress := TfrmLoadProgress.Create(aOwner);
-  frmLoadProgress.Left := aOwner.Left+((aOwner.Width-frmLoadProgress.Width) div 2);
-  frmLoadProgress.Top := aOwner.Top+((aOwner.Height-frmLoadProgress.Height) div 2);
   frmLoadProgress.Marquee := aMarquee;
   frmLoadProgress.Cancel := aCancel;
   frmLoadProgress.Text := aMessage;
+end;
+
+procedure ShowProgressBar();
+begin
   frmLoadProgress.Show;
-  Application.ProcessMessages;
 end;
 
 procedure HideProgressBar();
@@ -127,6 +129,12 @@ end;
 constructor TfrmLoadProgress.Create(AOwner: TComponent);
 begin
   inherited Create(aOwner);
+  if aOwner is TForm then
+  begin
+    Left := TForm(AOwner).Left+((TForm(AOwner).Width-Width) div 2);
+    Top := TForm(AOwner).Top+((TForm(AOwner).Height-Height) div 2);
+  end;
+
   Taskbar1 := TTaskbar.Create(aOwner);
   Taskbar1.ProgressState := TTaskBarProgressState.None;
 end;
