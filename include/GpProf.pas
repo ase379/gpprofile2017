@@ -44,17 +44,7 @@ const
   BUF_SIZE = 64 * 1024; //64*1024;
 
 type
-{$IFNDEF VER100}{$IFNDEF VER110}{$DEFINE NeedTLI}{$ENDIF}{$ENDIF}
-{$IFDEF NeedTLI}
-  TInt64 = int64;
-  TLargeInteger = record
-    case integer of
-      0: (LowPart: DWord; HighPart: LongInt);
-      1: (QuadPart: Comp);
-  end;
-{$ELSE}
   TInt64 = TLargeInteger;
-{$ENDIF}
 
   TTLEl = record
     tleThread: integer;
@@ -111,41 +101,6 @@ var
   profProfilingAutostart: boolean;
   profPrfOutputFile     : string;
   profTableName         : string;
-
-{$IFDEF VER90}
-type
-  EWin32Error = class(Exception)
-  public
-    ErrorCode : DWord;
-  end;
-
-const
-  SWin32Error    = 'Win32 Error.  Code: %d.'#10'%s';
-  SUnkWin32Error = 'A Win32 API function failed';
-
-procedure RaiseLastWin32Error;
-var
-  LastError: DWord;
-  error    : EWin32Error;
-begin
-  LastError := GetLastError;
-  if LastError <> ERROR_SUCCESS then
-    error := EWin32Error.CreateFmt(SWin32Error, [LastError, SysErrorMessage(LastError)])
-  else
-    error := EWin32Error.Create(SUnkWin32Error);
-  error.ErrorCode := LastError;
-  raise error;
-end;
-
-{ Win32Check }
-
-function Win32Check(RetVal: BOOL): BOOL;
-begin
-  if not RetVal then
-    RaiseLastWin32Error;
-  Result := RetVal;
-end;
-{$ENDIF VER90}
 
 procedure FlushFile;
 var
