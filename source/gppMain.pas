@@ -1001,6 +1001,8 @@ begin
   FInstrumentationFrame.chkShowAll.OnClick := cbProfileChange;;
   FInstrumentationFrame.OnReloadSource := LoadSource;
   FInstrumentationFrame.OnShowStatusBarMessage := StatusPanel0;
+  FInstrumentationFrame.btnLoadInstrumentationSelection.OnClick := btnLoadInstrumentationSelectionClick;
+  FInstrumentationFrame.btnSaveInstrumentationSelection.OnClick := btnSaveInstrumentationSelectionClick;
   fProfilingFrame := TfrmMainProfiling.Create(self);
   fProfilingFrame.Parent := tabAnalysis;
   fProfilingFrame.Align := alClient;
