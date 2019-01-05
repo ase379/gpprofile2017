@@ -44,7 +44,17 @@ const
   BUF_SIZE = 64 * 1024; //64*1024;
 
 type
+{$IFNDEF VER100}{$IFNDEF VER110}{$DEFINE NeedTLI}{$ENDIF}{$ENDIF}
+{$IFDEF NeedTLI}
+  TInt64 = int64;
+  TLargeInteger = record
+    case integer of
+      0: (LowPart: DWord; HighPart: LongInt);
+      1: (QuadPart: Comp);
+  end;
+{$ELSE}
   TInt64 = TLargeInteger;
+{$ENDIF}
 
   TTLEl = record
     tleThread: integer;
