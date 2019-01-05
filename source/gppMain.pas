@@ -745,7 +745,7 @@ function TfrmMain.ParseProfileCallback(percent: integer): boolean;
 begin
   frmLoadProgress.ProgressBar1.Position := percent;
   Application.ProcessMessages;
-  Result := frmLoadProgress.Visible;
+  Result := not frmLoadProgress.CancelPressed;
 end; { TfrmMain.ParseProfileCallback }
 
 function TfrmMain.ParseProfile(profile: string): boolean;
@@ -767,7 +767,7 @@ begin
           StatusPanel0('Load error',true);
         end
         else begin
-          loadCanceled := not frmLoadProgress.Visible;
+          loadCanceled := frmLoadProgress.CancelPressed;
           if not loadCanceled then begin
             if not openProfile.IsDigest then begin
               StatusPanel0('Saving digest',false);

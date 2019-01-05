@@ -21,6 +21,7 @@ type
   private
     fMarquee : boolean;
     fCancel : Boolean;
+    fCancelPressed : boolean;
     Taskbar1 : TTaskbar;
     procedure setMarquee(const Value: boolean);
     procedure setCancel(const Value: boolean);
@@ -33,6 +34,7 @@ type
     property Marquee : boolean read fMarquee write setMarquee;
     property Cancel : boolean read fCancel write setCancel;
     property Text : string read getText write setText;
+    property CancelPressed : boolean read fCancelPressed;
   end;
 
 
@@ -113,6 +115,7 @@ end;
 
 procedure TfrmLoadProgress.btnCancelLoadClick(Sender: TObject);
 begin
+  fCancelPressed := true;
   Hide;
 end;
 
