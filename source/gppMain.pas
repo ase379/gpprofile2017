@@ -255,11 +255,12 @@ type
     procedure EnablePC;
     procedure DisablePC2;
     procedure EnablePC2;
-    function  ParseProfile(profile: string): boolean;
     procedure LoadProfile(fileName: string);
     procedure SetCaption;
     procedure SetSource;
+    procedure ParseProfile(profile: string);
     function  ParseProfileCallback(percent: integer): boolean;
+    procedure ParseProfileDone;
 
     procedure EnumUserSettings(settings: TStrings);
     procedure FillDelphiVer;
@@ -744,7 +745,6 @@ end;
 function TfrmMain.ParseProfileCallback(percent: integer): boolean;
 begin
   frmLoadProgress.ProgressBar1.Position := percent;
-  Application.ProcessMessages;
   Result := not frmLoadProgress.CancelPressed;
 end; { TfrmMain.ParseProfileCallback }
 
@@ -753,44 +753,75 @@ begin
   Result := false;
   cancelLoading := false;
   Enabled := false;
-  try
-    DisablePC2;
-    try
-      ResetProfile();
-      InitProgressBar(Self,'Parsing profiling results...',false, True);
-      try
-        StatusPanel0('Loading '+profile,false);
-        ShowProgressBar;
-        openProfile := TResults.Create(profile,ParseProfileCallback);
-        if openProfile = nil then begin
-          NoProfile;
-          actDelUndelProfile.Enabled := false;
-          StatusPanel0('Load error',true);
-        end
-        else begin
-          loadCanceled := frmLoadProgress.CancelPressed;
-          if not loadCanceled then begin
-            if not openProfile.IsDigest then begin
-              StatusPanel0('Saving digest',false);
-              openProfile.SaveDigest(profile);
-            end;
-          end;
-          StatusPanel0('Loaded',true);
-          Result := true;
-        end;
-      finally
-        HideProgressBar;
-      end;
-      if assigned(openProfile) then
-      begin
-        actProfileOptions.Enabled := true;
-        FProfilingFrame.OpenProfile := openProfile;
-      end;
-      Show;
-      FProfilingFrame.FillThreadCombos;
-    finally if assigned(openProfile) then EnablePC2; end;
-  finally Enabled := true; end;
+  DisablePC2;
+  ResetProfile();
+  InitProgressBar(Self,'Parsing profiling results...',false, True);
+  StatusPanel0('Loading '+profile,false);
+  ExecuteAsync(
+    procedure
+    begin
+      openProfile := TResults.Create(profile,ParseProfileCallback);
+    end,
+    procedure
+    begin
+      TThread.Synchronize(nil,ParseProfileDone);
+    end,
+    'loading profile'
+  );
+  ShowProgressBar;
 end; { TfrmMain.ParseProfile }
+
+procedure TfrmMain.ParseProfileDone();
+var
+  LOpenResult : boolean;
+begin
+  LOpenResult := false;
+  if openProfile = nil then
+  begin
+    NoProfile;
+    actDelUndelProfile.Enabled := false;
+    StatusPanel0('Load error',true);
+  end
+  else
+  begin
+    loadCanceled := frmLoadProgress.CancelPressed;
+    if not loadCanceled then begin
+      if not openProfile.IsDigest then begin
+        StatusPanel0('Saving digest',false);
+        openProfile.SaveDigest(openProfile.FileName);
+      end;
+    end;
+    StatusPanel0('Loaded',true);
+    LOpenResult := true;
+  end;
+  HideProgressBar;
+  if assigned(openProfile) then
+  begin
+    actProfileOptions.Enabled := true;
+    FProfilingFrame.OpenProfile := openProfile;
+  end;
+  Show;
+  FProfilingFrame.FillThreadCombos;
+  if assigned(openProfile) then
+    EnablePC2;
+  Enabled := true;
+  if LOpenResult then
+  begin
+    SetCaption;
+    SetSource;
+    actHideNotExecuted.Checked := GetProfilePref('HideNotExecuted', prefHideNotExecuted);
+    FProfilingFrame.FillViews(1);
+    FProfilingFrame.ClearBreakdown;
+    actHideNotExecuted.Enabled   := true;
+    actRescanProfile.Enabled     := true;
+    actExportProfile.Enabled     := true;
+    mnuExportProfile.Enabled     := true;
+    actRenameMoveProfile.Enabled := true;
+    actMakeCopyProfile.Enabled   := true;
+    actDelUndelProfile.Enabled   := true;
+    SwitchDelMode(true);
+  end;
+end;
 
 
 
@@ -803,21 +834,8 @@ begin
     currentProfile := ExtractFileName(fileName);
     PageControl1.ActivePage := tabAnalysis;
     ClearSource;
-    if ParseProfile(fileName) then begin
-      SetCaption;
-      SetSource;
-      actHideNotExecuted.Checked := GetProfilePref('HideNotExecuted', prefHideNotExecuted);
-      FProfilingFrame.FillViews(1);
-      FProfilingFrame.ClearBreakdown;
-      actHideNotExecuted.Enabled   := true;
-      actRescanProfile.Enabled     := true;
-      actExportProfile.Enabled     := true;
-      mnuExportProfile.Enabled     := true;
-      actRenameMoveProfile.Enabled := true;
-      actMakeCopyProfile.Enabled   := true;
-      actDelUndelProfile.Enabled   := true;
-      SwitchDelMode(true);
-    end;
+    ParseProfile(fileName);
+
   end;
 end; { TfrmMain.LoadProfile }
 
@@ -1259,7 +1277,7 @@ begin
   OpenDialog.DefaultExt := 'dpr';
   LFilename := '';
   if assigned(openProfile) then
-    LFileName := ChangeFileExt(openProfile.Name,'.dpr');
+    LFileName := ChangeFileExt(openProfile.FileName,'.dpr');
   OpenDialog.FileName := ExtractFilename(LFilename);
   OpenDialog.InitialDir := ExtractFileDir(LFilename);
   OpenDialog.Filter := 'Delphi project (*.dpr)|*.dpr|Delphi package (*.dpk)|*.dpk|Any file (*.*)|*.*';
@@ -1437,7 +1455,7 @@ end;
 
 procedure TfrmMain.MRUPrfClick(Sender: TObject; LatestFile: String);
 begin
-  if (openProfile = nil) or (openProfile.Name <> LatestFile) or loadCanceled then
+  if (openProfile = nil) or (openProfile.FileName <> LatestFile) or loadCanceled then
   try
     if not FileExists(LatestFile) then
       raise Exception.Create('File '+LatestFile+ ' not found.');
@@ -1969,7 +1987,7 @@ end; { TfrmMain.GetOutputDir }
 
 procedure TfrmMain.actRescanProfileExecute(Sender: TObject);
 begin
-  LoadProfile(openProfile.Name);
+  LoadProfile(openProfile.FileName);
 end;
 
 procedure TfrmMain.CloseDelphiHandles;
@@ -2085,19 +2103,19 @@ var LSrc : string;
   LFilename : string;
 begin
   try
-    LFilename := ButLast(openProfile.Name,Length(ExtractFileExt(openProfile.Name)))+
+    LFilename := ButLast(openProfile.FileName,Length(ExtractFileExt(openProfile.FileName)))+
                 FormatDateTime('_ddmmyy',Now)+'.prf';
     SaveDialog1.InitialDir := ExtractFileDir(LFilename);
     SaveDialog1.FileName := ExtractFilename(LFilename);
-    SaveDialog1.Title := 'Make copy of '+openProfile.Name;
+    SaveDialog1.Title := 'Make copy of '+openProfile.FileName;
     SaveDialog1.Filter := 'Profile data|*.prf|Any file|*.*';
     if SaveDialog1.Execute then begin
       if ExtractFileExt(SaveDialog1.FileName) = '' then
         SaveDialog1.FileName := SaveDialog1.FileName + '.prf';
-    LSrc := openProfile.Name;
+    LSrc := openProfile.FileName;
     TFile.Copy(LSrc,SaveDialog1.FileName,true);
     MRUPrf.LatestFile := SaveDialog1.FileName;
-    MRUPrf.LatestFile := openProfile.Name;
+    MRUPrf.LatestFile := openProfile.FileName;
   end;
   except on e: Exception do
     begin
@@ -2112,8 +2130,8 @@ var
 begin
   try
     if undelProject = '' then begin // delete
-      undelProject := ChangeFileExt(openProfile.Name,'.~pr');
-      TFile.Move(openProfile.Name,undelProject);
+      undelProject := ChangeFileExt(openProfile.FileName,'.~pr');
+      TFile.Move(openProfile.FileName,undelProject);
       NoProfile;
       SwitchDelMode(false);
     end
@@ -2157,16 +2175,16 @@ var
   LFilename : string;
 begin
   try
-  LFilename := ButLast(openProfile.Name,Length(ExtractFileExt(openProfile.Name)))+
+  LFilename := ButLast(openProfile.FileName,Length(ExtractFileExt(openProfile.FileName)))+
                 FormatDateTime('_ddmmyy',Now)+'.prf';
     SaveDialog1.InitialDir := ExtractFileDir(LFilename);
     SaveDialog1.FileName := ExtractFilename(LFilename);
-    SaveDialog1.Title := 'Rename/Move '+openProfile.Name;
+    SaveDialog1.Title := 'Rename/Move '+openProfile.FileName;
     SaveDialog1.Filter := 'Profile data|*.prf|Any file|*.*';
     if SaveDialog1.Execute then begin
       if ExtractFileExt(SaveDialog1.FileName) = '' then
         SaveDialog1.FileName := SaveDialog1.FileName + '.prf';
-      TFile.Move(openProfile.Name,SaveDialog1.FileName);
+      TFile.Move(openProfile.FileName,SaveDialog1.FileName);
       openProfile.Rename(SaveDialog1.FileName);
       currentProfile := ExtractFileName(SaveDialog1.FileName);
       SetCaption;

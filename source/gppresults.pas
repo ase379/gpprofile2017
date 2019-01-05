@@ -268,7 +268,7 @@ type
     procedure   RecalcTimes;
     procedure   SaveDigest(fileName: string);
     procedure   Rename(fileName: string);
-    property    Name: String read resName;
+    property    FileName: String read resName;
     property    Version: integer read resPrfVersion;
     property    IsDigest: boolean read resPrfDigest;
     property    DigestVer: integer read resPrfDigestVer;
