@@ -65,6 +65,7 @@ end;
 procedure ShowProgressBar();
 begin
   frmLoadProgress.Show;
+  Application.ProcessMessages;
 end;
 
 procedure HideProgressBar();

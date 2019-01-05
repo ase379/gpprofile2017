@@ -760,6 +760,7 @@ begin
       InitProgressBar(Self,'Parsing profiling results...',false, True);
       try
         StatusPanel0('Loading '+profile,false);
+        ShowProgressBar;
         openProfile := TResults.Create(profile,ParseProfileCallback);
         if openProfile = nil then begin
           NoProfile;
