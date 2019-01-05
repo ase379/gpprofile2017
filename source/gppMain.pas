@@ -748,9 +748,8 @@ begin
   Result := not frmLoadProgress.CancelPressed;
 end; { TfrmMain.ParseProfileCallback }
 
-function TfrmMain.ParseProfile(profile: string): boolean;
+procedure TfrmMain.ParseProfile(profile: string);
 begin
-  Result := false;
   cancelLoading := false;
   Enabled := false;
   DisablePC2;
