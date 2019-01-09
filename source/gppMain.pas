@@ -73,7 +73,6 @@ type
     actRenameMoveProfile: TAction;
     RenameMove1: TMenuItem;
     pnlToolbar: TPanel;
-    Panel4: TPanel;
     Panel5: TPanel;
     tbrProject: TToolBar;
     BtnOpenProject: TToolButton;

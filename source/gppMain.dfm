@@ -40,13 +40,14 @@ object frmMain: TfrmMain
     BevelOuter = bvNone
     TabOrder = 0
     object Panel5: TPanel
-      Left = 214
+      Left = 0
       Top = 0
       Width = 201
       Height = 26
       Align = alLeft
       BevelOuter = bvNone
-      TabOrder = 1
+      TabOrder = 0
+      ExplicitLeft = 214
       object ToolBar2: TToolBar
         Left = 0
         Top = 0
@@ -118,13 +119,14 @@ object frmMain: TfrmMain
       end
     end
     object pnlToolbarMain: TPanel
-      Left = 415
+      Left = 201
       Top = 0
       Width = 56
       Height = 26
       Align = alLeft
       BevelOuter = bvNone
-      TabOrder = 2
+      TabOrder = 1
+      ExplicitLeft = 415
       object tbrMain: TToolBar
         Left = 0
         Top = 0
@@ -153,98 +155,16 @@ object frmMain: TfrmMain
         end
       end
     end
-    object Panel4: TPanel
-      Left = 0
-      Top = 0
-      Width = 214
-      Height = 26
-      Align = alLeft
-      BevelOuter = bvNone
-      TabOrder = 0
-      object tbrProject: TToolBar
-        Left = 0
-        Top = 0
-        Width = 211
-        Height = 26
-        Align = alLeft
-        AutoSize = True
-        Caption = 'tbrProject'
-        EdgeBorders = [ebLeft, ebTop, ebRight, ebBottom]
-        Images = imglButtons
-        ParentShowHint = False
-        ShowHint = True
-        TabOrder = 0
-        object BtnOpenProject: TToolButton
-          Left = 0
-          Top = 0
-          Action = actOpen
-          AllowAllUp = True
-          DropdownMenu = popRecent
-          Style = tbsDropDown
-        end
-        object btnRescanProject: TToolButton
-          Left = 38
-          Top = 0
-          Action = actRescanProject
-        end
-        object ToolButton6: TToolButton
-          Left = 61
-          Top = 0
-          Width = 8
-          Caption = 'ToolButton6'
-          ImageIndex = 9
-          Style = tbsSeparator
-        end
-        object BtnInstrumentAndRun: TToolButton
-          Left = 69
-          Top = 0
-          Action = actInstrumentRun
-        end
-        object btnInstrument: TToolButton
-          Left = 92
-          Top = 0
-          Action = actInstrument
-          AllowAllUp = True
-        end
-        object btnRemoveInstrumentation: TToolButton
-          Left = 115
-          Top = 0
-          Action = actRemoveInstrumentation
-          AllowAllUp = True
-        end
-        object tbtnRun: TToolButton
-          Left = 138
-          Top = 0
-          Action = actRun
-          AllowAllUp = True
-          DropdownMenu = popDelphiVer
-          Style = tbsDropDown
-        end
-        object ToolButton7: TToolButton
-          Left = 176
-          Top = 0
-          Width = 8
-          Caption = 'ToolButton7'
-          ImageIndex = 9
-          Style = tbsSeparator
-        end
-        object btnProjectOptions: TToolButton
-          Left = 184
-          Top = 0
-          Action = actProjectOptions
-          ParentShowHint = False
-          ShowHint = True
-        end
-      end
-    end
     object pnlToolbarLayout: TPanel
-      Left = 471
+      Left = 257
       Top = 0
-      Width = 638
+      Width = 852
       Height = 26
       Align = alClient
       BevelOuter = bvNone
-      TabOrder = 3
+      TabOrder = 2
+      ExplicitLeft = 471
+      ExplicitWidth = 638
       object tbrLayout: TToolBar
         Left = 0
         Top = 0
@@ -289,6 +209,7 @@ object frmMain: TfrmMain
     Width = 1109
     Height = 590
     Align = alClient
+    BevelEdges = []
     BevelOuter = bvNone
     TabOrder = 2
     object splitSourcePreview: TSplitter
@@ -324,12 +245,94 @@ object frmMain: TfrmMain
         object tabInstrumentation: TTabSheet
           Caption = 'Instrumentation'
           ImageIndex = 16
+          object tbrProject: TToolBar
+            Left = 0
+            Top = 0
+            Width = 1101
+            Height = 36
+            AutoSize = True
+            ButtonHeight = 36
+            ButtonWidth = 126
+            Caption = 'tbrProject'
+            EdgeBorders = [ebLeft, ebTop, ebRight, ebBottom]
+            EdgeInner = esNone
+            EdgeOuter = esNone
+            Images = imglButtons
+            ParentShowHint = False
+            ShowCaptions = True
+            ShowHint = True
+            TabOrder = 0
+            object BtnOpenProject: TToolButton
+              Left = 0
+              Top = 0
+              Action = actOpen
+              AllowAllUp = True
+              DropdownMenu = popRecent
+              Style = tbsTextButton
+            end
+            object btnRescanProject: TToolButton
+              Left = 126
+              Top = 0
+              Action = actRescanProject
+              Style = tbsTextButton
+            end
+            object ToolButton6: TToolButton
+              Left = 252
+              Top = 0
+              Width = 8
+              Caption = 'ToolButton6'
+              ImageIndex = 9
+              Style = tbsSeparator
+            end
+            object BtnInstrumentAndRun: TToolButton
+              Left = 260
+              Top = 0
+              Action = actInstrumentRun
+              Style = tbsTextButton
+            end
+            object btnInstrument: TToolButton
+              Left = 386
+              Top = 0
+              Action = actInstrument
+              AllowAllUp = True
+              Style = tbsTextButton
+            end
+            object btnRemoveInstrumentation: TToolButton
+              Left = 512
+              Top = 0
+              Action = actRemoveInstrumentation
+              AllowAllUp = True
+              Style = tbsTextButton
+            end
+            object tbtnRun: TToolButton
+              Left = 638
+              Top = 0
+              Action = actRun
+              AllowAllUp = True
+              DropdownMenu = popDelphiVer
+              Style = tbsTextButton
+            end
+            object ToolButton7: TToolButton
+              Left = 764
+              Top = 0
+              Width = 8
+              Caption = 'ToolButton7'
+              ImageIndex = 9
+              Style = tbsSeparator
+            end
+            object btnProjectOptions: TToolButton
+              Left = 772
+              Top = 0
+              Action = actProjectOptions
+              ParentShowHint = False
+              ShowHint = True
+              Style = tbsTextButton
+            end
+          end
         end
         object tabAnalysis: TTabSheet
           Caption = 'Analysis'
           ImageIndex = 17
-          ExplicitLeft = 63
-          ExplicitTop = 6
         end
       end
     end
