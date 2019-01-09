@@ -72,8 +72,6 @@ type
     SaveAs1: TMenuItem;
     actRenameMoveProfile: TAction;
     RenameMove1: TMenuItem;
-    pnlToolbar: TPanel;
-    Panel5: TPanel;
     tbrProject: TToolBar;
     BtnOpenProject: TToolButton;
     btnRescanProject: TToolButton;
@@ -95,9 +93,6 @@ type
     actDelUndelProfile: TAction;
     btnDelUndelProfile: TToolButton;
     Delete1: TMenuItem;
-    pnlToolbarMain: TPanel;
-    tbrMain: TToolBar;
-    btnPreferences: TToolButton;
     SaveDialog1: TSaveDialog;
     Panel0: TPanel;
     Panel1: TPanel;
@@ -126,7 +121,6 @@ type
     actHelpContents: TAction;
     actHelpShortcutKeys: TAction;
     actHelpAbout: TAction;
-    btnHelpContents: TToolButton;
     imglListViews: TImageList;
     lvLayouts: TListView;
     actHelpQuickStart: TAction;
@@ -136,16 +130,10 @@ type
     N7: TMenuItem;
     actShowHideSourcePreview: TAction;
     ShowSourcePreview1: TMenuItem;
-    pnlToolbarLayout: TPanel;
-    tbrLayout: TToolBar;
-    btnLayoutManager: TToolButton;
-    btnShowHideSourcePreview: TToolButton;
     actShowHideCallers: TAction;
     actShowHideCallees: TAction;
     HideCallers1: TMenuItem;
     HideCalled1: TMenuItem;
-    btnShowHideCallers: TToolButton;
-    btnShowHideCallees: TToolButton;
     sourceCodeEdit: TSynEdit;
     N8: TMenuItem;
     ToolButton21: TToolButton;
@@ -281,11 +269,9 @@ type
     procedure RescanProject;
     procedure LoadMetrics(layoutName: string);
     procedure SaveMetrics(layoutName: string);
-    procedure RepositionLayout;
     procedure RebuildLayoutPopup(changeActive: boolean);
     function  IsLayout(layout: string): boolean;
     procedure SetChangeLayout(setRestore: boolean);
-    function  CountLiveLayouts: integer;
     procedure LoadLayouts;
     procedure UseDelphiSettings(delphiVer: integer);
     procedure RebuildDefines;
@@ -891,15 +877,6 @@ begin
   end;
 end; { TfrmMain.FillDelphiVer }
 
-function TfrmMain.CountLiveLayouts: integer;
-var
-  i: integer;
-begin
-  Result := 0;
-  with lvLayouts do
-    for i := 0 to Items.Count-1 do
-      if Items[i].ImageIndex <> 1 then Result := Result + 1;
-end; { TfrmMain.CountLiveLayouts }
 
 procedure TfrmMain.RebuildLayoutPopup(changeActive: boolean);
 var
@@ -941,21 +918,6 @@ begin
       end;
       popLayout.Items.Insert(popLayout.Items.Count,mn);
     end;
-  end;
-  if inpLayoutName.Text = ''
-    then BtnLayoutManager.Hint := actLayoutManager.Hint
-    else BtnLayoutManager.Hint := actLayoutManager.Hint + ' (' + inpLayoutName.Text + ')';
-  if CountLiveLayouts <= 1 then begin
-    BtnLayoutManager.Style := tbsButton;
-    BtnLayoutManager.Width := 23;
-    BtnLayoutManager.DropdownMenu := nil;
-    BtnLayoutManager.Perform(CM_RECREATEWND, 0, 0);
-  end
-  else begin
-    BtnLayoutManager.Style := tbsDropDown;
-    BtnLayoutManager.Width := 36;
-    BtnLayoutManager.DropdownMenu := popLayout;
-    BtnLayoutManager.Perform(CM_RECREATEWND, 0, 0);
   end;
 end;
 
@@ -2268,7 +2230,6 @@ end;
 
 procedure TfrmMain.actLayoutManagerExecute(Sender: TObject);
 begin
-  if not pnlLayout.Visible then RepositionLayout;
   pnlLayout.Visible := not pnlLayout.Visible;
 end;
 
@@ -2279,21 +2240,9 @@ end;
 
 procedure TfrmMain.FormResize(Sender: TObject);
 begin
-  if pnlLayout.Visible then RepositionLayout;
   FProfilingFrame.RepositionSliders;
 end;
 
-procedure TfrmMain.RepositionLayout;
-var
-  right : integer;
-  right2: integer;
-begin
-  right  := BtnLayoutManager.Left+pnlToolbarLayout.Left+BtnLayoutManager.Width+3;
-  right2 := Width-9;
-  if right2 < right then right := right2;
-  pnlLayout.Left := right-pnlLayout.Width+1;
-  pnlLayout.Top  := 0;
-end;
 
 procedure TfrmMain.lbLayoutsClick(Sender: TObject);
 begin
