@@ -1241,6 +1241,7 @@ begin
   OpenDialog.FileName := ExtractFilename(LFilename);
   OpenDialog.InitialDir := ExtractFileDir(LFilename);
   OpenDialog.Filter := 'Delphi project (*.dpr)|*.dpr|Delphi package (*.dpk)|*.dpk|Any file (*.*)|*.*';
+  OpenDialog.Title := 'Load delphi project/package...';
   if OpenDialog.Execute then
   begin
     vFN := OpenDialog.FileName;
@@ -1338,7 +1339,9 @@ end;
 
 procedure TfrmMain.actOpenProfileExecute(Sender: TObject);
 begin
-  with OpenDialog do begin
+  with OpenDialog do
+  begin
+    Title := 'Load profile data...';
     DefaultExt := 'prf';
     if openProject = nil then FileName := '*.prf'
                          else FileName := ChangeFileExt(openProject.Name,'.prf');
@@ -1445,6 +1448,8 @@ end;
 procedure TfrmMain.btnLoadInstrumentationSelectionClick(Sender: TObject);
 var
   LFilename : String;
+  LOldEvent : TVTChangeEvent;
+  LLastSelectedIndex : integer;
 begin
   if openProject = nil then
     Exit;
@@ -1453,10 +1458,18 @@ begin
   OpenDialog.FileName := ExtractFilename(LFilename);
   OpenDialog.InitialDir := ExtractFileDir(LFilename);
   OpenDialog.Filter := 'GPProf instrumentation selection (*.gis)|*.gis|Any file (*.*)|*.*';
+  OpenDialog.Title := 'Load instrumentation selection...';
   if OpenDialog.Execute then
   begin
     openProject.LoadInstrumentalizationSelection(OpenDialog.FileName);
+    // an auto-click is done... ignore instrumentation upon select
+    LLastSelectedIndex := FInstrumentationFrame.SelectedUnitIndex;
+    LOldEvent := FInstrumentationFrame.vstSelectUnits.OnChecked;
+    FInstrumentationFrame.vstSelectUnits.OnChecked := nil;
     cbProfileChange(nil);
+    FInstrumentationFrame.vstSelectUnits.OnChecked := LOldEvent;
+    if LLastSelectedIndex <> -1 then
+      FInstrumentationFrame.SelectedUnitIndex := LLastSelectedIndex;
   end;
 end;
 
@@ -1470,7 +1483,7 @@ begin
     LFilename := ChangeFileExt(openProject.Name,'.gis');
     SaveDialog1.FileName := ExtractFileName(LFilename);
     SaveDialog1.InitialDir := ExtractFileDir(SaveDialog1.FileName);
-    SaveDialog1.Title := 'Save instrumentation selection';
+    SaveDialog1.Title := 'Save instrumentation selection...';
     SaveDialog1.Filter := 'GPProf instrumentation selection (*.gis)|*.gis|Any file (*.*)|*.*';
     if SaveDialog1.Execute then begin
       if ExtractFileExt(SaveDialog1.FileName) = '' then
@@ -2067,7 +2080,7 @@ begin
                 FormatDateTime('_ddmmyy',Now)+'.prf';
     SaveDialog1.InitialDir := ExtractFileDir(LFilename);
     SaveDialog1.FileName := ExtractFilename(LFilename);
-    SaveDialog1.Title := 'Make copy of '+openProfile.FileName;
+    SaveDialog1.Title := 'Make copy of '+openProfile.FileName+'...';
     SaveDialog1.Filter := 'Profile data|*.prf|Any file|*.*';
     if SaveDialog1.Execute then begin
       if ExtractFileExt(SaveDialog1.FileName) = '' then
@@ -2139,7 +2152,7 @@ begin
                 FormatDateTime('_ddmmyy',Now)+'.prf';
     SaveDialog1.InitialDir := ExtractFileDir(LFilename);
     SaveDialog1.FileName := ExtractFilename(LFilename);
-    SaveDialog1.Title := 'Rename/Move '+openProfile.FileName;
+    SaveDialog1.Title := 'Rename/Move '+openProfile.FileName+'...';
     SaveDialog1.Filter := 'Profile data|*.prf|Any file|*.*';
     if SaveDialog1.Execute then begin
       if ExtractFileExt(SaveDialog1.FileName) = '' then

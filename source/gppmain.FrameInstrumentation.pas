@@ -45,6 +45,8 @@ type
     fOnReloadSource : TReloadSourceEvent;
     function  GetSelectedUnitName(): string;
     function  GetSelectedClassName(): string;
+    function  GetSelectedUnitIndex(): integer;
+    procedure SetSelectedUnitIndex(const anIndex : integer);
 
     procedure ClickProcs(index: integer; recreateCl: boolean);
 
@@ -77,6 +79,7 @@ type
     property openProject : TProject read fOpenProject write fOpenProject;
     property OnShowStatusBarMessage : TOnShowStatusBarMessage read fOnShowStatusBarMessage write fOnShowStatusBarMessage;
     property OnReloadSource : TReloadSourceEvent read fOnReloadSource write fOnReloadSource;
+    property SelectedUnitIndex : integer read GetSelectedUnitIndex write SetSelectedUnitIndex;
   end;
 
 implementation
@@ -688,6 +691,16 @@ begin
       end;
     end;
   end;
+end;
+
+function TfrmMainInstrumentation.GetSelectedUnitIndex: integer;
+begin
+  result := fVstSelectUnitTools.GetSelectedIndex;
+end;
+
+procedure TfrmMainInstrumentation.SetSelectedUnitIndex(const anIndex: integer);
+begin
+  fVstSelectUnitTools.setSelectedIndex(anIndex);
 end;
 
 { TfrmMain.RebloadSource }
