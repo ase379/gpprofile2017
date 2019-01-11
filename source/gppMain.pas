@@ -72,7 +72,7 @@ type
     SaveAs1: TMenuItem;
     actRenameMoveProfile: TAction;
     RenameMove1: TMenuItem;
-    tbrProject: TToolBar;
+    tbrInstrument: TToolBar;
     BtnOpenProject: TToolButton;
     btnRescanProject: TToolButton;
     BtnInstrumentAndRun: TToolButton;
@@ -80,16 +80,16 @@ type
     btnRemoveInstrumentation: TToolButton;
     tbtnRun: TToolButton;
     btnProjectOptions: TToolButton;
-    ToolBar2: TToolBar;
+    tbrAnalysis: TToolBar;
     btnOpenProfile: TToolButton;
     btnRescanProfile: TToolButton;
     btnExportProfile: TToolButton;
     btnProfileOptions: TToolButton;
     btnRenameMoveProfile: TToolButton;
     btnMakeCopyProfile: TToolButton;
-    ToolButton6: TToolButton;
-    ToolButton7: TToolButton;
-    ToolButton11: TToolButton;
+    btnInstrumentDelimiter1: TToolButton;
+    btnInstrumentDelimiter2: TToolButton;
+    btnAnalysisDelimiter1: TToolButton;
     actDelUndelProfile: TAction;
     btnDelUndelProfile: TToolButton;
     Delete1: TMenuItem;
@@ -136,7 +136,7 @@ type
     HideCalled1: TMenuItem;
     sourceCodeEdit: TSynEdit;
     N8: TMenuItem;
-    ToolButton21: TToolButton;
+    btnAnalysisDelimiter2: TToolButton;
     actHelpOpenHome: TAction;
     actHelpWriteMail: TAction;
     N4: TMenuItem;
@@ -863,7 +863,7 @@ begin
       tBtnRun.Style := tbsButton;
       tBtnRun.Width := 23;
       tBtnRun.DropdownMenu := nil;
-      tbrProject.Perform(CM_RECREATEWND, 0, 0);
+      tbrInstrument.Perform(CM_RECREATEWND, 0, 0);
     end;
     if s.Count >= 1 then
     begin

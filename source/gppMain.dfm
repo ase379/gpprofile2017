@@ -40,8 +40,6 @@ object frmMain: TfrmMain
     BevelEdges = []
     BevelOuter = bvNone
     TabOrder = 1
-    ExplicitTop = 26
-    ExplicitHeight = 590
     object splitSourcePreview: TSplitter
       Left = 0
       Top = 492
@@ -61,7 +59,6 @@ object frmMain: TfrmMain
       Align = alClient
       BevelOuter = bvNone
       TabOrder = 0
-      ExplicitHeight = 466
       object PageControl1: TPageControl
         Left = 0
         Top = 0
@@ -73,20 +70,18 @@ object frmMain: TfrmMain
         Images = imglButtons
         TabOrder = 0
         OnChange = PageControl1Change
-        ExplicitHeight = 466
         object tabInstrumentation: TTabSheet
           Caption = 'Instrumentation'
           ImageIndex = 16
-          ExplicitHeight = 437
-          object tbrProject: TToolBar
+          object tbrInstrument: TToolBar
             Left = 0
             Top = 0
             Width = 1101
-            Height = 36
+            Height = 44
             AutoSize = True
-            ButtonHeight = 36
-            ButtonWidth = 126
-            Caption = 'tbrProject'
+            ButtonHeight = 44
+            ButtonWidth = 132
+            Caption = 'ToolBar1'
             EdgeInner = esNone
             EdgeOuter = esNone
             Images = imglButtons
@@ -98,62 +93,58 @@ object frmMain: TfrmMain
               Left = 0
               Top = 0
               Action = actOpen
-              AllowAllUp = True
               DropdownMenu = popRecent
-              Style = tbsTextButton
+              Style = tbsDropDown
             end
             object btnRescanProject: TToolButton
-              Left = 126
+              Left = 147
               Top = 0
               Action = actRescanProject
               Style = tbsTextButton
             end
-            object ToolButton6: TToolButton
-              Left = 252
+            object btnInstrumentDelimiter1: TToolButton
+              Left = 279
               Top = 0
-              Width = 8
-              Caption = 'ToolButton6'
+              Width = 5
+              Caption = 'btnInstrumentDelimiter1'
               ImageIndex = 9
               Style = tbsSeparator
             end
             object BtnInstrumentAndRun: TToolButton
-              Left = 260
+              Left = 284
               Top = 0
               Action = actInstrumentRun
               Style = tbsTextButton
             end
             object btnInstrument: TToolButton
-              Left = 386
+              Left = 416
               Top = 0
               Action = actInstrument
-              AllowAllUp = True
               Style = tbsTextButton
             end
             object btnRemoveInstrumentation: TToolButton
-              Left = 512
+              Left = 548
               Top = 0
               Action = actRemoveInstrumentation
-              AllowAllUp = True
               Style = tbsTextButton
             end
             object tbtnRun: TToolButton
-              Left = 638
+              Left = 680
               Top = 0
               Action = actRun
-              AllowAllUp = True
               DropdownMenu = popDelphiVer
               Style = tbsTextButton
             end
-            object ToolButton7: TToolButton
-              Left = 764
+            object btnInstrumentDelimiter2: TToolButton
+              Left = 812
               Top = 0
-              Width = 8
-              Caption = 'ToolButton7'
+              Width = 5
+              Caption = 'btnInstrumentDelimiter2'
               ImageIndex = 9
               Style = tbsSeparator
             end
             object btnProjectOptions: TToolButton
-              Left = 772
+              Left = 817
               Top = 0
               Action = actProjectOptions
               ParentShowHint = False
@@ -165,8 +156,7 @@ object frmMain: TfrmMain
         object tabAnalysis: TTabSheet
           Caption = 'Analysis'
           ImageIndex = 17
-          ExplicitHeight = 437
-          object ToolBar2: TToolBar
+          object tbrAnalysis: TToolBar
             Left = 0
             Top = 0
             Width = 1101
@@ -194,44 +184,44 @@ object frmMain: TfrmMain
               Top = 0
               Action = actRescanProfile
             end
-            object ToolButton11: TToolButton
+            object btnAnalysisDelimiter1: TToolButton
               Left = 203
               Top = 0
-              Width = 8
-              Caption = 'ToolButton11'
+              Width = 5
+              Caption = 'btnAnalysisDelimiter1'
               ImageIndex = 10
               Style = tbsSeparator
             end
             object btnRenameMoveProfile: TToolButton
-              Left = 211
+              Left = 208
               Top = 0
               Action = actRenameMoveProfile
             end
             object btnMakeCopyProfile: TToolButton
-              Left = 305
+              Left = 302
               Top = 0
               Action = actMakeCopyProfile
             end
             object btnDelUndelProfile: TToolButton
-              Left = 399
+              Left = 396
               Top = 0
               Action = actDelUndelProfile
             end
             object btnExportProfile: TToolButton
-              Left = 493
+              Left = 490
               Top = 0
               Action = actExportProfile
             end
-            object ToolButton21: TToolButton
-              Left = 587
+            object btnAnalysisDelimiter2: TToolButton
+              Left = 584
               Top = 0
-              Width = 8
-              Caption = 'ToolButton21'
+              Width = 5
+              Caption = 'btnAnalysisDelimiter2'
               ImageIndex = 10
               Style = tbsSeparator
             end
             object btnProfileOptions: TToolButton
-              Left = 595
+              Left = 589
               Top = 0
               Action = actProfileOptions
               ParentShowHint = False
@@ -249,7 +239,6 @@ object frmMain: TfrmMain
       Align = alBottom
       BevelOuter = bvNone
       TabOrder = 1
-      ExplicitTop = 469
       object sourceCodeEdit: TSynEdit
         Left = 0
         Top = 0
@@ -284,8 +273,8 @@ object frmMain: TfrmMain
     end
   end
   object pnlLayout: TPanel
-    Left = 744
-    Top = -8
+    Left = 947
+    Top = 8
     Width = 162
     Height = 100
     Hint = 'Layout Manager'
@@ -635,8 +624,8 @@ object frmMain: TfrmMain
     end
   end
   object imglButtons: TImageList
-    Left = 47
-    Top = 134
+    Left = 31
+    Top = 102
     Bitmap = {
       494C01011B002100040010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000007000000001002000000000000070
