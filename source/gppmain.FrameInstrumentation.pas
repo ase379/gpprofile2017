@@ -19,8 +19,6 @@ type
     Splitter2: TSplitter;
     pnlTop: TPanel;
     chkShowAll: TCheckBox;
-    btnLoadInstrumentationSelection: TButton;
-    btnSaveInstrumentationSelection: TButton;
     pnlUnits: TPanel;
     lblUnits: TStaticText;
     vstSelectUnits: TVirtualStringTree;
@@ -113,8 +111,6 @@ end;
 procedure TfrmMainInstrumentation.DisablePC;
 begin
   chkShowAll.Enabled                 := false;
-  btnLoadInstrumentationSelection.Enabled := false;
-  btnSaveInstrumentationSelection.Enabled := false;
   lblUnits.Enabled                   := false;
   lblClasses.Enabled                 := false;
   lblProcs.Enabled                   := false;
@@ -158,8 +154,6 @@ end; { TfrmMain.DoOnUnitCheck }
 procedure TfrmMainInstrumentation.EnablePC;
 begin
   chkShowAll.Enabled                 := true;
-  btnLoadInstrumentationSelection.Enabled := true;
-  btnSaveInstrumentationSelection.Enabled := true;
   lblUnits.Enabled                   := true;
   lblClasses.Enabled                 := true;
   lblProcs.Enabled                   := true;

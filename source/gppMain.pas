@@ -29,7 +29,7 @@ type
     Open2: TMenuItem;
     Exit1: TMenuItem;
     Preferences1: TMenuItem;
-    imglButtons: TImageList;
+    imglButtonTiny: TImageList;
     actRemoveInstrumentation: TAction;
     RemoveInstrumentation1: TMenuItem;
     actRun: TAction;
@@ -75,10 +75,8 @@ type
     tbrInstrument: TToolBar;
     BtnOpenProject: TToolButton;
     btnRescanProject: TToolButton;
-    BtnInstrumentAndRun: TToolButton;
     btnInstrument: TToolButton;
     btnRemoveInstrumentation: TToolButton;
-    tbtnRun: TToolButton;
     btnProjectOptions: TToolButton;
     tbrAnalysis: TToolBar;
     btnOpenProfile: TToolButton;
@@ -147,6 +145,13 @@ type
     actHelpVisitForum: TAction;
     actHelpJoinMailingList: TAction;
     SynPasSyn: TSynPasSyn;
+    ImageListMedium: TImageList;
+    imgListInstrumentationSmall: TImageList;
+    ToolButton1: TToolButton;
+    ToolButton2: TToolButton;
+    ToolButton3: TToolButton;
+    actLoadInstrumentationSelection: TAction;
+    actSaveInstrumentationSelection: TAction;
     procedure FormCreate(Sender: TObject);
     procedure MRUClick(Sender: TObject; LatestFile: String);
     procedure FormDestroy(Sender: TObject);
@@ -207,8 +212,8 @@ type
     procedure splitCallersMoved(Sender: TObject);
     procedure clbUnitsKeyPress(Sender: TObject; var Key: Char);
     procedure clbClassesKeyPress(Sender: TObject; var Key: Char);
-    procedure btnLoadInstrumentationSelectionClick(Sender: TObject);
-    procedure btnSaveInstrumentationSelectionClick(Sender: TObject);
+    procedure actLoadInstrumentationSelectionExecute(Sender: TObject);
+    procedure actSaveInstrumentationSelectionExecute(Sender: TObject);
   private
     openProject               : TProject;
     openProfile               : TResults;
@@ -474,6 +479,8 @@ begin
   actRemoveInstrumentation.Enabled := true;
   actRun.Enabled                   := true;
   actProjectOptions.Enabled        := true;
+  actLoadInstrumentationSelection.Enabled := true;
+  actSaveInstrumentationSelection.Enabled := true;
   FInstrumentationFrame.openProject := openProject;
   FInstrumentationFrame.FillUnitTree(not FInstrumentationFrame.chkShowAll.Checked);
 end;
@@ -621,8 +628,6 @@ begin
       selectedDelphi := RemoveDelphiPrefix(Items[Items.Count-1].Caption);
     end;
   end;
-  tbtnRun.Hint := 'Run Delphi '+selectedDelphi;
-  Run1.Caption := 'Run &Delphi '+selectedDelphi;
   Statusbar.Panels[1].Text := IFF(openProject = nil,'','Delphi '+selectedDelphi);
   if selectedDelphi <> '' then // <-- Added by Alisov A.
     UseDelphiSettings(Ord(selectedDelphi[1])-Ord(48));
@@ -803,6 +808,8 @@ begin
     actRenameMoveProfile.Enabled := true;
     actMakeCopyProfile.Enabled   := true;
     actDelUndelProfile.Enabled   := true;
+    actLoadInstrumentationSelection.Enabled := true;
+    actSaveInstrumentationSelection.Enabled := true;
     SwitchDelMode(true);
   end;
 end;
@@ -858,13 +865,6 @@ begin
     end;
     if s.Count = 0 then
       actRun.OnExecute := nil;
-    if s.Count <= 1 then
-    begin
-      tBtnRun.Style := tbsButton;
-      tBtnRun.Width := 23;
-      tBtnRun.DropdownMenu := nil;
-      tbrInstrument.Perform(CM_RECREATEWND, 0, 0);
-    end;
     if s.Count >= 1 then
     begin
       if (prefCompilerVersion < 0) or (prefCompilerVersion >= s.Count) then
@@ -980,8 +980,6 @@ begin
   FInstrumentationFrame.chkShowAll.OnClick := cbProfileChange;;
   FInstrumentationFrame.OnReloadSource := LoadSource;
   FInstrumentationFrame.OnShowStatusBarMessage := StatusPanel0;
-  FInstrumentationFrame.btnLoadInstrumentationSelection.OnClick := btnLoadInstrumentationSelectionClick;
-  FInstrumentationFrame.btnSaveInstrumentationSelection.OnClick := btnSaveInstrumentationSelectionClick;
   fProfilingFrame := TfrmMainProfiling.Create(self);
   fProfilingFrame.Parent := tabAnalysis;
   fProfilingFrame.Align := alClient;
@@ -1018,6 +1016,7 @@ begin
   SlidersMoved;
   
   SetCaption();
+  ResizeImageListImagesforHighDPI(imglButtonTiny, ImageListMedium);
 end;
 
 procedure TfrmMain.MRUClick(Sender: TObject; LatestFile: String);
@@ -1444,60 +1443,6 @@ procedure TfrmMain.btnCancelLoadClick(Sender: TObject);
 begin
   cancelLoading := true;
 end;
-
-procedure TfrmMain.btnLoadInstrumentationSelectionClick(Sender: TObject);
-var
-  LFilename : String;
-  LOldEvent : TVTChangeEvent;
-  LLastSelectedIndex : integer;
-begin
-  if openProject = nil then
-    Exit;
-  LFilename := ChangeFileExt(openProject.Name,'.gis');
-  OpenDialog.DefaultExt := 'gis';
-  OpenDialog.FileName := ExtractFilename(LFilename);
-  OpenDialog.InitialDir := ExtractFileDir(LFilename);
-  OpenDialog.Filter := 'GPProf instrumentation selection (*.gis)|*.gis|Any file (*.*)|*.*';
-  OpenDialog.Title := 'Load instrumentation selection...';
-  if OpenDialog.Execute then
-  begin
-    openProject.LoadInstrumentalizationSelection(OpenDialog.FileName);
-    // an auto-click is done... ignore instrumentation upon select
-    LLastSelectedIndex := FInstrumentationFrame.SelectedUnitIndex;
-    LOldEvent := FInstrumentationFrame.vstSelectUnits.OnChecked;
-    FInstrumentationFrame.vstSelectUnits.OnChecked := nil;
-    cbProfileChange(nil);
-    FInstrumentationFrame.vstSelectUnits.OnChecked := LOldEvent;
-    if LLastSelectedIndex <> -1 then
-      FInstrumentationFrame.SelectedUnitIndex := LLastSelectedIndex;
-  end;
-end;
-
-procedure TfrmMain.btnSaveInstrumentationSelectionClick(Sender: TObject);
-var
-  LFilename : string;
-begin
-  if openProject = nil then
-    Exit;
-  try
-    LFilename := ChangeFileExt(openProject.Name,'.gis');
-    SaveDialog1.FileName := ExtractFileName(LFilename);
-    SaveDialog1.InitialDir := ExtractFileDir(SaveDialog1.FileName);
-    SaveDialog1.Title := 'Save instrumentation selection...';
-    SaveDialog1.Filter := 'GPProf instrumentation selection (*.gis)|*.gis|Any file (*.*)|*.*';
-    if SaveDialog1.Execute then begin
-      if ExtractFileExt(SaveDialog1.FileName) = '' then
-        SaveDialog1.FileName := SaveDialog1.FileName + '.gis';
-    openProject.SaveInstrumentalizationSelection(SaveDialog1.FileName);
-  end;
-    except on e: Exception do
-    begin
-      ShowError(e.Message);
-    end;
-  end;
-
-end;
-
 
 procedure TfrmMain.LoadMetrics(layoutName: string);
 
@@ -2194,6 +2139,8 @@ begin
   actRenameMoveProfile.Enabled := false;
   actMakeCopyProfile.Enabled   := false;
   actProfileOptions.Enabled    := false;
+  actLoadInstrumentationSelection.Enabled := false;
+  actSaveInstrumentationSelection.Enabled := false;
   DisablePC2;
 end;
 
@@ -2244,6 +2191,34 @@ end;
 procedure TfrmMain.actLayoutManagerExecute(Sender: TObject);
 begin
   pnlLayout.Visible := not pnlLayout.Visible;
+end;
+
+procedure TfrmMain.actLoadInstrumentationSelectionExecute(Sender: TObject);
+var
+  LFilename : String;
+  LOldEvent : TVTChangeEvent;
+  LLastSelectedIndex : integer;
+begin
+  if openProject = nil then
+    Exit;
+  LFilename := ChangeFileExt(openProject.Name,'.gis');
+  OpenDialog.DefaultExt := 'gis';
+  OpenDialog.FileName := ExtractFilename(LFilename);
+  OpenDialog.InitialDir := ExtractFileDir(LFilename);
+  OpenDialog.Filter := 'GPProf instrumentation selection (*.gis)|*.gis|Any file (*.*)|*.*';
+  OpenDialog.Title := 'Load instrumentation selection...';
+  if OpenDialog.Execute then
+  begin
+    openProject.LoadInstrumentalizationSelection(OpenDialog.FileName);
+    // an auto-click is done... ignore instrumentation upon select
+    LLastSelectedIndex := FInstrumentationFrame.SelectedUnitIndex;
+    LOldEvent := FInstrumentationFrame.vstSelectUnits.OnChecked;
+    FInstrumentationFrame.vstSelectUnits.OnChecked := nil;
+    cbProfileChange(nil);
+    FInstrumentationFrame.vstSelectUnits.OnChecked := LOldEvent;
+    if LLastSelectedIndex <> -1 then
+      FInstrumentationFrame.SelectedUnitIndex := LLastSelectedIndex;
+  end;
 end;
 
 procedure TfrmMain.SpeedButton1Click(Sender: TObject);
@@ -2455,6 +2430,30 @@ procedure TfrmMain.actShowHideCallersUpdate(Sender: TObject);
 begin
   actShowHideCallers.Enabled := (PageControl1.ActivePage = tabAnalysis) and
                                 (FProfilingFrame.PageControl2.ActivePage = FProfilingFrame.tabProcedures);
+end;
+
+procedure TfrmMain.actSaveInstrumentationSelectionExecute(Sender: TObject);
+var
+  LFilename : string;
+begin
+  if openProject = nil then
+    Exit;
+  try
+    LFilename := ChangeFileExt(openProject.Name,'.gis');
+    SaveDialog1.FileName := ExtractFileName(LFilename);
+    SaveDialog1.InitialDir := ExtractFileDir(SaveDialog1.FileName);
+    SaveDialog1.Title := 'Save instrumentation selection...';
+    SaveDialog1.Filter := 'GPProf instrumentation selection (*.gis)|*.gis|Any file (*.*)|*.*';
+    if SaveDialog1.Execute then begin
+      if ExtractFileExt(SaveDialog1.FileName) = '' then
+        SaveDialog1.FileName := SaveDialog1.FileName + '.gis';
+    openProject.SaveInstrumentalizationSelection(SaveDialog1.FileName);
+  end;
+    except on e: Exception do
+    begin
+      ShowError(e.Message);
+    end;
+  end;
 end;
 
 procedure TfrmMain.actShowHideCalleesExecute(Sender: TObject);

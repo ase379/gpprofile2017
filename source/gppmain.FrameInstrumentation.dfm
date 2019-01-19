@@ -26,8 +26,6 @@ object frmMainInstrumentation: TfrmMainInstrumentation
     Align = alTop
     BevelOuter = bvNone
     TabOrder = 0
-    ExplicitLeft = -781
-    ExplicitWidth = 1101
     object chkShowAll: TCheckBox
       AlignWithMargins = True
       Left = 3
@@ -38,26 +36,6 @@ object frmMainInstrumentation: TfrmMainInstrumentation
       Caption = '&Show all folders'
       TabOrder = 0
     end
-    object btnLoadInstrumentationSelection: TButton
-      AlignWithMargins = True
-      Left = 108
-      Top = 3
-      Width = 99
-      Height = 19
-      Align = alLeft
-      Caption = 'Load Selection...'
-      TabOrder = 1
-    end
-    object btnSaveInstrumentationSelection: TButton
-      AlignWithMargins = True
-      Left = 213
-      Top = 3
-      Width = 99
-      Height = 19
-      Align = alLeft
-      Caption = 'Save Selection...'
-      TabOrder = 2
-    end
   end
   object pnlUnits: TPanel
     Left = 0
@@ -67,13 +45,11 @@ object frmMainInstrumentation: TfrmMainInstrumentation
     Align = alLeft
     BevelOuter = bvNone
     TabOrder = 1
-    ExplicitTop = -172
-    ExplicitHeight = 412
     object lblUnits: TStaticText
       AlignWithMargins = True
       Left = 3
       Top = 3
-      Width = 39
+      Width = 123
       Height = 17
       Align = alTop
       Caption = '&Units:'
@@ -94,7 +70,6 @@ object frmMainInstrumentation: TfrmMainInstrumentation
       TreeOptions.PaintOptions = [toShowButtons, toShowDropmark, toThemeAware, toUseBlendedImages]
       OnAddToSelection = vstSelectUnitsAddToSelection
       OnChecked = vstSelectUnitsChecked
-      ExplicitHeight = 389
       Columns = <>
     end
   end
@@ -106,13 +81,11 @@ object frmMainInstrumentation: TfrmMainInstrumentation
     Align = alLeft
     BevelOuter = bvNone
     TabOrder = 2
-    ExplicitTop = -172
-    ExplicitHeight = 412
     object lblClasses: TStaticText
       AlignWithMargins = True
       Left = 3
       Top = 3
-      Width = 51
+      Width = 131
       Height = 17
       Align = alTop
       Caption = '&Classes:'
@@ -133,7 +106,6 @@ object frmMainInstrumentation: TfrmMainInstrumentation
       TreeOptions.PaintOptions = [toShowButtons, toShowDropmark, toThemeAware, toUseBlendedImages]
       OnAddToSelection = vstSelectClassesAddToSelection
       OnChecked = vstSelectClassesChecked
-      ExplicitHeight = 389
       Columns = <>
     end
   end
@@ -145,15 +117,11 @@ object frmMainInstrumentation: TfrmMainInstrumentation
     Align = alClient
     BevelOuter = bvNone
     TabOrder = 3
-    ExplicitLeft = -509
-    ExplicitTop = -172
-    ExplicitWidth = 829
-    ExplicitHeight = 412
     object lblProcs: TStaticText
       AlignWithMargins = True
       Left = 3
       Top = 3
-      Width = 69
+      Width = 713
       Height = 17
       Align = alTop
       Caption = 'P&rocedures:'
@@ -174,8 +142,6 @@ object frmMainInstrumentation: TfrmMainInstrumentation
       TreeOptions.PaintOptions = [toShowButtons, toShowDropmark, toThemeAware, toUseBlendedImages]
       OnAddToSelection = vstSelectProcsAddToSelection
       OnChecked = vstSelectProcsChecked
-      ExplicitWidth = 829
-      ExplicitHeight = 389
       Columns = <>
     end
   end
