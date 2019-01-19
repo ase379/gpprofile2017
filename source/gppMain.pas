@@ -17,7 +17,6 @@ uses
 type
 
   TfrmMain = class(TForm)
-    Project1: TMenuItem;
     OpenDialog: TOpenDialog;
     StatusBar: TStatusBar;
     ActionList1: TActionList;
@@ -25,26 +24,17 @@ type
     actOpen: TAction;
     actExit: TAction;
     actPreferences: TAction;
-    Instrument1: TMenuItem;
-    Open2: TMenuItem;
     Exit1: TMenuItem;
     Preferences1: TMenuItem;
-    imglButtonTiny: TImageList;
     actRemoveInstrumentation: TAction;
-    RemoveInstrumentation1: TMenuItem;
     actRun: TAction;
-    Run1: TMenuItem;
     popRecent: TPopupMenu;
-    Reopen1: TMenuItem;
     actRescanProject: TAction;
-    Rescan1: TMenuItem;
     MRU: TGPMRUFiles;
     MainMenu1: TMainMenu;
     popDelphiVer: TPopupMenu;
-    OpenProfilingData1: TMenuItem;
     actOpenProfile: TAction;
     popRecentPrf: TPopupMenu;
-    ReopenProfilingData1: TMenuItem;
     MRUPrf: TGPMRUFiles;
     actInstrumentRun: TAction;
     Help1: TMenuItem;
@@ -53,25 +43,14 @@ type
     mnuHideNotExecuted: TMenuItem;
     actHideNotExecuted: TAction;
     actProjectOptions: TAction;
-    Options1: TMenuItem;
     actProfileOptions: TAction;
-    Profile1: TMenuItem;
-    ProfileOptions1: TMenuItem;
-    InstrumentandRun1: TMenuItem;
     actRescanProfile: TAction;
-    Rescan2: TMenuItem;
-    N5: TMenuItem;
-    N6: TMenuItem;
-    Export1: TMenuItem;
     actExportProfile: TAction;
     mnuExportProfile: TMenuItem;
     GpProfile1: TMenuItem;
     N1: TMenuItem;
     actMakeCopyProfile: TAction;
-    N2: TMenuItem;
-    SaveAs1: TMenuItem;
     actRenameMoveProfile: TAction;
-    RenameMove1: TMenuItem;
     tbrInstrument: TToolBar;
     BtnOpenProject: TToolButton;
     btnRescanProject: TToolButton;
@@ -90,7 +69,6 @@ type
     btnAnalysisDelimiter1: TToolButton;
     actDelUndelProfile: TAction;
     btnDelUndelProfile: TToolButton;
-    Delete1: TMenuItem;
     SaveDialog1: TSaveDialog;
     Panel0: TPanel;
     Panel1: TPanel;
@@ -115,7 +93,6 @@ type
     SpeedButton1: TSpeedButton;
     Contents1: TMenuItem;
     N3: TMenuItem;
-    Shortcutkeys1: TMenuItem;
     actHelpContents: TAction;
     actHelpShortcutKeys: TAction;
     actHelpAbout: TAction;
@@ -133,7 +110,6 @@ type
     HideCallers1: TMenuItem;
     HideCalled1: TMenuItem;
     sourceCodeEdit: TSynEdit;
-    N8: TMenuItem;
     btnAnalysisDelimiter2: TToolButton;
     actHelpOpenHome: TAction;
     actHelpWriteMail: TAction;
