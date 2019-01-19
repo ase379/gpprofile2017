@@ -30,7 +30,6 @@ object frmMain: TfrmMain
     ParentFont = True
     UseSystemFont = False
     OnResize = StatusBarResize
-    ExplicitWidth = 1109
   end
   object Panel0: TPanel
     Left = 0
@@ -41,7 +40,6 @@ object frmMain: TfrmMain
     BevelEdges = []
     BevelOuter = bvNone
     TabOrder = 1
-    ExplicitWidth = 1109
     object splitSourcePreview: TSplitter
       Left = 0
       Top = 492
@@ -61,24 +59,19 @@ object frmMain: TfrmMain
       Align = alClient
       BevelOuter = bvNone
       TabOrder = 0
-      ExplicitWidth = 1109
       object PageControl1: TPageControl
         Left = 0
         Top = 0
         Width = 1484
         Height = 492
-        ActivePage = tabInstrumentation
+        ActivePage = tabAnalysis
         Align = alClient
         HotTrack = True
         TabOrder = 0
         OnChange = PageControl1Change
-        ExplicitWidth = 1109
         object tabInstrumentation: TTabSheet
           Caption = 'Instrumentation'
           ImageIndex = 16
-          ExplicitTop = 25
-          ExplicitWidth = 1101
-          ExplicitHeight = 463
           object tbrInstrument: TToolBar
             Left = 0
             Top = 0
@@ -95,7 +88,6 @@ object frmMain: TfrmMain
             ShowCaptions = True
             ShowHint = True
             TabOrder = 0
-            ExplicitWidth = 1101
             object BtnOpenProject: TToolButton
               Left = 0
               Top = 0
@@ -173,9 +165,6 @@ object frmMain: TfrmMain
         object tabAnalysis: TTabSheet
           Caption = 'Analysis'
           ImageIndex = 17
-          ExplicitTop = 25
-          ExplicitWidth = 1101
-          ExplicitHeight = 463
           object tbrAnalysis: TToolBar
             Left = 0
             Top = 0
@@ -238,22 +227,6 @@ object frmMain: TfrmMain
               Action = actExportProfile
               ImageIndex = 5
             end
-            object btnAnalysisDelimiter2: TToolButton
-              Left = 584
-              Top = 0
-              Width = 5
-              Caption = 'btnAnalysisDelimiter2'
-              ImageIndex = 10
-              Style = tbsSeparator
-            end
-            object btnProfileOptions: TToolButton
-              Left = 589
-              Top = 0
-              Action = actProfileOptions
-              ImageIndex = 6
-              ParentShowHint = False
-              ShowHint = True
-            end
           end
         end
       end
@@ -266,7 +239,6 @@ object frmMain: TfrmMain
       Align = alBottom
       BevelOuter = bvNone
       TabOrder = 1
-      ExplicitWidth = 1109
       object sourceCodeEdit: TSynEdit
         Left = 0
         Top = 0
@@ -297,7 +269,6 @@ object frmMain: TfrmMain
         Lines.Strings = (
           'sourceCodeEdit')
         FontSmoothing = fsmNone
-        ExplicitTop = 3
       end
     end
   end
@@ -500,7 +471,6 @@ object frmMain: TfrmMain
       Enabled = False
       Hint = 'Profile options'
       ImageIndex = 9
-      OnExecute = actProfileOptionsExecute
     end
     object actRescanProfile: TAction
       Category = 'Profile'

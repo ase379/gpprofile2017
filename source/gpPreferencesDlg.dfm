@@ -217,6 +217,10 @@ object frmPreferences: TfrmPreferences
     object tabAnalysis: TTabSheet
       Caption = 'Analysis'
       ImageIndex = -1
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       object grpAnalysisSettings: TGroupBox
         AlignWithMargins = True
         Left = 3
@@ -259,7 +263,7 @@ object frmPreferences: TfrmPreferences
           AlignWithMargins = True
           Left = 10
           Top = 23
-          Width = 449
+          Width = 243
           Height = 13
           Margins.Left = 8
           Margins.Top = 8
@@ -267,7 +271,6 @@ object frmPreferences: TfrmPreferences
           Margins.Bottom = 8
           Align = alTop
           Caption = 'Performance output file name: (without extension)'
-          ExplicitWidth = 243
         end
         object Panel2: TPanel
           AlignWithMargins = True
@@ -312,6 +315,10 @@ object frmPreferences: TfrmPreferences
     object tabExcluded: TTabSheet
       Caption = 'Excluded units'
       ImageIndex = -1
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       object GroupBox2: TGroupBox
         Left = 8
         Top = 8
@@ -364,6 +371,10 @@ object frmPreferences: TfrmPreferences
     object tabDefines: TTabSheet
       Caption = 'Conditional defines'
       ImageIndex = 3
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       object GroupBox5: TGroupBox
         Left = 8
         Top = 8

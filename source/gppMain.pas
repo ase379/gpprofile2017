@@ -61,7 +61,6 @@ type
     btnOpenProfile: TToolButton;
     btnRescanProfile: TToolButton;
     btnExportProfile: TToolButton;
-    btnProfileOptions: TToolButton;
     btnRenameMoveProfile: TToolButton;
     btnMakeCopyProfile: TToolButton;
     btnInstrumentDelimiter1: TToolButton;
@@ -110,7 +109,6 @@ type
     HideCallers1: TMenuItem;
     HideCalled1: TMenuItem;
     sourceCodeEdit: TSynEdit;
-    btnAnalysisDelimiter2: TToolButton;
     actHelpOpenHome: TAction;
     actHelpWriteMail: TAction;
     N4: TMenuItem;
@@ -149,7 +147,6 @@ type
     procedure StatusBarResize(Sender: TObject);
     procedure actHideNotExecutedExecute(Sender: TObject);
     procedure actProjectOptionsExecute(Sender: TObject);
-    procedure actProfileOptionsExecute(Sender: TObject);
     procedure actRescanProfileExecute(Sender: TObject);
     procedure actExportProfileExecute(Sender: TObject);
     procedure mnuExportProfileClick(Sender: TObject);
@@ -1619,15 +1616,6 @@ begin
     end;
   end;
 end;
-
-procedure TfrmMain.actProfileOptionsExecute(Sender: TObject);
-begin
-  with frmPreferences do
-    if frmPreferences.ExecuteProfileSettings(mnuHideNotExecuted.Checked) then
-      if mnuHideNotExecuted.Checked <> cbHideNotExecuted.Checked then
-        actHideNotExecuted.Execute;
-end;
-
 
 function TfrmMain.ReplaceMacros(s: string): string;
 

@@ -119,7 +119,6 @@ type
 
     function ExecuteGlobalSettings(): boolean;
     function ExecuteProjectSettings(const aShowAll: boolean): boolean;
-    function ExecuteProfileSettings(const aHideNotExecute: boolean): boolean;
     property IsGlobalPreferenceDialog : boolean read fIsGlobalPreferenceDialog write fIsGlobalPreferenceDialog;
     property DefinesChanged : boolean read fDefinesChanged write fDefinesChanged;
   end;
@@ -741,32 +740,5 @@ begin
     end;
   end;
 end;
-
-
-
-function TfrmPreferences.ExecuteProfileSettings(const aHideNotExecute: boolean): boolean;
-begin
-  IsGlobalPreferenceDialog := false;
-  cbHideNotExecuted.Checked := aHideNotExecute;
-  Caption := 'GpProfile - Analysis options for '+CurrentProjectName;
-  tabInstrumentation.Enabled         := false;
-  tabInstrumentation.TabVisible      := false;
-  tabAnalysis.Enabled                := false;
-  tabAnalysis.TabVisible             := false;
-  tabExcluded.Enabled                := false;
-  tabExcluded.TabVisible             := false;
-  tabDefines.Enabled                 := false;
-  tabDefines.TabVisible              := false;
-  btnInstrumentationDefaults.Visible := true;
-  btnAnalysisDefaults.Visible        := true;
-  btnUnitsDefaults.Visible           := true;
-  btnDefinesDefaults.Visible         := true;
-  Left := frmMain.Left+((frmMain.Width-Width) div 2);
-  Top := frmMain.Top+((frmMain.Height-Height) div 2);
-  edtPerformanceOutputFilename.text  := GetProjectPref('PrfFilenameMakro',prefPrfFilenameMakro);
-  edtPerformanceOutputFilename.text := ResolvePrfProjectPlaceholders(edtPerformanceOutputFilename.text);
-  result := ShowModal = mrOK;
-end;
-
 
 end.
