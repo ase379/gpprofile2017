@@ -1016,7 +1016,6 @@ begin
   SlidersMoved;
   
   SetCaption();
-  ResizeImageListImagesforHighDPI(imglButtonTiny, ImageListMedium);
 end;
 
 procedure TfrmMain.MRUClick(Sender: TObject; LatestFile: String);
