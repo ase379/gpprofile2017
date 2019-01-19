@@ -152,6 +152,7 @@ type
     ToolButton3: TToolButton;
     actLoadInstrumentationSelection: TAction;
     actSaveInstrumentationSelection: TAction;
+    imgListAnalysisSmall: TImageList;
     procedure FormCreate(Sender: TObject);
     procedure MRUClick(Sender: TObject; LatestFile: String);
     procedure FormDestroy(Sender: TObject);
@@ -808,8 +809,6 @@ begin
     actRenameMoveProfile.Enabled := true;
     actMakeCopyProfile.Enabled   := true;
     actDelUndelProfile.Enabled   := true;
-    actLoadInstrumentationSelection.Enabled := true;
-    actSaveInstrumentationSelection.Enabled := true;
     SwitchDelMode(true);
   end;
 end;
