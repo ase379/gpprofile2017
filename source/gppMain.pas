@@ -127,6 +127,7 @@ type
     actLoadInstrumentationSelection: TAction;
     actSaveInstrumentationSelection: TAction;
     imgListAnalysisSmall: TImageList;
+    imgListInstrumentationMedium: TImageList;
     procedure FormCreate(Sender: TObject);
     procedure MRUClick(Sender: TObject; LatestFile: String);
     procedure FormDestroy(Sender: TObject);
@@ -988,6 +989,13 @@ begin
   SlidersMoved;
   
   SetCaption();
+  //LPercentage := Screen.PixelsPerInch * 100 / 96;
+
+  if 1=0 then
+  begin
+    tbrInstrument.Images := imgListInstrumentationMedium;
+  end;
+
 end;
 
 procedure TfrmMain.MRUClick(Sender: TObject; LatestFile: String);
