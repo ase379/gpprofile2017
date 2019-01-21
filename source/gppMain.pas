@@ -2063,7 +2063,7 @@ var
   LFilename : string;
 begin
   try
-  LFilename := ButLast(openProfile.FileName,Length(ExtractFileExt(openProfile.FileName)))+
+    LFilename := ButLast(openProfile.FileName,Length(ExtractFileExt(openProfile.FileName)))+
                 FormatDateTime('_ddmmyy',Now)+'.prf';
     SaveDialog1.InitialDir := ExtractFileDir(LFilename);
     SaveDialog1.FileName := ExtractFilename(LFilename);
@@ -2411,7 +2411,7 @@ begin
   try
     LFilename := ChangeFileExt(openProject.Name,'.gis');
     SaveDialog1.FileName := ExtractFileName(LFilename);
-    SaveDialog1.InitialDir := ExtractFileDir(SaveDialog1.FileName);
+    SaveDialog1.InitialDir := ExtractFileDir(LFilename);
     SaveDialog1.Title := 'Save instrumentation selection...';
     SaveDialog1.Filter := 'GPProf instrumentation selection (*.gis)|*.gis|Any file (*.*)|*.*';
     if SaveDialog1.Execute then begin
