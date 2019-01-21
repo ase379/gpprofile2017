@@ -197,7 +197,8 @@ var
   n         : integer;
   DividerPos: integer;
 begin
-  if Menu <> nil then begin
+  if (Menu <> nil) or (PopupMenu <> nil) then
+  begin
     if (RegistryKey='') then
       RegistryKey:='\Software\'+Application.Title;
     Registry:=TRegistry.Create;
@@ -205,11 +206,19 @@ begin
       RootKey:=HKEY_CURRENT_USER;
       if KeyExists(RegistryKey+'\FileHistory') then
         DeleteKey(RegistryKey+'\FileHistory');
-      if OpenKey(RegistryKey+'\FileHistory',true) then begin
-        if (Menu <> nil) then begin
+      if OpenKey(RegistryKey+'\FileHistory',true) then
+      begin
+        if (Menu <> nil) then
+        begin
           DividerPos:=DividerPlace;
           for n:=DividerPos+1 to Menu.Count-1 do
             WriteString('File'+Chr(n+Ord('1')-1-DividerPos),Copy(Menu.Items[n].Caption,4,256));
+        end;
+        if (PopupMenu <> nil) then
+        begin
+          DividerPos:=DividerPlace;
+          for n:=DividerPos+1 to PopupMenu.Items.Count-1 do
+            WriteString('File'+Chr(n+Ord('1')-1-DividerPos),Copy(PopupMenu.Items[n].Caption,4,256));
         end;
         CloseKey;
       end;
@@ -261,17 +270,27 @@ var
   n         : integer;
   LDividerPos: integer;
 begin
-  if (Menu <> nil) then
+  if (Menu <> nil) or (PopupMenu <> nil)then
   begin
     LDividerPos:=DividerPlace;
-    for n:=LDividerPos+1 to Menu.Count-1 do
-    begin
-      if Menu.Items[n].Caption.EndsWith(aRecentFile) then
+    if assigned(menu) then
+      for n:=LDividerPos+1 to Menu.Count-1 do
       begin
-        Menu.remove(Menu.Items[n]);
-        Break;
+        if Menu.Items[n].Caption.EndsWith(aRecentFile) then
+        begin
+          Menu.remove(Menu.Items[n]);
+          Break;
+        end;
       end;
-    end;
+    if assigned(PopupMenu) then
+      for n:=LDividerPos+1 to PopupMenu.items.Count-1 do
+      begin
+        if PopupMenu.items[n].Caption.EndsWith(aRecentFile) then
+        begin
+          PopupMenu.items.remove(PopupMenu.items[n]);
+          Break;
+        end;
+      end;
   end;
 
 end;
