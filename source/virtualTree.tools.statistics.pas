@@ -128,6 +128,7 @@ begin
   fList.OnCompareNodes := self.OnCompareNodes;
   fList.ongettext := OnGetText;
   fList.OnAfterCellPaint := OnAftercellPaint;
+  fList.TreeOptions.SelectionOptions := fList.TreeOptions.SelectionOptions + [toFullRowSelect];
 end;
 
 procedure TSimpleStatsListTools.AddEntry(const anEntryId : Cardinal);
@@ -765,6 +766,7 @@ var
   LCellInfo : TColumnInfoType;
   LRenderCell : Boolean;
   LNormalizedValue : double;
+  LNodeIsSelected : boolean;
 begin
   LData := node.GetData;
   if not assigned(fProfileResults) then
@@ -786,18 +788,31 @@ begin
     
     with TargetCanvas do
     begin
-      Pen.Color := fList.Colors.BackGroundColor;
-      Brush.Color := fList.Colors.BackGroundColor;
-      FillRect(CellRect);
+      LNodeIsSelected := sender.Selected[node];
+      if not LNodeIsSelected then
+      begin
+        Pen.Color := fList.Colors.BackGroundColor;
+        Brush.Color := fList.Colors.BackGroundColor;
+        Brush.Style := bsSolid;
+      end
+      else
+      begin
+        Pen.Color := fList.Colors.SelectionRectangleBlendColor;
+        Brush.Color := fList.Colors.SelectionRectangleBlendColor;
+        Brush.Style := bsSolid;
 
-      Pen.Color := RGB(226, 194, 95);
+      end;
+      FillRect(Rect(PBRect.Right,CellRect.Top,CellRect.Right,CellRect.Bottom));
+
+      Pen.Color := clInactiveCaption;
       Pen.Style := psSolid;
       Brush.Style := bsClear;
 
       if PBRect.Right > PBRect.Left then
        Rectangle(PBRect);
 
-      Brush.Color := RGB(246, 224, 123);
+
+      Brush.Color := clActiveCaption;
       Brush.Style := bsSolid;
       if PBRect.Right > PBRect.Left then
         FillRect(Rect(PBRect.Left + 2,
@@ -811,8 +826,14 @@ begin
         TColumnInfoType.Time : Text := FormatTime(LValue);
         TColumnInfoType.Count : Text := FormatCnt(Round(LValue));
       end;
-      Font.Color := clBlack;
+      if not LNodeIsSelected then
+        Font.Color := clWindowText
+      else
+        font.Color := clHighlightText;
       Brush.Style := bsClear;
+//      Pen.Color := RGB(226, 194, 95);
+//      Pen.Style := psSolid;
+
 
       TextOut(CellRect.Left + ((CellRect.Right - CellRect.Left) div 2) - (TextWidth(Text) div 2),
               CellRect.Top + ((CellRect.Bottom - CellRect.Top) div 2) - (TextHeight(Text) div 2),
