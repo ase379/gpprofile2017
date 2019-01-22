@@ -141,6 +141,7 @@ object frmMainProfiling: TfrmMainProfiling
             Header.Height = 20
             Header.MinHeight = 20
             Header.Options = [hoColumnResize, hoDrag, hoShowSortGlyphs, hoVisible]
+            PopupMenu = popAnalysisListview
             TabOrder = 0
             TreeOptions.PaintOptions = [toShowButtons, toShowDropmark, toThemeAware, toUseBlendedImages]
             OnNodeClick = vstCalleesNodeClick
@@ -220,6 +221,7 @@ object frmMainProfiling: TfrmMainProfiling
             Header.Height = 20
             Header.MinHeight = 20
             Header.Options = [hoColumnResize, hoDrag, hoShowSortGlyphs, hoVisible]
+            PopupMenu = popAnalysisListview
             TabOrder = 0
             TreeOptions.PaintOptions = [toShowButtons, toShowDropmark, toThemeAware, toUseBlendedImages]
             OnNodeClick = vstProcsNodeClick
@@ -306,6 +308,7 @@ object frmMainProfiling: TfrmMainProfiling
           Header.Height = 20
           Header.MinHeight = 20
           Header.Options = [hoColumnResize, hoDrag, hoShowSortGlyphs, hoVisible]
+          PopupMenu = popAnalysisListview
           TabOrder = 0
           TreeOptions.PaintOptions = [toShowButtons, toShowDropmark, toThemeAware, toUseBlendedImages]
           OnNodeClick = vstCalleesNodeClick
@@ -733,5 +736,17 @@ object frmMainProfiling: TfrmMainProfiling
       F1FFFF8F00000000F9FFFF9F00000000FDFFFFBF00000000FFFFFFFF00000000
       FFFFFFFF00000000FFFFFFFF0000000000000000000000000000000000000000
       000000000000}
+  end
+  object popAnalysisListview: TPopupMenu
+    Left = 197
+    Top = 224
+    object mnuHideNotExecuted: TMenuItem
+    end
+    object mnuExportProfile: TMenuItem
+      Caption = 'E&xport...'
+      Enabled = False
+      Hint = 'Export profile'
+      ImageIndex = 11
+    end
   end
 end

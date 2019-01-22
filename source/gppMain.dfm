@@ -64,7 +64,7 @@ object frmMain: TfrmMain
         Top = 0
         Width = 1484
         Height = 492
-        ActivePage = tabInstrumentation
+        ActivePage = tabAnalysis
         Align = alClient
         HotTrack = True
         TabOrder = 0
@@ -647,8 +647,8 @@ object frmMain: TfrmMain
     Top = 134
   end
   object MainMenu1: TMainMenu
-    Left = 137
-    Top = 134
+    Left = 609
+    Top = 206
     object GpProfile1: TMenuItem
       Caption = '&GpProfile'
       object Preferences1: TMenuItem
@@ -726,20 +726,6 @@ object frmMain: TfrmMain
     OnClick = MRUPrfClick
     Left = 107
     Top = 164
-  end
-  object popAnalysisListview: TPopupMenu
-    Left = 197
-    Top = 224
-    object mnuHideNotExecuted: TMenuItem
-      Action = actHideNotExecuted
-    end
-    object mnuExportProfile: TMenuItem
-      Caption = 'E&xport...'
-      Enabled = False
-      Hint = 'Export profile'
-      ImageIndex = 11
-      OnClick = mnuExportProfileClick
-    end
   end
   object SaveDialog1: TSaveDialog
     Filter = 'Profiling results|*.prf|Any file|*.*'

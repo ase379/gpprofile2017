@@ -39,14 +39,11 @@ type
     actInstrumentRun: TAction;
     Help1: TMenuItem;
     About1: TMenuItem;
-    popAnalysisListview: TPopupMenu;
-    mnuHideNotExecuted: TMenuItem;
     actHideNotExecuted: TAction;
     actProjectOptions: TAction;
     actProfileOptions: TAction;
     actRescanProfile: TAction;
     actExportProfile: TAction;
-    mnuExportProfile: TMenuItem;
     GpProfile1: TMenuItem;
     N1: TMenuItem;
     actMakeCopyProfile: TAction;
@@ -779,7 +776,7 @@ begin
     actHideNotExecuted.Enabled   := true;
     actRescanProfile.Enabled     := true;
     actExportProfile.Enabled     := true;
-    mnuExportProfile.Enabled     := true;
+    FProfilingFrame.mnuExportProfile.Enabled     := true;
     actRenameMoveProfile.Enabled := true;
     actMakeCopyProfile.Enabled   := true;
     actDelUndelProfile.Enabled   := true;
@@ -946,6 +943,8 @@ begin
 end; { TfrmMain.LoadLayouts }
 
 procedure TfrmMain.FormCreate(Sender: TObject);
+var
+  LMenuItem : TMenuItem;
 begin
   FInstrumentationFrame := TfrmMainInstrumentation.Create(self);
   FInstrumentationFrame.Parent := tabInstrumentation;
@@ -960,6 +959,10 @@ begin
   FProfilingFrame.actShowHideCallers := actShowHideCallers;
   FProfilingFrame.actShowHideCallees := actShowHideCallees;
   fProfilingFrame.OnReloadSource := LoadSource;
+  FProfilingFrame.mnuExportProfile.onClick := mnuExportProfileClick;
+  LMenuItem := TMenuItem.Create(self);
+  LMenuItem.Action := actHideNotExecuted;
+  FProfilingFrame.popAnalysisListview.Items.Insert(0,LMenuitem);
   Application.DefaultFont.Name :=  'Segoe UI';
   Application.DefaultFont.Size :=  8;
   inLVResize := false;
@@ -2105,7 +2108,7 @@ begin
   actHideNotExecuted.Enabled   := false;
   actRescanProfile.Enabled     := false;
   actExportProfile.Enabled     := false;
-  mnuExportProfile.Enabled     := false;
+  FProfilingFrame.mnuExportProfile.Enabled     := false;
   actRenameMoveProfile.Enabled := false;
   actMakeCopyProfile.Enabled   := false;
   actProfileOptions.Enabled    := false;

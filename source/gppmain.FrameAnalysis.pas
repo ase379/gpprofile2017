@@ -48,6 +48,9 @@ type
     actBrowsePrevious: TAction;
     actBrowseNext: TAction;
     imglButtons: TImageList;
+    popAnalysisListview: TPopupMenu;
+    mnuHideNotExecuted: TMenuItem;
+    mnuExportProfile: TMenuItem;
     procedure splitCallersMoved(Sender: TObject);
     procedure cbxSelectThreadProcChange(Sender: TObject);
     procedure cbxSelectThreadUnitChange(Sender: TObject);
@@ -234,6 +237,7 @@ begin
   FillClassView(resortOn);
   FillUnitView(resortOn);
   FillThreadView(resortOn);
+  mnuExportProfile.Enabled     := true;
 end;
 
 procedure TfrmMainProfiling.UpdateFocus;
