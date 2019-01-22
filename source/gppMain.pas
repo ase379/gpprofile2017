@@ -943,8 +943,6 @@ begin
 end; { TfrmMain.LoadLayouts }
 
 procedure TfrmMain.FormCreate(Sender: TObject);
-var
-  LMenuItem : TMenuItem;
 begin
   FInstrumentationFrame := TfrmMainInstrumentation.Create(self);
   FInstrumentationFrame.Parent := tabInstrumentation;
@@ -960,9 +958,7 @@ begin
   FProfilingFrame.actShowHideCallees := actShowHideCallees;
   fProfilingFrame.OnReloadSource := LoadSource;
   FProfilingFrame.mnuExportProfile.onClick := mnuExportProfileClick;
-  LMenuItem := TMenuItem.Create(self);
-  LMenuItem.Action := actHideNotExecuted;
-  FProfilingFrame.popAnalysisListview.Items.Insert(0,LMenuitem);
+  FProfilingFrame.popAnalysisListview.Items[0].Action := actHideNotExecuted;
   Application.DefaultFont.Name :=  'Segoe UI';
   Application.DefaultFont.Size :=  8;
   inLVResize := false;

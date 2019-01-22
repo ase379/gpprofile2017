@@ -12,6 +12,7 @@ object frmMainProfiling: TfrmMainProfiling
     ActivePage = tabProcedures
     Align = alClient
     HotTrack = True
+    PopupMenu = popAnalysisListview
     TabOrder = 0
     OnChange = PageControl2Change
     object tabProcedures: TTabSheet
@@ -393,6 +394,7 @@ object frmMainProfiling: TfrmMainProfiling
         Header.Height = 20
         Header.MinHeight = 20
         Header.Options = [hoColumnResize, hoDrag, hoShowSortGlyphs, hoVisible]
+        PopupMenu = popAnalysisListview
         TabOrder = 0
         TreeOptions.PaintOptions = [toShowButtons, toShowDropmark, toThemeAware, toUseBlendedImages]
         Columns = <
@@ -487,6 +489,7 @@ object frmMainProfiling: TfrmMainProfiling
         Header.Height = 20
         Header.MinHeight = 20
         Header.Options = [hoColumnResize, hoDrag, hoShowSortGlyphs, hoVisible]
+        PopupMenu = popAnalysisListview
         TabOrder = 1
         TreeOptions.PaintOptions = [toShowButtons, toShowDropmark, toThemeAware, toUseBlendedImages]
         Columns = <
@@ -529,6 +532,7 @@ object frmMainProfiling: TfrmMainProfiling
         Header.Height = 20
         Header.MinHeight = 20
         Header.Options = [hoColumnResize, hoDrag, hoShowSortGlyphs, hoVisible]
+        PopupMenu = popAnalysisListview
         TabOrder = 0
         TreeOptions.PaintOptions = [toShowButtons, toShowDropmark, toThemeAware, toUseBlendedImages]
         Columns = <

@@ -72,6 +72,10 @@ object frmMain: TfrmMain
         object tabInstrumentation: TTabSheet
           Caption = 'Instrumentation'
           ImageIndex = 16
+          ExplicitLeft = 0
+          ExplicitTop = 0
+          ExplicitWidth = 0
+          ExplicitHeight = 0
           object tbrInstrument: TToolBar
             Left = 0
             Top = 0
@@ -165,6 +169,10 @@ object frmMain: TfrmMain
         object tabAnalysis: TTabSheet
           Caption = 'Analysis'
           ImageIndex = 17
+          ExplicitLeft = 0
+          ExplicitTop = 0
+          ExplicitWidth = 0
+          ExplicitHeight = 0
           object tbrAnalysis: TToolBar
             Left = 0
             Top = 0
