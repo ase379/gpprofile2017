@@ -797,10 +797,17 @@ begin
       end
       else
       begin
-        Pen.Color := fList.Colors.SelectionRectangleBlendColor;
-        Brush.Color := fList.Colors.SelectionRectangleBlendColor;
+        if sender.Focused then
+        begin
+          Pen.Color := fList.Colors.FocusedSelectionColor;
+          Brush.Color := fList.Colors.FocusedSelectionColor;
+        end
+        else
+        begin
+          Pen.Color := fList.Colors.UnfocusedSelectionColor;
+          Brush.Color := fList.Colors.UnfocusedSelectionColor;
+        end;
         Brush.Style := bsSolid;
-
       end;
       FillRect(Rect(PBRect.Right,CellRect.Top,CellRect.Right,CellRect.Bottom));
 
@@ -826,14 +833,10 @@ begin
         TColumnInfoType.Time : Text := FormatTime(LValue);
         TColumnInfoType.Count : Text := FormatCnt(Round(LValue));
       end;
-      if not LNodeIsSelected then
-        Font.Color := clWindowText
-      else
+      Font.Color := clWindowText;
+      if LNodeIsSelected and sender.Focused then
         font.Color := clHighlightText;
       Brush.Style := bsClear;
-//      Pen.Color := RGB(226, 194, 95);
-//      Pen.Style := psSolid;
-
 
       TextOut(CellRect.Left + ((CellRect.Right - CellRect.Left) div 2) - (TextWidth(Text) div 2),
               CellRect.Top + ((CellRect.Bottom - CellRect.Top) div 2) - (TextHeight(Text) div 2),
