@@ -285,6 +285,7 @@ uses
   UITypes,
   StrUtils,
   ioUtils,
+  Diagnostics,
   Winapi.ActiveX,
   System.Threading;
 
@@ -1155,16 +1156,21 @@ var
   outDir: string;
   LShowAll : Boolean;
   LDefines : string;
-
+  LNeededTimeString : string;
 begin
   InitProgressBar(self,'Instrumenting units...',true, false);
   outDir := GetOutputDir(openProject.Name);
   fnm := MakeSmartBackslash(outDir)+ChangeFileExt(ExtractFileName(openProject.Name),'.gpi');
   LShowAll := FInstrumentationFrame.chkShowAll.Checked;
   LDefines := frmPreferences.ExtractDefines;
+  Enabled := false;
+  LNeededTimeString := '';
   ExecuteAsync(
     procedure
+    var
+      LStopwatch : TStopwatch;
     begin
+      LStopwatch := TStopWatch.StartNew();
       openProject.Instrument(not LShowAll,NotifyInstrument,
                          GetProjectPref('MarkerStyle',prefMarkerStyle),
                          GetProjectPref('KeepFileDate',prefKeepFileDate),
@@ -1183,15 +1189,18 @@ begin
           finally
             Free;
           end;
+      LStopwatch.Stop;
+      LNeededTimeString := LStopwatch.Elapsed.TotalSeconds.ToString();
     end,
     procedure
     begin
       TThread.Synchronize(nil,
       procedure
         begin
+          Enabled := true;
           HideProgressBar();
           FInstrumentationFrame.ReloadSource;
-          StatusPanel0('Instrumentation finished',false);
+          StatusPanel0('Instrumentation finished, it took '+LNeededTimeString+' seconds.',false);
         end
       );
     end,
