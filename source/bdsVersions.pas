@@ -2,15 +2,21 @@ unit bdsVersions;
 
 interface
 
+uses
+  system.Classes;
+
 
 function RemoveDelphiPrefix(const aDelphiVer: string): string;
 function DelphiVerToBDSVer(const aDelphiVer: string): string;
 function DelphiVerToCompilerVersion(const aDelphiVer: string): string;
 function BdsVerToDephiVer(const aBdsVersionString: string): string;
+procedure FillInDelphiVersions(settings: TStrings);
+
 
 implementation
 
-uses System.SysUtils;
+uses
+  Winapi.Windows, System.SysUtils,System.Win.Registry;
 
 
 const SEATTLE = '10.0 Seattle';
@@ -143,6 +149,76 @@ begin
     exit('2009')
   else
     exit('Embarcadero BDS ' +aBdsVersionString);
+end;
+
+procedure FillInDelphiVersions(settings: TStrings);
+
+  procedure FillInKeyNames(const aRegistry: TRegistry;const aRootKey: HKEY;const aKey: string; const aTargetStringList: TStringList);
+  begin
+    aTargetStringList.Clear;
+    aRegistry.RootKey := aRootKey;
+    if aRegistry.OpenKeyReadOnly(aKey) then
+    begin
+      try
+        aRegistry.GetKeyNames(aTargetStringList);
+      finally
+        aRegistry.CloseKey;
+      end;
+    end;
+  end;
+
+
+var
+  LRegistry : TRegistry;
+  LVersionNumbers: TStringList;
+  i: Integer;
+  LAppPath : string;
+begin
+  { returns the user settings that exist in the registry }
+  LVersionNumbers := TStringList.Create;
+  LRegistry := TRegistry.Create();
+  try
+    // Enumerate Delphi 2009-Rio
+    FillInKeyNames(LRegistry,HKEY_CURRENT_USER,'\SOFTWARE\Embarcadero\BDS',LVersionNumbers);
+    for i := LVersionNumbers.Count-1 downto 0 do
+    begin
+      if LRegistry.OpenKeyReadOnly('\SOFTWARE\Embarcadero\BDS\'+LVersionNumbers[i]) then
+      begin
+        try
+          LAppPath := LRegistry.ReadString('App');
+          if not FileExists(LAppPath) then
+            LVersionNumbers.Delete(i);
+        finally
+          LRegistry.CloseKey;
+        end;
+      end;
+    end;
+    for i := 0 to LVersionNumbers.Count-1 do
+      settings.Add(BdsVerToDephiVer(LVersionNumbers[i]));
+
+
+
+    // Enumerate Delphi 2005-2007
+    FillInKeyNames(LRegistry,HKEY_CURRENT_USER,'\SOFTWARE\Borland\BDS',LVersionNumbers);
+    for i := 0 to LVersionNumbers.Count-1 do
+    begin
+      if LVersionNumbers[i] = '5.0' then
+        settings.Add('2007')
+      else if LVersionNumbers[i] = '4.0' then
+        settings.Add('2006')
+      else if LVersionNumbers[i] = '3.0' then
+        settings.Add('2005')
+      else
+        settings.Add('Borland BDS ' + LVersionNumbers[i]);
+    end;
+
+    // Enumerate Delphi versions 2-5
+    FillInKeyNames(LRegistry,HKEY_LOCAL_MACHINE,'\SOFTWARE\Borland\Delphi',LVersionNumbers);
+    settings.AddStrings(LVersionNumbers);
+  finally
+    LRegistry.Free;
+    LVersionNumbers.Free;
+  end;
 end;
 
 
