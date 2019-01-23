@@ -225,8 +225,6 @@ type
     procedure ParseProfile(profile: string);
     function  ParseProfileCallback(percent: integer): boolean;
     procedure ParseProfileDone;
-
-    procedure EnumUserSettings(settings: TStrings);
     procedure FillDelphiVer;
     function  GetSearchPath(const aProject: string): string;
     function  GetOutputDir(const aProject: string): string;
@@ -627,81 +625,7 @@ begin
   end;
 end;
 
-procedure TfrmMain.EnumUserSettings(settings: TStrings);
-var
-  vTempSL: TStrings;
-  i: Integer;
-begin
-  { returns the user settings that exist in the registry }
-  with TRegistry.Create do  begin
-  try
 
-      // Enumerate Delphi 2009-XE3
-      RootKey := HKEY_CURRENT_USER;
-      if OpenKeyReadOnly('\SOFTWARE\Embarcadero\BDS') then
-      begin
-        try
-          vTempSL := TStringList.Create;
-          try
-            GetKeyNames(vTempSL);
-            for i := 0 to vTempSL.Count-1 do
-            begin
-              settings.Add(BdsVerToDephiVer(vTempSL[i]));
-            end;
-          finally
-            vTempSL.Free;
-          end;
-        finally
-          CloseKey;
-        end;
-      end;
-
-      // Enumerate Delphi 2005-2007
-      RootKey := HKEY_CURRENT_USER;
-      if OpenKeyReadOnly('\SOFTWARE\Borland\BDS') then
-      begin
-        try
-          vTempSL := TStringList.Create;
-          try
-            GetKeyNames(vTempSL);
-            for i := 0 to vTempSL.Count-1 do
-              if vTempSL[i] = '5.0' then
-                settings.Add('2007')
-              else if vTempSL[i] = '4.0' then
-                settings.Add('2006')
-              else if vTempSL[i] = '3.0' then
-                settings.Add('2005')
-              else
-                settings.Add('Borland BDS ' + vTempSL[i]);
-          finally
-            vTempSL.Free;
-          end;
-        finally
-          CloseKey;
-        end;
-      end;
-
-      RootKey := HKEY_LOCAL_MACHINE;
-      // Enumerate Delphi versions 2-5
-      if OpenKeyReadOnly('\SOFTWARE\Borland\Delphi') then
-      begin
-        try
-          vTempSL := TStringList.Create;
-          try
-            GetKeyNames(vTempSL);
-            settings.AddStrings(vTempSL);
-          finally
-            vTempSL.Free;
-          end;
-        finally
-          CloseKey;
-        end;
-      end;
-    finally
-      Free;
-    end;
-  end;
-end;
 
 { TfrmMain.EnablePC2 }
 
@@ -825,7 +749,7 @@ var
 begin
   s := TStringList.Create;
   try
-    EnumUserSettings(s);
+    FillInDelphiVersions(s);
     for i := 0 to s.Count-1 do begin
       mn := TMenuItem.Create(self);
       mn.Caption := 'Delphi &'+s[i];
@@ -1526,7 +1450,7 @@ var
 begin
   s := TStringList.Create;
   try
-    EnumUserSettings(s);
+    FillInDelphiVersions(s);
     verch := Chr(delphiVer+Ord('0'));
     setting := s.Count-1;
     for i := 0 to s.Count-2 do
