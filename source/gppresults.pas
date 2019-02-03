@@ -35,7 +35,6 @@ type
     procedure   Start(pkt: TResPacket);
     procedure   Stop(var pkt: TResPacket);
     procedure   UpdateDeadTime(pkt: TResPacket);
-    procedure   UpdateRunningTime(proxy: TProcProxy);
   end;
 
   TActiveProcList = class
@@ -46,7 +45,6 @@ type
     constructor Create;
     destructor  Destroy; override;
     procedure   UpdateDeadTime(pkt: TResPacket);
-    procedure   UpdateRunningTime(proxy: TProcProxy);
     procedure   Append(proxy: TProcProxy);
     procedure   Remove(proxy: TProcProxy);
     procedure   LocateLast(procID: integer; var this,parent: TProcProxy);
@@ -1371,11 +1369,6 @@ begin
   ppDeadTime := ppDeadTime + (pkt.rpMeasure2-pkt.rpMeasure1) + pkt.rpNullOverhead;
 end; { TProcProxy.UpdateDeadTime }
 
-procedure TProcProxy.UpdateRunningTime(proxy: TProcProxy);
-begin
-// don't need this anymore
-end; { TProcProxy.UpdateRunningTime }
-
 { TActiveProcList }
 
 procedure TActiveProcList.Append(proxy: TProcProxy);
@@ -1433,14 +1426,6 @@ begin
   for i := aplCount-1 downto Low(aplList) do
     aplList[i].UpdateDeadTime(pkt);
 end; { TActiveProcList.UpdateDeadTime }
-
-procedure TActiveProcList.UpdateRunningTime(proxy: TProcProxy);
-//var
-//  i: integer;
-begin
-//  for i := aplCount-1 downto Low(aplList) do
-//    aplList[i].UpdateRunningTime(proxy);
-end; { TActiveProcList.UpdateRunningTime }
 
 { TCallGraphInfo }
 
