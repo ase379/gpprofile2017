@@ -37,11 +37,10 @@ uses
   Windows,
   SysUtils,
   IniFiles,
+  GpProfWriter,
   GpProfH,
   gpprofCommon;
 
-const
-  BUF_SIZE = 64 * 1024; //64*1024;
 
 type
 {$IFNDEF VER100}{$IFNDEF VER110}{$DEFINE NeedTLI}{$ENDIF}{$ENDIF}
@@ -87,9 +86,7 @@ type
   TThreadInformationList = TObjectList<TThreadInformation>;
 
 var
-  prfFile        : THandle;
-  prfBuf         : pointer;
-  prfBufOffs     : integer;
+  prfWriter      : TBufferedWriter;
   prfLock        : TRTLCriticalSection;
   prfFreq        : TLargeInteger;
   prfCounter     : TLargeInteger;
@@ -112,60 +109,7 @@ var
   profPrfOutputFile     : string;
   profTableName         : string;
 
-procedure FlushFile;
-var
-  written: DWORD;
-begin
-  Win32Check(WriteFile(prfFile, prfBuf^, BUF_SIZE, written, nil));
-  prfBufOffs := 0;
-  FillChar(prfBuf^, BUF_SIZE, 0);
-end; { FlushFile }
 
-function OffsetPtr(ptr: pointer; offset: DWORD): pointer;
-begin
-  Result := pointer(DWORD(ptr)+offset);
-end; { OffsetPtr }
-
-procedure Transmit(const buf; count: DWORD);
-var
-  res    : boolean;
-  place  : DWORD;
-  bufp   : pointer;
-  written: DWORD;
-begin
-  place := BUF_SIZE-prfBufOffs;
-  if place <= count then begin
-    Move(buf,OffsetPtr(prfBuf,prfBufOffs)^,place); // fill the buffer
-    prfBufOffs := BUF_SIZE;
-    FlushFile;
-    Dec(count,place);
-    bufp := OffsetPtr(@buf,place);
-    while count >= BUF_SIZE do begin
-      Move(bufp^,prfBuf^,BUF_SIZE);
-      res := WriteFile(prfFile,prfBuf^,BUF_SIZE,written,nil);
-      if not res then RaiseLastWin32Error;
-      Dec(count,BUF_SIZE);
-      bufp := OffsetPtr(bufp,BUF_SIZE);
-    end; //while
-  end
-  else bufp := @buf;
-  if count > 0 then begin // store leftovers
-    Move(bufp^,OffsetPtr(prfBuf,prfBufOffs)^,count);
-    Inc(prfBufOffs,count);
-  end;
-end; { Transmit }
-
-procedure WriteInt   (int: integer);  begin Transmit(int, SizeOf(integer)); end;
-procedure WriteCardinal   (value: Cardinal);  begin Transmit(value, SizeOf(Cardinal)); end;
-procedure WriteTag   (tag: byte);     begin Transmit(tag, SizeOf(byte)); end;
-procedure WriteID    (id: integer);   begin Transmit(id, profProcSize); end;
-procedure WriteBool  (bool: boolean); begin Transmit(bool, 1); end;
-procedure WriteAnsiString  (value: ansistring);
-begin
-  WriteCardinal(Length(value));
-  if Length(Value)>0 then
-    Transmit(value[1], Length(value));
-end;
 
 procedure WriteTicks(ticks: Comp);
 type
@@ -173,7 +117,7 @@ type
 var
   diff: integer;
 begin
-  if not profCompressTicks then Transmit(ticks, Sizeof(Comp))
+  if not profCompressTicks then prfWriter.Transmit(ticks, Sizeof(Comp))
   else begin
     if prfLastTick = -1 then diff := 8
     else begin
@@ -182,8 +126,8 @@ begin
         Dec(diff);
       Inc(diff);
     end;
-    Transmit(diff, 1);
-    Transmit(ticks, diff);
+    prfWriter.Transmit(diff, 1);
+    prfWriter.Transmit(ticks, diff);
     prfLastTick := ticks;
   end;
 end; { WriteTicks }
@@ -194,15 +138,15 @@ const
 var
   remap: integer;
 begin
-  if not profCompressThreads then Transmit(thread, Sizeof(integer))
+  if not profCompressThreads then prfWriter.Transmit(thread, Sizeof(integer))
   else begin
     remap := prfThreads.Remap(thread);
     if prfThreads.Count >= prfMaxThreadNum then begin
-      Transmit(marker, prfThreadBytes);
+      prfWriter.Transmit(marker, prfThreadBytes);
       prfMaxThreadNum := 2 * prfMaxThreadNum;
       prfThreadBytes := prfThreadBytes + 1;
     end;
-    Transmit(remap, prfThreadBytes);
+    prfWriter.Transmit(remap, prfThreadBytes);
   end;
 end; { WriteThread }
 
@@ -227,9 +171,9 @@ begin
     EnterCriticalSection(prfLock);
     try
       FlushCounter;
-      WriteTag(PR_ENTERPROC);
+      prfWriter.WriteTag(PR_ENTERPROC);
       WriteThread(ct);
-      WriteID(procID);
+      prfWriter.WriteID(procID);
       WriteTicks(Cnt.QuadPart);
       QueryPerformanceCounter(TInt64((@prfCounter)^));
     finally LeaveCriticalSection(prfLock); end;
@@ -249,9 +193,9 @@ begin
     EnterCriticalSection(prfLock);
     try
       FlushCounter;
-      WriteTag(PR_EXITPROC);
+      prfWriter.WriteTag(PR_EXITPROC);
       WriteThread(ct);
-      WriteID(procID);
+      prfWriter.WriteID(procID);
       WriteTicks(Cnt.QuadPart);
       QueryPerformanceCounter(TInt64((@prfCounter)^));
     finally LeaveCriticalSection(prfLock); end;
@@ -458,16 +402,8 @@ begin
       prfName             := CombineNames(prfModuleName, 'prf');
       if profPrfOutputFile <> '' then
         prfName := profPrfOutputFile + '.prf';
-      prfBuf              := VirtualAlloc(nil, BUF_SIZE, MEM_RESERVE + MEM_COMMIT, PAGE_READWRITE);
-      prfBufOffs          := 0;
-      Win32Check(VirtualLock(prfBuf, BUF_SIZE));
-      Win32Check(prfBuf <> nil);
-      FillChar(prfBuf^, BUF_SIZE, 0);
       InitializeCriticalSection(prfLock);
-      prfFile := CreateFile(PChar(prfName), GENERIC_WRITE, 0, nil, CREATE_ALWAYS,
-                            FILE_ATTRIBUTE_NORMAL + FILE_FLAG_WRITE_THROUGH +
-                            FILE_FLAG_NO_BUFFERING, 0);
-      Win32Check(prfFile <> INVALID_HANDLE_VALUE);
+      prfWriter := TBufferedWriter.Create(prfName, profProcSize);
       QueryPerformanceFrequency(TInt64((@prfFreq)^));
     end;
   except
@@ -482,17 +418,17 @@ end; { Initialize }
 
 procedure WriteHeader;
 begin
-  WriteTag(PR_PRFVERSION);
-  WriteInt(PRF_VERSION);
-  WriteTag(PR_COMPTICKS);
-  WriteBool(profCompressTicks);
-  WriteTag(PR_COMPTHREADS);
-  WriteBool(profCompressThreads);
-  WriteTag(PR_FREQUENCY);
+  prfWriter.WriteTag(PR_PRFVERSION);
+  prfWriter.WriteInt(PRF_VERSION);
+  prfWriter.WriteTag(PR_COMPTICKS);
+  prfWriter.WriteBool(profCompressTicks);
+  prfWriter.WriteTag(PR_COMPTHREADS);
+  prfWriter.WriteBool(profCompressThreads);
+  prfWriter.WriteTag(PR_FREQUENCY);
   WriteTicks(prfFreq.QuadPart);
-  WriteTag(PR_PROCSIZE);
-  WriteInt(profProcSize);
-  WriteTag(PR_ENDHEADER);
+  prfWriter.WriteTag(PR_PROCSIZE);
+  prfWriter.WriteInt(profProcSize);
+  prfWriter.WriteTag(PR_ENDHEADER);
 end; { WriteHeader }
 
 procedure CopyTables;
@@ -508,7 +444,7 @@ begin
       GetMem(p,FileSize(f));
       try
         BlockRead(f,p^,FileSize(f));
-        Transmit(p^,FileSize(f));
+        prfWriter.Transmit(p^,FileSize(f));
       finally FreeMem(p); end;
     finally Close(f); end;
   end;
@@ -521,23 +457,19 @@ var
 begin
   run := prfRunning;
   prfRunning := True;
-  WriteTag(PR_STARTCALIB);
-  WriteInt(CALIB_CNT);
+  prfWriter.WriteTag(PR_STARTCALIB);
+  prfWriter.WriteInt(CALIB_CNT);
   for i := 1 to CALIB_CNT + 1 do begin
     ProfilerEnterProc(0);
     ProfilerExitProc(0);
   end;
   FlushCounter;
-  WriteTag(PR_ENDCALIB);
+  prfWriter.WriteTag(PR_ENDCALIB);
   prfRunning := run;
 end; { WriteCalibration }
 
 procedure Finalize;
 begin
-  FlushFile;
-  Win32Check(CloseHandle(prfFile));
-  Win32Check(VirtualUnlock(prfBuf, BUF_SIZE));
-  Win32Check(VirtualFree(prfBuf, 0, MEM_RELEASE));
   prfThreads.Free;
   prfThreadsInfo.free;
   DeleteCriticalSection(prfLock);
@@ -550,16 +482,16 @@ begin
   ProfilerStop;
   prfInitialized := False;
   FlushCounter;
-  WriteTag(PR_ENDDATA);
+  prfWriter.WriteTag(PR_ENDDATA);
 
-  WriteTag(PR_START_THREADINFO);
-  WriteCardinal(prfThreadsInfo.count);
+  prfWriter.WriteTag(PR_START_THREADINFO);
+  prfWriter.WriteCardinal(prfThreadsInfo.count);
   for i := 0 to prfThreadsInfo.count-1 do
   begin
-    WriteCardinal(prfThreadsInfo[i].ID);
-    WriteAnsiString(prfThreadsInfo[i].Name);
+    prfWriter.WriteCardinal(prfThreadsInfo[i].ID);
+    prfWriter.WriteAnsiString(prfThreadsInfo[i].Name);
   end;
-  WriteInt(PR_END_THREADINFO);
+  prfWriter.WriteInt(PR_END_THREADINFO);
   Finalize;
 
 end; { ProfilerTerminate }
@@ -572,7 +504,7 @@ initialization
     WriteHeader;
     CopyTables;
     WriteCalibration;
-    WriteTag(PR_STARTDATA);
+    prfWriter.WriteTag(PR_STARTDATA);
     prfInitialized := true;
     gpprof.NameThreadForDebugging('Main Application Thread', MainThreadID);
   end;
