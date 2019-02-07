@@ -788,7 +788,7 @@ begin
     with resProcedures[i] do begin
       peProcTime[Low(peProcTime)] := 0;
       peProcChildTime[Low(peProcChildTime)] := 0;
-      if (not IsDigest) or (DigestVer < 2) then begin
+      if (not IsDigest) or (DigestVer < PRF_DIGESTVER_2) then begin
         peProcTimeMin[Low(peProcTIme)] := High(int64);
         peProcTimeMax[Low(peProcTIme)] := 0;
       end;
@@ -1017,8 +1017,8 @@ begin
   try
     WriteTag(PR_DIGEST);
     WriteTag(PR_DIGESTVER);
-    WriteInt(PRF_DIGESTVER);
-    resPrfDigestVer := PRF_DIGESTVER;
+    WriteInt(PRF_DIGESTVER_CURRENT);
+    resPrfDigestVer := PRF_DIGESTVER_CURRENT;
     WriteTag(PR_ENDHEADER);
     WriteTag(PR_DIGFREQ);
     WriteInt64(resFrequency);
@@ -1213,14 +1213,14 @@ begin
             ReadInt(num);
             SetLength(peProcTimeMax,num);
             for j := Low(peProcTimeMax) to High(peProcTimeMax) do ReadInt64(peProcTimeMax[j]);
-            if DigestVer < 1 then SetLength(peProcTimeAvg,num);
+            if DigestVer < PRF_DIGESTVER_1 then SetLength(peProcTimeAvg,num);
             ReadInt(num);
             SetLength(peProcChildTime,num);
             for j := Low(peProcChildTime) to High(peProcChildTime) do ReadInt64(peProcChildTime[j]);
             ReadInt(num);
             SetLength(peProcCnt,num);
             for j := Low(peProcCnt) to High(peProcCnt) do ReadInt(peProcCnt[j]);
-            if DigestVer >= 1 then begin
+            if DigestVer >= PRF_DIGESTVER_1 then begin
               ReadInt(num);
               SetLength(peProcTimeAvg,num);
               for j := Low(peProcTimeAvg) to High(peProcTimeAvg) do ReadInt64(peProcTimeAvg[j]);

@@ -120,7 +120,7 @@ type
 implementation
 
 uses
-  gppExport, GpIFF;
+  gppExport, GpIFF, gpprofH;
 
 {$R *.dfm}
 
@@ -546,7 +546,7 @@ begin
     try
       with openProfile do
       begin
-        if DigestVer < 3 then
+        if DigestVer < PRF_DIGESTVER_3 then
           Exit;
         if cbxSelectThreadProc.ItemIndex >= 0 then
         begin
@@ -585,7 +585,7 @@ begin
     try
       with openProfile do
       begin
-        if DigestVer < 3 then
+        if DigestVer < PRF_DIGESTVER_3 then
           Exit;
         if cbxSelectThreadProc.ItemIndex >= 0 then
         begin
