@@ -2,6 +2,16 @@ unit gppCurrentPrefs;
 
 interface
 
+const
+  { no tick or thread info compression}
+  PREF_SPEEDSIZE_1 = 1;
+  { tick compression, no thread info compression}
+  PREF_SPEEDSIZE_2 = 2;
+  { tick compression, thread compression}
+  PREF_SPEEDSIZE_3 = 3;
+
+  PREF_MAX_SPEEDSIZE = PREF_SPEEDSIZE_3;
+
 var
   CurrentProjectName        : string;
   prefExcludedUnits         : string;
@@ -25,6 +35,7 @@ var
   selectedDelphi            : string;
   // the output dir as defined in the project
   ProjectOutputDir          : string;
+
 
 procedure SetProjectPref(name: string; value: variant); overload;
 function  GetProjectPref(name: string; defval: variant): variant; overload;
@@ -77,7 +88,7 @@ begin
       try
         prefExcludedUnits      := ReadString ('ExcludedUnits',defaultExcludedUnits);
         prefMarkerStyle        := ReadInteger('MarkerStyle',0);
-        prefSpeedSize          := ReadInteger('SpeedSize',1);
+        prefSpeedSize          := ReadInteger('SpeedSize',PREF_SPEEDSIZE_1);
         prefCompilerVersion    := ReadInteger('CompilerVersion',-1);
         prefHideNotExecuted    := ReadBool   ('HideNotExecuted',true);
         prefShowAllFolders     := ReadBool   ('ShowAllFolders',false);

@@ -1107,8 +1107,8 @@ begin
         with TIniFile.Create(fnm) do
           try
             WriteBool('Performance','ProfilingAutostart',GetProjectPref('ProfilingAutostart',prefProfilingAutostart));
-            WriteBool('Performance','CompressTicks',GetProjectPref('SpeedSize',prefSpeedSize)>1);
-            WriteBool('Performance','CompressThreads',GetProjectPref('SpeedSize',prefSpeedSize)>2);
+            WriteBool('Performance','CompressTicks',GetProjectPref('SpeedSize',prefSpeedSize)>=PREF_SPEEDSIZE_2);
+            WriteBool('Performance','CompressThreads',GetProjectPref('SpeedSize',prefSpeedSize)>=PREF_SPEEDSIZE_3);
             WriteString('Output','PrfOutputFilename',ResolvePrfProjectPlaceholders(GetProjectPref('PrfFilenameMakro',prefPrfFilenameMakro)));
           finally
             Free;
