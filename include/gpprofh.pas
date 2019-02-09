@@ -29,6 +29,7 @@ const
   PR_DIGCALLG    = 23;
   PR_START_THREADINFO = 24;
   PR_END_THREADINFO = 25;
+  PR_DIGTIMELINE = 26;
   PR_DIGENDCG    = -1;
 
 
@@ -49,8 +50,12 @@ const
   PRF_DIGESTVER_3 = 3;
 
 
+  { timeline support }
+  PRF_DIGESTVER_4 = 4;
+
+
   { the currently used digest version }
-  PRF_DIGESTVER_CURRENT = PRF_DIGESTVER_3;
+  PRF_DIGESTVER_CURRENT = PRF_DIGESTVER_4;
 
 implementation
 
