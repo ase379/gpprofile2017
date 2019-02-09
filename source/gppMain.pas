@@ -1042,7 +1042,7 @@ end;
 procedure TfrmMain.ExecuteAsync(const aProc, aOnFinishedProc: System.Sysutils.TProc;const aActionName : string);
 var
   LTask : ITask;
-  LException : string;
+  LExceptionMsg : string;
 begin
   LTask := tTask.Create(procedure
     begin
@@ -1056,13 +1056,13 @@ begin
       except
         on E:Exception do
         begin
+          LExceptionMsg := e.Message;
           TThread.Synchronize(nil,procedure
             begin
-              StatusPanel0('Error while '+aActionName+': '+LException,false);
-              ShowError(LException);
+              StatusPanel0('Error while '+aActionName+': '+LExceptionMsg,false);
+              ShowError('Error while '+aActionName+':'+sLineBreak+sLineBreak+LExceptionMsg);
             end
           );
-          LException := e.Message;
         end;
       end;
       if assigned(aOnFinishedProc) then
