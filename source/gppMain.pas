@@ -2041,8 +2041,6 @@ begin
   actRenameMoveProfile.Enabled := false;
   actMakeCopyProfile.Enabled   := false;
   actProfileOptions.Enabled    := false;
-  actLoadInstrumentationSelection.Enabled := false;
-  actSaveInstrumentationSelection.Enabled := false;
   DisablePC2;
 end;
 
