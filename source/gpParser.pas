@@ -167,9 +167,11 @@ type
     prConditStart: string;
     prConditStartUses: string;
     prConditStartAPI: string;
+    prConditStartMeasurePoint: string;
     prConditEnd: string;
     prConditEndUses: string;
     prConditEndAPI: string;
+    prConditEndMeasurePoint : string;
     prAppendUses: string;
     prCreateUses: string;
     prProfileEnterProc: string;
@@ -1853,18 +1855,22 @@ begin
         prConditStart := '{>>GpProfile}';
         prConditStartUses := '{>>GpProfile U}';
         prConditStartAPI := '{>>GpProfile API}';
+        prConditStartMeasurePoint := '{>>GpProfile MP}';
         prConditEnd := '{GpProfile>>}';
         prConditEndUses := '{GpProfile U>>}';
         prConditEndAPI := '{GpProfile API>>}';
+        prConditEndMeasurePoint := '{GpProfile MP>>}';
       end;
     Ct_IfDef:
       begin
         prConditStart := '{$IFDEF GpProfile}';
         prConditStartUses := '{$IFDEF GpProfile U}';
         prConditStartAPI := '{$IFDEF GpProfile API}';
+        prConditStartMeasurePoint := '{$IFDEF GpProfile MP}';
         prConditEnd := '{$ENDIF GpProfile}';
         prConditEndUses := '{$ENDIF GpProfile U}';
         prConditEndAPI := '{$ENDIF GpProfile API}';
+        prConditEndMeasurePoint := '{$ENDIF GpProfile MP}';
       end;
   end;
   prAppendUses := prConditStartUses + ' ' + cProfUnitName + ', ' +
