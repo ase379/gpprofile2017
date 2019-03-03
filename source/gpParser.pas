@@ -10,7 +10,8 @@ uses
   gppIDT,
   Dialogs,
   gppTree,
-  gpFileEdit;
+  gpFileEdit,
+  gpParser.MeasurePoint;
 
 type
   TNotifyProc = procedure(const aUnitName: String) of object;
@@ -101,13 +102,16 @@ type
     prCmtExitEnd: Integer;
     prPureAsm: boolean;
     unSetThreadNames: TProcSetThreadNameList;
+    fMeasurePointList : tMeasurePointList;
     function GetName: String;
+    function getMeasurePointList: TMeasurePointList;
   public
     constructor Create(procName: string; offset: Integer = 0;
       lineNum: Integer = 0; headerLineNum: Integer = 0);
     destructor Destroy; override;
     // the unicode name
     property Name : String read GetName;
+    property MeasurePointList : TMeasurePointList read getMeasurePointList;
   end;
 
   TAPI = class
@@ -167,21 +171,25 @@ type
     prConditStart: string;
     prConditStartUses: string;
     prConditStartAPI: string;
-    prConditStartMeasurePoint: string;
     prConditEnd: string;
     prConditEndUses: string;
     prConditEndAPI: string;
-    prConditEndMeasurePoint : string;
     prAppendUses: string;
     prCreateUses: string;
     prProfileEnterProc: string;
     prProfileExitProc: string;
+    prProfileEnterMP: string;
+    prProfileExitMP: string;
     prProfileEnterAsm: string;
     prProfileExitAsm: string;
     prProfileAPI: string;
     prAPIIntro: string;
     prNameThreadForDebugging: string;
     prGpprofDot: string;
+    prConditStartMeasurePointEnter: string;
+    prConditStartMeasurePointLeave: string;
+    prConditEndMeasurePointEnter : string;
+    prConditEndMeasurePointLeave : string;
     procedure PrepareComments(const aCommentType: TCommentType);
     procedure ApplySelections(const aUnitSelections: TUnitSelectionList);
 
@@ -445,8 +453,19 @@ end; { TProc.Create }
 
 destructor TProc.Destroy;
 begin
+  fMeasurePointList.Free;
   unSetThreadNames.Free;
-end; { TProc.Destroy }
+  inherited;
+end;
+
+function TProc.getMeasurePointList: TMeasurePointList;
+begin
+  if not assigned(fMeasurePointList) then
+    fMeasurePointList := TMeasurePointList.Create(true);
+  result := fMeasurePointList;
+end;
+
+{ TProc.Destroy }
 
 function TProc.GetName: String;
 begin
@@ -772,6 +791,7 @@ var
   vUnitFullName: TFileName;
   LSelfBuffer: string;
   LDataLowerCase: string;
+  LMeasurePoint : TMeasurePoint;
 begin
   unParsed := true;
   parserStack := TList.Create;
@@ -847,8 +867,9 @@ begin
               with aProject do
                 isInstrumentationFlag :=
                   IsOneOf(tokenData, [prConditStart, prConditStartUses,
-                  prConditStartAPI, prConditEnd, prConditEndUses,
-                  prConditEndAPI]);
+                  prConditStartAPI, prConditEnd,prConditEndUses,prConditEndAPI,
+                  prConditStartMeasurePointEnter, prConditStartMeasurePointLeave,
+                  prConditEndMeasurePointEnter,prConditEndMeasurePointLeave]);
               if not isInstrumentationFlag then
               begin
                 direct := ExtractDirective(tokenData);
@@ -1095,7 +1116,34 @@ begin
                       stateComment := stWaitExitBegin2;
                     end;
                   end
-
+                  else if tokenData = aProject.prConditStartMeasurePointEnter then
+                  begin
+                    LMeasurePoint := TMeasurePoint.Create(parser.Origin);
+                    LMeasurePoint.EnterPosBegin := tokenPos + Length(aProject.prConditStartMeasurePointEnter);
+                    unProcs.LastNode.Data.getMeasurePointList().AppendNode(LMeasurePoint);
+                  end
+                  else if tokenData = aProject.prConditEndMeasurePointEnter then
+                  begin
+                    LMeasurePoint := unProcs.LastNode.Data.getMeasurePointList().LastNode.Data;
+                    if not assigned(LMeasurePoint) then
+                      raise EParserError.Create(aProject.prConditEndMeasurePointEnter+' is not valid without '+aProject.prConditStartMeasurePointEnter);
+                    LMeasurePoint.EnterPosEnd := tokenPos;
+                  end
+                  else if tokenData = aProject.prConditStartMeasurePointLeave then
+                  begin
+                    LMeasurePoint := unProcs.LastNode.Data.getMeasurePointList().LastNode.Data;
+                    if not assigned(LMeasurePoint) then
+                      raise EParserError.Create(aProject.prConditStartMeasurePointLeave+' is not valid without '+aProject.prConditStartMeasurePointEnter);
+                    LMeasurePoint.LeavePosBegin := tokenPos + Length(aProject.prConditStartMeasurePointLeave);
+                  end
+                  else if tokenData = aProject.prConditEndMeasurePointLeave then
+                  begin
+                    LMeasurePoint := unProcs.LastNode.Data.getMeasurePointList().LastNode.Data;
+                    if not assigned(LMeasurePoint) then
+                      raise EParserError.Create(aProject.prConditEndMeasurePointLeave+' is not valid without '+aProject.prConditStartMeasurePointEnter);
+                    LMeasurePoint.LeavePosEnd := tokenPos;
+                    LMeasurePoint.ExtractSnippets();
+                  end;
                 end
                 else if (tokenID = ptIdentifier) then
                 begin
@@ -1621,6 +1669,7 @@ var
   un: TUnit;
   pr: TProc;
   LCurrentProc: INode<TProc>;
+  i : integer;
 begin
   s.Clear;
   un := prUnits.Locate(unitName);
@@ -1636,6 +1685,14 @@ begin
           s.Add(pr.Name + IntToStr(Ord(pr.prInstrumented)))
         else
           s.Add(pr.Name);
+        if Assigned(LCurrentProc.Data.fMeasurePointList) then
+        begin
+          for I := 0 to LCurrentProc.Data.fMeasurePointList.Count-1 do
+          begin
+            s.Add('MP Info');
+          end;
+
+        end;
         LCurrentProc := LCurrentProc.NextNode;
       end;
     end;
@@ -1855,32 +1912,32 @@ begin
         prConditStart := '{>>GpProfile}';
         prConditStartUses := '{>>GpProfile U}';
         prConditStartAPI := '{>>GpProfile API}';
-        prConditStartMeasurePoint := '{>>GpProfile MP}';
+        prConditStartMeasurePointEnter := '{>>GpProfile MP Enter}';
+        prConditStartMeasurePointLeave := '{>>GpProfile MP Leave}';
         prConditEnd := '{GpProfile>>}';
         prConditEndUses := '{GpProfile U>>}';
         prConditEndAPI := '{GpProfile API>>}';
-        prConditEndMeasurePoint := '{GpProfile MP>>}';
+        prConditEndMeasurePointEnter := '{GpProfile MP Enter>>}';
+        prConditEndMeasurePointLeave := '{GpProfile MP Leave>>}';
       end;
     Ct_IfDef:
       begin
         prConditStart := '{$IFDEF GpProfile}';
         prConditStartUses := '{$IFDEF GpProfile U}';
         prConditStartAPI := '{$IFDEF GpProfile API}';
-        prConditStartMeasurePoint := '{$IFDEF GpProfile MP}';
+        prConditStartMeasurePointEnter := '{$IFDEF GpProfile MP Enter}';
+        prConditStartMeasurePointLeave := '{$IFDEF GpProfile MP Leave}';
         prConditEnd := '{$ENDIF GpProfile}';
         prConditEndUses := '{$ENDIF GpProfile U}';
         prConditEndAPI := '{$ENDIF GpProfile API}';
-        prConditEndMeasurePoint := '{$ENDIF GpProfile MP}';
+        prConditEndMeasurePointEnter := '{$ENDIF GpProfile MP Enter}';
+        prConditEndMeasurePointLeave := '{$ENDIF GpProfile MP Leave}';
       end;
   end;
-  prAppendUses := prConditStartUses + ' ' + cProfUnitName + ', ' +
-    prConditEndUses;
-  prCreateUses := prConditStartUses + ' uses ' + cProfUnitName + '; ' +
-    prConditEndUses;
-  prProfileEnterProc := prConditStart + ' ' + 'ProfilerEnterProc(%d); try ' +
-    prConditEnd;
-  prProfileExitProc := prConditStart + ' finally ProfilerExitProc(%d); end; ' +
-    prConditEnd;
+  prAppendUses := prConditStartUses + ' ' + cProfUnitName + ', ' + prConditEndUses;
+  prCreateUses := prConditStartUses + ' uses ' + cProfUnitName + '; ' + prConditEndUses;
+  prProfileEnterProc := prConditStart + ' ' + 'ProfilerEnterProc(%d); try ' + prConditEnd;
+  prProfileExitProc := prConditStart + ' finally ProfilerExitProc(%d); end; ' + prConditEnd;
   prProfileEnterAsm := prConditStart +
     ' pushad; mov eax, %d; call ProfilerEnterProc; popad ' + prConditEnd;
   prProfileExitAsm := prConditStart +
@@ -1889,7 +1946,9 @@ begin
   prAPIIntro := 'GPP:';
   prNameThreadForDebugging := 'namethreadfordebugging';
   prGpprofDot := 'gpprof.';
-end; { TProject.PrepareComments }
+  prProfileEnterMP := prConditStartMeasurePointEnter + ' ' + ENTER_MP_FUNCTION_NAME+'(%s); try ' + prConditEndMeasurePointEnter;
+  prProfileExitMP := prConditStartMeasurePointLeave + ' finally '+EXIT_MP_FUNCTION_NAME+'(); end; ' + prConditEndMeasurePointLeave;
+  end; { TProject.PrepareComments }
 
 function TProject.GetFirstLine(unitName, procName: string): Integer;
 var
