@@ -16,6 +16,8 @@ type
 
 implementation
 
+uses GpProf;
+
 { TTestThread }
 
 constructor TTestThread.Create;
@@ -29,7 +31,7 @@ begin
   self.namethreadfordebugging('AwesomeThread2☺☼d156exÈ', self.ThreadID);
   {>>GpProfile MP Enter} ProfilerEnterMP('TEST'); try {GpProfile MP Enter>>}
   Sleep(1000);
-  {>>GpProfile MP Leave} finally ProfilerExitMP; end; {GpProfile MP Leave>>}
+  {>>GpProfile MP Leave} finally ProfilerExitMP('TEST'); end; {GpProfile MP Leave>>}
   inherited;
 end;
 
