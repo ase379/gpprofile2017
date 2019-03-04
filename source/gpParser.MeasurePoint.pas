@@ -32,8 +32,8 @@ type
     fEnterSnippet : AnsiString;
     fLeaveSnippet : AnsiString;
     fMeasurePointName : AnsiString;
-    procedure ExtractMpName();
-    procedure RaiseError(const aContext: string);
+    function ExtractMpName(const aTerm, aFunctionName : ansistring): ansistring;
+    procedure RaiseError(const aContext: ansistring);
   public
     constructor Create(const aFileBuffer: PAnsiChar);
     /// <summary>
@@ -73,44 +73,45 @@ begin
   fFileContents := aFileBuffer;
 end;
 
-procedure TMeasurePoint.ExtractMpName();
+function TMeasurePoint.ExtractMpName(const aTerm, aFunctionName : ansistring): ansistring;
 var
   LTempBuffer : ansistring;
   LFuncNamePos : integer;
 begin
-  if Length(fMeasurePointName) = 0 then
-  begin
-    LFuncNamePos := System.AnsiStrings.PosEx(ENTER_MP_FUNCTION_NAME, fEnterSnippet);
-    LTempBuffer := Copy(fEnterSnippet, LFuncNamePos+Length(ENTER_MP_FUNCTION_NAME),MAX_MP_NAME_LEN);
-    LTempBuffer := Trim(LTempBuffer);
-    if not StartsStr('(', LTempBuffer) then
-      RaiseError('"(" not found after "'+ENTER_MP_FUNCTION_NAME+'".');
-    Delete(LTempBuffer,1,1); // eat "("
-    if not StartsStr('''', LTempBuffer) then
-      RaiseError('Beginning "''" not found in "'+ENTER_MP_FUNCTION_NAME+'" call.');
-    Delete(LTempBuffer,1,1); // eat "'"
-    LFuncNamePos := System.AnsiStrings.PosEx('''', LTempBuffer);
-    if LFuncNamePos = -1 then
-      RaiseError('Ending "''" not found in "'+ENTER_MP_FUNCTION_NAME+'" call.');
-    fMeasurePointName := Copy(LTempBuffer, 1,LFuncNamePos-1)
-  end;
-
+  LFuncNamePos := System.AnsiStrings.PosEx(aFunctionName, aTerm);
+  LTempBuffer := Copy(aTerm, LFuncNamePos+Length(aFunctionName),MAX_MP_NAME_LEN);
+  LTempBuffer := Trim(LTempBuffer);
+  if not StartsStr('(', LTempBuffer) then
+    RaiseError('"(" not found after "'+aFunctionName+'".');
+  Delete(LTempBuffer,1,1); // eat "("
+  if not StartsStr('''', LTempBuffer) then
+    RaiseError('Beginning "''" not found in "'+aFunctionName+'" call.');
+  Delete(LTempBuffer,1,1); // eat "'"
+  LFuncNamePos := System.AnsiStrings.PosEx('''', LTempBuffer);
+  if LFuncNamePos = -1 then
+    RaiseError('Ending "''" not found in "'+aFunctionName+'" call.');
+  result := Copy(LTempBuffer, 1,LFuncNamePos-1);
 end;
 
 
 
 procedure TMeasurePoint.ExtractSnippets();
+var
+  LMPExitName : AnsiString;
 begin
   fEnterSnippet := Copy(fFileContents,EnterPosBegin+1,EnterPosEnd-EnterPosBegin);
   fLeaveSnippet := Copy(fFileContents,LeavePosBegin+1,LeavePosEnd-LeavePosBegin);
   if not ContainsStr(fEnterSnippet, ENTER_MP_FUNCTION_NAME) then
     RaiseError(ENTER_MP_FUNCTION_NAME+ ' not found in Measure Point enter define.');
-  ExtractMpName();
+  fMeasurePointName := ExtractMpName(fEnterSnippet, ENTER_MP_FUNCTION_NAME);
+  LMPExitName := ExtractMpName(fLeaveSnippet, EXIT_MP_FUNCTION_NAME);
+  if not SameText(fMeasurePointName, LMPExitName) then
+    RaiseError(ENTER_MP_FUNCTION_NAME+' uses name "'+fMeasurePointName+'", but '+EXIT_MP_FUNCTION_NAME+' uses name "'+LMPExitName+'".');
 end;
 
-procedure TMeasurePoint.RaiseError(const aContext: string);
+procedure TMeasurePoint.RaiseError(const aContext: ansistring);
 begin
-  raise EParserError.Create(aContext);
+  raise EParserError.Create(UTF8ToUnicodeString(aContext));
 end;
 
 end.
