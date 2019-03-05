@@ -1669,7 +1669,7 @@ var
   un: TUnit;
   pr: TProc;
   LCurrentProc: INode<TProc>;
-  i : integer;
+  LCurrentMP : INode<TMeasurePoint>;
 begin
   s.Clear;
   un := prUnits.Locate(unitName);
@@ -1687,11 +1687,12 @@ begin
           s.Add(pr.Name);
         if Assigned(LCurrentProc.Data.fMeasurePointList) then
         begin
-          for I := 0 to LCurrentProc.Data.fMeasurePointList.Count-1 do
+          LCurrentMP := LCurrentProc.Data.MeasurePointList.FirstNode;
+          while assigned(LCurrentMP) do
           begin
-            s.Add('MP Info');
+            s.Add(pr.Name+'.'+ UTF8ToUnicodeString(LCurrentMP.Data.PointName)+IntToStr(Ord(true))); // always instrumented
+            LCurrentMP := LCurrentProc.Data.MeasurePointList.NextNode;
           end;
-
         end;
         LCurrentProc := LCurrentProc.NextNode;
       end;
