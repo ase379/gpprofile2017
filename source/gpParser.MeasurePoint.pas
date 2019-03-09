@@ -31,9 +31,9 @@ type
 
     fEnterSnippet : AnsiString;
     fLeaveSnippet : AnsiString;
-    fMeasurePointName : AnsiString;
-    function ExtractMpName(const aTerm, aFunctionName : ansistring): ansistring;
-    procedure RaiseError(const aContext: ansistring);
+    fMeasurePointName : string;
+    function ExtractMpName(const aTerm, aFunctionName : ansistring): string;
+    procedure RaiseError(const aContext: string);
   public
     constructor Create(const aFileBuffer: PAnsiChar);
     /// <summary>
@@ -53,6 +53,7 @@ type
     /// </summary>
     property LeavePosEnd: Int64 read fLeavePosEnd write fLeavePosEnd;
 
+    property Name : string read fMeasurePointName;
     /// <summary>
     /// Extracts the buffer information from the given external buffer.
     /// </summary>
@@ -73,7 +74,7 @@ begin
   fFileContents := aFileBuffer;
 end;
 
-function TMeasurePoint.ExtractMpName(const aTerm, aFunctionName : ansistring): ansistring;
+function TMeasurePoint.ExtractMpName(const aTerm, aFunctionName : ansistring): string;
 var
   LTempBuffer : ansistring;
   LFuncNamePos : integer;
@@ -90,14 +91,14 @@ begin
   LFuncNamePos := System.AnsiStrings.PosEx('''', LTempBuffer);
   if LFuncNamePos = -1 then
     RaiseError('Ending "''" not found in "'+aFunctionName+'" call.');
-  result := Copy(LTempBuffer, 1,LFuncNamePos-1);
+  result := UTF8ToUnicodeString(Copy(LTempBuffer, 1,LFuncNamePos-1));
 end;
 
 
 
 procedure TMeasurePoint.ExtractSnippets();
 var
-  LMPExitName : AnsiString;
+  LMPExitName : string;
 begin
   fEnterSnippet := Copy(fFileContents,EnterPosBegin+1,EnterPosEnd-EnterPosBegin);
   fLeaveSnippet := Copy(fFileContents,LeavePosBegin+1,LeavePosEnd-LeavePosBegin);
@@ -109,9 +110,9 @@ begin
     RaiseError(ENTER_MP_FUNCTION_NAME+' uses name "'+fMeasurePointName+'", but '+EXIT_MP_FUNCTION_NAME+' uses name "'+LMPExitName+'".');
 end;
 
-procedure TMeasurePoint.RaiseError(const aContext: ansistring);
+procedure TMeasurePoint.RaiseError(const aContext: string);
 begin
-  raise EParserError.Create(UTF8ToUnicodeString(aContext));
+  raise EParserError.Create(aContext);
 end;
 
 end.
