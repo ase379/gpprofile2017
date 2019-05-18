@@ -24,10 +24,10 @@ uses System.Classes;
 procedure ProfilerStart;
 procedure ProfilerStop;
 procedure ProfilerStartThread;
-procedure ProfilerEnterProc(procID: integer);
-procedure ProfilerExitProc(procID: integer);
-procedure ProfilerEnterMP(const aName : AnsiString);
-procedure ProfilerExitMP(const aName : AnsiString);
+procedure ProfilerEnterProc(const aProcID: Cardinal);
+procedure ProfilerExitProc(const aProcID: Cardinal);
+procedure ProfilerEnterMP(const aMpID : Cardinal);
+procedure ProfilerExitMP(const aMpID : Cardinal);
 procedure ProfilerTerminate;
 procedure NameThreadForDebugging(AThreadName: AnsiString; AThreadID: TThreadID = TThreadID(-1)); overload;
 procedure NameThreadForDebugging(AThreadName: string; AThreadID: TThreadID = TThreadID(-1)); overload;
@@ -216,7 +216,7 @@ begin
   end;
 end; { FlushCounter }
 
-procedure profilerEnterProc(procID : integer);
+procedure profilerEnterProc(const aProcID : Cardinal);
 var
   ct : integer;
   cnt: TLargeinteger;
@@ -231,14 +231,14 @@ begin
       FlushCounter;
       WriteTag(PR_ENTERPROC);
       WriteThread(ct);
-      WriteID(procID);
+      WriteID(aProcID);
       WriteTicks(Cnt.QuadPart);
       QueryPerformanceCounter(TInt64((@prfCounter)^));
     finally LeaveCriticalSection(prfLock); end;
   end;
 end; { ProfilerEnterProc }
 
-procedure ProfilerExitProc(procID : integer);
+procedure ProfilerExitProc(const aProcID : Cardinal);
 var
   ct : integer;
   cnt: TLargeinteger;
@@ -253,14 +253,14 @@ begin
       FlushCounter;
       WriteTag(PR_EXITPROC);
       WriteThread(ct);
-      WriteID(procID);
+      WriteID(aProcID);
       WriteTicks(Cnt.QuadPart);
       QueryPerformanceCounter(TInt64((@prfCounter)^));
     finally LeaveCriticalSection(prfLock); end;
   end;
 end; { ProfilerExitProc }
 
-procedure ProfilerEnterMP(const aName : AnsiString);
+procedure ProfilerEnterMP(const aMpID : Cardinal);
 var
   ct : integer;
   cnt: TLargeinteger;
@@ -275,14 +275,14 @@ begin
       FlushCounter;
       WriteTag(PR_ENTER_MP);
       WriteThread(ct);
-      WriteAnsiString(aName);
+      WriteID(aMpID);
       WriteTicks(Cnt.QuadPart);
       QueryPerformanceCounter(TInt64((@prfCounter)^));
     finally LeaveCriticalSection(prfLock); end;
   end;
 
 end;
-procedure ProfilerExitMP(const aName : AnsiString);
+procedure ProfilerExitMP(const aMpID : Cardinal);
 var
   ct : integer;
   cnt: TLargeinteger;
@@ -297,7 +297,7 @@ begin
       FlushCounter;
       WriteTag(PR_EXIT_MP);
       WriteThread(ct);
-      WriteAnsiString(aName);
+      WriteID(aMpID);
       WriteTicks(Cnt.QuadPart);
       QueryPerformanceCounter(TInt64((@prfCounter)^));
     finally LeaveCriticalSection(prfLock); end;
@@ -607,6 +607,7 @@ begin
     WriteAnsiString(prfThreadsInfo[i].Name);
   end;
   WriteInt(PR_END_THREADINFO);
+
   Finalize;
 
 end; { ProfilerTerminate }
