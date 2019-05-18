@@ -64,6 +64,7 @@ type
     procedure Parse(aProject: TProject; const aExclUnits, aSearchPath,aDefaultDir, aConditionals: string;
       const aRescan, aParseAsm: boolean);
     procedure CheckInstrumentedProcs;
+    procedure SplitProcName(const aProcName : string; out aOutProcName, aOutMeasurePointName: string);
     function LocateUnit(unitName: string): TUnit;
     function LocateProc(procName: string): TProc;
     procedure Instrument(aProject: TProject; aIDT: TIDTable;aKeepDate, aBackupFile: boolean);
@@ -225,6 +226,7 @@ type
 implementation
 
 uses
+  System.StrUtils,
   System.AnsiStrings,
   Winapi.Windows,
   IoUtils,
@@ -1233,7 +1235,23 @@ begin
   finally
     parserStack.Free;
   end;
-end; { TUnit.Parse }
+end;
+
+procedure TUnit.SplitProcName(const aProcName: string; out aOutProcName, aOutMeasurePointName: string);
+var
+  LSplitResult : TArray<String>;
+begin
+  aOutProcName := aProcName;
+  aOutMeasurePointName := '';
+    if aProcName.contains(' => ') then
+    begin
+      LSplitResult := System.StrUtils.SplitString(aProcName, ' => ');
+      aOutProcName := LSplitResult[0];
+      aOutMeasurePointName := LSplitResult[1];
+    end;
+end;
+
+{ TUnit.Parse }
 
 procedure TUnit.CheckInstrumentedProcs;
 var
@@ -1690,7 +1708,7 @@ begin
           LCurrentMP := LCurrentProc.Data.MeasurePointList.FirstNode;
           while assigned(LCurrentMP) do
           begin
-            s.Add(pr.Name+'.'+ UTF8ToUnicodeString(LCurrentMP.Data.PointName)+IntToStr(Ord(true))); // always instrumented
+            s.Add(pr.Name+' => '+ LCurrentMP.Data.Name+IntToStr(Ord(true))); // always instrumented
             LCurrentMP := LCurrentProc.Data.MeasurePointList.NextNode;
           end;
         end;
