@@ -16,6 +16,8 @@ Additional features are:
 - The PRF output filename can be now be configured using several placeholders, e.g. the ModuleName or the ProcessName and ID.
 - The help system now uses CHM instead of HLP. HLP is not supported anymore by modern OSes.
 
+Redesigned UI with high DPI support starting with version 1.5.1.
+
 # Credits #
 
 GpProfile allows easily find bottlenecks and significantly improve perfomance of your Delphi applications. It is a must-have tool for any Delphi developer.
