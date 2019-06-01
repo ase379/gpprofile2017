@@ -12,7 +12,7 @@ uses
   SynEditHighlighter, SynEditCodeFolding, SynHighlighterPas, System.ImageList,
   System.Actions,gppCurrentPrefs, VirtualTrees,
   virtualTree.tools.checkable,
-  gppmain.FrameInstrumentation, gppmain.FrameAnalysis;
+  gppmain.FrameInstrumentation, gppmain.FrameAnalysis, gppmain.types;
 
 type
 
@@ -255,6 +255,7 @@ type
     function  ReplaceMacros(s: string): string;
     procedure ResetSourcePreview(reposition: boolean);
     procedure RestoreUIAfterParseProject;
+    procedure WMDropFiles (var aMsg: TMessage); message WM_DROPFILES;
  public
     function  GetDOFSetting(section,key,defval: string): string;
  end;
@@ -285,7 +286,7 @@ uses
   ioUtils,
   Diagnostics,
   Winapi.ActiveX,
-  System.Threading;
+  System.Threading, gppmain.dragNdrop;
 
 
 {$R *.DFM}
@@ -919,7 +920,7 @@ begin
   begin
     tbrInstrument.Images := imgListInstrumentationMedium;
   end;
-
+  TDragNDropHandler.setDragNDropEnabled(self.Handle, true);
 end;
 
 procedure TfrmMain.MRUClick(Sender: TObject; LatestFile: String);
@@ -1465,6 +1466,34 @@ begin
 end;
 
 
+
+procedure TfrmMain.WMDropFiles(var aMsg: TMessage);
+var
+  LDragNDropHandler : TDragNDropHandler;
+  LFilename : string;
+begin
+  LDragNDropHandler := TDragNDropHandler.Create(aMsg.WParam);
+  try
+    LDragNDropHandler.DetermineDroppedFiles();
+    for LFilename in LDragNDropHandler.Filenames do
+    begin
+      if LFilename.EndsWith('.dpr', true) then
+      begin
+        LoadProject(LFilename);
+        Break;
+
+      end
+      else if LFilename.EndsWith('.prf', True) then
+      begin
+        LoadProfile(LFilename);
+        Break;
+      end;
+    end;
+
+  finally
+    LDragNDropHandler.free;
+  end;
+end;
 
 { TfrmMain.UseDelphiSettings }
 
@@ -2101,11 +2130,11 @@ var
 begin
   if openProject = nil then
     Exit;
-  LFilename := ChangeFileExt(openProject.Name,'.gis');
+  LFilename := ChangeFileExt(openProject.Name,GPPROF_INSTRUMENTATION_SELECTION_EXT);
   OpenDialog.DefaultExt := 'gis';
   OpenDialog.FileName := ExtractFilename(LFilename);
   OpenDialog.InitialDir := ExtractFileDir(LFilename);
-  OpenDialog.Filter := 'GPProf instrumentation selection (*.gis)|*.gis|Any file (*.*)|*.*';
+  OpenDialog.Filter := TUIStrings.InstrumentationSelectionFilter();
   OpenDialog.Title := 'Load instrumentation selection...';
   if OpenDialog.Execute then
   begin
@@ -2339,14 +2368,14 @@ begin
   if openProject = nil then
     Exit;
   try
-    LFilename := ChangeFileExt(openProject.Name,'.gis');
+    LFilename := ChangeFileExt(openProject.Name,GPPROF_INSTRUMENTATION_SELECTION_EXT);
     SaveDialog1.FileName := ExtractFileName(LFilename);
     SaveDialog1.InitialDir := ExtractFileDir(LFilename);
-    SaveDialog1.Title := 'Save instrumentation selection...';
-    SaveDialog1.Filter := 'GPProf instrumentation selection (*.gis)|*.gis|Any file (*.*)|*.*';
+    SaveDialog1.Title := TUIStrings.SaveInstrumentationSelectionCaption;
+    SaveDialog1.Filter := TUIStrings.InstrumentationSelectionFilter;
     if SaveDialog1.Execute then begin
       if ExtractFileExt(SaveDialog1.FileName) = '' then
-        SaveDialog1.FileName := SaveDialog1.FileName + '.gis';
+        SaveDialog1.FileName := SaveDialog1.FileName + GPPROF_INSTRUMENTATION_SELECTION_EXT;
     openProject.SaveInstrumentalizationSelection(SaveDialog1.FileName);
   end;
     except on e: Exception do
