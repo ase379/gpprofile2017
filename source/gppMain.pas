@@ -256,8 +256,6 @@ type
     procedure ResetSourcePreview(reposition: boolean);
     procedure RestoreUIAfterParseProject;
     procedure WMDropFiles (var aMsg: TMessage); message WM_DROPFILES;
- public
-    function  GetDOFSetting(section,key,defval: string): string;
  end;
 
 var
@@ -1142,24 +1140,30 @@ end;
 
 procedure TfrmMain.actOpenExecute(Sender: TObject);
 var
-  vFN: TFileName;
+  LSourceFilename: TFileName;
   LFilename : string;
 begin
-  OpenDialog.DefaultExt := 'dpr';
+  OpenDialog.DefaultExt := TUIStrings.DelphiProjectSourceDefaultExt;
   LFilename := '';
   if assigned(openProfile) then
-    LFileName := ChangeFileExt(openProfile.FileName,'.dpr');
+    LFileName := ChangeFileExt(openProfile.FileName, TUIStrings.DelphiProjectSourceExt);
   OpenDialog.FileName := ExtractFilename(LFilename);
   OpenDialog.InitialDir := ExtractFileDir(LFilename);
-  OpenDialog.Filter := 'Delphi project (*.dpr)|*.dpr|Delphi package (*.dpk)|*.dpk|Any file (*.*)|*.*';
-  OpenDialog.Title := 'Load delphi project/package...';
+  OpenDialog.Filter := TUIStrings.ProjectSelectionFilter();
+  OpenDialog.Title := TUIStrings.LoadProjectCaption();
   if OpenDialog.Execute then
   begin
-    vFN := OpenDialog.FileName;
-    if AnsiUpperCase(ExtractFileExt(OpenDialog.FileName)) = '.DPROJ' then
-      vFN := ChangeFileExt(vFN, '.DPR');
+    LSourceFilename := OpenDialog.FileName;
+    if AnsiLowerCase(ExtractFileExt(OpenDialog.FileName)) = TUIStrings.DelphiProjectExt then
+    begin
+      // convert to dpk if exists, else to dpr
+      if FileExists(ChangeFileExt(LSourceFilename, TUIStrings.DelphiPackageSourceExt)) then
+        LSourceFilename := ChangeFileExt(LSourceFilename, TUIStrings.DelphiPackageSourceExt)
+      else
+        LSourceFilename := ChangeFileExt(LSourceFilename, TUIStrings.DelphiProjectSourceExt);
+    end;
     CloseDelphiHandles;
-    LoadProject(vFN);
+    LoadProject(LSourceFilename);
   end;
 end;
 
@@ -2130,7 +2134,7 @@ var
 begin
   if openProject = nil then
     Exit;
-  LFilename := ChangeFileExt(openProject.Name,GPPROF_INSTRUMENTATION_SELECTION_EXT);
+  LFilename := ChangeFileExt(openProject.Name,TUIStrings.GPProfInstrumentationSelectionExt);
   OpenDialog.DefaultExt := 'gis';
   OpenDialog.FileName := ExtractFilename(LFilename);
   OpenDialog.InitialDir := ExtractFileDir(LFilename);
@@ -2368,14 +2372,14 @@ begin
   if openProject = nil then
     Exit;
   try
-    LFilename := ChangeFileExt(openProject.Name,GPPROF_INSTRUMENTATION_SELECTION_EXT);
+    LFilename := ChangeFileExt(openProject.Name,TUIStrings.GPProfInstrumentationSelectionExt);
     SaveDialog1.FileName := ExtractFileName(LFilename);
     SaveDialog1.InitialDir := ExtractFileDir(LFilename);
     SaveDialog1.Title := TUIStrings.SaveInstrumentationSelectionCaption;
     SaveDialog1.Filter := TUIStrings.InstrumentationSelectionFilter;
     if SaveDialog1.Execute then begin
       if ExtractFileExt(SaveDialog1.FileName) = '' then
-        SaveDialog1.FileName := SaveDialog1.FileName + GPPROF_INSTRUMENTATION_SELECTION_EXT;
+        SaveDialog1.FileName := SaveDialog1.FileName + TUIStrings.GPProfInstrumentationSelectionExt;
     openProject.SaveInstrumentalizationSelection(SaveDialog1.FileName);
   end;
     except on e: Exception do
@@ -2413,22 +2417,6 @@ begin
     with openProfile do
       LoadSource(resUnits[resProcedures[integer((Sender as TListView).Selected.Data)].peUID].FilePath,
                  resProcedures[integer((Sender as TListView).Selected.Data)].peFirstLn);
-end;
-
-function TfrmMain.GetDOFSetting(section, key, defval: string): string;
-begin
-  Result := '';
-  if Assigned(openProject) then
-  begin
-    with TIniFile.Create(ChangeFileExt(openProject.Name,'.dof')) do
-      try
-        Result := ReadString(section, key, defval);
-      finally
-        Free;
-      end;
-  end
-  else
-    Result := '(project defines)';
 end;
 
 procedure TfrmMain.splitCallersMoved(Sender: TObject);

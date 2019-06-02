@@ -319,7 +319,7 @@ var
   i       : integer;
 begin
   if cbProjectDefines.Checked then begin
-    projcond := ReplaceAll(frmMain.GetDOFSetting('Directories','Conditionals',''),',',';');
+    projcond := ReplaceAll(GetDOFSetting('Directories','Conditionals',''),',',';');
     for i := 1 to NumElements(projcond,';',-1) do
       AddDefine(NthEl(projcond,i,';',-1),DEF_PROJECT);
   end
