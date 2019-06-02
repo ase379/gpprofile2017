@@ -1485,7 +1485,6 @@ begin
       begin
         LoadProject(LFilename);
         Break;
-
       end
       else if LFilename.EndsWith('.prf', True) then
       begin
@@ -1493,7 +1492,6 @@ begin
         Break;
       end;
     end;
-
   finally
     LDragNDropHandler.free;
   end;
