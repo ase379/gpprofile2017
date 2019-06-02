@@ -36,6 +36,7 @@ function HasOpenProject: boolean;
 
 
 function GetDOFSettingBool(const section, key: string;  defval: boolean): boolean;
+function GetDOFSetting(const section,key,defval: string): string;
 
 
 procedure LoadPreferences;
@@ -54,15 +55,28 @@ uses
   gpiff,
   gpregistry,
   gpPrfPlaceholders, 
-  GpString;
+  GpString,
+  gppmain.types;
 
 function GetDOFSettingBool(const section, key: string;  defval: boolean): boolean;
 begin
   Result := False;
   if CurrentProjectName <>'' then
-    with TIniFile.Create(ChangeFileExt(CurrentProjectName,'.dof')) do
+    with TIniFile.Create(ChangeFileExt(CurrentProjectName,TUIStrings.Delphi7OptionsExt)) do
       try
         Result := ReadBool(section, key, defval);
+      finally
+        Free;
+      end;
+end;
+
+function GetDOFSetting(const section,key,defval: string): string;
+begin
+  Result := '(project defines)';
+  if CurrentProjectName <>'' then
+    with TIniFile.Create(ChangeFileExt(CurrentProjectName,TUIStrings.Delphi7OptionsExt)) do
+      try
+        Result := ReadString(section, key, defval);
       finally
         Free;
       end;
