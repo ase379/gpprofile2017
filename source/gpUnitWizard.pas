@@ -22,7 +22,10 @@ type
     fInitialUnitName : string;
     fOpenProject : TProject;
     fVstSelectUnitTools : TCheckableListTools;
+    // lookup to speed up detection of double names
     fSelectedUnitNames : TDictionary<string, Cardinal>;
+    // lookup to detect unit recursion
+    fProcessedUnitNames : TDictionary<string, Cardinal>;
     procedure addUnit(const aParent : PVirtualNode; const aUnitName : string);
     procedure fillInUnits();
     procedure MoveSelectionsToResultList();
@@ -55,12 +58,14 @@ begin
   inherited;
   fVstSelectUnitTools := TCheckableListTools.Create(vstUnitDependencies, cid_Unit);
   fSelectedUnitNames := TDictionary<string, Cardinal>.Create;
+  fProcessedUnitNames := TDictionary<string, Cardinal>.Create;
 end;
 
 destructor TfmUnitWizard.Destroy;
 begin
   fVstSelectUnitTools.free;
   fSelectedUnitNames.free;
+  fProcessedUnitNames.Free;
   inherited;
 end;
 
@@ -73,13 +78,14 @@ begin
   fVstSelectUnitTools.Clear();
   try
     LNewNode := fVstSelectUnitTools.AddEntry(nil,fInitialUnitName);
+    if fSelectedUnitNames.ContainsKey(fInitialUnitName) then
+      vstUnitDependencies.CheckState[LNewNode] := TCheckState.csMixedNormal
+    else
+      vstUnitDependencies.CheckState[LNewNode] := TCheckState.csUncheckedNormal;
     addUnit(LNewNode,fInitialUnitName);
     LEnum := vstUnitDependencies.Nodes().GetEnumerator;
     while(LEnum.MoveNext) do
-    begin
-      // we are using a tree, so avoid the index
       vstUnitDependencies.Expanded[LEnum.Current] := True;
-    end;
   finally
     fVstSelectUnitTools.EndUpdate;
   end;
@@ -90,10 +96,9 @@ var
   LUnit : TUnit;
   LCurrentEntry: INode<TUnit>;
   LNewNode : PVirtualNode;
+  LName : string;
 begin
-  if assigned(aparent) then
-    vstUnitDependencies.Expanded[aparent] := true;
-
+  fProcessedUnitNames.AddOrSetValue(aUnitName,fProcessedUnitNames.count);
   LUnit := fopenProject.LocateUnit(aUnitName);
   if not assigned(LUnit) then
     raise Exception.Create('Error: Could not locate unit "'+aUnitName+'".');
@@ -101,12 +106,24 @@ begin
     LCurrentEntry := LUnit.unUnits.FirstNode;
     while assigned(LCurrentEntry) do
     begin
-      LNewNode := fVstSelectUnitTools.AddEntry(aParent,LCurrentEntry.Data.unName);
-      vstUnitDependencies.CheckState[LNewNode] := TCheckState.csUncheckedNormal;
-      addUnit(LNewNode,LCurrentEntry.Data.unName);
+      LName := LCurrentEntry.Data.unName;
+      LNewNode := fVstSelectUnitTools.AddEntry(aParent,LName);
+      if fProcessedUnitNames.ContainsKey(LName) or fOpenProject.IsMissingUnit(LName) then
+      begin
+        vstUnitDependencies.CheckState[LNewNode] := TCheckState.csMixedDisabled;
+      end
+      else
+      begin
+        if fSelectedUnitNames.ContainsKey(LName) then
+          vstUnitDependencies.CheckState[LNewNode] := TCheckState.csMixedNormal
+        else
+          vstUnitDependencies.CheckState[LNewNode] := TCheckState.csUncheckedNormal;
+        addUnit(LNewNode,LName);
+      end;
       LCurrentEntry := LCurrentEntry.NextNode;
     end;
   end;
+  fProcessedUnitNames.Remove(aUnitName);
 end;
 
 procedure TfmUnitWizard.MoveSelectionsToResultList();
@@ -115,6 +132,7 @@ var
   LCheckedState : TCheckedState;
   LName : string;
 begin
+  fSelectedUnitNames.Clear;
   LEnum := vstUnitDependencies.Nodes().GetEnumerator;
   while(LEnum.MoveNext) do
   begin
