@@ -180,8 +180,8 @@ type
     prAPIIntro: string;
     prNameThreadForDebugging: string;
     prGpprofDot: string;
+    prMissingUnitNames : TDictionary<String, Cardinal>;
     procedure PrepareComments(const aCommentType: TCommentType);
-    procedure ApplySelections(const aUnitSelections: TUnitSelectionList);
 
   public
     constructor Create(projName: string);
@@ -207,9 +207,12 @@ type
     function GetFirstLine(unitName, procName: string): Integer;
     function AnyChange(projectDirOnly: boolean): boolean;
     function LocateUnit(const aUnitName: string): TUnit;
+    function IsMissingUnit(const aUnitName : string): Boolean;
 
     procedure LoadInstrumentalizationSelection(const aFilename : string);
     procedure SaveInstrumentalizationSelection(const aFilename : string);
+    procedure ApplySelections(const aUnitSelections: TUnitSelectionList; const aOnlyCheckUnitName : boolean);
+
   end;
 
 implementation
@@ -777,9 +780,11 @@ begin
     if not aRescan then
     begin
       // Anton Alisov: not sure, for what reason FindOnPath is called here with unFullName instead of unName
-      if not FindOnPath(unFullName, aSearchPath, aDefaultDir, vUnitFullName)
-      then
+      if not FindOnPath(unFullName, aSearchPath, aDefaultDir, vUnitFullName) then
+      begin
+        aProject.prMissingUnitNames.AddOrSetValue(unFullname,0);
         raise EUnitInSearchPathNotFoundError.Create('Unit not found in search path: ' + unFullName);
+      end;
       unFullName := vUnitFullName;
       Assert(IsAbsolutePath(unFullName));
       unInProjectDir := (self = aProject.prUnit) or
@@ -1516,6 +1521,7 @@ end; { TUnit.AnyChange }
 constructor TProject.Create(projName: string);
 begin
   prUnits := TGlbUnitList.Create();
+  prMissingUnitNames := TDictionary<String, Cardinal>.Create;
   prName := projName;
   prUnit := nil;
 end; { TProject.Create }
@@ -1523,6 +1529,7 @@ end; { TProject.Create }
 destructor TProject.Destroy;
 begin
   prUnits.Free;
+  prMissingUnitNames.free;
 end; { TProject.Destroy }
 
 procedure TProject.Parse(aExclUnits: String;
@@ -2011,12 +2018,12 @@ begin
       end;
     end;
   end;
-  ApplySelections(LUnitSelections);
+  ApplySelections(LUnitSelections, false);
   LUnitSelections.Free;
 end;
 
 
-procedure TProject.ApplySelections(const aUnitSelections: TUnitSelectionList);
+procedure TProject.ApplySelections(const aUnitSelections: TUnitSelectionList; const aOnlyCheckUnitName : boolean);
 
   function GetSelectionOrNil(const aUnitName : string): TUnitSelection;
   var
@@ -2041,6 +2048,8 @@ procedure TProject.ApplySelections(const aUnitSelections: TUnitSelectionList);
     result := '';
     if assigned(aUnit) then
     begin
+      if aOnlyCheckUnitName then
+        Exit('*');
       LProcName := aProcName.ToUpper();
       for LCurrentProcName in aUnit.SelectedProcedures do
       begin
@@ -2167,6 +2176,13 @@ end;
 function TProject.LocateUnit(const aUnitName: string): TUnit;
 begin
   Result := prUnits.Locate(aUnitName)
+end;
+
+function TProject.IsMissingUnit(const aUnitName : string): Boolean;
+begin
+  result := prMissingUnitNames.ContainsKey(aUnitName);
+  if result then
+    Sleep(0);
 end;
 
 { TAPI }

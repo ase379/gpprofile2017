@@ -2127,8 +2127,6 @@ end;
 procedure TfrmMain.actLoadInstrumentationSelectionExecute(Sender: TObject);
 var
   LFilename : String;
-  LOldEvent : TVTChangeEvent;
-  LLastSelectedIndex : integer;
 begin
   if openProject = nil then
     Exit;
@@ -2142,13 +2140,7 @@ begin
   begin
     openProject.LoadInstrumentalizationSelection(OpenDialog.FileName);
     // an auto-click is done... ignore instrumentation upon select
-    LLastSelectedIndex := FInstrumentationFrame.SelectedUnitIndex;
-    LOldEvent := FInstrumentationFrame.vstSelectUnits.OnChecked;
-    FInstrumentationFrame.vstSelectUnits.OnChecked := nil;
-    cbProfileChange(nil);
-    FInstrumentationFrame.vstSelectUnits.OnChecked := LOldEvent;
-    if LLastSelectedIndex <> -1 then
-      FInstrumentationFrame.SelectedUnitIndex := LLastSelectedIndex;
+    FInstrumentationFrame.TriggerSelectionReload;
   end;
 end;
 
