@@ -97,6 +97,8 @@ var
   LCurrentEntry: INode<TUnit>;
   LNewNode : PVirtualNode;
   LName : string;
+  LRecursiveUnit : Boolean;
+  LMissingUnit : Boolean;
 begin
   fProcessedUnitNames.AddOrSetValue(aUnitName,fProcessedUnitNames.count);
   LUnit := fopenProject.LocateUnit(aUnitName);
@@ -107,18 +109,26 @@ begin
     while assigned(LCurrentEntry) do
     begin
       LName := LCurrentEntry.Data.unName;
-      LNewNode := fVstSelectUnitTools.AddEntry(aParent,LName);
-      if fProcessedUnitNames.ContainsKey(LName) or fOpenProject.IsMissingUnit(LName) then
-      begin
-        vstUnitDependencies.CheckState[LNewNode] := TCheckState.csMixedDisabled;
-      end
+      LMissingUnit := fOpenProject.IsMissingUnit(LName);
+      if LMissingUnit then
+        LNewNode := nil
       else
+        LNewNode := fVstSelectUnitTools.AddEntry(aParent,LName);
+      if Assigned(LNewNode) then
       begin
-        if fSelectedUnitNames.ContainsKey(LName) then
-          vstUnitDependencies.CheckState[LNewNode] := TCheckState.csMixedNormal
+        LRecursiveUnit := fProcessedUnitNames.ContainsKey(LName);
+        if LRecursiveUnit then
+        begin
+          vstUnitDependencies.CheckState[LNewNode] := TCheckState.csMixedDisabled;
+        end
         else
-          vstUnitDependencies.CheckState[LNewNode] := TCheckState.csUncheckedNormal;
-        addUnit(LNewNode,LName);
+        begin
+          if fSelectedUnitNames.ContainsKey(LName) then
+            vstUnitDependencies.CheckState[LNewNode] := TCheckState.csMixedNormal
+          else
+            vstUnitDependencies.CheckState[LNewNode] := TCheckState.csUncheckedNormal;
+          addUnit(LNewNode,LName);
+        end;
       end;
       LCurrentEntry := LCurrentEntry.NextNode;
     end;
