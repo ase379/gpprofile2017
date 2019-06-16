@@ -33,8 +33,6 @@ object fmUnitWizard: TfmUnitWizard
     Align = alBottom
     BevelOuter = bvNone
     TabOrder = 0
-    ExplicitLeft = -3
-    ExplicitTop = 330
     object oxButton1: TButton
       AlignWithMargins = True
       Left = 304
@@ -49,8 +47,6 @@ object fmUnitWizard: TfmUnitWizard
       Default = True
       ModalResult = 1
       TabOrder = 0
-      ExplicitLeft = 313
-      ExplicitHeight = 27
     end
     object oxButton2: TButton
       AlignWithMargins = True
@@ -63,12 +59,10 @@ object fmUnitWizard: TfmUnitWizard
       Margins.Right = 5
       Margins.Bottom = 5
       Align = alRight
+      Cancel = True
       Caption = 'Cancel'
       ModalResult = 2
       TabOrder = 1
-      ExplicitLeft = 400
-      ExplicitTop = 8
-      ExplicitHeight = 27
     end
   end
   object vstUnitDependencies: TVirtualStringTree
@@ -82,7 +76,6 @@ object fmUnitWizard: TfmUnitWizard
     Header.MainColumn = -1
     TabOrder = 1
     TreeOptions.AutoOptions = [toAutoDropExpand, toAutoExpand, toAutoScrollOnExpand, toAutoSort, toAutoTristateTracking, toAutoDeleteMovedNodes, toAutoChangeScale]
-    ExplicitLeft = 8
     Columns = <>
   end
 end
