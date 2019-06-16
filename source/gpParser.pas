@@ -2181,8 +2181,6 @@ end;
 function TProject.IsMissingUnit(const aUnitName : string): Boolean;
 begin
   result := prMissingUnitNames.ContainsKey(aUnitName);
-  if result then
-    Sleep(0);
 end;
 
 { TAPI }
