@@ -22,6 +22,7 @@ type
     fInitialUnitName : string;
     fOpenProject : TProject;
     fVstSelectUnitTools : TCheckableListTools;
+    fLocateUnitCache : TDictionary<string, TUnit>;
     // lookup to speed up detection of double names
     fSelectedUnitNames : TDictionary<string, Cardinal>;
     // lookup to detect unit recursion
@@ -57,6 +58,7 @@ constructor TfmUnitWizard.Create(AOwner: TComponent);
 begin
   inherited;
   fVstSelectUnitTools := TCheckableListTools.Create(vstUnitDependencies, cid_Unit);
+  fLocateUnitCache := TDictionary<string, TUnit>.Create();
   fSelectedUnitNames := TDictionary<string, Cardinal>.Create;
   fProcessedUnitNames := TDictionary<string, Cardinal>.Create;
 end;
@@ -64,6 +66,7 @@ end;
 destructor TfmUnitWizard.Destroy;
 begin
   fVstSelectUnitTools.free;
+  fLocateUnitCache.free;
   fSelectedUnitNames.free;
   fProcessedUnitNames.Free;
   inherited;
@@ -92,6 +95,16 @@ begin
 end;
 
 procedure TfmUnitWizard.addUnit(const aParent: PVirtualNode; const aUnitName: string);
+
+  function LocateUnit(): TUnit;
+  begin
+    if not fLocateUnitCache.TryGetValue(aUnitName, result) then
+    begin
+      result := fopenProject.LocateUnit(aUnitName);
+      fLocateUnitCache.Add(aUnitName, result);
+    end;
+  end;
+
 var
   LUnit : TUnit;
   LCurrentEntry: INode<TUnit>;
@@ -101,7 +114,7 @@ var
   LMissingUnit : Boolean;
 begin
   fProcessedUnitNames.AddOrSetValue(aUnitName,fProcessedUnitNames.count);
-  LUnit := fopenProject.LocateUnit(aUnitName);
+  LUnit := LocateUnit();
   if not assigned(LUnit) then
     raise Exception.Create('Error: Could not locate unit "'+aUnitName+'".');
   begin
