@@ -50,7 +50,6 @@ type
 
     function AppendNode(const aValue:T) : INode<T>;
     procedure ClearNodes();
-    procedure SortNodes();
     property Count : Cardinal read getCount;
   end;
 
@@ -100,12 +99,6 @@ procedure TRootNode<T>.ClearNodes;
 begin
   fSortedList.Clear;
   fLookupDict.Clear;
-end;
-
-
-procedure TRootNode<T>.SortNodes;
-begin
-  fSortedList.Sort(TComparer<INode<T>>.Construct(CompareFunc));
 end;
 
 
