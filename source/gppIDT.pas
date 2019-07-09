@@ -166,7 +166,7 @@ end;
 
 constructor TIDTU.Create;
 begin
-  inherited Create(true);
+  inherited Create();
   CompareFunc := TIDTCompare;
   idCnt       := 1;
 end;
@@ -219,7 +219,7 @@ end;
 
 constructor TIDTC.Create;
 begin
-  inherited Create(true);
+  inherited Create();
   CompareFunc     := TIDTCompare;
   idCnt       := 1;
 end;
@@ -264,7 +264,7 @@ end;
 
 constructor TIDTP.Create;
 begin
-  inherited Create(true);
+  inherited Create();
   CompareFunc := TIDTCompare;
   idCnt       := 1;
 end;

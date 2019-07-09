@@ -18,25 +18,18 @@ type
     function HasNextNode:Boolean;
     function HasPreviousNode:Boolean;
 
-    procedure setOwnsData(const aValue : boolean);
-    function getOwnsData: boolean;
-
     property Data : T read GetData write setData;
-    property OwnsData : boolean read getOwnsData write setOwnsData;
   end;
 
   TNode<T: class> = class(TInterfacedObject, INode<T>)
   private
     constructor Create(aValue: T);
   protected
-    fOwnsData : boolean;
     fData : T;
     fNextNode : INode<T>;
     fPreviousNode : INode<T>;
     procedure SetData(const aValue : T);
     function GetData(): T;
-    procedure setOwnsData(const aValue : boolean);
-    function getOwnsData: boolean;
   public
     function NextNode: INode<T>;
     function PreviousNode: INode<T>;
@@ -57,14 +50,13 @@ type
     fFirstNode : INode<T>;
     fTailNode : INode<T>;
     fIsSorted : boolean;
-    fOwnsData : boolean;
     FCount : Cardinal;
     function MergeSortImpl(const aBeforeNode: INode<T>; aCount : cardinal) : INode<T>;
     function MergeListsImpl(aBeforeNode1 : INode<T>; aCount1 : longint;
                              aBeforeNode2 : INode<T>; aCount2 : longint) :  INode<T>;
 
   public
-    constructor Create(const aDoOwnsData : boolean);
+    constructor Create();
     destructor Destroy; override;
 
     function FirstNode : INode<T>;
@@ -88,7 +80,6 @@ uses
 
 constructor TNode<T>.Create(aValue: T);
 begin
-  fOwnsData := true;
   fData := aValue;
   fNextNode := nil;
   fPreviousNode := nil;
@@ -130,21 +121,7 @@ begin
   result := fData;
 end;
 
-
-procedure TNode<T>.setOwnsData(const aValue: boolean);
-begin
-  fOwnsData := aValue;
-end;
-
-function TNode<T>.getOwnsData: boolean;
-begin
-  result := fOwnsData;
-end;
-
-
 { TRootNode }
-
-
 
 procedure TNode<T>.setNextNode(const aNewNode : INode<T>);
 begin
@@ -159,9 +136,8 @@ end;
 
 { TRootNode<T> }
 
-constructor TRootNode<T>.Create(const aDoOwnsData: boolean);
+constructor TRootNode<T>.Create();
 begin
-  fOwnsData := aDoOwnsData;
 end;
 
 destructor TRootNode<T>.Destroy;
@@ -393,7 +369,6 @@ var LOldTail : INode<T>;
 begin
   LOldTail := fTailNode;
   result := TNode<T>.Create(AValue);
-  result.OwnsData := fOwnsData;
   fTailNode := result;
 
   if assigned(LOldTail) then

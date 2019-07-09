@@ -283,7 +283,7 @@ end; { CompareUnit }
 
 constructor TUnitList.Create;
 begin
-  inherited Create(False);
+  inherited Create();
   CompareFunc := @CompareUnit;
 end; { TUnitList.Create }
 
@@ -296,7 +296,7 @@ end; { TUnitList.Add }
 
 constructor TGlbUnitList.Create();
 begin
-  inherited Create(true);
+  inherited Create();
   CompareFunc := @CompareUnit;
 end; { TGlbUnitList.Create }
 
@@ -340,7 +340,7 @@ end; { CompareProc }
 
 constructor TProcList.Create;
 begin
-  inherited Create(true);
+  inherited Create();
   CompareFunc := @CompareProc;
   // DisposeData := @DisposeProc;
 end; { TProcList.Create }
@@ -354,8 +354,6 @@ var
   LFoundEntry: INode<TProc>;
 
 begin
-  if Pos('GetThreadPriority', procName) > 0 then
-    pureAsm := pureAsm;
   LSearchEntry := TNode<TProc>.Create();
   LSearchEntry.Data := TProc.Create(procName, offset, lineNum, headerLineNum);
   if FindNode(LSearchEntry, LFoundEntry) then
@@ -1542,11 +1540,27 @@ procedure TProject.Parse(aExclUnits: String;
       aNotify(aUnitName)
   end;
 
+  procedure DetermineNextUnitToBeParsed(var un: TUnit);
+  var
+    LNode: INode<TUnit>;
+    u1: TUnit;
+  begin
+    LNode := prUnits.FirstNode;
+    un := nil;
+    while assigned(LNode) do
+    begin
+      u1 := LNode.Data;
+      if not(u1.unParsed or u1.unExcluded) then
+      begin
+        un := u1;
+        Break;
+      end;
+      LNode := LNode.NextNode;
+    end;
+  end;
 
 var
   un: TUnit;
-  u1: TUnit;
-  LNode: INode<TUnit>;
   vOldCurDir: string;
 begin
   PrepareComments(aCommentType);
@@ -1572,18 +1586,7 @@ begin
         on E: Exception do
           anErrorList.Add(E.Message);
       end;
-      LNode := prUnits.FirstNode;
-      un := nil;
-      while assigned(LNode) do
-      begin
-        u1 := LNode.Data;
-        if not(u1.unParsed or u1.unExcluded) then
-        begin
-          un := u1;
-          Break;
-        end;
-        LNode := LNode.NextNode;
-      end;
+      DetermineNextUnitToBeParsed(un);
     until (un = nil);
   finally
     SetCurrentDir(vOldCurDir);
@@ -2219,7 +2222,7 @@ end; { TAPIList.AddMeta }
 
 constructor TAPIList.Create;
 begin
-  inherited Create(true);
+  inherited Create();
 end; { TAPIList.Create }
 
 { TProcSetThreadNameList }
@@ -2237,7 +2240,7 @@ end;
 
 constructor TProcSetThreadNameList.Create;
 begin
-  inherited Create(true);
+  inherited Create();
 end;
 
 { TUnitSelection }
