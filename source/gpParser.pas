@@ -81,8 +81,12 @@ type
   end;
 
   TProcSetThreadNameList = class(TRootNode<TProcSetThreadName>)
+  private
     constructor Create; reintroduce;
     procedure AddPosition(const aPos: Cardinal; const aSelfBuffer: string);
+  protected
+    function GetLookupKey(const aValue : TProcSetThreadName) : string; override;
+
   end;
 
   TProc = class
@@ -121,18 +125,26 @@ type
   end;
 
   TUnitList = class(TRootNode<TUnit>)
+  protected
+    function GetLookupKey(const aValue : TUnit) : string; override;
+  private
     constructor Create; reintroduce;
     procedure Add(anUnit: TUnit);
   end;
 
   TGlbUnitList = class(TRootNode<TUnit>)
-  public
+  protected
+    function GetLookupKey(const aValue : TUnit) : string; override;
+  private
     constructor Create(); reintroduce;
     function Locate(unitName: string): TUnit;
     function LocateCreate(unitName, unitLocation: string;excluded: boolean): TUnit;
   end;
 
   TProcList = class(TRootNode<TProc>)
+  protected
+    function GetLookupKey(const aValue : TProc) : string; override;
+  private
     constructor Create; reintroduce;
     procedure Add(var procName: string; pureAsm: boolean;offset, lineNum, headerLineNum: Integer);
     procedure AddEnd(procName: string; offset, lineNum: Integer);
@@ -140,6 +152,9 @@ type
   end;
 
   TAPIList = class(TRootNode<TAPI>)
+  protected
+    function GetLookupKey(const aValue : TAPI) : string; override;
+  private
     constructor Create; reintroduce;
     procedure AddMeta(apiCmd: string; apiBegin, apiEnd: Integer);
     procedure AddExpanded(apiEnterBegin, apiEnterEnd, apiExitBegin,apiExitEnd: Integer);
@@ -285,7 +300,14 @@ constructor TUnitList.Create;
 begin
   inherited Create();
   CompareFunc := @CompareUnit;
-end; { TUnitList.Create }
+end;
+
+function TUnitList.GetLookupKey(const aValue: TUnit): string;
+begin
+  result := AnsiLowerCase(aValue.unName);
+end;
+
+{ TUnitList.Create }
 
 procedure TUnitList.Add(anUnit: TUnit);
 begin
@@ -299,6 +321,11 @@ begin
   inherited Create();
   CompareFunc := @CompareUnit;
 end; { TGlbUnitList.Create }
+
+function TGlbUnitList.GetLookupKey(const aValue: TUnit): string;
+begin
+  result := AnsiLowerCase(aValue.unName);
+end;
 
 function TGlbUnitList.Locate(unitName: string): TUnit;
 var
@@ -343,7 +370,14 @@ begin
   inherited Create();
   CompareFunc := @CompareProc;
   // DisposeData := @DisposeProc;
-end; { TProcList.Create }
+end;
+
+function TProcList.GetLookupKey(const aValue: TProc): string;
+begin
+  result := AnsiLowerCase(aValue.Name);
+end;
+
+{ TProcList.Create }
 
 procedure TProcList.Add(var procName: string; pureAsm: boolean;
   offset, lineNum, headerLineNum: Integer);
@@ -1103,7 +1137,7 @@ begin
                   LDataLowerCase := tokenData.ToLowerInvariant;
                   if LDataLowerCase = aProject.prNameThreadForDebugging then
                   begin
-                    unProcs.LastNode.Data.unSetThreadNames.AddPosition(tokenPos,
+                    unProcs.Last.Data.unSetThreadNames.AddPosition(tokenPos,
                       LSelfBuffer);
                     LSelfBuffer := '';
                   end
@@ -1190,21 +1224,21 @@ end; { TUnit.Parse }
 
 procedure TUnit.CheckInstrumentedProcs;
 var
-  LCurrentEntry: INode<TProc>;
+  LEnumor: TRootNode<TProc>.TEnumerator;
 begin
   unAllInst := true;
   unNoneInst := true;
   with unProcs do
   begin
-    LCurrentEntry := FirstNode;
-    while assigned(LCurrentEntry) do
+    LEnumor := GetEnumerator();
+    while LEnumor.MoveNext do
     begin
-      if not LCurrentEntry.Data.prInstrumented then
+      if not LEnumor.Current.Data.prInstrumented then
         unAllInst := False
       else
         unNoneInst := False;
-      LCurrentEntry := LCurrentEntry.NextNode;
     end;
+    LEnumor.Free;
   end;
 end; { TUnit.CheckInstrumentedProcs }
 
@@ -1236,16 +1270,16 @@ end; { TUnit.LocateProc }
 
 procedure TUnit.ConstructNames(idt: TIDTable);
 var
-  LCurrentEntry: INode<TProc>;
+  LEnumor: TRootNode<TProc>.TEnumerator;
 begin
-  LCurrentEntry := unProcs.FirstNode;
-  while assigned(LCurrentEntry) do
+  LEnumor := unProcs.GetEnumerator;
+  while LEnumor.MoveNext do
   begin
-    if LCurrentEntry.Data.prInstrumented then
-      idt.ConstructName(unName, unFullName, LCurrentEntry.Data.Name,
-        LCurrentEntry.Data.prHeaderLineNum);
-    LCurrentEntry := LCurrentEntry.NextNode;
+    if LEnumor.Current.Data.prInstrumented then
+      idt.ConstructName(unName, unFullName, LEnumor.Current.Data.Name,
+        LEnumor.Current.Data.prHeaderLineNum);
   end;
+  LEnumor.Free;
 end; { TUnit.ConstructNames }
 
 procedure TUnit.BackupInstrumentedFile(const aSrc: string);
@@ -1322,9 +1356,9 @@ var
   ed: TFileEdit;
   nameId: Integer;
   api: TAPI;
-  LCurrentApi: INode<TAPI>;
-  LCurrentProc: INode<TProc>;
-  LCurrentSetTName: INode<TProcSetThreadName>;
+  LApiEnumor: TRootNode<TAPI>.TEnumerator;
+  LProcEnumor: TRootNode<TProc>.TEnumerator;
+  LProcSetThreadNameEnumor: TRootNode<TProcSetThreadName>.TEnumerator;
   i: Integer;
   LPosition: Integer;
 begin { TUnit.Instrument }
@@ -1342,10 +1376,10 @@ begin { TUnit.Instrument }
       InstrumentUses(aProject, ed, i);
 
     any := AnyInstrumented;
-    LCurrentApi := unAPIs.FirstNode;
-    while assigned(LCurrentApi) do
+    LApiEnumor := unAPIs.GetEnumerator();
+    while LApiEnumor.MoveNext do
     begin
-      api := LCurrentApi.Data;
+      api := LApiEnumor.Current.Data;
       if any then
       begin
         if api.apiMeta then
@@ -1365,13 +1399,13 @@ begin { TUnit.Instrument }
           ed.Insert(api.apiExitBegin, '}');
         end;
       end;
-      LCurrentApi := LCurrentApi.NextNode;
     end;
+    LApiEnumor.Free;
 
-    LCurrentProc := unProcs.FirstNode;
-    while assigned(LCurrentProc) do
+    LProcEnumor := unProcs.GetEnumerator();
+    while LProcEnumor.MoveNext do
     begin
-      pr := LCurrentProc.Data;
+      pr := LProcEnumor.Current.Data;
       haveInst := (pr.prCmtEnterBegin >= 0);
       if not pr.prInstrumented then
       begin
@@ -1383,23 +1417,20 @@ begin { TUnit.Instrument }
             Length(aProject.prConditEnd) - 1);
 
           // remove gpprof in from of NameThreadForDebugging interceptor
-          LCurrentSetTName := pr.unSetThreadNames.FirstNode;
-          while assigned(LCurrentSetTName) do
+          LProcSetThreadNameEnumor := pr.unSetThreadNames.GetEnumerator;
+          while LProcSetThreadNameEnumor.MoveNext do
           begin
-            LPosition := LCurrentSetTName.Data.tpstnPos -
-              Length(aProject.prGpprofDot);
-            if LCurrentSetTName.Data.tpstnWithSelf <> '' then
+            LPosition := LProcSetThreadNameEnumor.Current.Data.tpstnPos - Length(aProject.prGpprofDot);
+            if LProcSetThreadNameEnumor.Current.Data.tpstnWithSelf <> '' then
               LPosition := LPosition - 1; // remove } as well
-            ed.Remove(LPosition, LCurrentSetTName.Data.tpstnPos - 1);
-            if LCurrentSetTName.Data.tpstnWithSelf <> '' then
+            ed.Remove(LPosition, LProcSetThreadNameEnumor.Current.Data.tpstnPos - 1);
+            if LProcSetThreadNameEnumor.Current.Data.tpstnWithSelf <> '' then
             begin
-              LPosition := LPosition - 2 -
-                Length(LCurrentSetTName.Data.tpstnWithSelf);
+              LPosition := LPosition - 2 - Length(LProcSetThreadNameEnumor.Current.Data.tpstnWithSelf);
               ed.Remove(LPosition, LPosition);
             end;
-
-            LCurrentSetTName := LCurrentSetTName.NextNode;
           end;
+          LProcSetThreadNameEnumor.Free;
         end;
       end
       else
@@ -1420,29 +1451,28 @@ begin { TUnit.Instrument }
 
         if haveInst then
         begin
-          LCurrentSetTName := pr.unSetThreadNames.FirstNode;
-          while assigned(LCurrentSetTName) do
+          LProcSetThreadNameEnumor := pr.unSetThreadNames.GetEnumerator;
+          while LProcSetThreadNameEnumor.MoveNext do
           begin
-            LPosition := LCurrentSetTName.Data.tpstnPos -
-              Length(aProject.prGpprofDot);
-            ed.Remove(LPosition, LCurrentSetTName.Data.tpstnPos - 1);
-            LCurrentSetTName := LCurrentSetTName.NextNode;
+            LPosition := LProcSetThreadNameEnumor.Current.Data.tpstnPos - Length(aProject.prGpprofDot);
+            ed.Remove(LPosition, LProcSetThreadNameEnumor.Current.Data.tpstnPos - 1);
           end;
+          LProcSetThreadNameEnumor.Free;
         end;
         // add gpprof in from of NameThreadForDebugging interceptor
-        LCurrentSetTName := pr.unSetThreadNames.FirstNode;
-        while assigned(LCurrentSetTName) do
+        LProcSetThreadNameEnumor := pr.unSetThreadNames.GetEnumerator;
+        while LProcSetThreadNameEnumor.MoveNext do
         begin
-          LPosition := LCurrentSetTName.Data.tpstnPos;
-          if LCurrentSetTName.Data.tpstnWithSelf <> '' then
+          LPosition := LProcSetThreadNameEnumor.Current.Data.tpstnPos;
+          if LProcSetThreadNameEnumor.Current.Data.tpstnWithSelf <> '' then
           begin
             ed.Insert(LPosition - Length('self') - 1, '{');
             ed.Insert(LPosition, '}' + aProject.prGpprofDot);
           end
           else
             ed.Insert(LPosition, aProject.prGpprofDot);
-          LCurrentSetTName := LCurrentSetTName.NextNode;
         end;
+        LProcSetThreadNameEnumor.Free;
 
         if haveInst then
           ed.Remove(pr.prCmtExitBegin, pr.prCmtExitEnd +
@@ -1453,8 +1483,8 @@ begin { TUnit.Instrument }
         else
           ed.Insert(pr.prEndOffset, Format(aProject.prProfileExitProc, [nameId]));
       end;
-      LCurrentProc := LCurrentProc.NextNode;
     end;
+    LProcEnumor.Free;
 
     ed.Execute(aKeepDate);
   finally
@@ -1464,21 +1494,21 @@ end; { TUnit.Instrument }
 
 function TUnit.AnyInstrumented: boolean;
 var
-  LCurrentProc: INode<TProc>;
+  LProcEnumerator: TRootNode<TProc>.TEnumerator;
 begin
   Result := False;
   with unProcs do
   begin
-    LCurrentProc := FirstNode;
-    while assigned(LCurrentProc) do
+    LProcEnumerator := GetEnumerator();
+    while LProcEnumerator.MoveNext do
     begin
-      if LCurrentProc.Data.prInstrumented then
+      if LProcEnumerator.Current.Data.prInstrumented then
       begin
         Result := true;
         Exit;
       end;
-      LCurrentProc := LCurrentProc.NextNode;
     end; // while
+    LProcEnumerator.Free;
   end; // with
 end; { TUnit.AnyInstrumented }
 
@@ -1495,22 +1525,22 @@ end; { TUnit.AddToIntArray }
 function TUnit.AnyChange: boolean;
 var
   pr: TProc;
-  LCurrentProc: INode<TProc>;
+  LProcEnumerator: TRootNode<TProc>.TEnumerator;
 begin
   Result := False;
   with unProcs do
   begin
-    LCurrentProc := FirstNode;
-    while assigned(LCurrentProc) do
+    LProcEnumerator := GetEnumerator();
+    while LProcEnumerator.MoveNext do
     begin
-      pr := LCurrentProc.Data;
+      pr := LProcEnumerator.Current.Data;
       if pr.prInstrumented <> pr.prInitial then
       begin
         Result := true;
         Exit;
       end;
-      LCurrentProc := LCurrentProc.NextNode;
     end; // while
+    LProcEnumerator.Free;
   end; // with
 end; { TUnit.AnyChange }
 
@@ -1542,21 +1572,21 @@ procedure TProject.Parse(aExclUnits: String;
 
   procedure DetermineNextUnitToBeParsed(var un: TUnit);
   var
-    LNode: INode<TUnit>;
+    LUnitEnumor: TRootNode<TUnit>.TEnumerator;
     u1: TUnit;
   begin
-    LNode := prUnits.FirstNode;
     un := nil;
-    while assigned(LNode) do
+    LUnitEnumor := prUnits.GetEnumerator();
+    while LUnitEnumor.MoveNext do
     begin
-      u1 := LNode.Data;
+      u1 := LUnitEnumor.Current.Data;
       if not(u1.unParsed or u1.unExcluded) then
       begin
         un := u1;
         Break;
       end;
-      LNode := LNode.NextNode;
     end;
+    LUnitEnumor.Free;
   end;
 
 var
@@ -1583,6 +1613,11 @@ begin
         un.Parse(self, aExclUnits, aSearchPath, ExtractFilePath(prName),
           aConditionals, False, aParseAsm);
       except
+        on e: EUnitInSearchPathNotFoundError do
+        begin
+          un.unParsed := true;
+          anErrorList.Add(E.Message);
+        end;
         on E: Exception do
           anErrorList.Add(E.Message);
       end;
@@ -1597,16 +1632,16 @@ procedure TProject.GetUnitList(var aSL: TStringList;
   const aProjectDirOnly, aGetInstrumented: boolean);
 var
   un: TUnit;
-  LNode: INode<TUnit>;
+  LUnitEnumor: TRootNode<TUnit>.TEnumerator;
   s: String;
 begin
   aSL.Clear;
   with prUnits do
   begin
-    LNode := FirstNode;
-    while assigned(LNode) do
+    LUnitEnumor := GetEnumerator();
+    while LUnitEnumor.MoveNext do
     begin
-      un := LNode.Data;
+      un := LUnitEnumor.Current.Data;
       if (not un.unExcluded) and (un.unProcs.Count > 0) and
         ((not aProjectDirOnly) or un.unInProjectDir) then
       begin
@@ -1618,8 +1653,8 @@ begin
 
         aSL.Add(s);
       end;
-      LNode := LNode.NextNode;
     end;
+    LUnitEnumor.Free;
   end;
 end; { TProject.GetUnitList }
 
@@ -1628,7 +1663,7 @@ procedure TProject.GetProcList(unitName: string; s: TStringList;
 var
   un: TUnit;
   pr: TProc;
-  LCurrentProc: INode<TProc>;
+  LProcEnumor: TRootNode<TProc>.TEnumerator;
 begin
   s.Clear;
   un := prUnits.Locate(unitName);
@@ -1636,53 +1671,51 @@ begin
   begin
     with un.unProcs do
     begin
-      LCurrentProc := FirstNode;
-      while assigned(LCurrentProc) do
+      LProcEnumor := GetEnumerator();
+      while LProcEnumor.MoveNext do
       begin
-        pr := LCurrentProc.Data;
+        pr := LProcEnumor.Current.Data;
         if getInstrumented then
           s.Add(pr.Name + IntToStr(Ord(pr.prInstrumented)))
         else
           s.Add(pr.Name);
-        LCurrentProc := LCurrentProc.NextNode;
       end;
     end;
+    LProcEnumor.Free;
   end;
 end; { TProject.GetProcList }
 
 procedure TProject.InstrumentTUnit(anUnit: TUnit; Instrument: boolean);
 var
-  LCurrentProc: INode<TProc>;
+  LProcEnumor: TRootNode<TProc>.TEnumerator;
 begin
   anUnit.unAllInst := Instrument;
   anUnit.unNoneInst := not Instrument;
   with anUnit.unProcs do
   begin
-    LCurrentProc := FirstNode;
-    while assigned(LCurrentProc) do
-    begin
-      LCurrentProc.Data.prInstrumented := Instrument;
-      LCurrentProc := LCurrentProc.NextNode;
-    end;
+    LProcEnumor := GetEnumerator();
+    while LProcEnumor.MoveNext do
+      LProcEnumor.Current.Data.prInstrumented := Instrument;
+    LProcEnumor.Free;
   end;
 end; { TProject.InstrumentTUnit }
 
 procedure TProject.InstrumentAll(Instrument, projectDirOnly: boolean);
 var
   un: TUnit;
-  LNode: INode<TUnit>;
+  LUnitEnumor: TRootNode<TUnit>.TEnumerator;
 begin
   with prUnits do
   begin
-    LNode := FirstNode;
-    while assigned(LNode) do
+    LUnitEnumor := GetEnumerator();
+    while LUnitEnumor.MoveNext do
     begin
-      un := LNode.Data;
+      un := LUnitEnumor.Current.Data;
       if (not un.unExcluded) and (un.unProcs.Count > 0) then
         if (not projectDirOnly) or un.unInProjectDir then
           InstrumentTUnit(un, Instrument);
-      LNode := LNode.NextNode;
     end;
+    LUnitEnumor.Free;
   end;
 end; { TProject.InstrumentAll }
 
@@ -1720,21 +1753,24 @@ end; { TProject.InstrumentProc }
 function TProject.AllInstrumented(projectDirOnly: boolean): boolean;
 var
   un: TUnit;
-  LNode: INode<TUnit>;
+  LUnitEnumor: TRootNode<TUnit>.TEnumerator;
 begin
   Result := False;
   with prUnits do
   begin
-    LNode := FirstNode;
-    while assigned(LNode) do
+    LUnitEnumor := GetEnumerator();
+    while LUnitEnumor.MoveNext do
     begin
-      un := LNode.Data;
+      un := LUnitEnumor.Current.Data;
       if (not un.unExcluded) and (un.unProcs.Count > 0) and
         (un.unInProjectDir or (not projectDirOnly)) then
         if not un.unAllInst then
+        begin
+          LUnitEnumor.Free;
           Exit;
-      LNode := LNode.NextNode;;
+        end;
     end;
+    LUnitEnumor.Free;
   end;
   Result := true;
 end; { TProject.AllInstrumented }
@@ -1758,7 +1794,7 @@ var
   i: Integer;
   unAny: boolean;
   anyInst: boolean;
-  LNode: INode<TUnit>;
+  LUnitEnumor: TRootNode<TUnit>.TEnumerator;
 begin
   PrepareComments(aCommentType);
   Rescan := TList.Create;
@@ -1772,10 +1808,10 @@ begin
         with prUnits do
         begin
           anyInst := False;
-          LNode := FirstNode;
-          while assigned(LNode) do
+          LUnitEnumor := GetEnumerator();
+          while LUnitEnumor.MoveNext do
           begin
-            un := LNode.Data;
+            un := LUnitEnumor.Current.Data;
             if (not un.unExcluded) and (un.unProcs.Count > 0) then
             begin
               DoNotify(un.unFullName, un.unName, False);
@@ -1792,8 +1828,8 @@ begin
               else
                 un.ConstructNames(idt);
             end;
-            LNode := LNode.NextNode;
           end;
+          LUnitEnumor.Free;
         end;
         if not ForceDirectories(ExtractFileDir(aIncFileName)) then
           raise Exception.Create('Could not create output folder ' +
@@ -1825,21 +1861,24 @@ end; { TProject.Instrument }
 function TProject.NoneInstrumented(projectDirOnly: boolean): boolean;
 var
   un: TUnit;
-  LNode: INode<TUnit>;
+  LUnitEnumor: TRootNode<TUnit>.TEnumerator;
 begin
   Result := False;
   with prUnits do
   begin
-    LNode := FirstNode;
-    while assigned(LNode) do
+    LUnitEnumor := GetEnumerator();
+    while LUnitEnumor.MoveNext do
     begin
-      un := LNode.Data;
+      un := LUnitEnumor.Current.Data;
       if (not un.unExcluded) and (un.unProcs.Count > 0) and
         (un.unInProjectDir or (not projectDirOnly)) then
         if not un.unNoneInst then
+        begin
+          LUnitEnumor.Free;
           Exit;
-      LNode := LNode.NextNode;
+        end;
     end;
+    LUnitEnumor.Free;
   end;
   Result := true;
 end; { TProject.NoneInstrumented }
@@ -1916,21 +1955,24 @@ end; { TProject.GetFirstLine }
 function TProject.AnyInstrumented(projectDirOnly: boolean): boolean;
 var
   un: TUnit;
-  LNode: INode<TUnit>;
+  LUnitEnumor: TRootNode<TUnit>.TEnumerator;
 begin
   Result := true;
   with prUnits do
   begin
-    LNode := FirstNode;
-    while assigned(LNode) do
+    LUnitEnumor := GetEnumerator();
+    while LUnitEnumor.MoveNext do
     begin
-      un := LNode.Data;
+      un := LUnitEnumor.Current.Data;
       if (not un.unExcluded) and (un.unProcs.Count > 0) and
         (un.unInProjectDir or (not projectDirOnly)) then
         if un.AnyInstrumented then
+        begin
+          LUnitEnumor.free;
           Exit;
-      LNode := LNode.NextNode;
+        end;
     end;
+    LUnitEnumor.Free;
   end;
   Result := False;
 end; { TProject.AnyInstrumented }
@@ -1940,7 +1982,7 @@ procedure TProject.Rescan(aExclUnits: String;
   aCommentType: TCommentType; aIgnoreFileDate: boolean; aParseAsm: boolean);
 var
   un: TUnit;
-  LNode: INode<TUnit>;
+  LUnitEnumor: TRootNode<TUnit>.TEnumerator;
   vOldCurDir: string;
 begin
   PrepareComments(aCommentType);
@@ -1952,15 +1994,14 @@ begin
       aExclUnits := aExclUnits + #13#10;
     with prUnits do
     begin
-      LNode := FirstNode;
-      while assigned(LNode) do
+      LUnitEnumor := GetEnumerator();
+      while LUnitEnumor.MoveNext do
       begin
-        un := LNode.Data;
+        un := LUnitEnumor.Current.Data;
         if (not un.unExcluded) and (un.unProcs.Count > 0) and
           (aIgnoreFileDate or (un.DidFileTimestampChange())) then
           un.Parse(self, aExclUnits, aSearchPath, ExtractFilePath(prName),
             aConditionals, true, aParseAsm);
-        LNode := LNode.NextNode;
       end;
     end;
   finally
@@ -2067,39 +2108,38 @@ var
   LUnitSelection : TUnitSelection;
   LProcSelection : string;
   un: TUnit;
-  LNode: INode<TUnit>;
-  LProcNode: INode<TProc>;
+  LUnitEnumor: TRootNode<TUnit>.TEnumerator;
+  LProcEnumor: TRootNode<TProc>.TEnumerator;
   LAllCnt : Cardinal;
   LNone : boolean;
 begin
   // update unit list selections
   with prUnits do
   begin
-    LNode := FirstNode;
-    while assigned(LNode) do
+    LUnitEnumor := GetEnumerator();
+    while LUnitEnumor.MoveNext do
     begin
-      un := LNode.Data;
+      un := LUnitEnumor.Current.Data;
       LUnitSelection := GetSelectionOrNil(un.unName);
       LAllCnt := 0;
       LNone := true;
-      LProcNode := un.unProcs.FirstNode;
-      while assigned(LProcNode) do
+      LProcEnumor := un.unProcs.GetEnumerator();
+      while LProcEnumor.MoveNext do
       begin
         LProcSelection := '';
         if assigned(LUnitSelection)  then
-          LProcSelection := GetProcSelectionOrNil(LUnitSelection,LProcNode.Data.Name);
-        LProcNode.Data.prInstrumented := LProcSelection <> '';
-        if LProcNode.Data.prInstrumented then
+          LProcSelection := GetProcSelectionOrNil(LUnitSelection,LProcEnumor.Current.Data.Name);
+        LProcEnumor.Current.Data.prInstrumented := LProcSelection <> '';
+        if LProcEnumor.Current.Data.prInstrumented then
         begin
           inc(LAllCnt);
           LNone := false;
         end;
-        LProcNode := LProcNode.NextNode;
       end;
       un.unAllInst := LAllCnt = un.unProcs.Count;
       un.unNoneInst := LNone;
-      LNode := LNode.NextNode;
     end;
+    LUnitEnumor.Free;
   end;
 end; { TProject.ApplySelections }
 
@@ -2155,21 +2195,21 @@ end;
 function TProject.AnyChange(projectDirOnly: boolean): boolean;
 var
   un: TUnit;
-  LNode: INode<TUnit>;
+  LUnitEnumor: TRootNode<TUnit>.TEnumerator;
 begin
   Result := true;
   with prUnits do
   begin
-    LNode := FirstNode;
-    while assigned(LNode) do
+    LUnitEnumor := GetEnumerator();
+    while LUnitEnumor.MoveNext do
     begin
-      un := LNode.Data;
+      un := LUnitEnumor.Current.Data;
       if (not un.unExcluded) and (un.unProcs.Count > 0) and
         (un.unInProjectDir or (not projectDirOnly)) then
         if un.DidFileTimestampChange() then
           Exit;
-      LNode := LNode.NextNode;
     end;
+    LUnitEnumor.Free;
   end;
   Result := False;
 end;
@@ -2223,7 +2263,15 @@ end; { TAPIList.AddMeta }
 constructor TAPIList.Create;
 begin
   inherited Create();
-end; { TAPIList.Create }
+end;
+
+function TAPIList.GetLookupKey(const aValue: TAPI): string;
+begin
+  result := aValue.apiCommands + aValue.apiBeginOffs.ToString + aValue.apiEndOffs.ToString +
+            aValue.apiExitBegin.ToString + aValue.apiExitEnd.ToString + aValue.apiMeta.ToString();
+end;
+
+{ TAPIList.Create }
 
 { TProcSetThreadNameList }
 
@@ -2241,6 +2289,11 @@ end;
 constructor TProcSetThreadNameList.Create;
 begin
   inherited Create();
+end;
+
+function TProcSetThreadNameList.GetLookupKey(const aValue: TProcSetThreadName): string;
+begin
+  result := aValue.tpstnPos.ToString();
 end;
 
 { TUnitSelection }

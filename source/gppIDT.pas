@@ -55,57 +55,63 @@ type
   end;
 
   TIDTU = class(TRootNode<TIDTUE>)
+  private
+    idCnt : integer;
     constructor Create; reintroduce;
     function    Insert(const key, qual: String): integer;
     procedure   Dump(var f: TGpHugeFile);
-  private
-    idCnt : integer;
+  protected
+    function GetLookupKey(const aValue : TIDTUE) : string; override;
   end;
 
   TIDTC = class(TRootNode<TIDTCE>)
+  private
+    idCnt : integer;
     constructor Create; reintroduce;
     function    Insert(const key: String; uid: integer): integer;
     procedure   Dump(var f: TGpHugeFile);
-  private
-    idCnt : integer;
+  protected
+    function GetLookupKey(const aValue : TIDTCE) : string; override;
   end;
 
   TIDTP = class(TRootNode<TIDTPE>)
+  private
+    idCnt: integer;
     constructor Create; reintroduce;
     function    Insert(const key: String; uid, cid, firstLn: integer): integer;
     procedure   Dump(var f: TGpHugeFile);
     procedure   WriteProcSize(const fileName: string);
-  private
-    idCnt: integer;
+  protected
+    function GetLookupKey(const aValue : TIDTPE) : string; override;
   end;
 
-function TIDTCompare(data1,data2: INode<TIDTUE>): integer; overload;
+function TIDTCompare(const data1,data2: INode<TIDTUE>): integer; overload;
 begin
   Result := String.Compare(data1.Data.eName,data2.data.eName,true);
 end; { TIDTCompare }
 
-function TIDTCompare(data1,data2: INode<TIDTCE>): integer; overload;
+function TIDTCompare(const data1,data2: INode<TIDTCE>): integer; overload;
 begin
   Result := String.Compare(data1.Data.eName,data2.data.eName,true);
 end; { TIDTCompare }
 
-function TIDTCompare(data1,data2: INode<TIDTPE>): integer; overload;
+function TIDTCompare(const data1,data2: INode<TIDTPE>): integer; overload;
 begin
   Result := String.Compare(data1.Data.eName,data2.data.eName,true);
 end; { TIDTCompare }
 
 
-function TIDTIDCompare(data1,data2: INode<TIDTUE>): integer;  overload;
+function TIDTIDCompare(const data1,data2: INode<TIDTUE>): integer;  overload;
 begin
   Result := TIDTE(data1).eID - TIDTE(data2).eID;
 end; { TIDTCompare }
 
-function TIDTIDCompare(data1,data2: INode<TIDTCE>): integer;  overload;
+function TIDTIDCompare(const data1,data2: INode<TIDTCE>): integer;  overload;
 begin
   Result := TIDTE(data1).eID - TIDTE(data2).eID;
 end; { TIDTCompare }
 
-function TIDTIDCompare(data1,data2: INode<TIDTPE>): integer;  overload;
+function TIDTIDCompare(const data1,data2: INode<TIDTPE>): integer;  overload;
 begin
   Result := TIDTE(data1).eID - TIDTE(data2).eID;
 end; { TIDTCompare }
@@ -183,19 +189,25 @@ end; { WriteString }
 
 procedure TIDTU.Dump(var f: TGpHugeFile);
 var
-  LEntry: INode<TIDTUE>;
+  LEnumor: TRootNode<TIDTUE>.TEnumerator;
 begin
   CompareFunc := TIDTIDCompare;
   WriteTag(f,PR_UNITTABLE);
   WriteInt(f,Count);
-  LEntry := FirstNode;
-  while assigned(LEntry) do begin
-    with LEntry.data do begin
+  LEnumor := self.GetEnumerator();
+  while LEnumor.MoveNext do
+  begin
+    with LEnumor.Current.data do
+    begin
       WriteString(f,eName);
       WriteString(f,eQual);
     end;
-    LEntry := LEntry.NextNode;
   end;
+end;
+
+function TIDTU.GetLookupKey(const aValue : TIDTUE) : string;
+begin
+  result := AnsiLowerCase(aValue.eName);
 end;
 
 function TIDTU.Insert(const key, qual: String): integer;
@@ -226,21 +238,25 @@ end;
 
 procedure TIDTC.Dump(var f: TGpHugeFile);
 var
-  LCurrentNode: INode<TIDTCE>;
+  LEnumor: TRootNode<TIDTCE>.TEnumerator;
 begin
   CompareFunc := TIDTIDCompare;
   WriteTag(f,PR_CLASSTABLE);
   WriteInt(f,Count);
-  LCurrentNode := FirstNode;
-  while assigned(LCurrentNode) do
+  LEnumor := GetEnumerator();
+  while LEnumor.MoveNext do
   begin
-    with LCurrentNode.Data do
+    with LEnumor.Current.Data do
     begin
       WriteString(f,eName);
       WriteInt(f,eUID);
     end;
-    LCurrentNode := LCurrentNode.NextNode;
   end;
+end;
+
+function TIDTC.GetLookupKey(const aValue: TIDTCE): string;
+begin
+  result := AnsiLowerCase(aValue.eName)
 end;
 
 function TIDTC.Insert(const key: String; uid: integer): integer;
@@ -271,21 +287,27 @@ end;
 
 procedure TIDTP.Dump(var f: TGpHugeFile);
 var
-  LCurrentNode: INode<TIDTPE>;
+  LEnumor: TRootNode<TIDTPE>.TEnumerator;
 begin
   CompareFunc := TIDTIDCompare;
   WriteTag(f,PR_PROCTABLE);
   WriteInt(f,Count);
-  LCurrentNode := FirstNode;
-  while assigned(LCurrentNode) do begin
-    with LCurrentNode.data do begin
+  LEnumor := self.GetEnumerator();
+  while LEnumor.MoveNext do
+  begin
+    with LEnumor.Current.data do
+    begin
       WriteString(f,eName);
       WriteInt(f,eUID);
       WriteInt(f,eCID);
       WriteInt(f,eFirstLn);
     end;
-    LCurrentNode := LCurrentNode.NextNode;
   end;
+end;
+
+function TIDTP.GetLookupKey(const aValue: TIDTPE): string;
+begin
+  result := AnsiLowerCase(aValue.eName);
 end;
 
 function TIDTP.Insert(const key: String; uid, cid, firstLn: integer): integer;

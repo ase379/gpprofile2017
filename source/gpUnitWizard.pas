@@ -107,7 +107,7 @@ procedure TfmUnitWizard.addUnit(const aParent: PVirtualNode; const aUnitName: st
 
 var
   LUnit : TUnit;
-  LCurrentEntry: INode<TUnit>;
+  LUnitEnumor: TRootNode<TUnit>.TEnumerator;
   LNewNode : PVirtualNode;
   LName : string;
   LRecursiveUnit : Boolean;
@@ -118,10 +118,10 @@ begin
   if not assigned(LUnit) then
     raise Exception.Create('Error: Could not locate unit "'+aUnitName+'".');
   begin
-    LCurrentEntry := LUnit.unUnits.FirstNode;
-    while assigned(LCurrentEntry) do
+    LUnitEnumor := LUnit.unUnits.GetEnumerator();
+    while LUnitEnumor.MoveNext do
     begin
-      LName := LCurrentEntry.Data.unName;
+      LName := LUnitEnumor.Current.Data.unName;
       LMissingUnit := fOpenProject.IsMissingUnit(LName);
       if LMissingUnit then
         LNewNode := nil
@@ -143,8 +143,8 @@ begin
           addUnit(LNewNode,LName);
         end;
       end;
-      LCurrentEntry := LCurrentEntry.NextNode;
     end;
+    LUnitEnumor.Free;
   end;
   fProcessedUnitNames.Remove(aUnitName);
 end;
