@@ -22,18 +22,21 @@ type
   TUnitList = class(TRootNode<TUnit>)
   protected
     function GetLookupKey(const aValue : TUnit) : string; override;
+    function AdjustKey(const aKey : string) : string;
   private
     constructor Create; reintroduce;
     procedure Add(anUnit: TUnit);
+    function FindNode(const aLookupKey: string; out aResultNode: INode<TUnit>): boolean; overload;
+
   end;
 
-  TGlbUnitList = class(TRootNode<TUnit>)
-  protected
-    function GetLookupKey(const aValue : TUnit) : string; override;
+  TGlbUnitList = class(TUnitList)
   public
-    constructor Create(); reintroduce;
     function Locate(unitName: string): TUnit;
     function LocateCreate(unitName, unitLocation: string;excluded: boolean): TUnit;
+    function AreAllUnitsInstrumented(const aCheckProjectDirOnly: Boolean): Boolean;
+    function IsNoUnitInstrumented(const aCheckProjectDirOnly : Boolean) : Boolean;
+    function IsAnyUnitInstrumented(const aCheckProjectDirOnly: boolean): boolean;
   end;
 
   TUnit = class(TBaseUnit)
@@ -63,7 +66,7 @@ type
       const aRescan, aParseAsm: boolean);
     procedure CheckInstrumentedProcs;
     function LocateUnit(unitName: string): TUnit;
-    function LocateProc(procName: string): TProc;
+    function LocateProc(const aProcName: string): TProc;
     procedure Instrument(aProject: TBaseProject; aIDT: TIDTable;aKeepDate, aBackupFile: boolean);
     procedure ConstructNames(idt: TIDTable);
     function AnyInstrumented: boolean;
@@ -132,15 +135,25 @@ begin
   Result := String.Compare(node1.Data.unName,node2.Data.unName,true);
 end; { CompareUnit }
 
+function TUnitList.AdjustKey(const aKey: string): string;
+begin
+  result := AnsiLowerCase(aKey);
+end;
+
 constructor TUnitList.Create;
 begin
   inherited Create();
   CompareFunc := @CompareUnit;
 end;
 
+function TUnitList.FindNode(const aLookupKey: string; out aResultNode: INode<TUnit>): boolean;
+begin
+  result := inherited FindNode(AdjustKey(aLookupKey),aResultNode);
+end;
+
 function TUnitList.GetLookupKey(const aValue: TUnit): string;
 begin
-  result := AnsiLowerCase(aValue.unName);
+  result := AdjustKey(aValue.unName);
 end;
 
 { TUnitList.Create }
@@ -152,25 +165,81 @@ end; { TUnitList.Add }
 
 { ========================= TGlbUnitList ========================= }
 
-constructor TGlbUnitList.Create();
+function TGlbUnitList.AreAllUnitsInstrumented(const aCheckProjectDirOnly: Boolean): Boolean;
+var
+  un: TUnit;
+  LUnitEnumor: TRootNode<TUnit>.TEnumerator;
 begin
-  inherited Create();
-  CompareFunc := @CompareUnit;
-end; { TGlbUnitList.Create }
+  Result := False;
+  LUnitEnumor := GetEnumerator();
+  try
+    while LUnitEnumor.MoveNext do
+    begin
+      un := LUnitEnumor.Current.Data;
+      if (not un.unExcluded) and (un.unProcs.Count > 0) and (un.unInProjectDir or (not aCheckProjectDirOnly)) then
+        if not un.unAllInst then
+          Exit;
+    end;
+  finally
+    LUnitEnumor.Free;
+  end;
+  Result := true;
+end;
 
-function TGlbUnitList.GetLookupKey(const aValue: TUnit): string;
+function TGlbUnitList.IsNoUnitInstrumented(const aCheckProjectDirOnly: Boolean): Boolean;
+var
+  un: TUnit;
+  LUnitEnumor: TRootNode<TUnit>.TEnumerator;
 begin
-  result := AnsiLowerCase(aValue.unName);
+  Result := false;
+  LUnitEnumor := GetEnumerator();
+  try
+    while LUnitEnumor.MoveNext do
+    begin
+      un := LUnitEnumor.Current.Data;
+      if (not un.unExcluded) and (un.unProcs.Count > 0) and
+        (un.unInProjectDir or (not aCheckProjectDirOnly)) then
+        if not un.unNoneInst then
+        begin
+          Exit;
+        end;
+    end;
+  finally
+    LUnitEnumor.Free;
+  end;
+  Result := true;
+end;
+
+
+function TGlbUnitList.IsAnyUnitInstrumented(const aCheckProjectDirOnly: boolean): boolean;
+var
+  un: TUnit;
+  LUnitEnumor: TRootNode<TUnit>.TEnumerator;
+begin
+  Result := true;
+  LUnitEnumor := GetEnumerator();
+  try
+    while LUnitEnumor.MoveNext do
+    begin
+      un := LUnitEnumor.Current.Data;
+      if (not un.unExcluded) and (un.unProcs.Count > 0) and
+        (un.unInProjectDir or (not aCheckProjectDirOnly)) then
+        if un.AnyInstrumented then
+        begin
+          Exit;
+        end;
+    end;
+  finally
+    LUnitEnumor.Free;
+  end;
+  Result := False;
 end;
 
 function TGlbUnitList.Locate(unitName: string): TUnit;
 var
-  LSearchEntry: INode<TUnit>;
   LFoundEntry: INode<TUnit>;
 begin
-  LSearchEntry := TNode<TUnit>.Create();
-  LSearchEntry.Data := TUnit.Create(unitName);
-  if FindNode(LSearchEntry, LFoundEntry) then
+  if FindNode(unitName, LFoundEntry) then
     Locate := LFoundEntry.Data
   else
     Locate := nil;
@@ -951,20 +1020,17 @@ var
 begin
   LSearchEntry := TNode<TUnit>.Create();
   LSearchEntry.Data := TUnit.Create(unitName);
-  if unUnits.FindNode(LSearchEntry, LFoundEntry) then
+  if unUnits.FindNode(unitName, LFoundEntry) then
     Result := LFoundEntry.Data
   else
     Result := nil;
 end; { TUnit.LocateUnit }
 
-function TUnit.LocateProc(procName: string): TProc;
+function TUnit.LocateProc(const aProcName: string): TProc;
 var
-  LSearchEntry: INode<TProc>;
   LFoundEntry: INode<TProc>;
 begin
-  LSearchEntry := TNode<TProc>.Create();
-  LSearchEntry.Data := TProc.Create(procName);
-  if unProcs.FindNode(LSearchEntry, LFoundEntry) then
+  if unProcs.FindNode(aProcName, LFoundEntry) then
     Result := LFoundEntry.Data
   else
     Result := nil;

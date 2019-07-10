@@ -44,6 +44,7 @@ type
 
     function GetEnumerator(): TEnumerator;
     function FindNode(const aSearchNode : INode<T>; out aResultNode: INode<T>) : boolean; overload;
+    function FindNode(const aLookupKey : string; out aResultNode: INode<T>) : boolean; overload;
 
     function Last : INode<T>;
     function First : INode<T>;
@@ -113,7 +114,13 @@ var
   LKey : string;
 begin
   LKey := GetLookupKey(aSearchData);
-  result := fLookupDict.TryGetValue(LKey, aResultNode);
+  result := FindNode(LKey, aResultNode);
+end;
+
+
+function TRootNode<T>.FindNode(const aLookupKey : string; out aResultNode: INode<T>) : boolean;
+begin
+  result := fLookupDict.TryGetValue(aLookupKey, aResultNode);
   if not result then
     aResultNode := nil;
 end;

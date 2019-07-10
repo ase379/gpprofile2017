@@ -67,12 +67,15 @@ type
   TProcList = class(TRootNode<TProc>)
   protected
     function GetLookupKey(const aValue : TProc) : string; override;
+    function AdjustKey(const aName : string): string;
   public
     constructor Create; reintroduce;
     procedure Add(var procName: string; pureAsm: boolean;offset, lineNum, headerLineNum: Integer);
     procedure AddEnd(procName: string; offset, lineNum: Integer);
     procedure AddInstrumented(procName: string;cmtEnterBegin, cmtEnterEnd, cmtExitBegin, cmtExitEnd: Integer);
     procedure SetAllInstrumented(const aValue : Boolean);
+    function FindNode(const aLookupKey : string; out aResultNode: INode<TProc>) : boolean; overload;
+
   end;
 
 
@@ -140,9 +143,14 @@ begin
   CompareFunc := @CompareProc;
 end;
 
+function TProcList.FindNode(const aLookupKey: string; out aResultNode: INode<TProc>): boolean;
+begin
+  result := inherited FindNode(AdjustKey(aLookupKey), aResultNode);
+end;
+
 function TProcList.GetLookupKey(const aValue: TProc): string;
 begin
-  result := AnsiLowerCase(aValue.Name);
+  result := AdjustKey(aValue.Name);
 end;
 
 procedure TProcList.SetAllInstrumented(const aValue: Boolean);
@@ -239,7 +247,12 @@ begin
       fInitial := true;
     end;
   end;
-end; { TProcList.AddInstrumented }
+end; function TProcList.AdjustKey(const aName: string): string;
+begin
+  result := AnsiLowerCase(aName);
+end;
+
+{ TProcList.AddInstrumented }
 
 
 end.

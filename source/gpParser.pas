@@ -276,29 +276,9 @@ begin
 end; { TProject.InstrumentProc }
 
 function TProject.AllInstrumented(projectDirOnly: boolean): boolean;
-var
-  un: TUnit;
-  LUnitEnumor: TRootNode<TUnit>.TEnumerator;
 begin
-  Result := False;
-  with prUnits do
-  begin
-    LUnitEnumor := GetEnumerator();
-    while LUnitEnumor.MoveNext do
-    begin
-      un := LUnitEnumor.Current.Data;
-      if (not un.unExcluded) and (un.unProcs.Count > 0) and
-        (un.unInProjectDir or (not projectDirOnly)) then
-        if not un.unAllInst then
-        begin
-          LUnitEnumor.Free;
-          Exit;
-        end;
-    end;
-    LUnitEnumor.Free;
-  end;
-  Result := true;
-end; { TProject.AllInstrumented }
+  Result := prUnits.AreAllUnitsInstrumented(projectDirOnly);
+end;
 
 procedure TProject.Instrument(aProjectDirOnly: boolean;
   aNotify: TNotifyInstProc; aCommentType: TCommentType;
@@ -384,29 +364,9 @@ begin
 end; { TProject.Instrument }
 
 function TProject.NoneInstrumented(projectDirOnly: boolean): boolean;
-var
-  un: TUnit;
-  LUnitEnumor: TRootNode<TUnit>.TEnumerator;
 begin
-  Result := False;
-  with prUnits do
-  begin
-    LUnitEnumor := GetEnumerator();
-    while LUnitEnumor.MoveNext do
-    begin
-      un := LUnitEnumor.Current.Data;
-      if (not un.unExcluded) and (un.unProcs.Count > 0) and
-        (un.unInProjectDir or (not projectDirOnly)) then
-        if not un.unNoneInst then
-        begin
-          LUnitEnumor.Free;
-          Exit;
-        end;
-    end;
-    LUnitEnumor.Free;
-  end;
-  Result := true;
-end; { TProject.NoneInstrumented }
+  result := prUnits.IsNoUnitInstrumented(projectDirOnly)
+end;
 
 function TProject.GetUnitPath(unitName: string): string;
 var
@@ -414,7 +374,7 @@ var
 begin
   un := prUnits.Locate(unitName);
   if un = nil then
-    raise Exception.Create('Trying to get name of unexistent unit!')
+    raise Exception.Create('Could not get filename for unit "'+unitName+'".')
   else
     Result := un.unFullName;
 end; { TProject.GetUnitPath }
@@ -438,29 +398,9 @@ begin
 end; { TProject.GetFirstLine }
 
 function TProject.AnyInstrumented(projectDirOnly: boolean): boolean;
-var
-  un: TUnit;
-  LUnitEnumor: TRootNode<TUnit>.TEnumerator;
 begin
-  Result := true;
-  with prUnits do
-  begin
-    LUnitEnumor := GetEnumerator();
-    while LUnitEnumor.MoveNext do
-    begin
-      un := LUnitEnumor.Current.Data;
-      if (not un.unExcluded) and (un.unProcs.Count > 0) and
-        (un.unInProjectDir or (not projectDirOnly)) then
-        if un.AnyInstrumented then
-        begin
-          LUnitEnumor.free;
-          Exit;
-        end;
-    end;
-    LUnitEnumor.Free;
-  end;
-  Result := False;
-end; { TProject.AnyInstrumented }
+  Result := prUnits.IsAnyUnitInstrumented(projectDirOnly);
+end;
 
 procedure TProject.Rescan(aExclUnits: String;
   const aSearchPath, aConditionals: string;
