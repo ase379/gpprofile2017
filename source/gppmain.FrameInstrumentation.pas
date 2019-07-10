@@ -578,6 +578,7 @@ procedure TfrmMainInstrumentation.clbUnitsClick();
 var
   LIndex : integer;
   LSelectedNode : PVirtualNode;
+  LUnitPath : string;
 begin
   fVstSelectProcTools.BeginUpdate;
   try
@@ -586,6 +587,7 @@ begin
     try
       fVstSelectClassTools.Clear;
       LIndex := 0;
+      LUnitPath := '';
       LSelectedNode := fVstSelectUnitTools.GetSelectedNode();
       if assigned(lSelectedNode) then
         LIndex := LSelectedNode.Index;
@@ -595,11 +597,12 @@ begin
         RecreateClasses(false);
         ChangeClassSelectionWithoutEvent(0);
         clbClassesClick(self);
-        OnShowStatusBarMessage(openProject.GetUnitPath(fVstSelectUnitTools.GetName(lSelectedNode.Index)), false)
+        LUnitPath := openProject.GetUnitPath(fVstSelectUnitTools.GetName(lSelectedNode.Index));
+        OnShowStatusBarMessage(LUnitPath, false)
       end
       else if openProject <> nil then
         OnShowStatusBarMessage(openProject.Name, false);
-      OnReloadSource('',0); // force reset
+      OnReloadSource(LUnitPath,0); // force reset
       mnuUnitWizard.Enabled := LIndex > 0;
     finally
       fVstSelectClassTools.EndUpdate;
