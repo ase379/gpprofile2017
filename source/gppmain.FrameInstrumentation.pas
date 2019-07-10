@@ -88,7 +88,7 @@ type
 implementation
 
 uses
-  GpString, gpUnitWizard,
+  GpString, gpUnitWizard, gpParser.Units,
   gppMain.FrameInstrumentation.SelectionInfo;
 
 {$R *.dfm}

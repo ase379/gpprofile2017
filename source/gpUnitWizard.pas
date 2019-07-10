@@ -8,7 +8,8 @@ uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
   StdCtrls, ComCtrls, ExtCtrls, Menus, ImgList, ActnList, ShellAPI, ShlObj,
   System.Actions, System.ImageList, System.Generics.Collections,
-  VirtualTrees, gpParser, virtualTree.tools.checkable;
+  VirtualTrees, gpParser, virtualTree.tools.checkable,
+  gpParser.Units;
 
 type
 
