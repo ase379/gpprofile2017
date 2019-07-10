@@ -10,7 +10,7 @@ uses
   gppIDT,
   Dialogs,
   gppTree,
-  gpFileEdit, gpParser.BaseProject, gpParser.types, gpParser.Units;
+  gpFileEdit, gpParser.BaseProject, gpParser.types, gpParser.Units, gpParser.Selections;
 
 type
   TNotifyProc = procedure(const aUnitName: String) of object;
@@ -18,18 +18,6 @@ type
 
   TProject = class;
 
-  TUnitSelection = class
-  private
-    fUnitName : string;
-    FSelectedProcedures : TStringList;
-  public
-    constructor Create(const aUnitName : string);
-    destructor Destroy;override;
-
-    property Name : string read fUnitName;
-    property SelectedProcedures : TStringList read FSelectedProcedures write FSelectedProcedures;
-  end;
-  TUnitSelectionList = TObjectList<TUnitSelection>;
 
   TProject = class(TBaseProject)
   private
@@ -74,7 +62,6 @@ implementation
 uses
   System.AnsiStrings, Winapi.Windows,
   GpIFF, GpString, gppCommon, gppCurrentPrefs,
-  Xml.XMLIntf, Xml.XMLDoc,
   gpParser.Procs;
 
 { ========================= TProject ========================= }
@@ -402,6 +389,11 @@ begin
   Result := prUnits.IsAnyUnitInstrumented(projectDirOnly);
 end;
 
+procedure TProject.ApplySelections(const aUnitSelections: TUnitSelectionList; const aOnlyCheckUnitName: boolean);
+begin
+  aUnitSelections.ApplySelections(prUnits,aOnlyCheckUnitName);
+end;
+
 procedure TProject.Rescan(aExclUnits: String;
   const aSearchPath, aConditionals: string;
   aCommentType: TCommentType; aIgnoreFileDate: boolean; aParseAsm: boolean);
@@ -436,183 +428,63 @@ end;
 
 procedure TProject.LoadInstrumentalizationSelection(const aFilename: string);
 
-  procedure RaiseInvalidTagError(const anExpectedName,aFoundName : string);
-  begin
-    raise EReadError.Create('Error: Expected "'+anExpectedName+'", but found "'+aFoundName+'".');
-  end;
-
-  procedure RaiseMissingAttributeError(const anTagName, anAttributeName : string);
-  begin
-    raise EReadError.Create('Error: Expected attribute "'+anAttributeName+'" for tag "'+anTagName+'".');
-  end;
 var
   LUnitSelections: TUnitSelectionList;
-  LXmlDocument : IXMLDocument;
-  LUnitsNode,
-  LUnitNode,
-  LProcNode: IXMLNode;
-  i,k,m : Integer;
-  LTagName : string;
-  LAttributeName : string;
-  LUnitSelection : TUnitSelection;
+
 begin
   LUnitSelections := TUnitSelectionList.Create(true);
-  LXmlDocument := LoadXMLDocument(aFilename);
-  for I := 0 to LXmlDocument.DocumentElement.ChildNodes.Count-1 do
-  begin
-    LUnitsNode := LXmlDocument.DocumentElement.ChildNodes[I];
-    if LUnitsNode.LocalName <> 'Units' then
-      RaiseInvalidTagError('Units',LUnitsNode.LocalName);
-    for k := 0 to LUnitsNode.ChildNodes.Count-1 do
-    begin
-      LUnitNode := LUnitsNode.ChildNodes[k];
-      LTagName := LUnitNode.LocalName;
-      if LTagName <> 'Unit' then
-        RaiseInvalidTagError('Unit',LTagName);
-      LAttributeName := LUnitNode.Attributes['Name'];
-      if LAttributeName = '' then
-        RaiseMissingAttributeError('Unit','Name');
-      LUnitSelection := TUnitSelection.Create(LAttributeName);
-      LUnitSelections.Add(LUnitSelection);
-      for m := 0 to LUnitNode.ChildNodes.Count-1 do
-      begin
-        LProcNode := LUnitNode.ChildNodes[m];
-        LTagName := LProcNode.LocalName;
-        if LTagName <> 'Procedure' then
-          RaiseInvalidTagError('Unit',LTagName);
-        LAttributeName := LProcNode.Attributes['Name'];
-        if LAttributeName = '' then
-          RaiseMissingAttributeError('Procedure','Name');
-        LUnitSelection.SelectedProcedures.Add(LAttributeName);
-      end;
-    end;
-  end;
+  LUnitSelections.LoadSelectionFile(aFilename);
   ApplySelections(LUnitSelections, false);
   LUnitSelections.Free;
 end;
 
 
-procedure TProject.ApplySelections(const aUnitSelections: TUnitSelectionList; const aOnlyCheckUnitName : boolean);
 
-  function GetSelectionOrNil(const aUnitName : string): TUnitSelection;
-  var
-    LSelection : TUnitSelection;
-    LUnitName : string;
-
-  begin
-    result := nil;
-    LUnitName := aUnitName.ToUpper();
-    for LSelection in aUnitSelections do
-    begin
-      if LSelection.Name.ToUpper = LUnitName then
-        exit(LSelection);
-    end;
-  end;
-
-  function GetProcSelectionOrNil(const aUnit:TUnitSelection ;const aProcName : string): string;
-  var
-    LCurrentProcName : string;
-    LProcName : string;
-  begin
-    result := '';
-    if assigned(aUnit) then
-    begin
-      if aOnlyCheckUnitName then
-        Exit('*');
-      LProcName := aProcName.ToUpper();
-      for LCurrentProcName in aUnit.SelectedProcedures do
-      begin
-        if LCurrentProcName.ToUpper = LProcName then
-          exit(LCurrentProcName);
-      end;
-    end;
-  end;
-
-
-var
-  LUnitSelection : TUnitSelection;
-  LProcSelection : string;
-  un: TUnit;
-  LUnitEnumor: TRootNode<TUnit>.TEnumerator;
-  LProcEnumor: TRootNode<TProc>.TEnumerator;
-  LAllCnt : Cardinal;
-  LNone : boolean;
-begin
-  // update unit list selections
-  with prUnits do
-  begin
-    LUnitEnumor := GetEnumerator();
-    while LUnitEnumor.MoveNext do
-    begin
-      un := LUnitEnumor.Current.Data;
-      LUnitSelection := GetSelectionOrNil(un.unName);
-      LAllCnt := 0;
-      LNone := true;
-      LProcEnumor := un.unProcs.GetEnumerator();
-      while LProcEnumor.MoveNext do
-      begin
-        LProcSelection := '';
-        if assigned(LUnitSelection)  then
-          LProcSelection := GetProcSelectionOrNil(LUnitSelection,LProcEnumor.Current.Data.Name);
-        LProcEnumor.Current.Data.prInstrumented := LProcSelection <> '';
-        if LProcEnumor.Current.Data.prInstrumented then
-        begin
-          inc(LAllCnt);
-          LNone := false;
-        end;
-      end;
-      un.unAllInst := LAllCnt = un.unProcs.Count;
-      un.unNoneInst := LNone;
-    end;
-    LUnitEnumor.Free;
-  end;
-end; { TProject.ApplySelections }
 
 
 procedure TProject.SaveInstrumentalizationSelection(const aFilename: string);
 var
   LInstrumentedUnits : TStringList;
   LInstrumentedProcs : TStringList;
-  LXmlDocument : IXMLDocument;
-  RootNode,
-  LUnitsNode,
-  LUnitNode,
-  LProcNode : IXMLNode;
-  LUnitName,LUnitNameWithInstr : string;
-  LProcName,LProcNameWithInstr : string;
-  LNoUnits : boolean;
+  LSerializer : TUnitSelectionSerializer;
+  LUnitNameWithInstr : string;
+  LUnitName : string;
+  LNoUnits : Boolean;
+  LProcNameWithInstr : string;
+  LProcName : string;
 begin
-  LXmlDocument := NewXMLDocument;
-  LXmlDocument.Encoding := 'utf-8';
-  LXmlDocument.Options := [doNodeAutoIndent]; // looks better in Editor ;)
-  RootNode := LXmlDocument.AddChild('ISelection');
   LInstrumentedUnits := TStringList.Create();
   LInstrumentedProcs := TStringList.Create();
-  GetUnitList(LInstrumentedUnits,false, true);
-  LUnitsNode := RootNode.AddChild('Units');
-  for LUnitNameWithInstr in LInstrumentedUnits do
-  begin
-    LUnitName := Copy(LUnitNameWithInstr,1,Length(LUnitNameWithInstr)-2);
-    LNoUnits := (LUnitNameWithInstr[Length(LUnitNameWithInstr)] = '1');
-    if not LNoUnits then
+  LSerializer := TUnitSelectionSerializer.Create(aFilename);
+  try
+    GetUnitList(LInstrumentedUnits,false, true);
+
+    for LUnitNameWithInstr in LInstrumentedUnits do
     begin
-      LUnitNode := LUnitsNode.AddChild('Unit');
-      LUnitNode.Attributes['Name'] := LUnitName;
-      GetProcList(LUnitName,LInstrumentedProcs,true);
-      for LProcNameWithInstr in LInstrumentedProcs do
+      LUnitName := Copy(LUnitNameWithInstr,1,Length(LUnitNameWithInstr)-2);
+      LNoUnits := (LUnitNameWithInstr[Length(LUnitNameWithInstr)] = '1');
+      if not LNoUnits then
       begin
-        // evaluate instrumented prefix
-        if LProcNameWithInstr.EndsWith('1') then
+        LSerializer.AddUnit(LUnitName);
+        GetProcList(LUnitName,LInstrumentedProcs,true);
+        for LProcNameWithInstr in LInstrumentedProcs do
         begin
-          LProcName := Copy(LProcNameWithInstr,1,Length(LProcNameWithInstr)-1);
-          LProcNode := LUnitNode.AddChild('Procedure');
-          LProcNode.Attributes['Name'] := LProcName;
+          // evaluate instrumented prefix
+          if LProcNameWithInstr.EndsWith('1') then
+          begin
+            LProcName := Copy(LProcNameWithInstr,1,Length(LProcNameWithInstr)-1);
+            LSerializer.AddProc(LProcName);
+          end;
         end;
       end;
     end;
+    LSerializer.Save;
+  finally
+    LSerializer.Free;
+    LInstrumentedUnits.free;
+    LInstrumentedProcs.Free;
   end;
-  LInstrumentedUnits.free;
-  LXmlDocument.SaveToFile(aFilename);
+
 end;
 
 { TProject.Rescan }
@@ -635,21 +507,6 @@ end;
 function TProject.IsMissingUnit(const aUnitName : string): Boolean;
 begin
   result := prMissingUnitNames.ContainsKey(aUnitName);
-end;
-
-{ TUnitSelection }
-
-constructor TUnitSelection.Create(const aUnitName : string);
-begin
-  inherited Create();
-  FUnitName := aUnitName;
-  FSelectedProcedures := TStringList.Create();;
-end;
-
-destructor TUnitSelection.Destroy;
-begin
-  FSelectedProcedures.Free;
-  inherited;
 end;
 
 end.
