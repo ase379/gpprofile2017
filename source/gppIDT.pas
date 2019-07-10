@@ -203,6 +203,7 @@ begin
       WriteString(f,eQual);
     end;
   end;
+  LEnumor.Free;
 end;
 
 function TIDTU.GetLookupKey(const aValue : TIDTUE) : string;
@@ -252,6 +253,7 @@ begin
       WriteInt(f,eUID);
     end;
   end;
+  LEnumor.Free;
 end;
 
 function TIDTC.GetLookupKey(const aValue: TIDTCE): string;
@@ -303,6 +305,7 @@ begin
       WriteInt(f,eFirstLn);
     end;
   end;
+  LEnumor.Free;
 end;
 
 function TIDTP.GetLookupKey(const aValue: TIDTPE): string;
