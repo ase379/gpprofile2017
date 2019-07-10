@@ -1872,7 +1872,9 @@ begin
       sourceCodeEdit.TopLine := focusOn+1;
       StatusPanel0(fileName,true);
     end;
-  except sourceCodeEdit.Lines.Clear; end;
+  except
+    sourceCodeEdit.Lines.Clear;
+  end;
 end; { TfrmMain.LoadSource }
 
 procedure TfrmMain.ClearSource;
