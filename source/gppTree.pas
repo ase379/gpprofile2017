@@ -38,13 +38,13 @@ type
     property CompareFunc : TCompareFunc read fCompareFunc write fCompareFunc;
     function GetLookupKey(const aValue : T) : string; virtual;abstract;
     function FindNode(const aSearchData : T; out aResultNode: INode<T>) : boolean; overload;
+    function FindNode(const aLookupKey : string; out aResultNode: INode<T>) : boolean; overload;
   public
     constructor Create();
     destructor Destroy; override;
 
     function GetEnumerator(): TEnumerator;
     function FindNode(const aSearchNode : INode<T>; out aResultNode: INode<T>) : boolean; overload;
-    function FindNode(const aLookupKey : string; out aResultNode: INode<T>) : boolean; overload;
 
     function Last : INode<T>;
     function First : INode<T>;
