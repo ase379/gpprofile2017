@@ -59,7 +59,7 @@ implementation
 uses
   System.Sysutils, System.Generics.Defaults;
 
-{ TNode }
+{ TNode<T> }
 
 constructor TNode<T>.Create(aValue: T);
 begin
