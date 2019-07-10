@@ -30,9 +30,8 @@ type
   TGlbUnitList = class(TRootNode<TUnit>)
   protected
     function GetLookupKey(const aValue : TUnit) : string; override;
-  private
-    constructor Create(); reintroduce;
   public
+    constructor Create(); reintroduce;
     function Locate(unitName: string): TUnit;
     function LocateCreate(unitName, unitLocation: string;excluded: boolean): TUnit;
   end;
@@ -76,7 +75,7 @@ type
 implementation
 
 uses
-  System.IOUtils,
+  System.IOUtils, Winapi.Windows,
   GpString, gppCommon,
   CastaliaPasLex, CastaliaPasLexTypes;
 
