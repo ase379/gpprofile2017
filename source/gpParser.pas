@@ -618,28 +618,9 @@ end;
 { TProject.Rescan }
 
 function TProject.AnyChange(projectDirOnly: boolean): boolean;
-var
-  un: TUnit;
-  LUnitEnumor: TRootNode<TUnit>.TEnumerator;
 begin
-  Result := true;
-  with prUnits do
-  begin
-    LUnitEnumor := GetEnumerator();
-    while LUnitEnumor.MoveNext do
-    begin
-      un := LUnitEnumor.Current.Data;
-      if (not un.unExcluded) and (un.unProcs.Count > 0) and
-        (un.unInProjectDir or (not projectDirOnly)) then
-        if un.DidFileTimestampChange() then
-          Exit;
-    end;
-    LUnitEnumor.Free;
-  end;
-  Result := False;
+  Result := prUnits.DidAnyTimestampChange(projectDirOnly);
 end;
-
-
 
 function TProject.LocateOrCreateUnit(const unitName, unitLocation: string; const excluded: boolean): TBaseUnit;
 begin

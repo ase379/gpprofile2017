@@ -37,6 +37,7 @@ type
     function AreAllUnitsInstrumented(const aCheckProjectDirOnly: Boolean): Boolean;
     function IsNoUnitInstrumented(const aCheckProjectDirOnly : Boolean) : Boolean;
     function IsAnyUnitInstrumented(const aCheckProjectDirOnly: boolean): boolean;
+    function DidAnyTimestampChange(const aCheckProjectDirOnly: boolean): boolean;
   end;
 
   TUnit = class(TBaseUnit)
@@ -210,6 +211,27 @@ begin
   Result := true;
 end;
 
+
+function TGlbUnitList.DidAnyTimestampChange(const aCheckProjectDirOnly: Boolean): boolean;
+var
+  un: TUnit;
+  LUnitEnumor: TRootNode<TUnit>.TEnumerator;
+begin
+  Result := true;
+  LUnitEnumor := GetEnumerator();
+  try
+    while LUnitEnumor.MoveNext do
+    begin
+      un := LUnitEnumor.Current.Data;
+      if (not un.unExcluded) and (un.unProcs.Count > 0) and (un.unInProjectDir or (not aCheckProjectDirOnly)) then
+        if un.DidFileTimestampChange() then
+          Exit;
+    end;
+  finally
+    LUnitEnumor.Free;
+  end;
+  Result := False;
+end;
 
 function TGlbUnitList.IsAnyUnitInstrumented(const aCheckProjectDirOnly: boolean): boolean;
 var
