@@ -446,7 +446,7 @@ begin
   ClearDefines;
   FDefines.Assign(ALexer.FDefines);
   FDefineStack := ALexer.FDefineStack;
-
+  LastFrame := nil;
   Frame := nil;
   SourceFrame := ALexer.FTopDefineRec;
   while SourceFrame <> nil do
