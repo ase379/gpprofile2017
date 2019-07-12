@@ -10,13 +10,17 @@ type
   TUnit = class;
 
   TDefineList = class
-    dlDefines: TStringList;
+  strict private
+    fDefines: TStringList;
+  public
     constructor Create;
     destructor Destroy; override;
-    procedure Define(conditional: string);
-    procedure Undefine(conditional: string);
-    function IsDefined(conditional: string): boolean;
-    procedure Assign(conditionals: string);
+    procedure Define(const aCondition: string);
+    procedure Undefine(const aCondition: string);
+    function IsDefined(const aCondition: string): boolean;
+    procedure Assign(const aConditions: string);
+
+    class function ToKey(const aCondition: string): string; static;
   end;
 
   TUnitList = class(TRootNode<TUnit>)
@@ -89,43 +93,48 @@ uses
 constructor TDefineList.Create;
 begin
   inherited Create;
-  dlDefines := TStringList.Create;
-  dlDefines.Sorted := true;
+  fDefines := TStringList.Create;
+  fDefines.Sorted := true;
 end;
 
-procedure TDefineList.Define(conditional: string);
+procedure TDefineList.Define(const aCondition: string);
 begin
-  if not IsDefined(conditional) then
-    dlDefines.Add(UpperCase(conditional));
+  if not IsDefined(aCondition) then
+    fDefines.Add(ToKey(aCondition));
 end;
 
 destructor TDefineList.Destroy;
 begin
-  dlDefines.Free;
+  fDefines.Free;
   inherited Destroy;
 end;
 
-function TDefineList.IsDefined(conditional: string): boolean;
+function TDefineList.IsDefined(const aCondition: string): boolean;
 begin
-  Result := (dlDefines.IndexOf(UpperCase(conditional)) >= 0);
+  Result := (fDefines.IndexOf(ToKey(aCondition)) >= 0);
 end;
 
-procedure TDefineList.Undefine(conditional: string);
+class function TDefineList.ToKey(const aCondition: string): string;
+begin
+  result := UpperCase(aCondition);
+end;
+
+procedure TDefineList.Undefine(const aCondition: string);
 var
   idx: Integer;
 begin
-  idx := dlDefines.IndexOf(UpperCase(conditional));
+  idx := fDefines.IndexOf(ToKey(aCondition));
   if idx >= 0 then
-    dlDefines.Delete(idx);
+    fDefines.Delete(idx);
 end;
 
-procedure TDefineList.Assign(conditionals: string);
+procedure TDefineList.Assign(const aConditions: string);
 var
   i: Integer;
 begin
-  dlDefines.Clear;
-  for i := 1 to NumElements(conditionals, ';', -1) do
-    Define(NthEl(conditionals, i, ';', -1));
+  fDefines.Clear;
+  for i := 1 to NumElements(aConditions, ';', -1) do
+    Define(NthEl(aConditions, i, ';', -1));
 end;
 
 
@@ -421,7 +430,6 @@ var
   parserStack: TList;
   skipList: TList;
   skipping: boolean;
-  conds: TDefineList;
   incName: string;
 
   function IsBlockStartToken(token: TptTokenKind): boolean;
@@ -600,6 +608,8 @@ var
   vUnitFullName: TFileName;
   LSelfBuffer: string;
   LDataLowerCase: string;
+  LDefines: TDefineList;
+
 begin
   unParsed := true;
   parserStack := TList.Create;
@@ -658,9 +668,9 @@ begin
     apiStartEnd := -1;
     skipping := False;
     skipList := TList.Create;
+    LDefines := TDefineList.Create;
     try
-      conds := TDefineList.Create;
-      conds.Assign(aConditionals);
+      LDefines.Assign(aConditionals);
       try
         repeat
           while parser.tokenID <> ptNull do
@@ -669,6 +679,15 @@ begin
             tokenData := parser.token;
             tokenPos := parser.tokenPos;
             tokenLN := parser.LineNumber;
+
+            if tokenData.Contains('NoVcsMdb') then
+              Sleep(0);
+            if tokenID = ptIfNDefDirect then
+            begin
+              PushSkippingState(skipping, False);
+              skipping := skipping or LDefines.IsDefined(ExtractParameter(tokenData, 1));
+            end;
+
 
             if tokenID = ptCompDirect then
             begin
@@ -686,7 +705,7 @@ begin
                 begin // process $IFDEF
                   PushSkippingState(skipping, False);
                   skipping := skipping or
-                    (not conds.IsDefined(ExtractParameter(tokenData, 1)));
+                    (not LDefines.IsDefined(ExtractParameter(tokenData, 1)));
                 end
                 else if direct = 'IFOPT' then
                 begin // process $IFOPT
@@ -696,7 +715,7 @@ begin
                 begin // process $IFNDEF
                   PushSkippingState(skipping, False);
                   skipping := skipping or
-                    conds.IsDefined(ExtractParameter(tokenData, 1));
+                    LDefines.IsDefined(ExtractParameter(tokenData, 1));
                 end
                 else if direct = 'ENDIF' then
                 begin // process $ENDIF
@@ -728,9 +747,9 @@ begin
                   continue;
                 end
                 else if direct = 'DEFINE' then // process $DEFINE
-                  conds.Define(ExtractParameter(tokenData, 1))
+                  LDefines.Define(ExtractParameter(tokenData, 1))
                 else if direct = 'UNDEF' then // process $UNDEF
-                  conds.Undefine(ExtractParameter(tokenData, 1));
+                  LDefines.Undefine(ExtractParameter(tokenData, 1));
               end;
 
               if inAsmBlock and ((prevTokenID = ptAddressOp) or
@@ -1005,7 +1024,7 @@ begin
           end; // while
         until not RemoveLastParser;
       finally
-        conds.Free;
+        LDefines.Free;
       end;
     finally
       skipList.Free;
