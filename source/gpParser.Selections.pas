@@ -221,9 +221,6 @@ begin
 end;
 
 procedure TUnitSelectionSerializer.AddUnit(const aUnitName: string);
-var
-  LUnitName : string;
-  LNoUnits : boolean;
 begin
   fUnitNode := fUnitsNode.AddChild('Unit');
   fUnitNode.Attributes['Name'] := aUnitName;
