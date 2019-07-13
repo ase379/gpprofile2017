@@ -4,24 +4,10 @@ interface
 
 uses
   System.Classes, System.SysUtils,
-  gppTree,gpParser.baseProject,gpParser.Types, gpFileEdit, gpParser.Procs, gpParser.API, gppIDT;
+  gppTree,gpParser.baseProject,gpParser.Types, gpParser.Procs, gpParser.Defines, gpParser.API, gppIDT, gpFileEdit;
 
 type
   TUnit = class;
-
-  TDefineList = class
-  strict private
-    fDefines: TStringList;
-  public
-    constructor Create;
-    destructor Destroy; override;
-    procedure Define(const aCondition: string);
-    procedure Undefine(const aCondition: string);
-    function IsDefined(const aCondition: string): boolean;
-    procedure Assign(const aConditions: string);
-
-    class function ToKey(const aCondition: string): string; static;
-  end;
 
   TUnitList = class(TRootNode<TUnit>)
   protected
@@ -86,56 +72,6 @@ uses
   System.IOUtils, Winapi.Windows,
   GpString, gppCommon,
   CastaliaPasLex, CastaliaPasLexTypes;
-
-
-{ ========================= TDefineList ========================= }
-
-constructor TDefineList.Create;
-begin
-  inherited Create;
-  fDefines := TStringList.Create;
-  fDefines.Sorted := true;
-end;
-
-procedure TDefineList.Define(const aCondition: string);
-begin
-  if not IsDefined(aCondition) then
-    fDefines.Add(ToKey(aCondition));
-end;
-
-destructor TDefineList.Destroy;
-begin
-  fDefines.Free;
-  inherited Destroy;
-end;
-
-function TDefineList.IsDefined(const aCondition: string): boolean;
-begin
-  Result := (fDefines.IndexOf(ToKey(aCondition)) >= 0);
-end;
-
-class function TDefineList.ToKey(const aCondition: string): string;
-begin
-  result := UpperCase(aCondition);
-end;
-
-procedure TDefineList.Undefine(const aCondition: string);
-var
-  idx: Integer;
-begin
-  idx := fDefines.IndexOf(ToKey(aCondition));
-  if idx >= 0 then
-    fDefines.Delete(idx);
-end;
-
-procedure TDefineList.Assign(const aConditions: string);
-var
-  i: Integer;
-begin
-  fDefines.Clear;
-  for i := 1 to NumElements(aConditions, ';', -1) do
-    Define(NthEl(aConditions, i, ';', -1));
-end;
 
 
 { ========================= TUnitList ========================= }
@@ -609,7 +545,6 @@ var
   LSelfBuffer: string;
   LDataLowerCase: string;
   LDefines: TDefineList;
-
 begin
   unParsed := true;
   parserStack := TList.Create;
@@ -680,15 +615,6 @@ begin
             tokenPos := parser.tokenPos;
             tokenLN := parser.LineNumber;
 
-            if tokenData.Contains('NoVcsMdb') then
-              Sleep(0);
-            if tokenID = ptIfNDefDirect then
-            begin
-              PushSkippingState(skipping, False);
-              skipping := skipping or LDefines.IsDefined(ExtractParameter(tokenData, 1));
-            end;
-
-
             if tokenID = ptCompDirect then
             begin
               // Don't process conditional compilation directive if it is
@@ -704,8 +630,7 @@ begin
                 if direct = 'IFDEF' then
                 begin // process $IFDEF
                   PushSkippingState(skipping, False);
-                  skipping := skipping or
-                    (not LDefines.IsDefined(ExtractParameter(tokenData, 1)));
+                  skipping := skipping or (not LDefines.IsDefined(ExtractParameter(tokenData, 1)));
                 end
                 else if direct = 'IFOPT' then
                 begin // process $IFOPT
@@ -714,8 +639,7 @@ begin
                 else if direct = 'IFNDEF' then
                 begin // process $IFNDEF
                   PushSkippingState(skipping, False);
-                  skipping := skipping or
-                    LDefines.IsDefined(ExtractParameter(tokenData, 1));
+                  skipping := skipping or LDefines.IsDefined(ExtractParameter(tokenData, 1));
                 end
                 else if direct = 'ENDIF' then
                 begin // process $ENDIF
