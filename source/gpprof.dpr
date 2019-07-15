@@ -30,31 +30,49 @@ uses
   Windows,
   Vcl.HtmlHelpViewer,
   GpString,
-  gppMain in 'gppMain.pas' {frmMain},
-  gpPreferencesDlg in 'gpPreferencesDlg.pas' {frmPreferences},
-  gpParser in 'gpParser.pas',
-  gppIDT in 'gppIDT.pas',
-  GpIFF in 'GpIFF.pas',
-  gppResults in 'gppResults.pas',
-  gppLoadProgress in 'gppLoadProgress.pas' {frmLoadProgress},
-  gppAbout in 'gppAbout.pas' {frmAbout},
-  gppExport in 'gppExport.pas' {frmExport},
-  gpFileEdit in 'gpFileEdit.pas',
-  gpRegUnreg in 'gpRegUnreg.pas',
-  gppCommon in 'gppCommon.pas',
-  DProjUnit in 'DProjUnit.pas',
   BdsProjUnit in 'BdsProjUnit.pas',
-  bdsVersions in 'bdsVersions.pas',
-  gppTree in 'gppTree.pas',
-  gpPrfPlaceholders in 'gpPrfPlaceholders.pas',
-  gpPrfPlaceholderDlg in 'gpPrfPlaceholderDlg.pas' {frmPreferenceMacros},
-  gppCurrentPrefs in 'gppCurrentPrefs.pas',
-  gppMain.FrameInstrumentation.SelectionInfo in 'gppMain.FrameInstrumentation.SelectionInfo.pas',
-  virtualTree.tools.base in 'virtualTree.tools.base.pas',
-  virtualTree.tools.checkable in 'virtualTree.tools.checkable.pas',
-  virtualTree.tools.statistics in 'virtualTree.tools.statistics.pas',
   gppmain.FrameInstrumentation in 'gppmain.FrameInstrumentation.pas' {frmMainInstrumentation: TFrame},
-  gppmain.FrameAnalysis in 'gppmain.FrameAnalysis.pas' {frmMainProfiling: TFrame};
+  gppTree in 'gppTree.pas',
+  gppMain in 'gppMain.pas' {frmMain},
+  gpFileEdit in 'gpFileEdit.pas',
+  GpVersion in 'GpVersion.pas',
+  gppIDT in 'gppIDT.pas',
+  CastaliaPasLex in 'OutSources\CastaliaDelphiParser\CastaliaPasLex.pas',
+  gpUnitWizard in 'gpUnitWizard.pas' {fmUnitWizard},
+  gppcommon in 'gppcommon.pas',
+  gppresults in 'gppresults.pas',
+  gppExport in 'gppExport.pas' {frmExport},
+  gppAbout in 'gppAbout.pas' {frmAbout},
+  gpiff in 'gpiff.pas',
+  GpHugeF in 'GpHugeF.pas',
+  gppmain.types in 'gppmain.types.pas',
+  gpPrfPlaceholders in 'gpPrfPlaceholders.pas',
+  GpRegistry in 'GpRegistry.pas',
+  gppCurrentPrefs in 'gppCurrentPrefs.pas',
+  gppmain.dragNdrop in 'gppmain.dragNdrop.pas',
+  gpPreferencesDlg in 'gpPreferencesDlg.pas' {frmPreferences},
+  SimpleReportUnit in 'SimpleReportUnit.pas' {fmSimpleReport},
+  gppLoadProgress in 'gppLoadProgress.pas' {frmLoadProgress},
+  gppmain.FrameAnalysis in 'gppmain.FrameAnalysis.pas' {frmMainProfiling: TFrame},
+  bdsVersions in 'bdsVersions.pas',
+  gppMain.FrameInstrumentation.SelectionInfo in 'gppMain.FrameInstrumentation.SelectionInfo.pas',
+  gpRegUnreg in 'gpRegUnreg.pas',
+  gpPrfPlaceholderDlg in 'gpPrfPlaceholderDlg.pas' {frmPreferenceMacros},
+  DProjUnit in 'DProjUnit.pas',
+  CastaliaPasLexTypes in 'OutSources\CastaliaDelphiParser\CastaliaPasLexTypes.pas',
+  CastaliaSimplePasParTypes in 'OutSources\CastaliaDelphiParser\CastaliaSimplePasParTypes.pas',
+  CastaliaSimplePasPar in 'OutSources\CastaliaDelphiParser\CastaliaSimplePasPar.pas',
+  gpParser.API in 'gpParser\gpParser.API.pas',
+  gpParser.BaseProject in 'gpParser\gpParser.BaseProject.pas',
+  gpParser.Defines in 'gpParser\gpParser.Defines.pas',
+  gpParser in 'gpParser\gpParser.pas',
+  gpParser.Procs in 'gpParser\gpParser.Procs.pas',
+  gpParser.Selections in 'gpParser\gpParser.Selections.pas',
+  gpParser.Types in 'gpParser\gpParser.Types.pas',
+  gpParser.Units in 'gpParser\gpParser.Units.pas',
+  virtualTree.tools.base in 'VirtualTree.Tools\virtualTree.tools.base.pas',
+  virtualTree.tools.checkable in 'VirtualTree.Tools\virtualTree.tools.checkable.pas',
+  virtualTree.tools.statistics in 'VirtualTree.Tools\virtualTree.tools.statistics.pas';
 
 {$R *.RES}
 
@@ -64,6 +82,13 @@ begin
   Application.CreateForm(TfrmPreferences, frmPreferences);
   Application.CreateForm(TfrmAbout, frmAbout);
   Application.CreateForm(TfrmExport, frmExport);
+  Application.CreateForm(TfrmPreferenceMacros, frmPreferenceMacros);
+  Application.CreateForm(TfrmMain, frmMain);
+  Application.CreateForm(TfmUnitWizard, fmUnitWizard);
+  Application.CreateForm(TfrmExport, frmExport);
+  Application.CreateForm(TfrmAbout, frmAbout);
+  Application.CreateForm(TfrmPreferences, frmPreferences);
+  Application.CreateForm(TfrmLoadProgress, frmLoadProgress);
   Application.CreateForm(TfrmPreferenceMacros, frmPreferenceMacros);
   Application.Run;
 end.
