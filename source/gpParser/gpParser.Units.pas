@@ -342,6 +342,8 @@ begin
     ptIfDefDirect : LDirective := 'IFDEF';
     ptIfOptDirect : LDirective := 'IFOPT';
     ptIfNDefDirect : LDirective := 'IFNDEF';
+    ptIfDirect : LDirective := 'IF';
+    ptIfEndDirect : LDirective := 'IFEND';
     ptEndIfDirect : LDirective := 'ENDIF';
     ptElseDirect : LDirective := 'ELSE';
     ptIncludeDirect : LDirective := 'INCLUDE';
@@ -375,6 +377,14 @@ begin
     else if LDirective = 'IFNDEF' then
     begin // process $IFNDEF
       fSkippedList.TriggerIfNDef(fDefines.IsDefined(ExtractParameter(tokenData, 1)));
+    end
+    else if LDirective = 'IF' then
+    begin
+      fSkippedList.TriggerIf(fDefines.IsDefined(ExtractParameter(tokenData, 1)));
+    end
+    else if LDirective = 'IFEND' then
+    begin
+      fSkippedList.TriggerIfEnd;
     end
     else if LDirective = 'ENDIF' then
     begin // process $ENDIF

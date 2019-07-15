@@ -6,32 +6,76 @@ uses
   System.Classes, System.Generics.Collections;
 
 type
+  TSkippedCodeIfType = (IFDEF_Based, IF_Based);
+
   TSkippedCodeRec = record
   public
+    IFType : TSkippedCodeIfType;
+    /// <summary>
+    /// The skipped state of the entry.
+    /// </summary>
     SkippedCodeSegment : Boolean;
+    /// <summary>
+    /// Describes whether the code is skipped/not skipped because of an IFOPT.
+    /// </summary>
     IsIfOpt : Boolean;
   end;
 
+  /// <summary>
+  /// A class describing the conditional defines and the current skip state of the parser:
+  /// whether code is skipped while reading or not.
+  /// </summary>
   TSkippedCodeRecList = class
   private
     fSkippedList : TList<TSkippedCodeRec>;
     fSkippingCode : Boolean;
-    procedure PushSkippingState(const isIfOPT: boolean);
-    function  PopSkippingState: boolean;
+    procedure PushSkippingState(const aIfType : TSkippedCodeIfType;const isIfOPT: boolean);
+    function  PopSkippingState(const aIfType : TSkippedCodeIfType): boolean;
+
     function  WasSkipping: boolean;
     function  InIFOPT: boolean;
   public
     constructor Create();
     destructor Destroy; override;
 
-    procedure Reset();
-
+    /// <summary>
+    /// Triggers a {$IFDEF a}
+    /// </summary>
     procedure TriggerIfDef(const aIsDefineSet : Boolean);
+
+    /// <summary>
+    /// Triggers a {$IFNDEF a}
+    /// </summary>
     procedure TriggerIfNDef(const aIsDefineSet : Boolean);
+
+    /// <summary>
+    /// Triggers a {$IFOPT R-}
+    /// </summary>
     procedure TriggerIfOpt();
+
+    /// <summary>
+    /// Triggers a {$IF a AND b}
+    /// </summary>
+    procedure TriggerIf(const aIsDefineSet : Boolean);
+
+    /// <summary>
+    /// Triggers a {$ELSE}
+    /// </summary>
     procedure TriggerElse();
+
+    /// <summary>
+    /// Triggers a {$ENDIF}
+    /// </summary>
     procedure TriggerEndIf();
 
+    /// <summary>
+    /// Triggers a {$IFEND}
+    /// </summary>
+    procedure TriggerIfEnd();
+
+    /// <summary>
+    /// Describes whether code is currently skipped or not.
+    /// </summary>
     property SkippingCode : boolean read fSkippingCode write fSkippingCode;
   end;
 
@@ -118,13 +162,6 @@ begin
   inherited;
 end;
 
-procedure TSkippedCodeRecList.Reset;
-begin
-  fSkippedList.Clear;
-  fSkippingCode := false;
-end;
-
-
 procedure TSkippedCodeRecList.TriggerElse;
 begin
   if (not self.InIFOPT) and (not self.WasSkipping) then
@@ -133,50 +170,64 @@ end;
 
 procedure TSkippedCodeRecList.TriggerEndIf;
 begin
-  self.SkippingCode := self.PopSkippingState;
+  self.SkippingCode := self.PopSkippingState(TSkippedCodeIfType.IFDEF_Based);
+end;
+
+procedure TSkippedCodeRecList.TriggerIf(const aIsDefineSet : Boolean);
+begin
+  self.PushSkippingState(IF_Based, false);
+  self.fSkippingCode := self.fSkippingCode or (not aIsDefineSet);
+end;
+
+procedure TSkippedCodeRecList.TriggerIfEnd;
+begin
+  self.SkippingCode := self.PopSkippingState(TSkippedCodeIfType.IF_Based);
 end;
 
 procedure TSkippedCodeRecList.TriggerIfDef(const aIsDefineSet : Boolean);
 begin
-  self.PushSkippingState(False);
+  self.PushSkippingState(IFDEF_Based, false);
   self.fSkippingCode := self.fSkippingCode or (not aIsDefineSet);
 end;
 
 procedure TSkippedCodeRecList.TriggerIfNDef(const aIsDefineSet : Boolean);
 begin
-  self.PushSkippingState(False);
+  self.PushSkippingState(IFDEF_Based, false);
   self.SkippingCode := self.SkippingCode or aIsDefineSet;
 end;
 
 procedure TSkippedCodeRecList.TriggerIfOpt();
 begin
-  Self.PushSkippingState(true);
+  Self.PushSkippingState(IFDEF_Based, true);
 end;
 
-procedure TSkippedCodeRecList.PushSkippingState(const isIfOPT: boolean);
+procedure TSkippedCodeRecList.PushSkippingState(const aIfType: TSkippedCodeIfType; const isIfOPT: boolean);
 var
   LRec : TSkippedCodeRec;
 begin
   LRec := default(TSkippedCodeRec);
+  LRec.IFType := aIfType;
   LRec.SkippedCodeSegment := fSkippingCode;
   LRec.IsIfOpt := isIfOPT;
   fSkippedList.Add(LRec);
 end;
 
-function TSkippedCodeRecList.PopSkippingState: boolean;
+function TSkippedCodeRecList.PopSkippingState(const aIfType: TSkippedCodeIfType): boolean;
 var
   LRec : TSkippedCodeRec;
+  I: Integer;
 begin
-  if fSkippedList.Count = 0 then
-    Result := true // source damaged - skip the rest
-  else
+  Result := true; // source damaged - skip the rest
+  for I := fSkippedList.Count-1 downto 0 do
   begin
-    LRec := fSkippedList.Last;
-    fSkippedList.Delete(fSkippedList.Count - 1);
-    Result := LRec.SkippedCodeSegment;
+    LRec := fSkippedList[i];
+    if LRec.IFType = aIfType  then
+    begin
+      fSkippedList.Delete(I);
+      Exit(LRec.SkippedCodeSegment);
+    end;
   end;
 end;
-
 
 function TSkippedCodeRecList.WasSkipping: boolean;
 begin
