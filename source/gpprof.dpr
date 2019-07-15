@@ -60,8 +60,6 @@ uses
   DProjUnit in 'DProjUnit.pas',
   CastaliaPasLex in 'CastaliaDelphiParser\CastaliaPasLex.pas',
   CastaliaPasLexTypes in 'CastaliaDelphiParser\CastaliaPasLexTypes.pas',
-  CastaliaSimplePasParTypes in 'CastaliaDelphiParser\CastaliaSimplePasParTypes.pas',
-  CastaliaSimplePasPar in 'CastaliaDelphiParser\CastaliaSimplePasPar.pas',
   gpParser.API in 'gpParser\gpParser.API.pas',
   gpParser.BaseProject in 'gpParser\gpParser.BaseProject.pas',
   gpParser.Defines in 'gpParser\gpParser.Defines.pas',
@@ -83,12 +81,7 @@ begin
   Application.CreateForm(TfrmAbout, frmAbout);
   Application.CreateForm(TfrmExport, frmExport);
   Application.CreateForm(TfrmPreferenceMacros, frmPreferenceMacros);
-  Application.CreateForm(TfrmMain, frmMain);
   Application.CreateForm(TfmUnitWizard, fmUnitWizard);
-  Application.CreateForm(TfrmExport, frmExport);
-  Application.CreateForm(TfrmAbout, frmAbout);
-  Application.CreateForm(TfrmPreferences, frmPreferences);
   Application.CreateForm(TfrmLoadProgress, frmLoadProgress);
-  Application.CreateForm(TfrmPreferenceMacros, frmPreferenceMacros);
   Application.Run;
 end.
