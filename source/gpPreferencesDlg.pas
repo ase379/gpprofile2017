@@ -136,6 +136,7 @@ implementation
 
 uses
   gpProf.bdsVersions,
+  gpProf.ProjectAccessor,
   GpString,
   gppMain,
   gpRegistry,
@@ -319,9 +320,18 @@ procedure TfrmPreferences.cbProjectDefinesClick(Sender: TObject);
 var
   projcond: string;
   i       : integer;
+  LAccessor : TProjectAccessor;
+  LConditionals : string;
 begin
-  if cbProjectDefines.Checked then begin
-    projcond := ReplaceAll(GetDOFSetting('Directories','Conditionals',''),',',';');
+  if cbProjectDefines.Checked then
+  begin
+    LAccessor := TProjectAccessor.Create(CurrentProjectName);
+    try
+      LConditionals := LAccessor.GetProjectDefines();
+    finally
+      LAccessor.Free;
+    end;
+    projcond := ReplaceAll(LConditionals,',',';');
     for i := 1 to NumElements(projcond,';',-1) do
       AddDefine(NthEl(projcond,i,';',-1),DEF_PROJECT);
   end
@@ -610,7 +620,11 @@ begin
       end; // Excluded units
       3: begin
         cbStandardDefines.Checked    := prefStandardDefines;
-        cbConsoleDefines.Checked     := GetDOFSettingBool('Linker','ConsoleApp',false);
+        With TProjectAccessor.Create(CurrentProjectName) do
+        begin
+          cbConsoleDefines.Checked     := IsConsoleProject(False);
+          Free;
+        end;
         cbProjectDefines.Checked     := prefProjectDefines;
         cbDisableUserDefines.Checked := prefDisableUserDefines;
         RebuildDefines(prefUserDefines);
