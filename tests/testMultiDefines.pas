@@ -1,6 +1,5 @@
 unit testMultiDefines;
 
-{$LEGACYIFEND}
 interface
 
 procedure TestMultidefinesDummy();
@@ -33,7 +32,10 @@ begin
 var
   i : Integer;
 begin
+  // some senseless code to avoid hints...
   i := 0;
+  if i = 0 then
+    Exit();
 {$IFEND}
 {$IFEND}
 end;
