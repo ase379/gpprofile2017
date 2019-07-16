@@ -409,8 +409,11 @@ begin
             LIfExpressionList.Add(if_false);
         end;
       end;
-      fSkippedList.TriggerIf(fDefines.IsTrue(LIfExpressionList));
-      LIfExpressionList.Free;
+      try
+        fSkippedList.TriggerIf(fDefines.IsTrue(LIfExpressionList));
+      finally
+        LIfExpressionList.Free;
+      end;
     end
     else if LDirective = 'IFEND' then
     begin
