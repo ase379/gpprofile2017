@@ -7,6 +7,7 @@ uses
 
 type
   TSkippedCodeIfType = (IFDEF_Based, IF_Based);
+  TSkippedCodeEndType = (ENDIF_Based, IFEND_Based);
 
   TSkippedCodeRec = record
   public
@@ -30,7 +31,7 @@ type
     fSkippedList : TList<TSkippedCodeRec>;
     fSkippingCode : Boolean;
     procedure PushSkippingState(const aIfType : TSkippedCodeIfType;const isIfOPT: boolean);
-    function  PopSkippingState(const aIfType : TSkippedCodeIfType): boolean;
+    function  PopSkippingState(const aEndType : TSkippedCodeEndType): boolean;
 
     function  WasSkipping: boolean;
     function  InIFOPT: boolean;
@@ -79,6 +80,9 @@ type
     property SkippingCode : boolean read fSkippingCode write fSkippingCode;
   end;
 
+  TIfExpressionPart = (if_true, if_false, if_Or, if_And);
+  TIfExpressionPartList = TList<TIfExpressionPart>;
+
   TDefineList = class
   strict private
     fDefines: TStringList;
@@ -88,6 +92,7 @@ type
     procedure Define(const aCondition: string);
     procedure Undefine(const aCondition: string);
     function IsDefined(const aCondition: string): boolean;
+    function IsTrue(const aList : TIfExpressionPartList): Boolean;
     procedure Assign(const aConditions: string);
 
     class function ToKey(const aCondition: string): string; static;
@@ -123,6 +128,42 @@ end;
 function TDefineList.IsDefined(const aCondition: string): boolean;
 begin
   Result := (fDefines.IndexOf(ToKey(aCondition)) >= 0);
+end;
+
+function TDefineList.IsTrue(const aList: TIfExpressionPartList): Boolean;
+var
+  I : integer;
+  LLastOperator : TIfExpressionPart;
+  LValue : TIfExpressionPart;
+begin
+  Result := aList.Count > 0;
+  LLastOperator := if_true;  // make no sense, but must not be OR or AND
+  for i := 0 to aList.Count-1 do
+  begin
+    LValue := aList[i];
+    case LValue of
+      if_Or,
+      if_AND :
+        begin
+          LLastOperator := LValue;
+        end;
+      if_true,
+      if_false:
+        begin
+          if i = 0 then
+          begin
+            result := (LValue = if_true);
+          end
+          else
+          begin
+            if LLastOperator = if_Or then
+              Result := Result OR (LValue = if_true)
+            else if LLastOperator = if_and then
+              Result := Result AND (LValue = if_true);
+          end;
+        end;
+    end;
+  end;
 end;
 
 class function TDefineList.ToKey(const aCondition: string): string;
@@ -170,7 +211,7 @@ end;
 
 procedure TSkippedCodeRecList.TriggerEndIf;
 begin
-  self.SkippingCode := self.PopSkippingState(TSkippedCodeIfType.IFDEF_Based);
+  self.SkippingCode := self.PopSkippingState(TSkippedCodeEndType.ENDIF_Based);
 end;
 
 procedure TSkippedCodeRecList.TriggerIf(const aIsDefineSet : Boolean);
@@ -181,7 +222,7 @@ end;
 
 procedure TSkippedCodeRecList.TriggerIfEnd;
 begin
-  self.SkippingCode := self.PopSkippingState(TSkippedCodeIfType.IF_Based);
+  self.SkippingCode := self.PopSkippingState(TSkippedCodeEndType.IFEND_Based);
 end;
 
 procedure TSkippedCodeRecList.TriggerIfDef(const aIsDefineSet : Boolean);
@@ -212,21 +253,34 @@ begin
   fSkippedList.Add(LRec);
 end;
 
-function TSkippedCodeRecList.PopSkippingState(const aIfType: TSkippedCodeIfType): boolean;
+function TSkippedCodeRecList.PopSkippingState(const aEndType: TSkippedCodeEndType): boolean;
 var
   LRec : TSkippedCodeRec;
   I: Integer;
 begin
   Result := true; // source damaged - skip the rest
-  for I := fSkippedList.Count-1 downto 0 do
+  // if based can be closed by endif or ifend
+  if aEndType = ENDIF_Based then
   begin
-    LRec := fSkippedList[i];
-    if LRec.IFType = aIfType  then
+    LRec := fSkippedList.Last;
+    fSkippedList.Remove(LRec);
+    result := LRec.SkippedCodeSegment;
+  end
+  else if aEndType = IFEND_Based then
+  begin
+    for I := fSkippedList.Count-1 downto 0 do
     begin
-      fSkippedList.Delete(I);
-      Exit(LRec.SkippedCodeSegment);
+      LRec := fSkippedList[i];
+      if LRec.IFType = IF_Based  then
+      begin
+        fSkippedList.Delete(I);
+        Exit(LRec.SkippedCodeSegment);
+      end;
+      raise Exception.Create('PopSkippingState: Missing IF for ENDIF.');
     end;
-  end;
+  end
+  else
+    raise Exception.Create('PopSkippingState: Invalid end type.');
 end;
 
 function TSkippedCodeRecList.WasSkipping: boolean;
