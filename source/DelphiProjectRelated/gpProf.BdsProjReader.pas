@@ -17,6 +17,8 @@ type
     function Root: IXMLNodeList;
     function SearchPath: String;
     function OutputDir: String;
+    function GetProjectDefines: string;
+    function IsConsoleApp(const aDefaultIfNotFound: boolean): Boolean;
   end;
 
 implementation
@@ -47,6 +49,46 @@ destructor TBdsProjReader.Destroy;
 begin
   FXML := nil;
   inherited;
+end;
+
+function TBdsProjReader.GetProjectDefines: string;
+var
+  i: Integer;
+  Personalities,Directories:IXmlNodeList;
+  Nd:IXmlNode;
+begin
+  Result := '';
+
+  Personalities := Root.Nodes['Delphi.Personality'].ChildNodes;
+  Directories := Personalities.Nodes['Directories'].ChildNodes;
+  for i := 0 to Directories.Count-1 do
+  begin
+    Nd := Directories.Nodes[i];
+    if (Nd.Attributes['Name'] = 'Conditionals') and (Nd.NodeValue <> Null) then
+    begin
+      Result := Result + IfThen((Result<>'') and (Result[Length(Result)]<>';'), ';') +
+         Nd.NodeValue;
+    end;
+  end;
+end;
+
+function TBdsProjReader.IsConsoleApp(const aDefaultIfNotFound: boolean): Boolean;
+var
+  i: Integer;
+  Personalities,Directories:IXmlNodeList;
+  Nd:IXmlNode;
+begin
+  Result := false;
+  Personalities := Root.Nodes['Delphi.Personality'].ChildNodes;
+  Directories := Personalities.Nodes['Linker'].ChildNodes;
+  for i := 0 to Directories.Count-1 do
+  begin
+    Nd := Directories.Nodes[i];
+    if (Nd.Attributes['Name'] = 'ConsoleApp') and (Nd.NodeValue <> Null) then
+    begin
+      Result := Nd.NodeValue;
+    end;
+  end;
 end;
 
 function TBdsProjReader.OutputDir: String;
