@@ -17,7 +17,6 @@ type
     constructor Create; reintroduce;
     procedure Add(anUnit: TUnit);
     function FindNode(const aLookupKey: string; out aResultNode: INode<TUnit>): boolean; overload;
-
   end;
 
   TGlbUnitList = class(TUnitList)
@@ -44,9 +43,9 @@ type
 
     class function ExtractCommentBody(const comment: string): string; static;
     class function ExtractParameter(const comment: string; const parameter: Integer): string; static;
+    class function ExtractNumElements(const comment: string): integer;
     class function IsOneOf(key: string; compareWith: array of string): boolean; static;
     class function ExtractDirective(comment: string): string; static;
-
   public
     unName: TFilename;
     unFullName: TFileName;
@@ -334,7 +333,10 @@ function TUnit.ProcessDirectives(const aProject: TBaseProject; const tokenID: Tp
 var
   LIsInstrumentationFlag: boolean;
   LDirective: string;
-
+  LParameter : string;
+  i : Integer;
+  LNumElements : Integer;
+  LIfExpressionList : TIfExpressionPartList;
 begin
   LDirective := '';
   LIsInstrumentationFlag := false;
@@ -380,7 +382,35 @@ begin
     end
     else if LDirective = 'IF' then
     begin
-      fSkippedList.TriggerIf(fDefines.IsDefined(ExtractParameter(tokenData, 1)));
+      LIfExpressionList := TIfExpressionPartList.Create();
+      LNumElements := ExtractNumElements(tokenData);
+      for I := 1 to LNumElements do
+      begin
+        LParameter := ExtractParameter(tokenData, i);
+        if Trim(LParameter) = '' then
+          Continue;
+        if SameText(LParameter, 'AND') then
+          LIfExpressionList.Add(if_And)
+        else if SameText(LParameter, 'OR') then
+          LIfExpressionList.Add(if_OR)
+        else
+        begin
+          if LParameter.StartsWith('DEFINED', True) then
+          begin
+            // remove ')' at end
+            DelLastOccurance(LParameter, ')');
+            Delete(LParameter, 1, Length('DEFINED'));
+            // remove '(' after DEFINED
+            DelFirstOccurance(LParameter, '(');
+          end;
+          if fDefines.IsDefined(LParameter) then
+            LIfExpressionList.Add(if_true)
+          else
+            LIfExpressionList.Add(if_false);
+        end;
+      end;
+      fSkippedList.TriggerIf(fDefines.IsTrue(LIfExpressionList));
+      LIfExpressionList.Free;
     end
     else if LDirective = 'IFEND' then
     begin
@@ -412,6 +442,12 @@ end;
 class function TUnit.ExtractParameter(const comment: string; const parameter: Integer): string;
 begin
   Result := NthEl(ExtractCommentBody(comment), parameter + 1, ' ', -1);
+end; { ExtractParameter }
+
+
+class function TUnit.ExtractNumElements(const comment: string): Integer;
+begin
+  Result := NumElements(ExtractCommentBody(comment), ' ', -1);
 end; { ExtractParameter }
 
 class function TUnit.IsOneOf(key: string; compareWith: array of string): boolean;
