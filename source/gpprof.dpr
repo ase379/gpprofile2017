@@ -30,7 +30,6 @@ uses
   Windows,
   Vcl.HtmlHelpViewer,
   GpString,
-  BdsProjUnit in 'BdsProjUnit.pas',
   gppmain.FrameInstrumentation in 'gppmain.FrameInstrumentation.pas' {frmMainInstrumentation: TFrame},
   gppTree in 'gppTree.pas',
   gppMain in 'gppMain.pas' {frmMain},
@@ -53,13 +52,14 @@ uses
   SimpleReportUnit in 'SimpleReportUnit.pas' {fmSimpleReport},
   gppLoadProgress in 'gppLoadProgress.pas' {frmLoadProgress},
   gppmain.FrameAnalysis in 'gppmain.FrameAnalysis.pas' {frmMainProfiling: TFrame},
-  bdsVersions in 'bdsVersions.pas',
   gppMain.FrameInstrumentation.SelectionInfo in 'gppMain.FrameInstrumentation.SelectionInfo.pas',
   gpRegUnreg in 'gpRegUnreg.pas',
   gpPrfPlaceholderDlg in 'gpPrfPlaceholderDlg.pas' {frmPreferenceMacros},
-  DProjUnit in 'DProjUnit.pas',
   CastaliaPasLex in 'CastaliaDelphiParser\CastaliaPasLex.pas',
   CastaliaPasLexTypes in 'CastaliaDelphiParser\CastaliaPasLexTypes.pas',
+  gpProf.bdsVersions in 'DelphiProjectRelated\gpProf.bdsVersions.pas',
+  gpProf.BdsProjReader in 'DelphiProjectRelated\gpProf.BdsProjReader.pas',
+  gpProf.DProjReader in 'DelphiProjectRelated\gpProf.DProjReader.pas',
   gpParser.API in 'gpParser\gpParser.API.pas',
   gpParser.BaseProject in 'gpParser\gpParser.BaseProject.pas',
   gpParser.Defines in 'gpParser\gpParser.Defines.pas',
@@ -82,6 +82,5 @@ begin
   Application.CreateForm(TfrmExport, frmExport);
   Application.CreateForm(TfrmPreferenceMacros, frmPreferenceMacros);
   Application.CreateForm(TfmUnitWizard, fmUnitWizard);
-  Application.CreateForm(TfrmLoadProgress, frmLoadProgress);
   Application.Run;
 end.

@@ -135,7 +135,7 @@ function ResolvePrfProjectPlaceholders(const aFilenameWithPh: string): string;
 implementation
 
 uses
-  bdsVersions,
+  gpProf.bdsVersions,
   GpString,
   gppMain,
   gpRegistry,

@@ -8,7 +8,7 @@ uses
   Registry, Messages, Classes, Forms, Windows, SysUtils, Graphics, Controls,
   Dialogs, StdCtrls, Menus, ComCtrls, GpParser, ExtCtrls, gpMRU,
   ActnList, ImgList, Buttons, ToolWin, gppResults, Grids,
-  DProjUnit, SynEdit,
+  gpProf.DProjReader, SynEdit,
   SynEditHighlighter, SynEditCodeFolding, SynHighlighterPas, System.ImageList,
   System.Actions,gppCurrentPrefs, VirtualTrees,
   virtualTree.tools.checkable,
@@ -264,8 +264,8 @@ var
 implementation
 
 uses
-  BdsProjUnit,
-  BdsVersions,
+  gpprof.BdsProjReader,
+  gpProf.bdsVersions,
   IniFiles,
   GpString,
   GpProfH,
@@ -1660,8 +1660,8 @@ var
   vDofFN: TFileName;
   vDProjFN: TFileName;
   vBdsProjFN: TFileName;
-  vDProj: TDProj;
-  vBdsProj: TBdsProj;
+  LDProjReader: TDProjReader;
+  LBdsProjReader: TBdsProjReader;
   vOldCurDir: String;
   vFullPath: String;
   i: Integer;
@@ -1682,11 +1682,11 @@ begin
   vDProjFN := ChangeFileExt(aProject, '.dproj');
   if FileExists(vDProjFN) then
   begin
-    vDProj := TDProj.Create(vDProjFN);
+    LDProjReader := TDProjReader.Create(vDProjFN);
     try
-      vPath := IfThen((vPath <> '') and (vPath[Length(vPath)] <> ';'), ';') + vDProj.SearchPath;
+      vPath := IfThen((vPath <> '') and (vPath[Length(vPath)] <> ';'), ';') + LDProjReader.SearchPath;
     finally
-      vDProj.Free;
+      LDProjReader.Free;
     end;
   end;
 
@@ -1694,11 +1694,11 @@ begin
   vBdsProjFN := ChangeFileExt(aProject, '.bdsproj');
   if FileExists(vBdsProjFN) then
   begin
-    vBdsProj := TBdsProj.Create(vBdsProjFN);
+    LBdsProjReader := TBdsProjReader.Create(vBdsProjFN);
     try
-      vPath := IfThen((vPath <> '') and (vPath[Length(vPath)] <> ';'), ';') + vBdsProj.SearchPath;
+      vPath := IfThen((vPath <> '') and (vPath[Length(vPath)] <> ';'), ';') + LBdsProjReader.SearchPath;
     finally
-      vBdsProj.Free;
+      LBdsProjReader.Free;
     end;
   end;
 
@@ -1770,11 +1770,11 @@ const
   cPlatform = '$(Platform)';
   cConfig = '$(Config)';
 var
-  vDProj: TDProj;
+  LDProjReader: TDProjReader;
   vDProjFN: TFileName;
   vDofFN: TFileName;
   vBdsProjFN: TFileName;
-  vBdsProj: TBdsProj;
+  LBdsProjReader: TBdsProjReader;
   vOldCurDir: String;
 begin
   Result := '';
@@ -1782,11 +1782,11 @@ begin
   vDProjFN := ChangeFileExt(aProject, '.dproj');
   if FileExists(vDProjFN) then
   begin
-    vDProj := TDProj.Create(vDProjFN);
+    LDProjReader := TDProjReader.Create(vDProjFN);
     try
-      Result := vDProj.OutputDir;
+      Result := LDProjReader.OutputDir;
     finally
-      vDProj.Free;
+      LDProjReader.Free;
     end;
   end
   else begin
@@ -1802,11 +1802,11 @@ begin
       vBdsProjFN := ChangeFileExt(aProject, '.bdsproj');
       if FileExists(vBdsProjFN) then
       begin
-        vBdsProj := TBdsProj.Create(vBdsProjFN);
+        LBdsProjReader := TBdsProjReader.Create(vBdsProjFN);
         try
-          Result := vBdsProj.OutputDir;
+          Result := LBdsProjReader.OutputDir;
         finally
-          vBdsProj.Free;
+          LBdsProjReader.Free;
         end
       end;
     end;
