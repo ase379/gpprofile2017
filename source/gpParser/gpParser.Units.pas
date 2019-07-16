@@ -295,7 +295,7 @@ begin
   Result := False;
 
   LExtension := ExtractFileExt(aUnitName).ToLower;
-  if (LExtension <> '.pas') and (LExtension <> '.dpr') then
+  if (LExtension <> '.pas') and (LExtension <> '.dpr') and (LExtension <> '.inc') then
     aUnitName := aUnitName + '.pas';
 
   if FileExists(aUnitName) then
@@ -337,6 +337,7 @@ var
   i : Integer;
   LNumElements : Integer;
   LIfExpressionList : TIfExpressionPartList;
+  tokenDataLowerCase : string;
 begin
   LDirective := '';
   LIsInstrumentationFlag := false;
@@ -348,7 +349,15 @@ begin
     ptIfEndDirect : LDirective := 'IFEND';
     ptEndIfDirect : LDirective := 'ENDIF';
     ptElseDirect : LDirective := 'ELSE';
-    ptIncludeDirect : LDirective := 'INCLUDE';
+    ptIncludeDirect :
+    begin
+      LDirective := 'INCLUDE';
+      // the lexer recognizes $i+ as $i, ignore it
+      tokenDataLowerCase := AnsiLowerCase(tokendata);
+      if (tokenDataLowerCase = '{$i-}') or
+         (tokenDataLowerCase = '{$i+}') then
+         exit('');
+    end;
     ptDefineDirect : LDirective := 'DEFINE';
     ptUndefDirect : LDirective := 'UNDEF';
     ptCompDirect :
@@ -572,11 +581,12 @@ var
     end;
   end; { ExpandLocation }
 
-  procedure CreateNewParser(const aUnitFN, aSearchPath: string);
+  function CreateNewParser(const aUnitFN, aSearchPath: string): boolean;
   var
     zero: char;
     vUnitFullName: TFileName;
   begin
+    result := true;
     if parser <> nil then
     begin
       parserStack.Add(parser);
@@ -585,8 +595,7 @@ var
 
 
     if not FindOnPath(aUnitFN, aSearchPath, aDefaultDir, vUnitFullName) then
-      raise EUnitInSearchPathNotFoundError.Create('Unit not found in search path: '
-        + aUnitFN);
+      Exit(False);
 
     parser := TmwPasLex.Create;
     stream := TMemoryStream.Create();
@@ -711,11 +720,20 @@ begin
               if (LDirective = 'INCLUDE') or (LDirective = 'I') then
               begin // process $INCLUDE
                 // process {$I *.INC}
-                incName := ExtractParameter(tokenData, 1);
+                incName := ExtractParameter(tokendata, 1);
+                // having double spaces causes problems with ExtractParameter; the result is then empty...
+                if incName = '' then
+                begin
+                  incName := tokenData.Replace('  ',' ',[rfReplaceAll]);
+                  incName := ExtractParameter(incName, 1);
+                end;
                 if FirstEl(incName, '.', -1) = '*' then
                   incName := FirstEl(ExtractFileName(unFullName), '.', -1) +
                     '.' + ButFirstEl(incName, '.', -1);
-                CreateNewParser(incName, aSearchPath);
+                if incName = '' then
+                  raise Exception.Create('Include contains empty unit name : "'+ tokenData + '".' );
+                if not CreateNewParser(incName, aSearchPath) then
+                  raise EUnitInSearchPathNotFoundError.Create('Unit not found in search path: '+ incName);
                 continue;
               end
               else if LDirective = 'DEFINE' then // process $DEFINE
