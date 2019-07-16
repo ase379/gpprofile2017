@@ -20,6 +20,8 @@ type
     DelphiProjectFilter = '*.dproj';
     DelphiProjectCaption = 'Delphi project file';
 
+    DelphiBdsProjExt = '.bdsproj';
+
     Delphi7OptionsExt = '.dof';
     Delphi7OptionsFilter = '*.dof';
     Delphi7OptionsCaption = 'Delphi 7 options file';
