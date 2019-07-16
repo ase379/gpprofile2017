@@ -33,12 +33,6 @@ procedure SetProfilePref(name: string; value: variant); overload;
 function  GetProfilePref(name: string; defval: variant): variant; overload;
 function HasOpenProject: boolean;
 
-
-
-function GetDOFSettingBool(const section, key: string;  defval: boolean): boolean;
-function GetDOFSetting(const section,key,defval: string): string;
-
-
 procedure LoadPreferences;
 
 /// saves the (global) preferences in the registry
@@ -56,31 +50,8 @@ uses
   gpregistry,
   gpPrfPlaceholders, 
   GpString,
-  gppmain.types;
-
-function GetDOFSettingBool(const section, key: string;  defval: boolean): boolean;
-begin
-  Result := False;
-  if CurrentProjectName <>'' then
-    with TIniFile.Create(ChangeFileExt(CurrentProjectName,TUIStrings.Delphi7OptionsExt)) do
-      try
-        Result := ReadBool(section, key, defval);
-      finally
-        Free;
-      end;
-end;
-
-function GetDOFSetting(const section,key,defval: string): string;
-begin
-  Result := '(project defines)';
-  if CurrentProjectName <>'' then
-    with TIniFile.Create(ChangeFileExt(CurrentProjectName,TUIStrings.Delphi7OptionsExt)) do
-      try
-        Result := ReadString(section, key, defval);
-      finally
-        Free;
-      end;
-end;
+  gppmain.types,
+  gpProf.DofReader;
 
 procedure LoadPreferences;
 begin
