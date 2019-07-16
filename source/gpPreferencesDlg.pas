@@ -116,6 +116,8 @@ type
     procedure RebuildDefines(userDefines: string);
     function  ExtractUserDefines: string;
     function  ExtractDefines: string;
+    // extracts project and user defines
+    function  ExtractAllDefines: string;
 
     function ExecuteGlobalSettings(): boolean;
     function ExecuteProjectSettings(const aShowAll: boolean): boolean;
@@ -501,6 +503,22 @@ begin
       if Result <> '' then Result := Result + ';';
       Result := Result + lvDefines.Items[i].Caption;
     end;
+  end;
+end;
+
+
+function TfrmPreferences.ExtractAllDefines: string;
+var
+  i: integer;
+begin
+  Result := '';
+  for i := 0 to lvDefines.Items.Count-1 do
+  begin
+    if (lvDefines.Items[i].ImageIndex = DEF_USER) and (cbDisableUserDefines.Checked) then
+      continue;
+    if Result <> '' then
+      Result := Result + ';';
+    Result := Result + lvDefines.Items[i].Caption;
   end;
 end;
 

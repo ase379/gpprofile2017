@@ -472,7 +472,7 @@ begin
     CurrentProjectName := aProject;
     RebuildDefines;
     vErrList := TStringList.Create;
-    LDefines := frmPreferences.ExtractDefines;
+    LDefines := frmPreferences.ExtractAllDefines;
     ExecuteAsync(
       procedure
       begin
@@ -501,10 +501,9 @@ begin
   end
   else
   begin
-    LDefines := frmPreferences.ExtractDefines;
     InitProgressBar(self,'Rescanning units...', true, false);
     RebuildDefines;
-    LDefines := frmPreferences.ExtractDefines;
+    LDefines := frmPreferences.ExtractAllDefines;
     ExecuteAsync(
       procedure
       begin
@@ -542,14 +541,12 @@ end;
 
 procedure TfrmMain.RebuildDefines;
 begin
-  with frmPreferences do begin
-    ReselectCompilerVersion(selectedDelphi);
-    cbStandardDefines.Checked    := GetProjectPref('StandardDefines',prefStandardDefines);
-    cbConsoleDefines.Checked     := GetProjectPref('ConsoleDefines',IsProjectConsole);
-    cbProjectDefines.Checked     := GetProjectPref('ProjectDefines',prefProjectDefines);
-    cbDisableUserDefines.Checked := GetProjectPref('DisableUserDefines',prefDisableUserDefines);
-    RebuildDefines(GetProjectPref('UserDefines',prefUserDefines));
-  end;
+  frmPreferences.ReselectCompilerVersion(selectedDelphi);
+  frmPreferences.cbStandardDefines.Checked    := GetProjectPref('StandardDefines',prefStandardDefines);
+  frmPreferences.cbConsoleDefines.Checked     := GetProjectPref('ConsoleDefines',IsProjectConsole);
+  frmPreferences.cbProjectDefines.Checked     := GetProjectPref('ProjectDefines',prefProjectDefines);
+  frmPreferences.cbDisableUserDefines.Checked := GetProjectPref('DisableUserDefines',prefDisableUserDefines);
+  frmPreferences.RebuildDefines(GetProjectPref('UserDefines',prefUserDefines));
 end;
 
 procedure TfrmMain.LoadProject(fileName: string; defaultDelphi: string = '');
@@ -1085,7 +1082,7 @@ begin
   outDir := GetOutputDir(openProject.Name);
   fnm := MakeSmartBackslash(outDir)+ChangeFileExt(ExtractFileName(openProject.Name),'.gpi');
   LShowAll := FInstrumentationFrame.chkShowAll.Checked;
-  LDefines := frmPreferences.ExtractDefines;
+  LDefines := frmPreferences.ExtractAllDefines;
   Enabled := false;
   LNeededTimeString := '';
   ExecuteAsync(
