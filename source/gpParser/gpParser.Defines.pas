@@ -256,31 +256,27 @@ end;
 function TSkippedCodeRecList.PopSkippingState(const aEndType: TSkippedCodeEndType): boolean;
 var
   LRec : TSkippedCodeRec;
-  I: Integer;
 begin
-  Result := true; // source damaged - skip the rest
+  if fSkippedList.Count = 0 then
+    Exit(True);    // source damaged - skip the rest
   // if based can be closed by endif or ifend
-  if aEndType = ENDIF_Based then
-  begin
-    LRec := fSkippedList.Last;
-    fSkippedList.Remove(LRec);
-    result := LRec.SkippedCodeSegment;
-  end
-  else if aEndType = IFEND_Based then
-  begin
-    for I := fSkippedList.Count-1 downto 0 do
+  case aEndType of
+    ENDIF_Based,
+    IFEND_Based :
     begin
-      LRec := fSkippedList[i];
-      if LRec.IFType = IF_Based  then
-      begin
-        fSkippedList.Delete(I);
-        Exit(LRec.SkippedCodeSegment);
-      end;
-      raise Exception.Create('PopSkippingState: Missing IF for ENDIF.');
-    end;
-  end
+      // - since XE4 or higher, the Delphi compilers were changed to accept either $IFEND or $ENDIF to close $IF
+      //   statements.
+      // - Before XE4, only $IFEND could be used to close $IF statements.
+      //   The $LEGACYIFEND directive allows you to restore the old behavior, which is useful if your code is emitting
+      //   E2029 related to nested $IF and $IFDEF statements.
+      // -> as the project defines whether the code is compilable, we support the new style.
+      LRec := fSkippedList.Last;
+      fSkippedList.Remove(LRec);
+      result := LRec.SkippedCodeSegment;
+    end
   else
     raise Exception.Create('PopSkippingState: Invalid end type.');
+  end;
 end;
 
 function TSkippedCodeRecList.WasSkipping: boolean;
