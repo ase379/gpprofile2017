@@ -15,6 +15,7 @@ type
     PlatformName : string;
     IsEnabledConfig : boolean;
     ExeOutput : string; // the exe path (with inheritance)
+    Defines : string;
   end;
 
   TDProjConfigs = class(TObjectList<DProjConfig>)
@@ -23,6 +24,7 @@ type
     CurrentPlatFormCondition : string;
     CurrentConfigCondition : string;
     CurrentConfig : string;
+    AppType : string;
   public
     function GetConfigNameFromConfigLine(const aConfigLine: string) : string;
     function GetConfigTypeFromConfigLine(const aConfigLine: string) : string;
@@ -48,6 +50,10 @@ type
     function Root: IXMLNodeList;
     function SearchPath: String;
     function OutputDir(): String;
+    function IsConsoleApp(const aDefaultIfNotFound: Boolean): Boolean;
+    function GetProjectDefines: string;
+
+
 
   end;
 
@@ -89,6 +95,21 @@ begin
   inherited;
 end;
 
+function TDProjReader.GetProjectDefines: string;
+var
+  LConfig : DProjConfig;
+begin
+  Result := '';
+  LConfig := fDProjConfigs.FindConfigByCurrentSettings();
+  if assigned(LConfig) then
+    Exit(LConfig.Defines);
+end;
+
+function TDProjReader.IsConsoleApp(const aDefaultIfNotFound: Boolean): Boolean;
+begin
+  result := sametext(fDProjConfigs.AppType, 'Console');
+end;
+
 procedure TDProjReader.LoadConfigs();
 var
   i : integer;
@@ -119,6 +140,13 @@ begin
         fDProjConfigs.CurrentPlatForm := LChild.Text;
         fDProjConfigs.CurrentPlatFormCondition := LChild.Attributes['Condition'];
       end;
+      if LPropertyGroupNode.ChildValues['AppType'] <> null then
+      begin
+        LChild := LPropertyGroupNode.ChildNodes.Nodes['AppType'];
+        fDProjConfigs.AppType := LChild.Text;
+
+      end;
+
     end;
 
 
@@ -152,6 +180,9 @@ begin
         begin
           if LPropertyGroupNode.ChildValues['DCC_ExeOutput'] <> Null then
             LNewConfig.ExeOutput := LPropertyGroupNode.ChildValues['DCC_ExeOutput'];
+          if LPropertyGroupNode.ChildValues['DCC_Define'] <> Null then
+            LNewConfig.Defines := LPropertyGroupNode.ChildValues['DCC_Define'];
+
         end;
 
       end;
@@ -237,6 +268,8 @@ procedure TDProjConfigs.ApplySettingInheritance;
       anEntry.ExeOutput := LBaseEntry.ExeOutput;
     if anEntry.ConfigType = '' then
       anEntry.ConfigType := LBaseEntry.ConfigType;
+    if anEntry.Defines = '' then
+      anEntry.Defines := LBaseEntry.Defines;
   end;
 
 var
