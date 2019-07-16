@@ -266,6 +266,7 @@ implementation
 uses
   gpprof.BdsProjReader,
   gpProf.bdsVersions,
+  gpProf.ProjectAccessor,
   IniFiles,
   GpString,
   GpProfH,
@@ -532,7 +533,11 @@ begin
   Result := false;
   if assigned(openProject) then begin
     // Don't know why but ConsoleApp=1 means that app is NOT a console app!
-    Result := not GetDOFSettingBool('Linker','ConsoleApp',true);
+    with TProjectAccessor.Create(CurrentProjectName) do
+    begin
+      Result := not IsConsoleProject(true);
+      Free;
+    end;
     // Also, CONSOLE is defined only if Linker option is set, not if
     // {$APPTYPE CONSOLE} is specified in main program!
     // Stupid, but that's how Delphi works.
@@ -1586,71 +1591,14 @@ begin
 end;
 
 function TfrmMain.ReplaceMacros(s: string): string;
-
-  function GetDelphiXE2Var(const aVarName: string): string;
-  begin
-    if lowercase(aVarName) = 'platform' then Result:= 'Win32';
-    if lowercase(aVarName) = 'config' then Result:= 'Release';
-  end;
-
-  function GetEnvVar(const aVarName: String): String;
-  var
-    vSize: Integer;
-  begin
-    Result := '';
-    vSize := GetEnvironmentVariable(PChar(aVarName), nil, 0);
-    if vSize > 0 then
-    begin
-      SetLength(Result, vSize);
-      GetEnvironmentVariable(PChar(aVarName), PChar(Result), vSize);
-      // Cut out #0 char
-      if Result <> '' then
-        Result := Copy(Result, 1, Length(Result)-1);
-    end;
-  end;
-
 var
-  vMacroValue: String;
-  vMacros: array of String;
-  vInMacro: Boolean;
-  vMacroSt: Integer;
-  i, p: Integer;
+  LAccessor : TProjectAccessor;
 begin
-  Result := s;
-
-  // First, build full macros list from Search Path (macro is found by $(MacroName))
-  vMacros := nil;
-  vMacroSt := -1;
-  vInMacro := False;
-  for i := 1 to Length(Result) do
-    if Copy((Result+' '), i, 2) = '$(' then
-    begin
-      vInMacro := True;
-      vMacroSt := i;
-    end
-    else if vInMacro and (Result[i] = ')') then
-    begin
-      vInMacro := False;
-
-      // Get macro name (without round brackets: $( ) )
-      p := Length(vMacros);
-      SetLength(vMacros, p+1);
-      vMacros[p] := Copy(Result, vMacroSt+2, i-1-(vMacroSt+2)+1);
-    end;
-
-  for i := 0 to High(vMacros) do
-  begin
-    // NB! Paths from DCC_UnitSearchPath element of *.dproj file are already added,
-    // so simply skip this macro
-    if AnsiUpperCase(vMacros[i]) = 'DCC_UNITSEARCHPATH' then
-      Continue;
-
-    vMacroValue := GetEnvVar(vMacros[i]);
-    if (vMacroValue = '') then vMacroValue:= GetDelphiXE2Var(vMacros[i]);
-    // ToDo: Not all macros are possible to get throug environment variables
-    // Neet to find out, how to resolve the rest macros
-    if vMacroValue <> '' then
-      Result := StringReplace(Result, '$(' + vMacros[i] + ')', vMacroValue, [rfReplaceAll]);
+  LAccessor := TProjectAccessor.Create(CurrentProjectName);
+  try
+    Result := LAccessor.ReplaceMacros(s);
+  finally
+    LAccessor.Free;
   end;
 end; { TfrmMain.ReplaceMacros }
 
@@ -1669,7 +1617,7 @@ begin
   vPath := '';
 
   // Get settings from obsolete dof-file
-  vDofFN := ChangeFileExt(aProject, '.dof');
+  vDofFN := ChangeFileExt(aProject, TUIStrings.Delphi7OptionsExt);
   if FileExists(vDofFN) then
     with TIniFile.Create(vDofFN) do
     try
@@ -1679,7 +1627,7 @@ begin
     end;
 
   // Get settings from dproj-file
-  vDProjFN := ChangeFileExt(aProject, '.dproj');
+  vDProjFN := ChangeFileExt(aProject, TUIStrings.DelphiProjectExt);
   if FileExists(vDProjFN) then
   begin
     LDProjReader := TDProjReader.Create(vDProjFN);
@@ -1691,7 +1639,7 @@ begin
   end;
 
   // Get settings from bdsproj-file
-  vBdsProjFN := ChangeFileExt(aProject, '.bdsproj');
+  vBdsProjFN := ChangeFileExt(aProject, TUIStrings.DelphiBdsProjExt);
   if FileExists(vBdsProjFN) then
   begin
     LBdsProjReader := TBdsProjReader.Create(vBdsProjFN);
@@ -1766,69 +1714,16 @@ end;
 { TfrmMain.GetSearchPath }
 
 function TfrmMain.GetOutputDir(const aProject: string): string;
-const
-  cPlatform = '$(Platform)';
-  cConfig = '$(Config)';
 var
-  LDProjReader: TDProjReader;
-  vDProjFN: TFileName;
-  vDofFN: TFileName;
-  vBdsProjFN: TFileName;
-  LBdsProjReader: TBdsProjReader;
-  vOldCurDir: String;
+  LProjectAccessor : TProjectAccessor;
 begin
   Result := '';
 
-  vDProjFN := ChangeFileExt(aProject, '.dproj');
-  if FileExists(vDProjFN) then
-  begin
-    LDProjReader := TDProjReader.Create(vDProjFN);
-    try
-      Result := LDProjReader.OutputDir;
-    finally
-      LDProjReader.Free;
-    end;
-  end
-  else begin
-    vDofFN := ChangeFileExt(aProject, '.dof');
-    if FileExists(vDofFN) then
-      with TIniFile.Create(vDofFN) do
-      try
-        Result := ReadString('Directories', 'OutputDir', '');
-      finally
-        Free;
-      end
-    else begin
-      vBdsProjFN := ChangeFileExt(aProject, '.bdsproj');
-      if FileExists(vBdsProjFN) then
-      begin
-        LBdsProjReader := TBdsProjReader.Create(vBdsProjFN);
-        try
-          Result := LBdsProjReader.OutputDir;
-        finally
-          LBdsProjReader.Free;
-        end
-      end;
-    end;
-  end;
-
-  Result := ReplaceMacros(Result);
-
-  // If getting output dir was not successful - use project dir as output dir
-  if Result = '' then
-    Result := ExtractFilePath(aProject);
-
-  // Transform path to absolute
-  if not IsAbsolutePath(Result) then
-  begin
-    vOldCurDir := GetCurrentDir;
-    try
-      if not SetCurrentDir(ExtractFileDir(aProject)) then
-        Assert(False);
-      Result := ExpandUNCFileName(Result);
-    finally
-      SetCurrentDir(vOldCurDir)
-    end;
+  LProjectAccessor := TProjectAccessor.Create(aProject);
+  try
+    result := LProjectAccessor.GetOutputDir()
+  finally
+    LProjectAccessor.Free;
   end;
   ProjectOutputDir := result;
 end; { TfrmMain.GetOutputDir }
