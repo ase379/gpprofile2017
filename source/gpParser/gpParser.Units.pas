@@ -3,7 +3,7 @@ unit gpParser.Units;
 interface
 
 uses
-  System.Classes, System.SysUtils,
+  System.Classes, System.SysUtils, CastaliaPasLexTypes,
   gppTree,gpParser.baseProject,gpParser.Types, gpParser.Procs, gpParser.Defines, gpParser.API, gppIDT, gpFileEdit;
 
 type
@@ -17,7 +17,6 @@ type
     constructor Create; reintroduce;
     procedure Add(anUnit: TUnit);
     function FindNode(const aLookupKey: string; out aResultNode: INode<TUnit>): boolean; overload;
-
   end;
 
   TGlbUnitList = class(TUnitList)
@@ -32,9 +31,21 @@ type
 
   TUnit = class(TBaseUnit)
   private
+    fDefines: TDefineList;
+    fSkippedList : TSkippedCodeRecList;
     procedure AddToIntArray(var anArray: TArray<Integer>;const aValue: Integer);
     procedure InstrumentUses(const aProject: TBaseProject; const ed: TFileEdit;const anIndex: Integer);
     procedure BackupInstrumentedFile(const aSrc: string);
+    /// <summary>
+    /// Processes the given data and return the directive string, e.g. "IFDEF" or "INCLUDE"
+    /// </summary>
+    function ProcessDirectives(const aProject: TBaseProject; const tokenID: TptTokenKind; const tokenData : string): string;
+
+    class function ExtractCommentBody(const comment: string): string; static;
+    class function ExtractParameter(const comment: string; const parameter: Integer): string; static;
+    class function ExtractNumElements(const comment: string): integer;
+    class function IsOneOf(key: string; compareWith: array of string): boolean; static;
+    class function ExtractDirective(comment: string): string; static;
   public
     unName: TFilename;
     unFullName: TFileName;
@@ -71,7 +82,7 @@ implementation
 uses
   System.IOUtils, Winapi.Windows,
   GpString, gppCommon,
-  CastaliaPasLex, CastaliaPasLexTypes;
+  CastaliaPasLex;
 
 
 { ========================= TUnitList ========================= }
@@ -255,6 +266,7 @@ begin
   unUnits.Free;
   unProcs.Free;
   unAPIs.Free;
+  inherited;
 end;
 
 function TUnit.DidFileTimestampChange: boolean;
@@ -283,7 +295,7 @@ begin
   Result := False;
 
   LExtension := ExtractFileExt(aUnitName).ToLower;
-  if (LExtension <> '.pas') and (LExtension <> '.dpr') then
+  if (LExtension <> '.pas') and (LExtension <> '.dpr') and (LExtension <> '.inc') then
     aUnitName := aUnitName + '.pas';
 
   if FileExists(aUnitName) then
@@ -317,6 +329,162 @@ begin
   end;
 end; { FindOnPath }
 
+function TUnit.ProcessDirectives(const aProject: TBaseProject; const tokenID: TptTokenKind; const tokenData : string): string;
+var
+  LIsInstrumentationFlag: boolean;
+  LDirective: string;
+  LParameter : string;
+  i : Integer;
+  LNumElements : Integer;
+  LIfExpressionList : TIfExpressionPartList;
+  tokenDataLowerCase : string;
+begin
+  LDirective := '';
+  LIsInstrumentationFlag := false;
+  case tokenID of
+    ptIfDefDirect : LDirective := 'IFDEF';
+    ptIfOptDirect : LDirective := 'IFOPT';
+    ptIfNDefDirect : LDirective := 'IFNDEF';
+    ptIfDirect : LDirective := 'IF';
+    ptIfEndDirect : LDirective := 'IFEND';
+    ptEndIfDirect : LDirective := 'ENDIF';
+    ptElseDirect : LDirective := 'ELSE';
+    ptIncludeDirect :
+    begin
+      LDirective := 'INCLUDE';
+      // the lexer recognizes $i+ as $i, ignore it
+      tokenDataLowerCase := AnsiLowerCase(tokendata);
+      if (tokenDataLowerCase = '{$i-}') or
+         (tokenDataLowerCase = '{$i+}') then
+         exit('');
+    end;
+    ptDefineDirect : LDirective := 'DEFINE';
+    ptUndefDirect : LDirective := 'UNDEF';
+    ptCompDirect :
+    begin
+      LIsInstrumentationFlag := IsOneOf(tokenData,
+        [aProject.prConditStart, aProject.prConditStartUses,
+        aProject.prConditStartAPI, aProject.prConditEnd, aProject.prConditEndUses,
+        aProject.prConditEndAPI]
+      );
+      LDirective := ExtractDirective(tokenData);
+    end;
+    else
+      exit('');
+  end;
+
+    // Don't process conditional compilation directive if it is
+    // actually an instrumentation flag!
+  if not LIsInstrumentationFlag then
+  begin
+    if LDirective = 'IFDEF' then
+    begin // process $IFDEF
+      fSkippedList.TriggerIfDef(fDefines.IsDefined(ExtractParameter(tokenData, 1)));
+    end
+    else if LDirective = 'IFOPT' then
+    begin // process $IFOPT
+      fSkippedList.TriggerIfOpt();
+    end
+    else if LDirective = 'IFNDEF' then
+    begin // process $IFNDEF
+      fSkippedList.TriggerIfNDef(fDefines.IsDefined(ExtractParameter(tokenData, 1)));
+    end
+    else if LDirective = 'IF' then
+    begin
+      LIfExpressionList := TIfExpressionPartList.Create();
+      LNumElements := ExtractNumElements(tokenData);
+      for I := 1 to LNumElements do
+      begin
+        LParameter := ExtractParameter(tokenData, i);
+        if Trim(LParameter) = '' then
+          Continue;
+        if SameText(LParameter, 'AND') then
+          LIfExpressionList.Add(if_And)
+        else if SameText(LParameter, 'OR') then
+          LIfExpressionList.Add(if_OR)
+        else
+        begin
+          if LParameter.StartsWith('DEFINED', True) then
+          begin
+            // remove ')' at end
+            DelLastOccurance(LParameter, ')');
+            Delete(LParameter, 1, Length('DEFINED'));
+            // remove '(' after DEFINED
+            DelFirstOccurance(LParameter, '(');
+          end;
+          if fDefines.IsDefined(LParameter) then
+            LIfExpressionList.Add(if_true)
+          else
+            LIfExpressionList.Add(if_false);
+        end;
+      end;
+      try
+        fSkippedList.TriggerIf(fDefines.IsTrue(LIfExpressionList));
+      finally
+        LIfExpressionList.Free;
+      end;
+    end
+    else if LDirective = 'IFEND' then
+    begin
+      fSkippedList.TriggerIfEnd;
+    end
+    else if LDirective = 'ENDIF' then
+    begin // process $ENDIF
+      fSkippedList.TriggerEndIf;
+    end
+    else if LDirective = 'ELSE' then
+    begin // process $ELSE
+      fSkippedList.TriggerElse;
+    end;
+  end;
+  result := LDirective;
+
+end;
+
+class function TUnit.ExtractCommentBody(const comment: string): string;
+  begin
+  if comment = '' then
+    Result := ''
+  else if comment[1] = '{' then
+    Result := Copy(comment, 2, Length(comment) - 2)
+  else
+    Result := Copy(comment, 3, Length(comment) - 4);
+end;
+
+class function TUnit.ExtractParameter(const comment: string; const parameter: Integer): string;
+begin
+  Result := NthEl(ExtractCommentBody(comment), parameter + 1, ' ', -1);
+end; { ExtractParameter }
+
+
+class function TUnit.ExtractNumElements(const comment: string): Integer;
+begin
+  Result := NumElements(ExtractCommentBody(comment), ' ', -1);
+end; { ExtractParameter }
+
+class function TUnit.IsOneOf(key: string; compareWith: array of string): boolean;
+var
+  i: Integer;
+begin
+  Result := False;
+  for i := Low(compareWith) to High(compareWith) do
+    if key = compareWith[i] then
+      exit(true);
+end; { IsOneOf }
+
+class function TUnit.ExtractDirective(comment: string): string;
+begin
+  Result := ButFirst(UpperCase(FirstEl(ExtractCommentBody(comment),
+    ' ', -1)), 1);
+  // Fix Delphi stupidity - Delphi parses {$ENDIF.} (where '.' is any
+  // non-ident character (alpha, number, underscore)) as {$ENDIF}
+  while (Result <> '') and
+    (not(CharInSet(Result[Length(Result)],['a'..'z','A'..'Z','0'..'9','_','+', '-']))) do
+    Delete(Result, Length(Result), 1);
+end; { ExtractDirective }
+
+
+
 procedure TUnit.Parse(aProject: TBaseProject; const aExclUnits, aSearchPath,
   aDefaultDir, aConditionals: String; const aRescan, aParseAsm: boolean);
 type
@@ -331,7 +499,6 @@ type
     , stWaitSemi // Parse till semicolon
     );
 var
-  isInstrumentationFlag: boolean;
   parser: TmwPasLex;
   stream: TMemoryStream;
   state: TParseState;
@@ -362,10 +529,7 @@ var
   apiCmd: string;
   apiStart: Integer;
   apiStartEnd: Integer;
-  direct: string;
   parserStack: TList;
-  skipList: TList;
-  skipping: boolean;
   incName: string;
 
   function IsBlockStartToken(token: TptTokenKind): boolean;
@@ -417,11 +581,12 @@ var
     end;
   end; { ExpandLocation }
 
-  procedure CreateNewParser(const aUnitFN, aSearchPath: string);
+  function CreateNewParser(const aUnitFN, aSearchPath: string): boolean;
   var
     zero: char;
     vUnitFullName: TFileName;
   begin
+    result := true;
     if parser <> nil then
     begin
       parserStack.Add(parser);
@@ -430,8 +595,7 @@ var
 
 
     if not FindOnPath(aUnitFN, aSearchPath, aDefaultDir, vUnitFullName) then
-      raise EUnitInSearchPathNotFoundError.Create('Unit not found in search path: '
-        + aUnitFN);
+      Exit(False);
 
     parser := TmwPasLex.Create;
     stream := TMemoryStream.Create();
@@ -470,81 +634,13 @@ var
     end;
   end; { RemoveLastParser }
 
-  function ExtractCommentBody(comment: string): string;
-  begin
-    if comment = '' then
-      Result := ''
-    else if comment[1] = '{' then
-      Result := Copy(comment, 2, Length(comment) - 2)
-    else
-      Result := Copy(comment, 3, Length(comment) - 4);
-  end; { ExtractCommentBody }
-
-  function ExtractDirective(comment: string): string;
-  begin
-    Result := ButFirst(UpperCase(FirstEl(ExtractCommentBody(comment),
-      ' ', -1)), 1);
-    // Fix Delphi stupidity - Delphi parses {$ENDIF.} (where '.' is any
-    // non-ident character (alpha, number, underscore)) as {$ENDIF}
-    while (Result <> '') and
-      (not(CharInSet(Result[Length(Result)],['a'..'z','A'..'Z','0'..'9','_','+', '-']))) do
-      Delete(Result, Length(Result), 1);
-  end; { ExtractDirective }
-
-  function ExtractParameter(comment: string; parameter: Integer): string;
-  begin
-    Result := NthEl(ExtractCommentBody(comment), parameter + 1, ' ', -1);
-  end; { ExtractParameter }
-
-  procedure PushSkippingState(skipping: boolean; isIFOPT: boolean);
-  begin
-    skipList.Add(pointer(skipping));
-    skipList.Add(pointer(isIFOPT));
-  end; { PushSkippingState }
-
-  function WasSkipping: boolean;
-  begin
-    if skipList.Count = 0 then
-      Result := False
-    else
-      Result := boolean(skipList[skipList.Count - 2]);
-  end; { WasSkipping }
-
-  function InIFOPT: boolean;
-  begin
-    if skipList.Count = 0 then
-      Result := False // should not happen, but ...
-    else
-      Result := boolean(skipList[skipList.Count - 1]);
-  end; { TUnit.InIFOPT }
-
-  function PopSkippingState: boolean;
-  begin
-    if skipList.Count = 0 then
-      Result := true // source damaged - skip the rest
-    else
-    begin
-      skipList.Delete(skipList.Count - 1);
-      Result := boolean(skipList[skipList.Count - 1]);
-      skipList.Delete(skipList.Count - 1);
-    end;
-  end; { PopSkippingState }
-
-  function IsOneOf(key: string; compareWith: array of string): boolean;
-  var
-    i: Integer;
-  begin
-    Result := False;
-    for i := Low(compareWith) to High(compareWith) do
-      if key = compareWith[i] then
-        exit(true);
-  end; { IsOneOf }
 
 var
   vUnitFullName: TFileName;
   LSelfBuffer: string;
   LDataLowerCase: string;
-  LDefines: TDefineList;
+  LDirective : string;
+
 begin
   unParsed := true;
   parserStack := TList.Create;
@@ -601,11 +697,10 @@ begin
     prevTokenID := ptNull;
     apiStart := -1;
     apiStartEnd := -1;
-    skipping := False;
-    skipList := TList.Create;
-    LDefines := TDefineList.Create;
+    fSkippedList := TSkippedCodeRecList.Create();
+    fDefines := TDefineList.Create;
     try
-      LDefines.Assign(aConditionals);
+      fDefines.Assign(aConditionals);
       try
         repeat
           while parser.tokenID <> ptNull do
@@ -615,66 +710,36 @@ begin
             tokenPos := parser.tokenPos;
             tokenLN := parser.LineNumber;
 
-            if tokenID = ptCompDirect then
-            begin
-              // Don't process conditional compilation directive if it is
-              // actually an instrumentation flag!
-              with aProject do
-                isInstrumentationFlag :=
-                  IsOneOf(tokenData, [prConditStart, prConditStartUses,
-                  prConditStartAPI, prConditEnd, prConditEndUses,
-                  prConditEndAPI]);
-              if not isInstrumentationFlag then
-              begin
-                direct := ExtractDirective(tokenData);
-                if direct = 'IFDEF' then
-                begin // process $IFDEF
-                  PushSkippingState(skipping, False);
-                  skipping := skipping or (not LDefines.IsDefined(ExtractParameter(tokenData, 1)));
-                end
-                else if direct = 'IFOPT' then
-                begin // process $IFOPT
-                  PushSkippingState(skipping, true);
-                end
-                else if direct = 'IFNDEF' then
-                begin // process $IFNDEF
-                  PushSkippingState(skipping, False);
-                  skipping := skipping or LDefines.IsDefined(ExtractParameter(tokenData, 1));
-                end
-                else if direct = 'ENDIF' then
-                begin // process $ENDIF
-                  skipping := PopSkippingState;
-                end
-                else if direct = 'ELSE' then
-                begin // process $ELSE
-                  if (not InIFOPT) and (not WasSkipping) then
-                    skipping := not skipping;
-                end;
-              end;
-            end;
+            LDirective := ProcessDirectives(aProject, tokenID, tokenData);
 
-            if not skipping then
+            if not fSkippedList.SkippingCode then
             begin // we're not in the middle of conditionally removed block
               if (tokenID = ptPoint) and (prevTokenID = ptEnd) then
                 Break; // final end.
 
-              if tokenID = ptCompDirect then
-              begin
-                if (direct = 'INCLUDE') or (direct = 'I') then
-                begin // process $INCLUDE
-                  // process {$I *.INC}
-                  incName := ExtractParameter(tokenData, 1);
-                  if FirstEl(incName, '.', -1) = '*' then
-                    incName := FirstEl(ExtractFileName(unFullName), '.', -1) +
-                      '.' + ButFirstEl(incName, '.', -1);
-                  CreateNewParser(incName, aSearchPath);
-                  continue;
-                end
-                else if direct = 'DEFINE' then // process $DEFINE
-                  LDefines.Define(ExtractParameter(tokenData, 1))
-                else if direct = 'UNDEF' then // process $UNDEF
-                  LDefines.Undefine(ExtractParameter(tokenData, 1));
-              end;
+              if (LDirective = 'INCLUDE') or (LDirective = 'I') then
+              begin // process $INCLUDE
+                // process {$I *.INC}
+                incName := ExtractParameter(tokendata, 1);
+                // having double spaces causes problems with ExtractParameter; the result is then empty...
+                if incName = '' then
+                begin
+                  incName := tokenData.Replace('  ',' ',[rfReplaceAll]);
+                  incName := ExtractParameter(incName, 1);
+                end;
+                if FirstEl(incName, '.', -1) = '*' then
+                  incName := FirstEl(ExtractFileName(unFullName), '.', -1) +
+                    '.' + ButFirstEl(incName, '.', -1);
+                if incName = '' then
+                  raise Exception.Create('Include contains empty unit name : "'+ tokenData + '".' );
+                if not CreateNewParser(incName, aSearchPath) then
+                  raise EUnitInSearchPathNotFoundError.Create('Unit not found in search path: '+ incName);
+                continue;
+              end
+              else if LDirective = 'DEFINE' then // process $DEFINE
+                fDefines.Define(ExtractParameter(tokenData, 1))
+              else if LDirective = 'UNDEF' then // process $UNDEF
+                fDefines.Undefine(ExtractParameter(tokenData, 1));
 
               if inAsmBlock and ((prevTokenID = ptAddressOp) or
                 (prevTokenID = ptDoubleAddressOp)) and (tokenID <> ptAddressOp)
@@ -948,10 +1013,10 @@ begin
           end; // while
         until not RemoveLastParser;
       finally
-        LDefines.Free;
+        FreeAndNil(fDefines);
       end;
     finally
-      skipList.Free;
+      FreeAndNil(fSkippedList);
     end;
   finally
     parserStack.Free;

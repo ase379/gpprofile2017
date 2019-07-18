@@ -116,6 +116,8 @@ type
     procedure RebuildDefines(userDefines: string);
     function  ExtractUserDefines: string;
     function  ExtractDefines: string;
+    // extracts project and user defines
+    function  ExtractAllDefines: string;
 
     function ExecuteGlobalSettings(): boolean;
     function ExecuteProjectSettings(const aShowAll: boolean): boolean;
@@ -133,7 +135,8 @@ function ResolvePrfProjectPlaceholders(const aFilenameWithPh: string): string;
 implementation
 
 uses
-  bdsVersions,
+  gpProf.bdsVersions,
+  gpProf.ProjectAccessor,
   GpString,
   gppMain,
   gpRegistry,
@@ -317,9 +320,18 @@ procedure TfrmPreferences.cbProjectDefinesClick(Sender: TObject);
 var
   projcond: string;
   i       : integer;
+  LAccessor : TProjectAccessor;
+  LConditionals : string;
 begin
-  if cbProjectDefines.Checked then begin
-    projcond := ReplaceAll(GetDOFSetting('Directories','Conditionals',''),',',';');
+  if cbProjectDefines.Checked then
+  begin
+    LAccessor := TProjectAccessor.Create(CurrentProjectName);
+    try
+      LConditionals := LAccessor.GetProjectDefines();
+    finally
+      LAccessor.Free;
+    end;
+    projcond := ReplaceAll(LConditionals,',',';');
     for i := 1 to NumElements(projcond,';',-1) do
       AddDefine(NthEl(projcond,i,';',-1),DEF_PROJECT);
   end
@@ -504,6 +516,22 @@ begin
   end;
 end;
 
+
+function TfrmPreferences.ExtractAllDefines: string;
+var
+  i: integer;
+begin
+  Result := '';
+  for i := 0 to lvDefines.Items.Count-1 do
+  begin
+    if (lvDefines.Items[i].ImageIndex = DEF_USER) and (cbDisableUserDefines.Checked) then
+      continue;
+    if Result <> '' then
+      Result := Result + ';';
+    Result := Result + lvDefines.Items[i].Caption;
+  end;
+end;
+
 procedure TfrmPreferences.cbDisableUserDefinesClick(Sender: TObject);
 var
   image: TBitmap;
@@ -592,7 +620,11 @@ begin
       end; // Excluded units
       3: begin
         cbStandardDefines.Checked    := prefStandardDefines;
-        cbConsoleDefines.Checked     := GetDOFSettingBool('Linker','ConsoleApp',false);
+        With TProjectAccessor.Create(CurrentProjectName) do
+        begin
+          cbConsoleDefines.Checked     := IsConsoleProject(False);
+          Free;
+        end;
         cbProjectDefines.Checked     := prefProjectDefines;
         cbDisableUserDefines.Checked := prefDisableUserDefines;
         RebuildDefines(prefUserDefines);

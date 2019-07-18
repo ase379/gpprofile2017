@@ -8,7 +8,7 @@ uses
   Registry, Messages, Classes, Forms, Windows, SysUtils, Graphics, Controls,
   Dialogs, StdCtrls, Menus, ComCtrls, GpParser, ExtCtrls, gpMRU,
   ActnList, ImgList, Buttons, ToolWin, gppResults, Grids,
-  DProjUnit, SynEdit,
+  SynEdit,
   SynEditHighlighter, SynEditCodeFolding, SynHighlighterPas, System.ImageList,
   System.Actions,gppCurrentPrefs, VirtualTrees,
   virtualTree.tools.checkable,
@@ -252,7 +252,6 @@ type
     procedure RebuildDefines;
     procedure SlidersMoved;
     function  IsProjectConsole: boolean;
-    function  ReplaceMacros(s: string): string;
     procedure ResetSourcePreview(reposition: boolean);
     procedure RestoreUIAfterParseProject;
     procedure WMDropFiles (var aMsg: TMessage); message WM_DROPFILES;
@@ -264,8 +263,8 @@ var
 implementation
 
 uses
-  BdsProjUnit,
-  BdsVersions,
+  gpProf.bdsVersions,
+  gpProf.ProjectAccessor,
   IniFiles,
   GpString,
   GpProfH,
@@ -472,7 +471,7 @@ begin
     CurrentProjectName := aProject;
     RebuildDefines;
     vErrList := TStringList.Create;
-    LDefines := frmPreferences.ExtractDefines;
+    LDefines := frmPreferences.ExtractAllDefines;
     ExecuteAsync(
       procedure
       begin
@@ -501,10 +500,9 @@ begin
   end
   else
   begin
-    LDefines := frmPreferences.ExtractDefines;
     InitProgressBar(self,'Rescanning units...', true, false);
     RebuildDefines;
-    LDefines := frmPreferences.ExtractDefines;
+    LDefines := frmPreferences.ExtractAllDefines;
     ExecuteAsync(
       procedure
       begin
@@ -531,9 +529,14 @@ end; { TfrmMain.ParseProject }
 function TfrmMain.IsProjectConsole: boolean;
 begin
   Result := false;
-  if assigned(openProject) then begin
+  if assigned(openProject) then
+  begin
     // Don't know why but ConsoleApp=1 means that app is NOT a console app!
-    Result := not GetDOFSettingBool('Linker','ConsoleApp',true);
+    with TProjectAccessor.Create(CurrentProjectName) do
+    begin
+      Result := IsConsoleProject(true);
+      Free;
+    end;
     // Also, CONSOLE is defined only if Linker option is set, not if
     // {$APPTYPE CONSOLE} is specified in main program!
     // Stupid, but that's how Delphi works.
@@ -542,14 +545,12 @@ end;
 
 procedure TfrmMain.RebuildDefines;
 begin
-  with frmPreferences do begin
-    ReselectCompilerVersion(selectedDelphi);
-    cbStandardDefines.Checked    := GetProjectPref('StandardDefines',prefStandardDefines);
-    cbConsoleDefines.Checked     := GetProjectPref('ConsoleDefines',IsProjectConsole);
-    cbProjectDefines.Checked     := GetProjectPref('ProjectDefines',prefProjectDefines);
-    cbDisableUserDefines.Checked := GetProjectPref('DisableUserDefines',prefDisableUserDefines);
-    RebuildDefines(GetProjectPref('UserDefines',prefUserDefines));
-  end;
+  frmPreferences.ReselectCompilerVersion(selectedDelphi);
+  frmPreferences.cbStandardDefines.Checked    := GetProjectPref('StandardDefines',prefStandardDefines);
+  frmPreferences.cbConsoleDefines.Checked     := GetProjectPref('ConsoleDefines',IsProjectConsole);
+  frmPreferences.cbProjectDefines.Checked     := GetProjectPref('ProjectDefines',prefProjectDefines);
+  frmPreferences.cbDisableUserDefines.Checked := GetProjectPref('DisableUserDefines',prefDisableUserDefines);
+  frmPreferences.RebuildDefines(GetProjectPref('UserDefines',prefUserDefines));
 end;
 
 procedure TfrmMain.LoadProject(fileName: string; defaultDelphi: string = '');
@@ -1085,7 +1086,7 @@ begin
   outDir := GetOutputDir(openProject.Name);
   fnm := MakeSmartBackslash(outDir)+ChangeFileExt(ExtractFileName(openProject.Name),'.gpi');
   LShowAll := FInstrumentationFrame.chkShowAll.Checked;
-  LDefines := frmPreferences.ExtractDefines;
+  LDefines := frmPreferences.ExtractAllDefines;
   Enabled := false;
   LNeededTimeString := '';
   ExecuteAsync(
@@ -1588,180 +1589,17 @@ begin
   end;
 end;
 
-function TfrmMain.ReplaceMacros(s: string): string;
-
-  function GetDelphiXE2Var(const aVarName: string): string;
-  begin
-    if lowercase(aVarName) = 'platform' then Result:= 'Win32';
-    if lowercase(aVarName) = 'config' then Result:= 'Release';
-  end;
-
-  function GetEnvVar(const aVarName: String): String;
-  var
-    vSize: Integer;
-  begin
-    Result := '';
-    vSize := GetEnvironmentVariable(PChar(aVarName), nil, 0);
-    if vSize > 0 then
-    begin
-      SetLength(Result, vSize);
-      GetEnvironmentVariable(PChar(aVarName), PChar(Result), vSize);
-      // Cut out #0 char
-      if Result <> '' then
-        Result := Copy(Result, 1, Length(Result)-1);
-    end;
-  end;
-
-var
-  vMacroValue: String;
-  vMacros: array of String;
-  vInMacro: Boolean;
-  vMacroSt: Integer;
-  i, p: Integer;
-begin
-  Result := s;
-
-  // First, build full macros list from Search Path (macro is found by $(MacroName))
-  vMacros := nil;
-  vMacroSt := -1;
-  vInMacro := False;
-  for i := 1 to Length(Result) do
-    if Copy((Result+' '), i, 2) = '$(' then
-    begin
-      vInMacro := True;
-      vMacroSt := i;
-    end
-    else if vInMacro and (Result[i] = ')') then
-    begin
-      vInMacro := False;
-
-      // Get macro name (without round brackets: $( ) )
-      p := Length(vMacros);
-      SetLength(vMacros, p+1);
-      vMacros[p] := Copy(Result, vMacroSt+2, i-1-(vMacroSt+2)+1);
-    end;
-
-  for i := 0 to High(vMacros) do
-  begin
-    // NB! Paths from DCC_UnitSearchPath element of *.dproj file are already added,
-    // so simply skip this macro
-    if AnsiUpperCase(vMacros[i]) = 'DCC_UNITSEARCHPATH' then
-      Continue;
-
-    vMacroValue := GetEnvVar(vMacros[i]);
-    if (vMacroValue = '') then vMacroValue:= GetDelphiXE2Var(vMacros[i]);
-    // ToDo: Not all macros are possible to get throug environment variables
-    // Neet to find out, how to resolve the rest macros
-    if vMacroValue <> '' then
-      Result := StringReplace(Result, '$(' + vMacros[i] + ')', vMacroValue, [rfReplaceAll]);
-  end;
-end; { TfrmMain.ReplaceMacros }
-
 function TfrmMain.GetSearchPath(const aProject: string): string;
 var
   vPath: string;
-  vDofFN: TFileName;
-  vDProjFN: TFileName;
-  vBdsProjFN: TFileName;
-  vDProj: TDProj;
-  vBdsProj: TBdsProj;
-  vOldCurDir: String;
-  vFullPath: String;
-  i: Integer;
+  LProjectAccessor : TProjectAccessor;
 begin
   vPath := '';
-
-  // Get settings from obsolete dof-file
-  vDofFN := ChangeFileExt(aProject, '.dof');
-  if FileExists(vDofFN) then
-    with TIniFile.Create(vDofFN) do
-    try
-      vPath := ReadString('Directories', 'SearchPath', '');
-    finally
-      Free;
-    end;
-
-  // Get settings from dproj-file
-  vDProjFN := ChangeFileExt(aProject, '.dproj');
-  if FileExists(vDProjFN) then
-  begin
-    vDProj := TDProj.Create(vDProjFN);
-    try
-      vPath := IfThen((vPath <> '') and (vPath[Length(vPath)] <> ';'), ';') + vDProj.SearchPath;
-    finally
-      vDProj.Free;
-    end;
-  end;
-
-  // Get settings from bdsproj-file
-  vBdsProjFN := ChangeFileExt(aProject, '.bdsproj');
-  if FileExists(vBdsProjFN) then
-  begin
-    vBdsProj := TBdsProj.Create(vBdsProjFN);
-    try
-      vPath := IfThen((vPath <> '') and (vPath[Length(vPath)] <> ';'), ';') + vBdsProj.SearchPath;
-    finally
-      vBdsProj.Free;
-    end;
-  end;
-
-  // Get settings from registry
-  with TGpRegistry.Create do begin
-    try
-      //Path for Delphi XE2-XE3
-      RootKey:= HKEY_CURRENT_USER;
-      if OpenKeyReadOnly('HKEY_CURRENT_USER\Software\Embarcadero\BDS\'+DelphiVerToBDSVer(selectedDelphi)+'\Library\Win32') then begin
-        vPath := vPath + IfThen((vPath <> '') and (vPath[Length(vPath)] <> ';'), ';') + ReadString('Search Path','');
-        CloseKey;
-      end;
-
-      // Path for Delphi 2009-XE
-      RootKey := HKEY_CURRENT_USER;
-      if OpenKeyReadOnly('SOFTWARE\Embarcadero\BDS\' + DelphiVerToBDSVer(selectedDelphi) + '\Library') then
-      begin
-        vPath := vPath + IfThen((vPath <> '') and (vPath[Length(vPath)] <> ';'), ';') + ReadString('Search Path','');
-        CloseKey;
-      end;
-
-      // Path for Delphi 2005-2007
-      RootKey := HKEY_CURRENT_USER;
-      if OpenKeyReadOnly('SOFTWARE\Borland\BDS\' + DelphiVerToBDSVer(selectedDelphi) + '\Library') then
-      begin
-        vPath := vPath + IfThen((vPath <> '') and (vPath[Length(vPath)] <> ';'), ';') + ReadString('Search Path','');
-        vPath := vPath + IfThen((vPath <> '') and (vPath[Length(vPath)] <> ';'), ';') + ReadString('SearchPath','');
-        CloseKey;
-      end;
-
-      // Path for Delphi 2-7
-      RootKey := HKEY_LOCAL_MACHINE;
-      if OpenKeyReadOnly('SOFTWARE\Borland\Delphi\'+selectedDelphi+'\Library') then
-      begin
-        vPath := vPath + IfThen((vPath <> '') and (vPath[Length(vPath)] <> ';'), ';') + ReadString('SearchPath','');
-        vPath := vPath + IfThen((vPath <> '') and (vPath[Length(vPath)] <> ';'), ';') + ReadString('Search Path','');
-        CloseKey;
-      end;
-    finally
-      Free;
-    end;
-  end;
-
-  // Substitute macros (environment variables) with their real values
-  vPath := ReplaceMacros(vPath);
-
-  // Transform all search paths into absolute
-  Result := '';
-  vOldCurDir := GetCurrentDir;
-  if not SetCurrentDir(ExtractFileDir(aProject)) then
-    Assert(False);
+  LProjectAccessor := TProjectAccessor.Create(aProject);
   try
-    for i := 1 to NumElements(vPath, ';', -1) do
-    begin
-      vFullPath := ExpandUNCFileName(NthEl(vPath, i, ';', -1));
-      if DirectoryExists(vFullPath) then
-        Result := Result + IfThen(Result <> '', ';') + vFullPath;
-    end;
+    Result := LProjectAccessor.GetSearchPath(selectedDelphi);
   finally
-    SetCurrentDir(vOldCurDir);
+    LProjectAccessor.Free;
   end;
 end;
 
@@ -1769,69 +1607,16 @@ end;
 { TfrmMain.GetSearchPath }
 
 function TfrmMain.GetOutputDir(const aProject: string): string;
-const
-  cPlatform = '$(Platform)';
-  cConfig = '$(Config)';
 var
-  vDProj: TDProj;
-  vDProjFN: TFileName;
-  vDofFN: TFileName;
-  vBdsProjFN: TFileName;
-  vBdsProj: TBdsProj;
-  vOldCurDir: String;
+  LProjectAccessor : TProjectAccessor;
 begin
   Result := '';
 
-  vDProjFN := ChangeFileExt(aProject, '.dproj');
-  if FileExists(vDProjFN) then
-  begin
-    vDProj := TDProj.Create(vDProjFN);
-    try
-      Result := vDProj.OutputDir;
-    finally
-      vDProj.Free;
-    end;
-  end
-  else begin
-    vDofFN := ChangeFileExt(aProject, '.dof');
-    if FileExists(vDofFN) then
-      with TIniFile.Create(vDofFN) do
-      try
-        Result := ReadString('Directories', 'OutputDir', '');
-      finally
-        Free;
-      end
-    else begin
-      vBdsProjFN := ChangeFileExt(aProject, '.bdsproj');
-      if FileExists(vBdsProjFN) then
-      begin
-        vBdsProj := TBdsProj.Create(vBdsProjFN);
-        try
-          Result := vBdsProj.OutputDir;
-        finally
-          vBdsProj.Free;
-        end
-      end;
-    end;
-  end;
-
-  Result := ReplaceMacros(Result);
-
-  // If getting output dir was not successful - use project dir as output dir
-  if Result = '' then
-    Result := ExtractFilePath(aProject);
-
-  // Transform path to absolute
-  if not IsAbsolutePath(Result) then
-  begin
-    vOldCurDir := GetCurrentDir;
-    try
-      if not SetCurrentDir(ExtractFileDir(aProject)) then
-        Assert(False);
-      Result := ExpandUNCFileName(Result);
-    finally
-      SetCurrentDir(vOldCurDir)
-    end;
+  LProjectAccessor := TProjectAccessor.Create(aProject);
+  try
+    result := LProjectAccessor.GetOutputDir()
+  finally
+    LProjectAccessor.Free;
   end;
   ProjectOutputDir := result;
 end; { TfrmMain.GetOutputDir }
