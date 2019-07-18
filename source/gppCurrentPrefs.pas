@@ -2,45 +2,76 @@ unit gppCurrentPrefs;
 
 interface
 
-var
-  CurrentProjectName        : string;
-  prefExcludedUnits         : string;
-  prefMarkerStyle           : integer;
-  prefCompilerVersion       : integer;
-  prefHideNotExecuted       : boolean;
-  prefSpeedSize             : integer;
-  prefShowAllFolders        : boolean;
-  prefStandardDefines       : boolean;
-  prefProjectDefines        : boolean;
-  prefDisableUserDefines    : boolean;
-  prefUserDefines           : string;
-  prefKeepFileDate          : boolean;
-  prefUseFileDate           : boolean;
-  prefPrfFilenameMakro      : string;
-  prefProfilingAutostart    : boolean;
-  prefInstrumentAssembler   : boolean;
-  prefMakeBackupOfInstrumentedFile : boolean;
+type
+
+  TGlobalPreferences = class
+  public
+  class var
+    ExcludedUnits         : string;
+    MarkerStyle           : integer;
+    CompilerVersion       : integer;
+    HideNotExecuted       : boolean;
+    SpeedSize             : integer;
+    ShowAllFolders        : boolean;
+    StandardDefines       : boolean;
+    ProjectDefines        : boolean;
+    DisableUserDefines    : boolean;
+    UserDefines           : string;
+    KeepFileDate          : boolean;
+    UseFileDate           : boolean;
+    PrfFilenameMakro      : string;
+    ProfilingAutostart    : boolean;
+    InstrumentAssembler   : boolean;
+    MakeBackupOfInstrumentedFile : boolean;
+
+    class procedure SetProjectPref(name: string; value: variant); overload; static;
+    class function  GetProjectPref(name: string; defval: variant): variant; overload; static;
+    class procedure DelProjectPref(name: string); static;
+    class procedure SetProfilePref(name: string; value: variant); overload; static;
+    class function  GetProfilePref(name: string; defval: variant): variant; overload; static;
+
+    class procedure LoadPreferences;
+
+    /// saves the (global) preferences in the registry
+    class procedure SavePreferences;
+  end;
 
   /// <summary>
-  /// The selected product version, e.g. 10.3 Rio.
+  /// data regarding the current session, e.g the last selected folder, the current project, etc.
   /// </summary>
-  selectedDelphi            : string;
-  /// <summary>
-  /// The output dir as defined in the project.
-  /// </summary>
-  ProjectOutputDir          : string;
+  TSessionData = class
+  private
+  class var
+    fLastSelectedGisFolder : string;
+  public
+  class var
 
-procedure SetProjectPref(name: string; value: variant); overload;
-function  GetProjectPref(name: string; defval: variant): variant; overload;
-procedure DelProjectPref(name: string);
-procedure SetProfilePref(name: string; value: variant); overload;
-function  GetProfilePref(name: string; defval: variant): variant; overload;
-function HasOpenProject: boolean;
+    /// <summary>
+    /// The filename of the selected project, empty string if non selected.
+    /// </summary>
+    CurrentProjectName        : string;
 
-procedure LoadPreferences;
+    /// <summary>
+    /// The selected product version, e.g. 10.3 Rio.
+    /// </summary>
+    selectedDelphi            : string;
 
-/// saves the (global) preferences in the registry
-procedure SavePreferences;
+    /// <summary>
+    /// The output dir as defined in the project.
+    /// </summary>
+    ProjectOutputDir          : string;
+
+    class function GetLastSelectedGisFolder : string;
+    class procedure SetLastSelectedGisFolder(const aValue : string);
+
+    class function HasOpenProject: boolean;static;
+
+  end;
+
+
+
+
+
 
 
 implementation
@@ -56,29 +87,29 @@ uses
   GpString,
   gppmain.types;
 
-procedure LoadPreferences;
+class procedure TGlobalPreferences.LoadPreferences;
 begin
   with TGpRegistry.Create do
     try
       RootKey := HKEY_CURRENT_USER;
       OpenKey(cRegistryRoot+'\Preferences', True);
       try
-        prefExcludedUnits      := ReadString ('ExcludedUnits',defaultExcludedUnits);
-        prefMarkerStyle        := ReadInteger('MarkerStyle',0);
-        prefSpeedSize          := ReadInteger('SpeedSize',1);
-        prefCompilerVersion    := ReadInteger('CompilerVersion',-1);
-        prefHideNotExecuted    := ReadBool   ('HideNotExecuted',true);
-        prefShowAllFolders     := ReadBool   ('ShowAllFolders',false);
-        prefStandardDefines    := ReadBool   ('StandardDefines',true);
-        prefProjectDefines     := ReadBool   ('ProjectDefines',true);
-        prefDisableUserDefines := ReadBool   ('DisableUserDefines',false);
-        prefUserDefines        := ReadString ('UserDefines','');
-        prefProfilingAutostart := ReadBool   ('ProfilingAutostart',true);
-        prefInstrumentAssembler:= ReadBool   ('InstrumentAssembler',false);
-        prefMakeBackupOfInstrumentedFile := ReadBool('MakeBackupOfInstrumentedFile', true);
-        prefKeepFileDate       := ReadBool   ('KeepFileDate',false);
-        prefUseFileDate        := ReadBool   ('UseFileDate',true);
-        prefPrfFilenameMakro   := ReadString ('PrfFilenameMakro',TPrfPlaceholder.PrfPlaceholderToMacro(TPrfPlaceholderType.ModulePath));
+        ExcludedUnits      := ReadString ('ExcludedUnits',defaultExcludedUnits);
+        MarkerStyle        := ReadInteger('MarkerStyle',0);
+        SpeedSize          := ReadInteger('SpeedSize',1);
+        CompilerVersion    := ReadInteger('CompilerVersion',-1);
+        HideNotExecuted    := ReadBool   ('HideNotExecuted',true);
+        ShowAllFolders     := ReadBool   ('ShowAllFolders',false);
+        StandardDefines    := ReadBool   ('StandardDefines',true);
+        ProjectDefines     := ReadBool   ('ProjectDefines',true);
+        DisableUserDefines := ReadBool   ('DisableUserDefines',false);
+        UserDefines        := ReadString ('UserDefines','');
+        ProfilingAutostart := ReadBool   ('ProfilingAutostart',true);
+        InstrumentAssembler:= ReadBool   ('InstrumentAssembler',false);
+        MakeBackupOfInstrumentedFile := ReadBool('MakeBackupOfInstrumentedFile', true);
+        KeepFileDate       := ReadBool   ('KeepFileDate',false);
+        UseFileDate        := ReadBool   ('UseFileDate',true);
+        PrfFilenameMakro   := ReadString ('PrfFilenameMakro',TPrfPlaceholder.PrfPlaceholderToMacro(TPrfPlaceholderType.ModulePath));
       finally
         CloseKey;
       end;
@@ -87,64 +118,81 @@ begin
     end;
 end; { LoadPreferences }
 
-procedure SavePreferences;
+class procedure TGlobalPreferences.SavePreferences;
 begin
   with TGpRegistry.Create do begin
     RootKey := HKEY_CURRENT_USER;
     OpenKey(cRegistryRoot+'\Preferences',true);
-    WriteString ('ExcludedUnits',      prefExcludedUnits);
-    WriteInteger('MarkerStyle',        prefMarkerStyle);
-    WriteInteger('SpeedSize',          prefSpeedSize);
-    WriteInteger('CompilerVersion',    prefCompilerVersion);
-    WriteBool   ('HideNotExecuted',    prefHideNotExecuted);
-    WriteBool   ('ShowAllFolders',     prefShowAllFolders);
-    WriteBool   ('StandardDefines',    prefStandardDefines);
-    WriteBool   ('ProjectDefines',     prefProjectDefines);
-    WriteBool   ('DisableUserDefines', prefDisableUserDefines);
-    WriteString ('UserDefines',        prefUserDefines);
-    WriteBool   ('ProfilingAutostart', prefProfilingAutostart);
-    WriteBool   ('InstrumentAssembler',prefInstrumentAssembler);
-    WriteBool   ('MakeBackupOfInstrumentedFile', prefMakeBackupOfInstrumentedFile);
+    WriteString ('ExcludedUnits',      ExcludedUnits);
+    WriteInteger('MarkerStyle',        MarkerStyle);
+    WriteInteger('SpeedSize',          SpeedSize);
+    WriteInteger('CompilerVersion',    CompilerVersion);
+    WriteBool   ('HideNotExecuted',    HideNotExecuted);
+    WriteBool   ('ShowAllFolders',     ShowAllFolders);
+    WriteBool   ('StandardDefines',    StandardDefines);
+    WriteBool   ('ProjectDefines',     ProjectDefines);
+    WriteBool   ('DisableUserDefines', DisableUserDefines);
+    WriteString ('UserDefines',        UserDefines);
+    WriteBool   ('ProfilingAutostart', ProfilingAutostart);
+    WriteBool   ('InstrumentAssembler',InstrumentAssembler);
+    WriteBool   ('MakeBackupOfInstrumentedFile', MakeBackupOfInstrumentedFile);
 
-    WriteBool   ('KeepFileDate',       prefKeepFileDate);
-    WriteBool   ('UseFileDate',        prefUseFileDate);
-    WriteString ('PrfFilenameMakro',   prefPrfFilenameMakro);
+    WriteBool   ('KeepFileDate',       KeepFileDate);
+    WriteBool   ('UseFileDate',        UseFileDate);
+    WriteString ('PrfFilenameMakro',   PrfFilenameMakro);
     Free;
   end;
 end; { SavePreferences }
 
-procedure SetProjectPref(name: string; value: variant);
+class procedure TGlobalPreferences.SetProjectPref(name: string; value: variant);
 begin
-  TGpRegistryTools.SetPref('\Projects\'+ReplaceAll(CurrentProjectName,'\','/'),name,value);
+  TGpRegistryTools.SetPref('\Projects\'+ReplaceAll(TSessionData.CurrentProjectName,'\','/'),name,value);
 end; { SetProjectPref }
 
-function GetProjectPref(name: string; defval: variant): variant;
+class function TGlobalPreferences.GetProjectPref(name: string; defval: variant): variant;
 begin
-  if not HasOpenProject then 
+  if not TSessionData.HasOpenProject then
     Result := defval
-  else 
-    Result := TGpRegistryTools.GetPref('\Projects\'+ReplaceAll(CurrentProjectName,'\','/'),name,defval);
+  else
+    Result := TGpRegistryTools.GetPref('\Projects\'+ReplaceAll(TSessionData.CurrentProjectName,'\','/'),name,defval);
 end; { GetProjectPref }
 
-procedure DelProjectPref(name: string);
+class procedure TGlobalPreferences.DelProjectPref(name: string);
 begin
-  if HasOpenProject then TGpRegistryTools.DelPref('\Projects\'+ReplaceAll(CurrentProjectName,'\','/'),name);
+  if TSessionData.HasOpenProject then
+    TGpRegistryTools.DelPref('\Projects\'+ReplaceAll(TSessionData.CurrentProjectName,'\','/'),name);
 end; { DelProjectPref }
 
-procedure SetProfilePref(name: string; value: variant);
+class procedure TGlobalPreferences.SetProfilePref(name: string; value: variant);
 begin
-  TGpRegistryTools.SetPref('\Profiles\'+ReplaceAll(CurrentProjectName,'\','/'),name,value);
+  TGpRegistryTools.SetPref('\Profiles\'+ReplaceAll(TSessionData.CurrentProjectName,'\','/'),name,value);
 end; { SetProfilePref }
 
-function GetProfilePref(name: string; defval: variant): variant;
+class function TGlobalPreferences.GetProfilePref(name: string; defval: variant): variant;
 begin
-  if not HasOpenProject then 
+  if not TSessionData.HasOpenProject then
     Result := defval
-  else 
-    Result := TGpRegistryTools.GetPref('\Profiles\'+ReplaceAll(CurrentProjectName,'\','/'),name,defval);
-end; { GetProfilePref }
+  else
+    Result := TGpRegistryTools.GetPref('\Profiles\'+ReplaceAll(TSessionData.CurrentProjectName,'\','/'),name,defval);
+end;
 
-function HasOpenProject: boolean;
+{ TSessionData }
+
+class function TSessionData.GetLastSelectedGisFolder: string;
+begin
+  if fLastSelectedGisFolder = '' then
+    result := CurrentProjectName
+  else
+    Result := fLastSelectedGisFolder;
+
+end;
+
+class procedure TSessionData.SetLastSelectedGisFolder(const aValue: string);
+begin
+  fLastSelectedGisFolder := aValue;
+end;
+
+class function TSessionData.HasOpenProject: boolean;
 begin
   result := Length(Trim(CurrentProjectName)) <> 0;
 end; { HasOpenProject }

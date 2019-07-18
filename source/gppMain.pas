@@ -468,19 +468,20 @@ begin
     InitProgressBar(self,'Parsing units...', true, false);
     FInstrumentationFrame.FillUnitTree(true); // clear all listboxes
     openProject := TProject.Create(aProject);
-    CurrentProjectName := aProject;
+    TSessionData.CurrentProjectName := aProject;
     RebuildDefines;
     vErrList := TStringList.Create;
     LDefines := frmPreferences.ExtractAllDefines;
     ExecuteAsync(
       procedure
       begin
-        openProject.Parse(GetProjectPref('ExcludedUnits',prefExcludedUnits),
-                  GetSearchPath(aProject),
-                  LDefines, NotifyParse,
-                  GetProjectPref('MarkerStyle', prefMarkerStyle),
-                  GetProjectPref('InstrumentAssembler', prefInstrumentAssembler),
-                  vErrList);
+        openProject.Parse(
+          TGlobalPreferences.GetProjectPref('ExcludedUnits',TGlobalPreferences.ExcludedUnits),
+          GetSearchPath(aProject),
+          LDefines, NotifyParse,
+          TGlobalPreferences.GetProjectPref('MarkerStyle', TGlobalPreferences.MarkerStyle),
+          TGlobalPreferences.GetProjectPref('InstrumentAssembler', TGlobalPreferences.InstrumentAssembler),
+          vErrList);
 
       end,
       procedure
@@ -490,7 +491,7 @@ begin
           HideProgressBar;
           if vErrList.Count > 0 then
           begin
-            TfmSimpleReport.Execute(CurrentProjectName + '- error list', vErrList);
+            TfmSimpleReport.Execute(TSessionData.CurrentProjectName + '- error list', vErrList);
           end;
           vErrList.Free;
           RestoreUIAfterParseProject();
@@ -506,12 +507,13 @@ begin
     ExecuteAsync(
       procedure
       begin
-        openProject.Rescan(GetProjectPref('ExcludedUnits', prefExcludedUnits),
-                   GetSearchPath(aProject),
-                   LDefines,
-                   GetProjectPref('MarkerStyle', prefMarkerStyle),
-                   GetProjectPref('UseFileDate', prefUseFileDate),
-                   GetProjectPref('InstrumentAssembler', prefInstrumentAssembler));
+        openProject.Rescan(
+          TGlobalPreferences.GetProjectPref('ExcludedUnits', TGlobalPreferences.ExcludedUnits),
+          GetSearchPath(aProject),
+          LDefines,
+          TGlobalPreferences.GetProjectPref('MarkerStyle', TGlobalPreferences.MarkerStyle),
+          TGlobalPreferences.GetProjectPref('UseFileDate', TGlobalPreferences.UseFileDate),
+          TGlobalPreferences.GetProjectPref('InstrumentAssembler', TGlobalPreferences.InstrumentAssembler));
       end,
       procedure
       begin
@@ -532,7 +534,7 @@ begin
   if assigned(openProject) then
   begin
     // Don't know why but ConsoleApp=1 means that app is NOT a console app!
-    with TProjectAccessor.Create(CurrentProjectName) do
+    with TProjectAccessor.Create(TSessionData.CurrentProjectName) do
     begin
       Result := IsConsoleProject(true);
       Free;
@@ -545,12 +547,12 @@ end;
 
 procedure TfrmMain.RebuildDefines;
 begin
-  frmPreferences.ReselectCompilerVersion(selectedDelphi);
-  frmPreferences.cbStandardDefines.Checked    := GetProjectPref('StandardDefines',prefStandardDefines);
-  frmPreferences.cbConsoleDefines.Checked     := GetProjectPref('ConsoleDefines',IsProjectConsole);
-  frmPreferences.cbProjectDefines.Checked     := GetProjectPref('ProjectDefines',prefProjectDefines);
-  frmPreferences.cbDisableUserDefines.Checked := GetProjectPref('DisableUserDefines',prefDisableUserDefines);
-  frmPreferences.RebuildDefines(GetProjectPref('UserDefines',prefUserDefines));
+  frmPreferences.ReselectCompilerVersion(TSessionData.selectedDelphi);
+  frmPreferences.cbStandardDefines.Checked    := TGlobalPreferences.GetProjectPref('StandardDefines',TGlobalPreferences.StandardDefines);
+  frmPreferences.cbConsoleDefines.Checked     := TGlobalPreferences.GetProjectPref('ConsoleDefines',IsProjectConsole);
+  frmPreferences.cbProjectDefines.Checked     := TGlobalPreferences.GetProjectPref('ProjectDefines',TGlobalPreferences.ProjectDefines);
+  frmPreferences.cbDisableUserDefines.Checked := TGlobalPreferences.GetProjectPref('DisableUserDefines',TGlobalPreferences.DisableUserDefines);
+  frmPreferences.RebuildDefines(TGlobalPreferences.GetProjectPref('UserDefines',TGlobalPreferences.UserDefines));
 end;
 
 procedure TfrmMain.LoadProject(fileName: string; defaultDelphi: string = '');
@@ -565,10 +567,10 @@ begin
     currentProject := ExtractFileName(fileName);
     ParseProject(fileName,false);
     if defaultDelphi = '' then
-      defaultDelphi := RemoveDelphiPrefix(frmPreferences.cbxCompilerVersion.Items[prefCompilerVersion]);
-    selectedDelphi := GetProjectPref('DelphiVersion',defaultDelphi);
+      defaultDelphi := RemoveDelphiPrefix(frmPreferences.cbxCompilerVersion.Items[TGlobalPreferences.CompilerVersion]);
+    TSessionData.selectedDelphi := TGlobalPreferences.GetProjectPref('DelphiVersion',defaultDelphi);
     RebuildDelphiVer;
-    FInstrumentationFrame.chkShowAll.Checked := GetProjectPref('ShowAllFolders',prefShowAllFolders);
+    FInstrumentationFrame.chkShowAll.Checked := TGlobalPreferences.GetProjectPref('ShowAllFolders',TGlobalPreferences.ShowAllFolders);
     PageControl1.ActivePage := tabInstrumentation;
     SetCaption;
     SetSource;
@@ -586,7 +588,7 @@ begin
     if Items.Count >= 1 then
       Items[Items.Count-1].Checked := true;
     for i := 0 to Items.Count-1 do begin
-      if RemoveDelphiPrefix(Items[i].Caption) = selectedDelphi then
+      if RemoveDelphiPrefix(Items[i].Caption) = TSessionData.selectedDelphi then
       begin
         Items[Items.Count-1].Checked := false;
         Items[i].Checked := true;
@@ -596,12 +598,12 @@ begin
     end;
 
     if (not found) and (Items.Count >= 1) then begin
-      selectedDelphi := RemoveDelphiPrefix(Items[Items.Count-1].Caption);
+      TSessionData.selectedDelphi := RemoveDelphiPrefix(Items[Items.Count-1].Caption);
     end;
   end;
-  Statusbar.Panels[1].Text := IFF(openProject = nil,'','Delphi '+selectedDelphi);
-  if selectedDelphi <> '' then // <-- Added by Alisov A.
-    UseDelphiSettings(Ord(selectedDelphi[1])-Ord(48));
+  Statusbar.Panels[1].Text := IFF(openProject = nil,'','Delphi '+TSessionData.selectedDelphi);
+  if TSessionData.selectedDelphi <> '' then // <-- Added by Alisov A.
+    UseDelphiSettings(Ord(TSessionData.selectedDelphi[1])-Ord(48));
 end; { TfrmMain.RebuildDelphiVer }
 
 procedure TfrmMain.DisablePC2;
@@ -695,7 +697,7 @@ begin
   begin
     SetCaption;
     SetSource;
-    actHideNotExecuted.Checked := GetProfilePref('HideNotExecuted', prefHideNotExecuted);
+    actHideNotExecuted.Checked := TGlobalPreferences.GetProfilePref('HideNotExecuted', TGlobalPreferences.HideNotExecuted);
     FProfilingFrame.FillViews(1);
     FProfilingFrame.ClearBreakdown;
     actHideNotExecuted.Enabled   := true;
@@ -727,9 +729,9 @@ end; { TfrmMain.LoadProfile }
 
 procedure TfrmMain.DelphiVerClick(Sender: TObject);
 begin
-  selectedDelphi := RemoveDelphiPrefix(TMenuItem(Sender).Caption);
+  TSessionData.selectedDelphi := RemoveDelphiPrefix(TMenuItem(Sender).Caption);
   RebuildDelphiVer;
-  SetProjectPref('DelphiVersion',selectedDelphi);
+  TGlobalPreferences.SetProjectPref('DelphiVersion',TSessionData.selectedDelphi);
 end;
 
 procedure TfrmMain.LayoutClick(Sender: TObject);
@@ -762,9 +764,9 @@ begin
       actRun.OnExecute := nil;
     if s.Count >= 1 then
     begin
-      if (prefCompilerVersion < 0) or (prefCompilerVersion >= s.Count) then
-        prefCompilerVersion := s.Count-1;
-      selectedDelphi := GetProjectPref('DelphiVersion', s[prefCompilerVersion]);
+      if (TGlobalPreferences.CompilerVersion < 0) or (TGlobalPreferences.CompilerVersion >= s.Count) then
+        TGlobalPreferences.CompilerVersion := s.Count-1;
+      TSessionData.selectedDelphi := TGlobalPreferences.GetProjectPref('DelphiVersion', s[TGlobalPreferences.CompilerVersion]);
       RebuildDelphiVer;
     end;
   finally
@@ -898,12 +900,12 @@ begin
     hProcess := 0;
     hThread  := 0;
   end;
-  LoadPreferences;
+  TGlobalPreferences.LoadPreferences;
   PageControl1.ActivePage := tabInstrumentation;
   DisablePC2;
   DisablePC;
   loadCanceled := false;
-  CurrentProjectName := '';
+  TSessionData.CurrentProjectName := '';
 
   MRU.RegistryKey := cRegistryRoot+'\MRU\DPR';
   MRU.LoadFromRegistry;
@@ -1028,7 +1030,7 @@ end;
 procedure TfrmMain.cbProfileChange(Sender: TObject);
 begin
   FInstrumentationFrame.FillUnitTree(not FInstrumentationFrame.chkShowAll.Checked);
-  SetProjectPref('ShowAllFolders',FInstrumentationFrame.chkShowAll.Checked);
+  TGlobalPreferences.SetProjectPref('ShowAllFolders',FInstrumentationFrame.chkShowAll.Checked);
 end;
 
 
@@ -1096,20 +1098,20 @@ begin
     begin
       LStopwatch := TStopWatch.StartNew();
       openProject.Instrument(not LShowAll,NotifyInstrument,
-                         GetProjectPref('MarkerStyle',prefMarkerStyle),
-                         GetProjectPref('KeepFileDate',prefKeepFileDate),
-                         GetProjectPref('MakeBackupOfInstrumentedFile',prefKeepFileDate),
+                         TGlobalPreferences.GetProjectPref('MarkerStyle',TGlobalPreferences.MarkerStyle),
+                         TGlobalPreferences.GetProjectPref('KeepFileDate',TGlobalPreferences.KeepFileDate),
+                         TGlobalPreferences.GetProjectPref('MakeBackupOfInstrumentedFile',TGlobalPreferences.KeepFileDate),
                          fnm,LDefines,
                          GetSearchPath(openProject.Name),
-                         GetProjectPref('InstrumentAssembler',prefInstrumentAssembler));
+                         TGlobalPreferences.GetProjectPref('InstrumentAssembler',TGlobalPreferences.InstrumentAssembler));
 
       if FileExists(fnm) then
         with TIniFile.Create(fnm) do
           try
-            WriteBool('Performance','ProfilingAutostart',GetProjectPref('ProfilingAutostart',prefProfilingAutostart));
-            WriteBool('Performance','CompressTicks',GetProjectPref('SpeedSize',prefSpeedSize)>1);
-            WriteBool('Performance','CompressThreads',GetProjectPref('SpeedSize',prefSpeedSize)>2);
-            WriteString('Output','PrfOutputFilename',ResolvePrfProjectPlaceholders(GetProjectPref('PrfFilenameMakro',prefPrfFilenameMakro)));
+            WriteBool('Performance','ProfilingAutostart',TGlobalPreferences.GetProjectPref('ProfilingAutostart',TGlobalPreferences.ProfilingAutostart));
+            WriteBool('Performance','CompressTicks',TGlobalPreferences.GetProjectPref('SpeedSize',TGlobalPreferences.SpeedSize)>1);
+            WriteBool('Performance','CompressThreads',TGlobalPreferences.GetProjectPref('SpeedSize',TGlobalPreferences.SpeedSize)>2);
+            WriteString('Output','PrfOutputFilename',ResolvePrfProjectPlaceholders(TGlobalPreferences.GetProjectPref('PrfFilenameMakro',TGlobalPreferences.PrfFilenameMakro)));
           finally
             Free;
           end;
@@ -1196,13 +1198,13 @@ begin
   with TGpRegistry.Create do
     try
       RootKey := HKEY_LOCAL_MACHINE;
-      if OpenKeyReadOnly('\SOFTWARE\Borland\Delphi\' + selectedDelphi) then
-        run := ReadString('Delphi ' + FirstEl(selectedDelphi,'.',-1),'')
+      if OpenKeyReadOnly('\SOFTWARE\Borland\Delphi\' + TSessionData.selectedDelphi) then
+        run := ReadString('Delphi ' + FirstEl(TSessionData.selectedDelphi,'.',-1),'')
       else begin
         RootKey := HKEY_CURRENT_USER;
-        if OpenKeyReadOnly('\SOFTWARE\Borland\BDS\' + DelphiVerToBDSVer(selectedDelphi)) then
+        if OpenKeyReadOnly('\SOFTWARE\Borland\BDS\' + DelphiVerToBDSVer(TSessionData.selectedDelphi)) then
           run := ReadString('App', '')
-        else if OpenKeyReadOnly('\SOFTWARE\Embarcadero\BDS\' + DelphiVerToBDSVer(selectedDelphi)) then
+        else if OpenKeyReadOnly('\SOFTWARE\Embarcadero\BDS\' + DelphiVerToBDSVer(TSessionData.selectedDelphi)) then
           run := ReadString('App', '')
         else
           run := '';
@@ -1572,7 +1574,7 @@ procedure TfrmMain.actHideNotExecutedExecute(Sender: TObject);
 begin
   actHideNotExecuted.Checked := not actHideNotExecuted.Checked;
   FProfilingFrame.FillViews;
-  SetProfilePref('HideNotExecuted', actHideNotExecuted.Checked);
+  TGlobalPreferences.SetProfilePref('HideNotExecuted', actHideNotExecuted.Checked);
 end;
 
 procedure TfrmMain.actProjectOptionsExecute(Sender: TObject);
@@ -1597,7 +1599,7 @@ begin
   vPath := '';
   LProjectAccessor := TProjectAccessor.Create(aProject);
   try
-    Result := LProjectAccessor.GetSearchPath(selectedDelphi);
+    Result := LProjectAccessor.GetSearchPath(TSessionData.selectedDelphi);
   finally
     LProjectAccessor.Free;
   end;
@@ -1618,7 +1620,7 @@ begin
   finally
     LProjectAccessor.Free;
   end;
-  ProjectOutputDir := result;
+  TSessionData.ProjectOutputDir := result;
 end; { TfrmMain.GetOutputDir }
 
 procedure TfrmMain.actRescanProfileExecute(Sender: TObject);
@@ -1887,7 +1889,7 @@ begin
   if openProject = nil then
     Exit;
 
-  if (not GetProjectPref('UseFileDate', prefUseFileDate)) or
+  if (not TGlobalPreferences.GetProjectPref('UseFileDate', TGlobalPreferences.UseFileDate)) or
     openProject.AnyChange(false) then
   begin
     FInstrumentationFrame.RescanProject(ParseProject);
@@ -1917,7 +1919,7 @@ var
 begin
   if openProject = nil then
     Exit;
-  LFilename := ChangeFileExt(openProject.Name,TUIStrings.GPProfInstrumentationSelectionExt);
+  LFilename := ChangeFileExt(TSessionData.GetLastSelectedGisFolder(),TUIStrings.GPProfInstrumentationSelectionExt);
   OpenDialog.DefaultExt := 'gis';
   OpenDialog.FileName := ExtractFilename(LFilename);
   OpenDialog.InitialDir := ExtractFileDir(LFilename);
@@ -1926,6 +1928,7 @@ begin
   if OpenDialog.Execute then
   begin
     openProject.LoadInstrumentalizationSelection(OpenDialog.FileName);
+    TSessionData.SetLastSelectedGisFolder(OpenDialog.FileName);
     // an auto-click is done... ignore instrumentation upon select
     FInstrumentationFrame.TriggerSelectionReload;
   end;
@@ -2149,16 +2152,18 @@ begin
   if openProject = nil then
     Exit;
   try
-    LFilename := ChangeFileExt(openProject.Name,TUIStrings.GPProfInstrumentationSelectionExt);
+    LFilename := ChangeFileExt(TSessionData.GetLastSelectedGisFolder,TUIStrings.GPProfInstrumentationSelectionExt);
     SaveDialog1.FileName := ExtractFileName(LFilename);
     SaveDialog1.InitialDir := ExtractFileDir(LFilename);
     SaveDialog1.Title := TUIStrings.SaveInstrumentationSelectionCaption;
     SaveDialog1.Filter := TUIStrings.InstrumentationSelectionFilter;
-    if SaveDialog1.Execute then begin
-      if ExtractFileExt(SaveDialog1.FileName) = '' then
-        SaveDialog1.FileName := SaveDialog1.FileName + TUIStrings.GPProfInstrumentationSelectionExt;
-    openProject.SaveInstrumentalizationSelection(SaveDialog1.FileName);
-  end;
+    if SaveDialog1.Execute then
+    begin
+       if ExtractFileExt(SaveDialog1.FileName) = '' then
+          SaveDialog1.FileName := SaveDialog1.FileName + TUIStrings.GPProfInstrumentationSelectionExt;
+      openProject.SaveInstrumentalizationSelection(SaveDialog1.FileName);
+      TSessionData.SetLastSelectedGisFolder(SaveDialog1.FileName);
+    end;
     except on e: Exception do
     begin
       ShowError(e.Message);
