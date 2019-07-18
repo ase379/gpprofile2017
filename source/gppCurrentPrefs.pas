@@ -36,19 +36,39 @@ type
     class procedure SavePreferences;
   end;
 
-var
-  CurrentProjectName        : string;
-
   /// <summary>
-  /// The selected product version, e.g. 10.3 Rio.
+  /// data regarding the current session, e.g the last selected folder, the current project, etc.
   /// </summary>
-  selectedDelphi            : string;
-  /// <summary>
-  /// The output dir as defined in the project.
-  /// </summary>
-  ProjectOutputDir          : string;
+  TSessionData = class
+  private
+  class var
+    fLastSelectedGisFolder : string;
+  public
+  class var
 
-function HasOpenProject: boolean;
+    /// <summary>
+    /// The filename of the selected project, empty string if non selected.
+    /// </summary>
+    CurrentProjectName        : string;
+
+    /// <summary>
+    /// The selected product version, e.g. 10.3 Rio.
+    /// </summary>
+    selectedDelphi            : string;
+
+    /// <summary>
+    /// The output dir as defined in the project.
+    /// </summary>
+    ProjectOutputDir          : string;
+
+    class function GetLastSelectedGisFolder : string;
+    class procedure SetLastSelectedGisFolder(const aValue : string);
+
+    class function HasOpenProject: boolean;static;
+
+  end;
+
+
 
 
 
@@ -126,36 +146,53 @@ end; { SavePreferences }
 
 class procedure TGlobalPreferences.SetProjectPref(name: string; value: variant);
 begin
-  TGpRegistryTools.SetPref('\Projects\'+ReplaceAll(CurrentProjectName,'\','/'),name,value);
+  TGpRegistryTools.SetPref('\Projects\'+ReplaceAll(TSessionData.CurrentProjectName,'\','/'),name,value);
 end; { SetProjectPref }
 
 class function TGlobalPreferences.GetProjectPref(name: string; defval: variant): variant;
 begin
-  if not HasOpenProject then
+  if not TSessionData.HasOpenProject then
     Result := defval
   else
-    Result := TGpRegistryTools.GetPref('\Projects\'+ReplaceAll(CurrentProjectName,'\','/'),name,defval);
+    Result := TGpRegistryTools.GetPref('\Projects\'+ReplaceAll(TSessionData.CurrentProjectName,'\','/'),name,defval);
 end; { GetProjectPref }
 
 class procedure TGlobalPreferences.DelProjectPref(name: string);
 begin
-  if HasOpenProject then TGpRegistryTools.DelPref('\Projects\'+ReplaceAll(CurrentProjectName,'\','/'),name);
+  if TSessionData.HasOpenProject then
+    TGpRegistryTools.DelPref('\Projects\'+ReplaceAll(TSessionData.CurrentProjectName,'\','/'),name);
 end; { DelProjectPref }
 
 class procedure TGlobalPreferences.SetProfilePref(name: string; value: variant);
 begin
-  TGpRegistryTools.SetPref('\Profiles\'+ReplaceAll(CurrentProjectName,'\','/'),name,value);
+  TGpRegistryTools.SetPref('\Profiles\'+ReplaceAll(TSessionData.CurrentProjectName,'\','/'),name,value);
 end; { SetProfilePref }
 
 class function TGlobalPreferences.GetProfilePref(name: string; defval: variant): variant;
 begin
-  if not HasOpenProject then
+  if not TSessionData.HasOpenProject then
     Result := defval
   else
-    Result := TGpRegistryTools.GetPref('\Profiles\'+ReplaceAll(CurrentProjectName,'\','/'),name,defval);
-end; { GetProfilePref }
+    Result := TGpRegistryTools.GetPref('\Profiles\'+ReplaceAll(TSessionData.CurrentProjectName,'\','/'),name,defval);
+end;
 
-function HasOpenProject: boolean;
+{ TSessionData }
+
+class function TSessionData.GetLastSelectedGisFolder: string;
+begin
+  if fLastSelectedGisFolder = '' then
+    result := CurrentProjectName
+  else
+    Result := fLastSelectedGisFolder;
+
+end;
+
+class procedure TSessionData.SetLastSelectedGisFolder(const aValue: string);
+begin
+  fLastSelectedGisFolder := aValue;
+end;
+
+class function TSessionData.HasOpenProject: boolean;
 begin
   result := Length(Trim(CurrentProjectName)) <> 0;
 end; { HasOpenProject }

@@ -151,7 +151,7 @@ var LSubstitutes : TPrfPlaceholderValueDict;
 begin
   // resolve the global or saved settings...
   LSubstitutes := TPrfPlaceholderValueDict.create();
-  LSubstitutes.add(ProjectFilename, ProjectOutputDir);
+  LSubstitutes.add(ProjectFilename, TSessionData.ProjectOutputDir);
   result := TPrfPlaceholder.ReplaceProjectMacros(aFilenameWithPh, LSubstitutes);
   LSubstitutes.free;
 end;
@@ -325,7 +325,7 @@ var
 begin
   if cbProjectDefines.Checked then
   begin
-    LAccessor := TProjectAccessor.Create(CurrentProjectName);
+    LAccessor := TProjectAccessor.Create(TSessionData.CurrentProjectName);
     try
       LConditionals := LAccessor.GetProjectDefines();
     finally
@@ -620,7 +620,7 @@ begin
       end; // Excluded units
       3: begin
         cbStandardDefines.Checked    := TGlobalPreferences.StandardDefines;
-        With TProjectAccessor.Create(CurrentProjectName) do
+        With TProjectAccessor.Create(TSessionData.CurrentProjectName) do
         begin
           cbConsoleDefines.Checked     := IsConsoleProject(False);
           Free;
@@ -697,7 +697,7 @@ begin
     TGlobalPreferences.InstrumentAssembler:= cbInstrumentAssembler.Checked;
     TGlobalPreferences.MakeBackupOfInstrumentedFile := cbMakeBackupOfInstrumentedFile.Checked;
     TGlobalPreferences.SavePreferences;
-    selectedDelphi := RemoveDelphiPrefix(cbxCompilerVersion.Items[TGlobalPreferences.CompilerVersion]);
+    TSessionData.selectedDelphi := RemoveDelphiPrefix(cbxCompilerVersion.Items[TGlobalPreferences.CompilerVersion]);
   end;
 end;
 
@@ -709,7 +709,7 @@ var
 begin
   with frmPreferences do begin
     IsGlobalPreferenceDialog := false;
-    Caption := 'GpProfile - Instrumentation options for '+CurrentProjectName;
+    Caption := 'GpProfile - Instrumentation options for '+TSessionData.CurrentProjectName;
     memoExclUnits.Text := TGlobalPreferences.GetProjectPref('ExcludedUnits',TGlobalPreferences.ExcludedUnits);
     projMarker := TGlobalPreferences.GetProjectPref('MarkerStyle',TGlobalPreferences.MarkerStyle);
     if (projMarker >= 0) and (projMarker < cbxMarker.Items.Count)
@@ -719,7 +719,7 @@ begin
     if projSpeedSize < tbSpeedSize.Min then projSpeedSize := tbSpeedSize.Min
     else if projSpeedSize > tbSpeedSize.Max then projSpeedSize := tbSpeedSize.Max;
     tbSpeedSize.Position := projSpeedSize;
-    ReselectCompilerVersion(selectedDelphi);
+    ReselectCompilerVersion(TSessionData.selectedDelphi);
     cbShowAllFolders.Checked           := aShowAll;
     cbKeepFileDate.Checked             := TGlobalPreferences.GetProjectPref('KeepFileDate',TGlobalPreferences.KeepFileDate);
     cbUseFileDate.Checked              := TGlobalPreferences.GetProjectPref('UseFileDate',TGlobalPreferences.UseFileDate);
@@ -765,7 +765,7 @@ begin
       TGlobalPreferences.SetProjectPref('ProfilingAutostart',cbProfilingAutostart.Checked);
       TGlobalPreferences.SetProjectPref('InstrumentAssembler',cbInstrumentAssembler.Checked);
       TGlobalPreferences.SetProjectPref('MakeBackupOfInstrumentedFile',cbMakeBackupOfInstrumentedFile.Checked);
-      selectedDelphi := RemoveDelphiPrefix(cbxCompilerVersion.Items[cbxCompilerVersion.ItemIndex]);
+      TSessionData.selectedDelphi := RemoveDelphiPrefix(cbxCompilerVersion.Items[cbxCompilerVersion.ItemIndex]);
       if memoExclUnits.Text = TGlobalPreferences.ExcludedUnits then
         TGlobalPreferences.DelProjectPref('ExcludedUnits')
       else

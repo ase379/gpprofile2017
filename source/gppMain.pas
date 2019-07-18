@@ -468,7 +468,7 @@ begin
     InitProgressBar(self,'Parsing units...', true, false);
     FInstrumentationFrame.FillUnitTree(true); // clear all listboxes
     openProject := TProject.Create(aProject);
-    CurrentProjectName := aProject;
+    TSessionData.CurrentProjectName := aProject;
     RebuildDefines;
     vErrList := TStringList.Create;
     LDefines := frmPreferences.ExtractAllDefines;
@@ -491,7 +491,7 @@ begin
           HideProgressBar;
           if vErrList.Count > 0 then
           begin
-            TfmSimpleReport.Execute(CurrentProjectName + '- error list', vErrList);
+            TfmSimpleReport.Execute(TSessionData.CurrentProjectName + '- error list', vErrList);
           end;
           vErrList.Free;
           RestoreUIAfterParseProject();
@@ -534,7 +534,7 @@ begin
   if assigned(openProject) then
   begin
     // Don't know why but ConsoleApp=1 means that app is NOT a console app!
-    with TProjectAccessor.Create(CurrentProjectName) do
+    with TProjectAccessor.Create(TSessionData.CurrentProjectName) do
     begin
       Result := IsConsoleProject(true);
       Free;
@@ -547,7 +547,7 @@ end;
 
 procedure TfrmMain.RebuildDefines;
 begin
-  frmPreferences.ReselectCompilerVersion(selectedDelphi);
+  frmPreferences.ReselectCompilerVersion(TSessionData.selectedDelphi);
   frmPreferences.cbStandardDefines.Checked    := TGlobalPreferences.GetProjectPref('StandardDefines',TGlobalPreferences.StandardDefines);
   frmPreferences.cbConsoleDefines.Checked     := TGlobalPreferences.GetProjectPref('ConsoleDefines',IsProjectConsole);
   frmPreferences.cbProjectDefines.Checked     := TGlobalPreferences.GetProjectPref('ProjectDefines',TGlobalPreferences.ProjectDefines);
@@ -568,7 +568,7 @@ begin
     ParseProject(fileName,false);
     if defaultDelphi = '' then
       defaultDelphi := RemoveDelphiPrefix(frmPreferences.cbxCompilerVersion.Items[TGlobalPreferences.CompilerVersion]);
-    selectedDelphi := TGlobalPreferences.GetProjectPref('DelphiVersion',defaultDelphi);
+    TSessionData.selectedDelphi := TGlobalPreferences.GetProjectPref('DelphiVersion',defaultDelphi);
     RebuildDelphiVer;
     FInstrumentationFrame.chkShowAll.Checked := TGlobalPreferences.GetProjectPref('ShowAllFolders',TGlobalPreferences.ShowAllFolders);
     PageControl1.ActivePage := tabInstrumentation;
@@ -588,7 +588,7 @@ begin
     if Items.Count >= 1 then
       Items[Items.Count-1].Checked := true;
     for i := 0 to Items.Count-1 do begin
-      if RemoveDelphiPrefix(Items[i].Caption) = selectedDelphi then
+      if RemoveDelphiPrefix(Items[i].Caption) = TSessionData.selectedDelphi then
       begin
         Items[Items.Count-1].Checked := false;
         Items[i].Checked := true;
@@ -598,12 +598,12 @@ begin
     end;
 
     if (not found) and (Items.Count >= 1) then begin
-      selectedDelphi := RemoveDelphiPrefix(Items[Items.Count-1].Caption);
+      TSessionData.selectedDelphi := RemoveDelphiPrefix(Items[Items.Count-1].Caption);
     end;
   end;
-  Statusbar.Panels[1].Text := IFF(openProject = nil,'','Delphi '+selectedDelphi);
-  if selectedDelphi <> '' then // <-- Added by Alisov A.
-    UseDelphiSettings(Ord(selectedDelphi[1])-Ord(48));
+  Statusbar.Panels[1].Text := IFF(openProject = nil,'','Delphi '+TSessionData.selectedDelphi);
+  if TSessionData.selectedDelphi <> '' then // <-- Added by Alisov A.
+    UseDelphiSettings(Ord(TSessionData.selectedDelphi[1])-Ord(48));
 end; { TfrmMain.RebuildDelphiVer }
 
 procedure TfrmMain.DisablePC2;
@@ -729,9 +729,9 @@ end; { TfrmMain.LoadProfile }
 
 procedure TfrmMain.DelphiVerClick(Sender: TObject);
 begin
-  selectedDelphi := RemoveDelphiPrefix(TMenuItem(Sender).Caption);
+  TSessionData.selectedDelphi := RemoveDelphiPrefix(TMenuItem(Sender).Caption);
   RebuildDelphiVer;
-  TGlobalPreferences.SetProjectPref('DelphiVersion',selectedDelphi);
+  TGlobalPreferences.SetProjectPref('DelphiVersion',TSessionData.selectedDelphi);
 end;
 
 procedure TfrmMain.LayoutClick(Sender: TObject);
@@ -766,7 +766,7 @@ begin
     begin
       if (TGlobalPreferences.CompilerVersion < 0) or (TGlobalPreferences.CompilerVersion >= s.Count) then
         TGlobalPreferences.CompilerVersion := s.Count-1;
-      selectedDelphi := TGlobalPreferences.GetProjectPref('DelphiVersion', s[TGlobalPreferences.CompilerVersion]);
+      TSessionData.selectedDelphi := TGlobalPreferences.GetProjectPref('DelphiVersion', s[TGlobalPreferences.CompilerVersion]);
       RebuildDelphiVer;
     end;
   finally
@@ -905,7 +905,7 @@ begin
   DisablePC2;
   DisablePC;
   loadCanceled := false;
-  CurrentProjectName := '';
+  TSessionData.CurrentProjectName := '';
 
   MRU.RegistryKey := cRegistryRoot+'\MRU\DPR';
   MRU.LoadFromRegistry;
@@ -1198,13 +1198,13 @@ begin
   with TGpRegistry.Create do
     try
       RootKey := HKEY_LOCAL_MACHINE;
-      if OpenKeyReadOnly('\SOFTWARE\Borland\Delphi\' + selectedDelphi) then
-        run := ReadString('Delphi ' + FirstEl(selectedDelphi,'.',-1),'')
+      if OpenKeyReadOnly('\SOFTWARE\Borland\Delphi\' + TSessionData.selectedDelphi) then
+        run := ReadString('Delphi ' + FirstEl(TSessionData.selectedDelphi,'.',-1),'')
       else begin
         RootKey := HKEY_CURRENT_USER;
-        if OpenKeyReadOnly('\SOFTWARE\Borland\BDS\' + DelphiVerToBDSVer(selectedDelphi)) then
+        if OpenKeyReadOnly('\SOFTWARE\Borland\BDS\' + DelphiVerToBDSVer(TSessionData.selectedDelphi)) then
           run := ReadString('App', '')
-        else if OpenKeyReadOnly('\SOFTWARE\Embarcadero\BDS\' + DelphiVerToBDSVer(selectedDelphi)) then
+        else if OpenKeyReadOnly('\SOFTWARE\Embarcadero\BDS\' + DelphiVerToBDSVer(TSessionData.selectedDelphi)) then
           run := ReadString('App', '')
         else
           run := '';
@@ -1599,7 +1599,7 @@ begin
   vPath := '';
   LProjectAccessor := TProjectAccessor.Create(aProject);
   try
-    Result := LProjectAccessor.GetSearchPath(selectedDelphi);
+    Result := LProjectAccessor.GetSearchPath(TSessionData.selectedDelphi);
   finally
     LProjectAccessor.Free;
   end;
@@ -1620,7 +1620,7 @@ begin
   finally
     LProjectAccessor.Free;
   end;
-  ProjectOutputDir := result;
+  TSessionData.ProjectOutputDir := result;
 end; { TfrmMain.GetOutputDir }
 
 procedure TfrmMain.actRescanProfileExecute(Sender: TObject);
@@ -1919,7 +1919,7 @@ var
 begin
   if openProject = nil then
     Exit;
-  LFilename := ChangeFileExt(openProject.Name,TUIStrings.GPProfInstrumentationSelectionExt);
+  LFilename := ChangeFileExt(TSessionData.GetLastSelectedGisFolder(),TUIStrings.GPProfInstrumentationSelectionExt);
   OpenDialog.DefaultExt := 'gis';
   OpenDialog.FileName := ExtractFilename(LFilename);
   OpenDialog.InitialDir := ExtractFileDir(LFilename);
@@ -1928,6 +1928,7 @@ begin
   if OpenDialog.Execute then
   begin
     openProject.LoadInstrumentalizationSelection(OpenDialog.FileName);
+    TSessionData.SetLastSelectedGisFolder(OpenDialog.FileName);
     // an auto-click is done... ignore instrumentation upon select
     FInstrumentationFrame.TriggerSelectionReload;
   end;
@@ -2151,16 +2152,18 @@ begin
   if openProject = nil then
     Exit;
   try
-    LFilename := ChangeFileExt(openProject.Name,TUIStrings.GPProfInstrumentationSelectionExt);
+    LFilename := ChangeFileExt(TSessionData.GetLastSelectedGisFolder,TUIStrings.GPProfInstrumentationSelectionExt);
     SaveDialog1.FileName := ExtractFileName(LFilename);
     SaveDialog1.InitialDir := ExtractFileDir(LFilename);
     SaveDialog1.Title := TUIStrings.SaveInstrumentationSelectionCaption;
     SaveDialog1.Filter := TUIStrings.InstrumentationSelectionFilter;
-    if SaveDialog1.Execute then begin
-      if ExtractFileExt(SaveDialog1.FileName) = '' then
-        SaveDialog1.FileName := SaveDialog1.FileName + TUIStrings.GPProfInstrumentationSelectionExt;
-    openProject.SaveInstrumentalizationSelection(SaveDialog1.FileName);
-  end;
+    if SaveDialog1.Execute then
+    begin
+       if ExtractFileExt(SaveDialog1.FileName) = '' then
+          SaveDialog1.FileName := SaveDialog1.FileName + TUIStrings.GPProfInstrumentationSelectionExt;
+      openProject.SaveInstrumentalizationSelection(SaveDialog1.FileName);
+      TSessionData.SetLastSelectedGisFolder(SaveDialog1.FileName);
+    end;
     except on e: Exception do
     begin
       ShowError(e.Message);
