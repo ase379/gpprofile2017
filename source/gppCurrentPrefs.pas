@@ -21,9 +21,13 @@ var
   prefInstrumentAssembler   : boolean;
   prefMakeBackupOfInstrumentedFile : boolean;
 
-  // the selected compiler version
+  /// <summary>
+  /// The selected product version, e.g. 10.3 Rio.
+  /// </summary>
   selectedDelphi            : string;
-  // the output dir as defined in the project
+  /// <summary>
+  /// The output dir as defined in the project.
+  /// </summary>
   ProjectOutputDir          : string;
 
 procedure SetProjectPref(name: string; value: variant); overload;
@@ -50,8 +54,7 @@ uses
   gpregistry,
   gpPrfPlaceholders, 
   GpString,
-  gppmain.types,
-  gpProf.DofReader;
+  gppmain.types;
 
 procedure LoadPreferences;
 begin
