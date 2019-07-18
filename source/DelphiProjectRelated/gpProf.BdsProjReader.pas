@@ -15,9 +15,9 @@ type
     destructor Destroy; override;
 
     function Root: IXMLNodeList;
-    function SearchPath: String;
     function OutputDir: String;
     function GetProjectDefines: string;
+    function GetSearchPath: String;
     function IsConsoleApp(const aDefaultIfNotFound: boolean): Boolean;
   end;
 
@@ -111,7 +111,7 @@ begin
   end;
 end;
 
-function TBdsProjReader.SearchPath: String;
+function TBdsProjReader.GetSearchPath: String;
 var
   i: Integer;
   Personalities,Directories:IXmlNodeList;
