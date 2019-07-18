@@ -475,12 +475,13 @@ begin
     ExecuteAsync(
       procedure
       begin
-        openProject.Parse(GetProjectPref('ExcludedUnits',prefExcludedUnits),
-                  GetSearchPath(aProject),
-                  LDefines, NotifyParse,
-                  GetProjectPref('MarkerStyle', prefMarkerStyle),
-                  GetProjectPref('InstrumentAssembler', prefInstrumentAssembler),
-                  vErrList);
+        openProject.Parse(
+          TGlobalPreferences.GetProjectPref('ExcludedUnits',TGlobalPreferences.ExcludedUnits),
+          GetSearchPath(aProject),
+          LDefines, NotifyParse,
+          TGlobalPreferences.GetProjectPref('MarkerStyle', TGlobalPreferences.MarkerStyle),
+          TGlobalPreferences.GetProjectPref('InstrumentAssembler', TGlobalPreferences.InstrumentAssembler),
+          vErrList);
 
       end,
       procedure
@@ -506,12 +507,13 @@ begin
     ExecuteAsync(
       procedure
       begin
-        openProject.Rescan(GetProjectPref('ExcludedUnits', prefExcludedUnits),
-                   GetSearchPath(aProject),
-                   LDefines,
-                   GetProjectPref('MarkerStyle', prefMarkerStyle),
-                   GetProjectPref('UseFileDate', prefUseFileDate),
-                   GetProjectPref('InstrumentAssembler', prefInstrumentAssembler));
+        openProject.Rescan(
+          TGlobalPreferences.GetProjectPref('ExcludedUnits', TGlobalPreferences.ExcludedUnits),
+          GetSearchPath(aProject),
+          LDefines,
+          TGlobalPreferences.GetProjectPref('MarkerStyle', TGlobalPreferences.MarkerStyle),
+          TGlobalPreferences.GetProjectPref('UseFileDate', TGlobalPreferences.UseFileDate),
+          TGlobalPreferences.GetProjectPref('InstrumentAssembler', TGlobalPreferences.InstrumentAssembler));
       end,
       procedure
       begin
@@ -546,11 +548,11 @@ end;
 procedure TfrmMain.RebuildDefines;
 begin
   frmPreferences.ReselectCompilerVersion(selectedDelphi);
-  frmPreferences.cbStandardDefines.Checked    := GetProjectPref('StandardDefines',prefStandardDefines);
-  frmPreferences.cbConsoleDefines.Checked     := GetProjectPref('ConsoleDefines',IsProjectConsole);
-  frmPreferences.cbProjectDefines.Checked     := GetProjectPref('ProjectDefines',prefProjectDefines);
-  frmPreferences.cbDisableUserDefines.Checked := GetProjectPref('DisableUserDefines',prefDisableUserDefines);
-  frmPreferences.RebuildDefines(GetProjectPref('UserDefines',prefUserDefines));
+  frmPreferences.cbStandardDefines.Checked    := TGlobalPreferences.GetProjectPref('StandardDefines',TGlobalPreferences.StandardDefines);
+  frmPreferences.cbConsoleDefines.Checked     := TGlobalPreferences.GetProjectPref('ConsoleDefines',IsProjectConsole);
+  frmPreferences.cbProjectDefines.Checked     := TGlobalPreferences.GetProjectPref('ProjectDefines',TGlobalPreferences.ProjectDefines);
+  frmPreferences.cbDisableUserDefines.Checked := TGlobalPreferences.GetProjectPref('DisableUserDefines',TGlobalPreferences.DisableUserDefines);
+  frmPreferences.RebuildDefines(TGlobalPreferences.GetProjectPref('UserDefines',TGlobalPreferences.UserDefines));
 end;
 
 procedure TfrmMain.LoadProject(fileName: string; defaultDelphi: string = '');
@@ -565,10 +567,10 @@ begin
     currentProject := ExtractFileName(fileName);
     ParseProject(fileName,false);
     if defaultDelphi = '' then
-      defaultDelphi := RemoveDelphiPrefix(frmPreferences.cbxCompilerVersion.Items[prefCompilerVersion]);
-    selectedDelphi := GetProjectPref('DelphiVersion',defaultDelphi);
+      defaultDelphi := RemoveDelphiPrefix(frmPreferences.cbxCompilerVersion.Items[TGlobalPreferences.CompilerVersion]);
+    selectedDelphi := TGlobalPreferences.GetProjectPref('DelphiVersion',defaultDelphi);
     RebuildDelphiVer;
-    FInstrumentationFrame.chkShowAll.Checked := GetProjectPref('ShowAllFolders',prefShowAllFolders);
+    FInstrumentationFrame.chkShowAll.Checked := TGlobalPreferences.GetProjectPref('ShowAllFolders',TGlobalPreferences.ShowAllFolders);
     PageControl1.ActivePage := tabInstrumentation;
     SetCaption;
     SetSource;
@@ -695,7 +697,7 @@ begin
   begin
     SetCaption;
     SetSource;
-    actHideNotExecuted.Checked := GetProfilePref('HideNotExecuted', prefHideNotExecuted);
+    actHideNotExecuted.Checked := TGlobalPreferences.GetProfilePref('HideNotExecuted', TGlobalPreferences.HideNotExecuted);
     FProfilingFrame.FillViews(1);
     FProfilingFrame.ClearBreakdown;
     actHideNotExecuted.Enabled   := true;
@@ -729,7 +731,7 @@ procedure TfrmMain.DelphiVerClick(Sender: TObject);
 begin
   selectedDelphi := RemoveDelphiPrefix(TMenuItem(Sender).Caption);
   RebuildDelphiVer;
-  SetProjectPref('DelphiVersion',selectedDelphi);
+  TGlobalPreferences.SetProjectPref('DelphiVersion',selectedDelphi);
 end;
 
 procedure TfrmMain.LayoutClick(Sender: TObject);
@@ -762,9 +764,9 @@ begin
       actRun.OnExecute := nil;
     if s.Count >= 1 then
     begin
-      if (prefCompilerVersion < 0) or (prefCompilerVersion >= s.Count) then
-        prefCompilerVersion := s.Count-1;
-      selectedDelphi := GetProjectPref('DelphiVersion', s[prefCompilerVersion]);
+      if (TGlobalPreferences.CompilerVersion < 0) or (TGlobalPreferences.CompilerVersion >= s.Count) then
+        TGlobalPreferences.CompilerVersion := s.Count-1;
+      selectedDelphi := TGlobalPreferences.GetProjectPref('DelphiVersion', s[TGlobalPreferences.CompilerVersion]);
       RebuildDelphiVer;
     end;
   finally
@@ -898,7 +900,7 @@ begin
     hProcess := 0;
     hThread  := 0;
   end;
-  LoadPreferences;
+  TGlobalPreferences.LoadPreferences;
   PageControl1.ActivePage := tabInstrumentation;
   DisablePC2;
   DisablePC;
@@ -1028,7 +1030,7 @@ end;
 procedure TfrmMain.cbProfileChange(Sender: TObject);
 begin
   FInstrumentationFrame.FillUnitTree(not FInstrumentationFrame.chkShowAll.Checked);
-  SetProjectPref('ShowAllFolders',FInstrumentationFrame.chkShowAll.Checked);
+  TGlobalPreferences.SetProjectPref('ShowAllFolders',FInstrumentationFrame.chkShowAll.Checked);
 end;
 
 
@@ -1096,20 +1098,20 @@ begin
     begin
       LStopwatch := TStopWatch.StartNew();
       openProject.Instrument(not LShowAll,NotifyInstrument,
-                         GetProjectPref('MarkerStyle',prefMarkerStyle),
-                         GetProjectPref('KeepFileDate',prefKeepFileDate),
-                         GetProjectPref('MakeBackupOfInstrumentedFile',prefKeepFileDate),
+                         TGlobalPreferences.GetProjectPref('MarkerStyle',TGlobalPreferences.MarkerStyle),
+                         TGlobalPreferences.GetProjectPref('KeepFileDate',TGlobalPreferences.KeepFileDate),
+                         TGlobalPreferences.GetProjectPref('MakeBackupOfInstrumentedFile',TGlobalPreferences.KeepFileDate),
                          fnm,LDefines,
                          GetSearchPath(openProject.Name),
-                         GetProjectPref('InstrumentAssembler',prefInstrumentAssembler));
+                         TGlobalPreferences.GetProjectPref('InstrumentAssembler',TGlobalPreferences.InstrumentAssembler));
 
       if FileExists(fnm) then
         with TIniFile.Create(fnm) do
           try
-            WriteBool('Performance','ProfilingAutostart',GetProjectPref('ProfilingAutostart',prefProfilingAutostart));
-            WriteBool('Performance','CompressTicks',GetProjectPref('SpeedSize',prefSpeedSize)>1);
-            WriteBool('Performance','CompressThreads',GetProjectPref('SpeedSize',prefSpeedSize)>2);
-            WriteString('Output','PrfOutputFilename',ResolvePrfProjectPlaceholders(GetProjectPref('PrfFilenameMakro',prefPrfFilenameMakro)));
+            WriteBool('Performance','ProfilingAutostart',TGlobalPreferences.GetProjectPref('ProfilingAutostart',TGlobalPreferences.ProfilingAutostart));
+            WriteBool('Performance','CompressTicks',TGlobalPreferences.GetProjectPref('SpeedSize',TGlobalPreferences.SpeedSize)>1);
+            WriteBool('Performance','CompressThreads',TGlobalPreferences.GetProjectPref('SpeedSize',TGlobalPreferences.SpeedSize)>2);
+            WriteString('Output','PrfOutputFilename',ResolvePrfProjectPlaceholders(TGlobalPreferences.GetProjectPref('PrfFilenameMakro',TGlobalPreferences.PrfFilenameMakro)));
           finally
             Free;
           end;
@@ -1572,7 +1574,7 @@ procedure TfrmMain.actHideNotExecutedExecute(Sender: TObject);
 begin
   actHideNotExecuted.Checked := not actHideNotExecuted.Checked;
   FProfilingFrame.FillViews;
-  SetProfilePref('HideNotExecuted', actHideNotExecuted.Checked);
+  TGlobalPreferences.SetProfilePref('HideNotExecuted', actHideNotExecuted.Checked);
 end;
 
 procedure TfrmMain.actProjectOptionsExecute(Sender: TObject);
@@ -1887,7 +1889,7 @@ begin
   if openProject = nil then
     Exit;
 
-  if (not GetProjectPref('UseFileDate', prefUseFileDate)) or
+  if (not TGlobalPreferences.GetProjectPref('UseFileDate', TGlobalPreferences.UseFileDate)) or
     openProject.AnyChange(false) then
   begin
     FInstrumentationFrame.RescanProject(ParseProject);
