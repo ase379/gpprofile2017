@@ -11,3 +11,7 @@ source/__history
 *.bak
 *.bk1
 *.stat
+DCU64/
+bin64/
+BIN/
+source/CastaliaDelphiParser/__history/
