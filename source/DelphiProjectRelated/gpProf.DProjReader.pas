@@ -48,13 +48,10 @@ type
     destructor Destroy; override;
 
     function Root: IXMLNodeList;
-    function SearchPath: String;
     function OutputDir(): String;
     function IsConsoleApp(const aDefaultIfNotFound: Boolean): Boolean;
+    function GetSearchPath: String;
     function GetProjectDefines: string;
-
-
-
   end;
 
 function IfThen(const aCond: Boolean; const aIfTrue: String; const aIfFalse: string = ''): String;
@@ -227,7 +224,7 @@ begin
   end;
 end;
 
-function TDProjReader.SearchPath: String;
+function TDProjReader.GetSearchPath: String;
 var
   i: Integer;
 begin
@@ -253,6 +250,58 @@ end;
 
 { TDProjConfigs }
 
+procedure MergeDefines(const anEntry, aBaseEntry : DProjConfig);
+
+  function isInArray(const aTerm : string;const anArray : TArray<string>): Boolean;
+  var
+    LTerm : string;
+    LEntry : string;
+    I : Integer;
+  begin
+    result := false;
+    LTerm := AnsiLowerCase(aTerm);
+    for i := Low(anArray) to High(anArray) do
+    begin
+      LEntry := AnsiLowerCase(anArray[i]);
+      if LEntry = LTerm then
+        Exit(True);
+    end;
+  end;
+
+var
+  LEntryArray,
+  LBaseEntryArray : TArray<string>;
+  i : Integer;
+  LOldLength : Integer;
+begin
+  if anEntry.Defines = '' then
+    anEntry.Defines := aBaseEntry.Defines
+  else
+  begin
+    LBaseEntryArray := aBaseEntry.Defines.Split([';'],TStringSplitOptions.ExcludeEmpty);
+    LEntryArray := anEntry.Defines.Split([';'],TStringSplitOptions.ExcludeEmpty);
+    for i := Low(LBaseEntryArray) to High(LBaseEntryArray) do
+    begin
+      if not isInArray(LBaseEntryArray[i], LEntryArray) then
+      begin
+        LOldLength := Length(LEntryArray);
+        SetLength(LEntryArray, LOldLength+1);
+        LEntryArray[LOldLength] := LBaseEntryArray[i];
+      end;
+
+    end;
+    anEntry.Defines := '';
+    for i := Low(LEntryArray) to High(LEntryArray) do
+    begin
+      if SameText(LEntryArray[i], '$(DCC_Define)')  then
+        Continue;
+
+      anEntry.Defines := anEntry.Defines + LEntryArray[i]+';';
+    end;
+    Delete(anEntry.Defines, Length(anEntry.Defines), 1);
+  end;
+end;
+
 procedure TDProjConfigs.ApplySettingInheritance;
 
   procedure ApplyBaseRecursive(const anEntry : DProjConfig);
@@ -268,8 +317,7 @@ procedure TDProjConfigs.ApplySettingInheritance;
       anEntry.ExeOutput := LBaseEntry.ExeOutput;
     if anEntry.ConfigType = '' then
       anEntry.ConfigType := LBaseEntry.ConfigType;
-    if anEntry.Defines = '' then
-      anEntry.Defines := LBaseEntry.Defines;
+    MergeDefines(anEntry, LBaseEntry);
   end;
 
 var
