@@ -15,6 +15,8 @@ uses
   gppmain.FrameInstrumentation, gppmain.FrameAnalysis, gppmain.types;
 
 type
+  TAsyncExecuteProc = reference to procedure();
+  TAsyncFinishedProc = reference to procedure(const aNeededSeconds : Double);
 
   TfrmMain = class(TForm)
     OpenDialog: TOpenDialog;
@@ -206,7 +208,7 @@ type
     inLVResize                : boolean;
     FInstrumentationFrame     : TfrmMainInstrumentation;
     FProfilingFrame           : TfrmMainProfiling;
-    procedure ExecuteAsync(const aProc,aOnFinishedProc: System.Sysutils.TProc;const aActionName : string);
+    procedure ExecuteAsync(const aProc: TAsyncExecuteProc;const aOnFinishedProc: TAsyncFinishedProc;const aActionName : string);
     procedure ParseProject(const aProject: string; const aJustRescan: boolean);
     procedure LoadProject(fileName: string; defaultDelphi: string = '');
     procedure NotifyParse(const aUnitName: string);
@@ -484,7 +486,7 @@ begin
           vErrList);
 
       end,
-      procedure
+      procedure(const aNeededSeconds : Double)
       begin
         TThread.Synchronize(nil, procedure
         begin
@@ -495,6 +497,7 @@ begin
           end;
           vErrList.Free;
           RestoreUIAfterParseProject();
+          StatusPanel0('Parsing finished, it took '+aNeededSeconds.ToString+' seconds.',false);
         end);
       end,
       'parsing');
@@ -515,12 +518,13 @@ begin
           TGlobalPreferences.GetProjectPref('UseFileDate', TGlobalPreferences.UseFileDate),
           TGlobalPreferences.GetProjectPref('InstrumentAssembler', TGlobalPreferences.InstrumentAssembler));
       end,
-      procedure
+      procedure(const aNeededSeconds : Double)
       begin
         TThread.Synchronize(nil, procedure
         begin
           HideProgressBar;
           RestoreUIAfterParseProject();
+          StatusPanel0('Rescanning finished, it took '+aNeededSeconds.ToString+' seconds.',false);
         end);
       end,'rescanning');
   end;
@@ -650,9 +654,10 @@ begin
     begin
       openProfile := TResults.Create(profile,ParseProfileCallback);
     end,
-    procedure
+    procedure(const aNeededSeconds : Double)
     begin
       TThread.Synchronize(nil,ParseProfileDone);
+      StatusPanel0('Parsing of results finished, it took '+aNeededSeconds.ToString+' seconds.',false);
     end,
     'loading profile'
   );
@@ -1041,23 +1046,28 @@ begin
   inherited;
 end;
 
-procedure TfrmMain.ExecuteAsync(const aProc, aOnFinishedProc: System.Sysutils.TProc;const aActionName : string);
+procedure TfrmMain.ExecuteAsync(const aProc: TAsyncExecuteProc;const aOnFinishedProc: TAsyncFinishedProc;const aActionName : string);
 var
   LTask : ITask;
   LExceptionMsg : string;
 begin
   LTask := tTask.Create(procedure
+    var
+      LStopwatch : TStopwatch;
     begin
       try
         Coinitialize(nil);
         try
+          LStopwatch := TStopWatch.StartNew();
           aProc();
         finally
+          LStopwatch.Stop;
           CoUninitialize
         end;
       except
         on E:Exception do
         begin
+          LStopwatch.Reset;
           LExceptionMsg := e.Message;
           TThread.Synchronize(nil,procedure
             begin
@@ -1069,7 +1079,7 @@ begin
       end;
       if assigned(aOnFinishedProc) then
       begin
-        aOnFinishedProc;
+        aOnFinishedProc(LStopwatch.Elapsed.TotalSeconds);
       end;
     end);
   LTask.Start;
@@ -1082,7 +1092,6 @@ var
   outDir: string;
   LShowAll : Boolean;
   LDefines : string;
-  LNeededTimeString : string;
 begin
   InitProgressBar(self,'Instrumenting units...',true, false);
   outDir := GetOutputDir(openProject.Name);
@@ -1090,13 +1099,9 @@ begin
   LShowAll := FInstrumentationFrame.chkShowAll.Checked;
   LDefines := frmPreferences.ExtractAllDefines;
   Enabled := false;
-  LNeededTimeString := '';
   ExecuteAsync(
     procedure
-    var
-      LStopwatch : TStopwatch;
     begin
-      LStopwatch := TStopWatch.StartNew();
       openProject.Instrument(not LShowAll,NotifyInstrument,
                          TGlobalPreferences.GetProjectPref('MarkerStyle',TGlobalPreferences.MarkerStyle),
                          TGlobalPreferences.GetProjectPref('KeepFileDate',TGlobalPreferences.KeepFileDate),
@@ -1115,10 +1120,8 @@ begin
           finally
             Free;
           end;
-      LStopwatch.Stop;
-      LNeededTimeString := LStopwatch.Elapsed.TotalSeconds.ToString();
     end,
-    procedure
+    procedure(const aNeededSeconds : Double)
     begin
       TThread.Synchronize(nil,
       procedure
@@ -1126,7 +1129,7 @@ begin
           Enabled := true;
           HideProgressBar();
           FInstrumentationFrame.ReloadSource;
-          StatusPanel0('Instrumentation finished, it took '+LNeededTimeString+' seconds.',false);
+          StatusPanel0('Instrumentation finished, it took '+aNeededSeconds.ToString+' seconds.',false);
         end
       );
     end,
