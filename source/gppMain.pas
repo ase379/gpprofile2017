@@ -1461,7 +1461,7 @@ var
 begin
   s := TStringList.Create;
   try
-    FillInDelphiVersions(s);
+    SynPasSyn.EnumUserSettings(s);
     verch := Chr(delphiVer+Ord('0'));
     setting := s.Count-1;
     for i := 0 to s.Count-2 do
