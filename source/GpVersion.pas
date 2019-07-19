@@ -55,10 +55,13 @@ begin
   inherited Create;
   viLangCharset := lang_charset;
   viVersionSize := GetFileVersionInfoSize(PChar(fileName),hnd);
-  if viVersionSize > 0 then begin
+  if viVersionSize > 0 then
+  begin
     GetMem(viVersionInfo,viVersionSize);
-    Win32Check(GetFileVersionInfo(PChar(fileName),0,viVersionSize,viVersionInfo));
-    Win32Check(VerQueryValue(viVersionInfo,'\',pointer(viFixedFileInfo),viFixedFileSize));
+    if not GetFileVersionInfo(PChar(fileName),0,viVersionSize,viVersionInfo) then
+      RaiseLastOSError();
+    if not VerQueryValue(viVersionInfo,'\',pointer(viFixedFileInfo),viFixedFileSize) then
+      RaiseLastOSError();
   end;
 end; { TGpVersionInfo.Create }
 

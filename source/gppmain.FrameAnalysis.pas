@@ -675,8 +675,6 @@ procedure TfrmMainProfiling.ExportTo(fileName: string; exportProcs, exportClasse
 
   procedure ExpClasses(var f: textfile; delim: char);
   begin
-   // TODO ASE: add classes
-
     LExport(f,fvstClassesTools, delim);
   end; { ExpClasses }
 

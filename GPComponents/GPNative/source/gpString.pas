@@ -29,6 +29,9 @@ function  Last         (x: string; num: integer): string;
 function  ButFirst     (x: string; num: integer): string;
 function  ButLast      (x: string; num: integer): string;
 
+procedure DelFirstOccurance(var x: string; const c : Char);
+procedure DelLastOccurance(var x: string; const c : Char);
+
 implementation
 
 function MakeBackslash (s: String): String;
@@ -317,4 +320,32 @@ begin
   else ButLast := Copy (x,1,Length(x)-num);
 end; { function ButLast }
 
+procedure DelFirstOccurance(var x: string; const c : Char);
+var
+  k : Integer;
+begin
+  for k := Length(x) downto 1 do
+  begin
+    if x[k] = c then
+    begin
+      Delete(x, k, 1);
+      Break;
+    end;
+  end;
+end;
+
+procedure DelLastOccurance(var x: string; const c : Char);
+var
+  k : Integer;
+begin
+  for k := 1 to Length(x) do
+  begin
+    if x[k] = c then
+    begin
+      Delete(x, k, 1);
+      Break;
+    end;
+  end;
+
+end;
 end.

@@ -11,7 +11,6 @@ const
   cRegistryRoot  = 'SOFTWARE\GpProfileReborn';
   cRegistryUIsub = 'UI';
   cRegistryUI    = cRegistryRoot + '\' + cRegistryUIsub;
-  cProfUnitName  = 'GpProf';
   cUIVersion     = '1.0.3';
   cDefLayout     = 'default';
 

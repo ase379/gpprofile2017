@@ -1,4 +1,4 @@
-unit bdsVersions;
+unit gpProf.bdsVersions;
 
 interface
 
@@ -10,6 +10,12 @@ function RemoveDelphiPrefix(const aDelphiVer: string): string;
 function DelphiVerToBDSVer(const aDelphiVer: string): string;
 function DelphiVerToCompilerVersion(const aDelphiVer: string): string;
 function BdsVerToDephiVer(const aBdsVersionString: string): string;
+/// <summary>
+/// Gets the major version for the bds version, e.g. 19.0 -> 19
+///  This can be used to compare the versions.
+/// </summary>
+function GetBdsMajorVersion(const aBdsVersion : string) : Integer;
+
 procedure FillInDelphiVersions(settings: TStrings);
 
 
@@ -36,6 +42,10 @@ begin
   end;
 end;
 
+function GetBdsMajorVersion(const aBdsVersion : string) : Integer;
+begin
+  result := string.ToInteger(aBdsVersion);
+end;
 
 function DelphiVerToBDSVer(const aDelphiVer: string): string;
 begin
