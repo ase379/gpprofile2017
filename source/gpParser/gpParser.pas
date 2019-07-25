@@ -77,6 +77,7 @@ end; { TProject.Create }
 destructor TProject.Destroy;
 begin
   prUnits.Free;
+  inherited;
 end; { TProject.Destroy }
 
 procedure TProject.Parse(aExclUnits: String;

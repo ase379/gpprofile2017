@@ -591,6 +591,7 @@ begin
   if proxy = nil then raise Exception.Create('gppResults.TResults.ExitProcPkt: Entry not found!');
   ExitProc(proxy,parent,pkt);
   proxy.Destroy;
+  inherited;
 end; { TResults.ExitProcPkt }
 
 procedure TResults.AddEnterProc(pkt: TResPacket);

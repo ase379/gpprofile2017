@@ -132,6 +132,7 @@ const
   destructor TGpHugeFile.Destroy;
   begin
     Close;
+    inherited
   end; { TGpHugeFile.Destroy }
 
   function TGpHugeFile.FileExists: boolean;
