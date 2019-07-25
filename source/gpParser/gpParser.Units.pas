@@ -44,8 +44,8 @@ type
     class function ExtractCommentBody(const comment: string): string; static;
     class function ExtractParameter(const comment: string; const parameter: Integer): string; static;
     class function ExtractNumElements(const comment: string): integer;
-    class function IsOneOf(key: string; compareWith: array of string): boolean; static;
-    class function ExtractDirective(comment: string): string; static;
+    class function IsOneOf(const key: string; const compareWith: array of string): boolean; static;
+    class function ExtractDirective(const comment: string): string; static;
   public
     unName: TFilename;
     unFullName: TFileName;
@@ -465,7 +465,7 @@ begin
   Result := NumElements(ExtractCommentBody(comment), ' ', -1);
 end; { ExtractParameter }
 
-class function TUnit.IsOneOf(key: string; compareWith: array of string): boolean;
+class function TUnit.IsOneOf(const key: string; const compareWith: array of string): boolean;
 var
   i: Integer;
 begin
@@ -475,7 +475,7 @@ begin
       exit(true);
 end; { IsOneOf }
 
-class function TUnit.ExtractDirective(comment: string): string;
+class function TUnit.ExtractDirective(const comment: string): string;
 begin
   Result := ButFirst(UpperCase(FirstEl(ExtractCommentBody(comment),
     ' ', -1)), 1);
