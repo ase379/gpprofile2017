@@ -282,14 +282,14 @@ var
   vOldCurDir: string;
   un: TUnit;
   idt: TIDTable;
-  Rescan: TList;
+  Rescan: TList<TUnit>;
   i: Integer;
   unAny: boolean;
   anyInst: boolean;
   LUnitEnumor: TRootNode<TUnit>.TEnumerator;
 begin
   PrepareComments(aCommentType);
-  Rescan := TList.Create;
+  Rescan := TList<TUnit>.Create;
   try
     idt := TIDTable.Create;
     try
@@ -341,8 +341,8 @@ begin
     end;
     for i := 0 to Rescan.Count - 1 do
     begin
-      DoNotify(TUnit(Rescan[i]).unFullName, TUnit(Rescan[i]).unName, true);
-      TUnit(Rescan[i]).Parse(self, '', aSearchPath, ExtractFilePath(prName),
+      DoNotify(Rescan[i].unFullName, Rescan[i].unName, true);
+      Rescan[i].Parse(self, '', aSearchPath, ExtractFilePath(prName),
         aConditionals, true, aParseAsm);
     end;
   finally
