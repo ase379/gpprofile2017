@@ -4,17 +4,37 @@ unit gppIDT;
 
 interface
 
-uses GpString;
+uses GpString,GpHugeF;
 
 type
+  IIDTableDumpableList = interface
+  ['{BD8A181B-0A58-4622-AF13-32C9FA686F80}']
+    procedure   Dump(var f: TGpHugeFile);
+  end;
+
+  IIDTableUnitList = interface(IIDTableDumpableList)
+  ['{9617766A-5238-4C33-979C-11860B1DE595}']
+    function Insert(const key, qual: String): integer;
+  end;
+
+  IIDTableClassList = interface(IIDTableDumpableList)
+  ['{195AB08E-1C3B-4BE7-8550-41688A466BCB}']
+    function Insert(const key: String; uid: integer): integer;
+  end;
+
+  IIDTableProcList = interface(IIDTableDumpableList)
+  ['{7EBDE193-63D7-437F-BD71-98E3B2A4C791}']
+    function Insert(const key: String; uid, cid, firstLn: integer): integer;
+    procedure WriteProcSize(const fileName: string);
+  end;
+
   TIDTable = class
   private
-    idUnits: TObject;
-    idClass: TObject;
-    idProcs: TObject;
+    idUnits: IIDTableUnitList;
+    idClass: IIDTableClassList;
+    idProcs: IIDTableProcList;
   public
     constructor Create;
-    destructor  Destroy; override;
     /// <summary>
     /// Registers the given procedure and returns the procedure id.
     /// </summary>
@@ -30,7 +50,6 @@ uses
   IniFiles,
   GppTree,
   GpProfH,
-  GpHugeF,
   gppCommon;
 
 type
@@ -59,7 +78,7 @@ type
     constructor Create(const name: String; id, uid, cid, firstLn: integer);
   end;
 
-  TIDTableUnits = class(TRootNode<TIDTableUnitEntry>)
+  TIDTableUnits = class(TRootNode<TIDTableUnitEntry>, IIDTableUnitList)
   private
     idCnt : integer;
     constructor Create; reintroduce;
@@ -69,7 +88,7 @@ type
     function GetLookupKey(const aValue : TIDTableUnitEntry) : string; override;
   end;
 
-  TIDTableClasses = class(TRootNode<TIDTableClassEntry>)
+  TIDTableClasses = class(TRootNode<TIDTableClassEntry>, IIDTableClassList)
   private
     idCnt : integer;
     constructor Create; reintroduce;
@@ -79,7 +98,7 @@ type
     function GetLookupKey(const aValue : TIDTableClassEntry) : string; override;
   end;
 
-  TIDTableProcedures = class(TRootNode<TIDTableProcEntry>)
+  TIDTableProcedures = class(TRootNode<TIDTableProcEntry>, IIDTableProcList)
   private
     idCnt: integer;
     constructor Create; reintroduce;
@@ -129,11 +148,11 @@ var
   clasID: integer;
   p     : integer;
 begin
-  unitID := TIDTableUnits(idUnits).Insert(unitName, unitFullName);
+  unitID := idUnits.Insert(unitName, unitFullName);
   p := Pos('.',procName);
-  if p > 0 then clasID := TIDTableClasses(idClass).Insert(unitName+'.'+First(procName,p-1),unitID)
-           else clasID := TIDTableClasses(idClass).Insert(unitName+'.<>',unitID); // classless
-  Result := TIDTableProcedures(idProcs).Insert(unitName+'.'+procName,unitID,clasID,firstLn);
+  if p > 0 then clasID := idClass.Insert(unitName+'.'+First(procName,p-1),unitID)
+           else clasID := idClass.Insert(unitName+'.<>',unitID); // classless
+  Result := idProcs.Insert(unitName+'.'+procName,unitID,clasID,firstLn);
 end;
 
 constructor TIDTable.Create;
@@ -142,14 +161,6 @@ begin
   idClass := TIDTableClasses.Create;
   idProcs := TIDTableProcedures.Create;
   inherited Create;
-end;
-
-destructor TIDTable.Destroy;
-begin
-  inherited Destroy;
-  idUnits.Free;
-  idClass.Free;
-  idProcs.Free;
 end;
 
 procedure TIDTable.Dump(const fileName: string);
@@ -162,15 +173,15 @@ begin
   f := TGpHugeFile.CreateEx(fnm,FILE_FLAG_SEQUENTIAL_SCAN+FILE_ATTRIBUTE_NORMAL);
   try
     f.RewriteBuffered(1);
-    TIDTableUnits(idUnits).Dump(f);
-    TIDTableClasses(idClass).Dump(f);
-    TIDTableProcedures(idProcs).Dump(f);
+    idUnits.Dump(f);
+    idClass.Dump(f);
+    idProcs.Dump(f);
   finally f.Free; end;
   with TIniFile.Create(fileName) do begin
     try WriteString('IDTables','TableName',fnm);
     finally Free; end;
   end;
-  TIDTableProcedures(idProcs).WriteProcSize(fileName);
+  idProcs.WriteProcSize(fileName);
 end;
 
 { TIDTableUnits }
