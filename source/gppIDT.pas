@@ -31,50 +31,52 @@ uses
   gppCommon;
 
 type
-  TIDTE = class
+  TIDTableEntry = class
+  private
     eName: String;
     eID  : integer;
+  public
     constructor Create(const name: String; id: integer);
   end;
 
-  TIDTUE = class(TIDTE)
+  TIDTableUnitEntry = class(TIDTableEntry)
     eQual: String;
     constructor Create(const name, qual: String; id: integer); reintroduce;
   end;
 
-  TIDTCE = class(TIDTE)
+  TIDTableClassEntry = class(TIDTableEntry)
     eUID: integer;
     constructor Create(const name: String; id, uid: integer);
   end;
 
-  TIDTPE = class(TIDTE)
+  TIDTableProcEntry = class(TIDTableEntry)
     eUID    : integer;
     eCID    : integer;
     eFirstLn: integer;
     constructor Create(const name: String; id, uid, cid, firstLn: integer);
   end;
 
-  TIDTU = class(TRootNode<TIDTUE>)
+  TIDTableUnits = class(TRootNode<TIDTableUnitEntry>)
   private
     idCnt : integer;
     constructor Create; reintroduce;
     function    Insert(const key, qual: String): integer;
     procedure   Dump(var f: TGpHugeFile);
   protected
-    function GetLookupKey(const aValue : TIDTUE) : string; override;
+    function GetLookupKey(const aValue : TIDTableUnitEntry) : string; override;
   end;
 
-  TIDTC = class(TRootNode<TIDTCE>)
+  TIDTableClasses = class(TRootNode<TIDTableClassEntry>)
   private
     idCnt : integer;
     constructor Create; reintroduce;
     function    Insert(const key: String; uid: integer): integer;
     procedure   Dump(var f: TGpHugeFile);
   protected
-    function GetLookupKey(const aValue : TIDTCE) : string; override;
+    function GetLookupKey(const aValue : TIDTableClassEntry) : string; override;
   end;
 
-  TIDTP = class(TRootNode<TIDTPE>)
+  TIDTableProcedures = class(TRootNode<TIDTableProcEntry>)
   private
     idCnt: integer;
     constructor Create; reintroduce;
@@ -82,38 +84,38 @@ type
     procedure   Dump(var f: TGpHugeFile);
     procedure   WriteProcSize(const fileName: string);
   protected
-    function GetLookupKey(const aValue : TIDTPE) : string; override;
+    function GetLookupKey(const aValue : TIDTableProcEntry) : string; override;
   end;
 
-function TIDTCompare(const data1,data2: INode<TIDTUE>): integer; overload;
+function TIDTCompare(const data1,data2: INode<TIDTableUnitEntry>): integer; overload;
 begin
   Result := String.Compare(data1.Data.eName,data2.data.eName,true);
 end; { TIDTCompare }
 
-function TIDTCompare(const data1,data2: INode<TIDTCE>): integer; overload;
+function TIDTCompare(const data1,data2: INode<TIDTableClassEntry>): integer; overload;
 begin
   Result := String.Compare(data1.Data.eName,data2.data.eName,true);
 end; { TIDTCompare }
 
-function TIDTCompare(const data1,data2: INode<TIDTPE>): integer; overload;
+function TIDTCompare(const data1,data2: INode<TIDTableProcEntry>): integer; overload;
 begin
   Result := String.Compare(data1.Data.eName,data2.data.eName,true);
 end; { TIDTCompare }
 
 
-function TIDTIDCompare(const data1,data2: INode<TIDTUE>): integer;  overload;
+function TIDTIDCompare(const data1,data2: INode<TIDTableUnitEntry>): integer;  overload;
 begin
-  Result := TIDTE(data1).eID - TIDTE(data2).eID;
+  Result := TIDTableEntry(data1).eID - TIDTableEntry(data2).eID;
 end; { TIDTCompare }
 
-function TIDTIDCompare(const data1,data2: INode<TIDTCE>): integer;  overload;
+function TIDTIDCompare(const data1,data2: INode<TIDTableClassEntry>): integer;  overload;
 begin
-  Result := TIDTE(data1).eID - TIDTE(data2).eID;
+  Result := TIDTableEntry(data1).eID - TIDTableEntry(data2).eID;
 end; { TIDTCompare }
 
-function TIDTIDCompare(const data1,data2: INode<TIDTPE>): integer;  overload;
+function TIDTIDCompare(const data1,data2: INode<TIDTableProcEntry>): integer;  overload;
 begin
-  Result := TIDTE(data1).eID - TIDTE(data2).eID;
+  Result := TIDTableEntry(data1).eID - TIDTableEntry(data2).eID;
 end; { TIDTCompare }
 
 { TIDTable }
@@ -124,18 +126,18 @@ var
   clasID: integer;
   p     : integer;
 begin
-  unitID := TIDTU(idUnits).Insert(unitName, unitFullName);
+  unitID := TIDTableUnits(idUnits).Insert(unitName, unitFullName);
   p := Pos('.',procName);
-  if p > 0 then clasID := TIDTC(idClass).Insert(unitName+'.'+First(procName,p-1),unitID)
-           else clasID := TIDTC(idClass).Insert(unitName+'.<>',unitID); // classless
-  Result := TIDTP(idProcs).Insert(unitName+'.'+procName,unitID,clasID,firstLn);
+  if p > 0 then clasID := TIDTableClasses(idClass).Insert(unitName+'.'+First(procName,p-1),unitID)
+           else clasID := TIDTableClasses(idClass).Insert(unitName+'.<>',unitID); // classless
+  Result := TIDTableProcedures(idProcs).Insert(unitName+'.'+procName,unitID,clasID,firstLn);
 end;
 
 constructor TIDTable.Create;
 begin
-  idUnits := TIDTU.Create;
-  idClass := TIDTC.Create;
-  idProcs := TIDTP.Create;
+  idUnits := TIDTableUnits.Create;
+  idClass := TIDTableClasses.Create;
+  idProcs := TIDTableProcedures.Create;
   inherited Create;
 end;
 
@@ -157,20 +159,20 @@ begin
   f := TGpHugeFile.CreateEx(fnm,FILE_FLAG_SEQUENTIAL_SCAN+FILE_ATTRIBUTE_NORMAL);
   try
     f.RewriteBuffered(1);
-    TIDTU(idUnits).Dump(f);
-    TIDTC(idClass).Dump(f);
-    TIDTP(idProcs).Dump(f);
+    TIDTableUnits(idUnits).Dump(f);
+    TIDTableClasses(idClass).Dump(f);
+    TIDTableProcedures(idProcs).Dump(f);
   finally f.Free; end;
   with TIniFile.Create(fileName) do begin
     try WriteString('IDTables','TableName',fnm);
     finally Free; end;
   end;
-  TIDTP(idProcs).WriteProcSize(fileName);
+  TIDTableProcedures(idProcs).WriteProcSize(fileName);
 end;
 
-{ TIDTU }
+{ TIDTableUnits }
 
-constructor TIDTU.Create;
+constructor TIDTableUnits.Create;
 begin
   inherited Create();
   CompareFunc := TIDTCompare;
@@ -187,9 +189,9 @@ begin
     f.BlockWriteUnsafe(str[1],Length(str)+1); // write zero-terminated
 end; { WriteString }
 
-procedure TIDTU.Dump(var f: TGpHugeFile);
+procedure TIDTableUnits.Dump(var f: TGpHugeFile);
 var
-  LEnumor: TRootNode<TIDTUE>.TEnumerator;
+  LEnumor: TRootNode<TIDTableUnitEntry>.TEnumerator;
 begin
   CompareFunc := TIDTIDCompare;
   WriteTag(f,PR_UNITTABLE);
@@ -206,18 +208,18 @@ begin
   LEnumor.Free;
 end;
 
-function TIDTU.GetLookupKey(const aValue : TIDTUE) : string;
+function TIDTableUnits.GetLookupKey(const aValue : TIDTableUnitEntry) : string;
 begin
   result := AnsiLowerCase(aValue.eName);
 end;
 
-function TIDTU.Insert(const key, qual: String): integer;
+function TIDTableUnits.Insert(const key, qual: String): integer;
 var
   LSearchNode,
-  LResultNode : INode<TIDTUE>;
+  LResultNode : INode<TIDTableUnitEntry>;
 begin
-  LSearchNode := TNode<TIDTUE>.Create();
-  LSearchNode.Data := TIDTUE.Create(key,qual,idCnt);
+  LSearchNode := TNode<TIDTableUnitEntry>.Create();
+  LSearchNode.Data := TIDTableUnitEntry.Create(key,qual,idCnt);
   if not FindNode(LSearchNode, LResultNode) then
   begin
     AppendNode(LSearchNode.data);
@@ -228,18 +230,18 @@ begin
     result := LResultNode.Data.eID;
 end;
 
-{ TIDTC }
+{ TIDTableClasses }
 
-constructor TIDTC.Create;
+constructor TIDTableClasses.Create;
 begin
   inherited Create();
   CompareFunc     := TIDTCompare;
   idCnt       := 1;
 end;
 
-procedure TIDTC.Dump(var f: TGpHugeFile);
+procedure TIDTableClasses.Dump(var f: TGpHugeFile);
 var
-  LEnumor: TRootNode<TIDTCE>.TEnumerator;
+  LEnumor: TRootNode<TIDTableClassEntry>.TEnumerator;
 begin
   CompareFunc := TIDTIDCompare;
   WriteTag(f,PR_CLASSTABLE);
@@ -256,18 +258,18 @@ begin
   LEnumor.Free;
 end;
 
-function TIDTC.GetLookupKey(const aValue: TIDTCE): string;
+function TIDTableClasses.GetLookupKey(const aValue: TIDTableClassEntry): string;
 begin
   result := AnsiLowerCase(aValue.eName)
 end;
 
-function TIDTC.Insert(const key: String; uid: integer): integer;
+function TIDTableClasses.Insert(const key: String; uid: integer): integer;
 var
   LSearchNode,
-  LResultNode : INode<TIDTCE>;
+  LResultNode : INode<TIDTableClassEntry>;
 begin
-  LSearchNode := TNode<TIDTCE>.Create();
-  LSearchNode.Data := TIDTCE.Create(key,idCnt,uid);
+  LSearchNode := TNode<TIDTableClassEntry>.Create();
+  LSearchNode.Data := TIDTableClassEntry.Create(key,idCnt,uid);
   if not FindNode(LSearchNode, LResultNode) then
   begin
     AppendNode(LSearchNode.data);
@@ -278,18 +280,18 @@ begin
     result := LResultNode.Data.eID;
 end;
 
-{ TIDTP }
+{ TIDTableProcedures }
 
-constructor TIDTP.Create;
+constructor TIDTableProcedures.Create;
 begin
   inherited Create();
   CompareFunc := TIDTCompare;
   idCnt       := 1;
 end;
 
-procedure TIDTP.Dump(var f: TGpHugeFile);
+procedure TIDTableProcedures.Dump(var f: TGpHugeFile);
 var
-  LEnumor: TRootNode<TIDTPE>.TEnumerator;
+  LEnumor: TRootNode<TIDTableProcEntry>.TEnumerator;
 begin
   CompareFunc := TIDTIDCompare;
   WriteTag(f,PR_PROCTABLE);
@@ -308,18 +310,18 @@ begin
   LEnumor.Free;
 end;
 
-function TIDTP.GetLookupKey(const aValue: TIDTPE): string;
+function TIDTableProcedures.GetLookupKey(const aValue: TIDTableProcEntry): string;
 begin
   result := AnsiLowerCase(aValue.eName);
 end;
 
-function TIDTP.Insert(const key: String; uid, cid, firstLn: integer): integer;
+function TIDTableProcedures.Insert(const key: String; uid, cid, firstLn: integer): integer;
 var
   LSearchNode,
-  LResultNode : INode<TIDTPE>;
+  LResultNode : INode<TIDTableProcEntry>;
 begin
-  LSearchNode := TNode<TIDTPE>.Create();
-  LSearchNode.Data := TIDTPE.Create(key,idCnt,uid,cid,firstLn);
+  LSearchNode := TNode<TIDTableProcEntry>.Create();
+  LSearchNode.Data := TIDTableProcEntry.Create(key,idCnt,uid,cid,firstLn);
   if not FindNode(LSearchNode, LResultNode) then
   begin
     AppendNode(LSearchNode.data);
@@ -330,7 +332,7 @@ begin
     result := LResultNode.Data.eID;
 end;
 
-procedure TIDTP.WriteProcSize(const fileName: string);
+procedure TIDTableProcedures.WriteProcSize(const fileName: string);
 begin
   with TIniFile.Create(fileName) do begin
     try
@@ -342,9 +344,9 @@ begin
   end;
 end;
 
-{ TIDTE }
+{ TIDTableEntry }
 
-constructor TIDTE.Create(const name: String; id: integer);
+constructor TIDTableEntry.Create(const name: String; id: integer);
 begin
   inherited Create;
   eName := name;
@@ -352,9 +354,9 @@ begin
 end;
 
 
-{ TIDTPE }
+{ TIDTableProcEntry }
 
-constructor TIDTPE.Create(const name: String; id, uid, cid, firstLn: integer);
+constructor TIDTableProcEntry.Create(const name: String; id, uid, cid, firstLn: integer);
 begin
   inherited Create(name,id);
   eUID     := uid;
@@ -362,18 +364,18 @@ begin
   eFirstLn := firstLn;
 end;
 
-{ TIDTUE }
+{ TIDTableUnitEntry }
 
-constructor TIDTUE.Create(const name, qual: String; id: integer);
+constructor TIDTableUnitEntry.Create(const name, qual: String; id: integer);
 begin
   eQual := qual;
   inherited Create(name, id);
 end;
 
 
-{ TIDTCE }
+{ TIDTableClassEntry }
 
-constructor TIDTCE.Create(const name: String; id, uid: integer);
+constructor TIDTableClassEntry.Create(const name: String; id, uid: integer);
 begin
   eUID := uid;
   inherited Create(name, id);
