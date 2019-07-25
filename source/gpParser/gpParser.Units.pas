@@ -70,7 +70,10 @@ type
     function LocateUnit(unitName: string): TUnit;
     function LocateProc(const aProcName: string): TProc;
     procedure Instrument(aProject: TBaseProject; aIDT: TIDTable;aKeepDate, aBackupFile: boolean);
-    procedure ConstructNames(idt: TIDTable);
+    /// <summary>
+    /// Registers the procs of this unit at the given TIDTable.
+    /// </summary>
+    procedure RegisterProcs(const idt: TIDTable);
     function AnyInstrumented: boolean;
     function AnyChange: boolean;
     function DidFileTimestampChange(): boolean;
@@ -1066,7 +1069,7 @@ begin
     Result := nil;
 end; { TUnit.LocateProc }
 
-procedure TUnit.ConstructNames(idt: TIDTable);
+procedure TUnit.RegisterProcs(const idt: TIDTable);
 var
   LEnumor: TRootNode<TProc>.TEnumerator;
 begin
@@ -1074,11 +1077,11 @@ begin
   while LEnumor.MoveNext do
   begin
     if LEnumor.Current.Data.prInstrumented then
-      idt.ConstructName(unName, unFullName, LEnumor.Current.Data.Name,
+      idt.RegisterProc(unName, unFullName, LEnumor.Current.Data.Name,
         LEnumor.Current.Data.prHeaderLineNum);
   end;
   LEnumor.Free;
-end; { TUnit.ConstructNames }
+end; { TUnit.RegisterProcs }
 
 procedure TUnit.BackupInstrumentedFile(const aSrc: string);
 var
@@ -1233,7 +1236,7 @@ begin { TUnit.Instrument }
       end
       else
       begin
-        nameId := aIDT.ConstructName(unName, unFullName, pr.Name,
+        nameId := aIDT.RegisterProc(unName, unFullName, pr.Name,
           pr.prHeaderLineNum);
 
         if haveInst then

@@ -318,7 +318,7 @@ begin
                 Rescan.Add(un);
               end
               else
-                un.ConstructNames(idt);
+                un.RegisterProcs(idt);
             end;
           end;
           LUnitEnumor.Free;

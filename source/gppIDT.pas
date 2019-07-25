@@ -15,7 +15,10 @@ type
   public
     constructor Create;
     destructor  Destroy; override;
-    function    ConstructName(const unitName, unitFullName, procName: String; firstLn: integer): integer;
+    /// <summary>
+    /// Registers the given procedure and returns the procedure id.
+    /// </summary>
+    function    RegisterProc(const unitName, unitFullName, procName: String; firstLn: integer): integer;
     procedure   Dump(const fileName: string);
   end;
 
@@ -120,7 +123,7 @@ end; { TIDTCompare }
 
 { TIDTable }
 
-function TIDTable.ConstructName(const unitName, unitFullName, procName: String; firstLn: integer): integer;
+function TIDTable.RegisterProc(const unitName, unitFullName, procName: String; firstLn: integer): integer;
 var
   unitID: integer;
   clasID: integer;
