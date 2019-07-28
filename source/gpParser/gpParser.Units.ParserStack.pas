@@ -28,6 +28,7 @@ type
     procedure Add(const aEntry : TUnitParserStackEntry);
 
     function HasEntries: Boolean;
+    procedure RemoveLastEntry;
     function GetLastEntry : TUnitParserStackEntry;
   end;
 
@@ -58,6 +59,12 @@ end;
 function TUnitParserStack.HasEntries: Boolean;
 begin
   result := fList.Count > 0;
+end;
+
+procedure TUnitParserStack.RemoveLastEntry;
+begin
+  if HasEntries then
+    fList.Remove(fList.Last);
 end;
 
 procedure TUnitParserStack.Add(const aEntry : TUnitParserStackEntry);

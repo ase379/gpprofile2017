@@ -524,10 +524,18 @@ end;
 function TUnit.RemoveLastParser(): boolean;
 begin
   fCurrentUnitParserStackEntry.Free;
-  fCurrentUnitParserStackEntry := fUnitParserStack.GetLastEntry();
-  Result := assigned(fCurrentUnitParserStackEntry);
-  if Result then
+  if fUnitParserStack.HasEntries() then
+  begin
+    fCurrentUnitParserStackEntry := fUnitParserStack.GetLastEntry();
+    fUnitParserStack.RemoveLastEntry();
     fCurrentUnitParserStackEntry.Lexer.Next;
+    Result := true;
+  end
+  else
+  begin
+    fCurrentUnitParserStackEntry := nil;
+    Result := False;
+  end;
 end;
 
 procedure TUnit.Parse(aProject: TBaseProject; const aExclUnits, aSearchPath,
