@@ -68,6 +68,7 @@ uses
   gpParser.Selections in 'gpParser\gpParser.Selections.pas',
   gpParser.Types in 'gpParser\gpParser.Types.pas',
   gpParser.Units in 'gpParser\gpParser.Units.pas',
+  gpParser.Units.ParserStack in 'gpParser\gpParser.Units.ParserStack.pas',
   virtualTree.tools.base in 'VirtualTree.Tools\virtualTree.tools.base.pas',
   virtualTree.tools.checkable in 'VirtualTree.Tools\virtualTree.tools.checkable.pas',
   virtualTree.tools.statistics in 'VirtualTree.Tools\virtualTree.tools.statistics.pas',

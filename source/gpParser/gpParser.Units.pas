@@ -85,7 +85,7 @@ implementation
 uses
   System.IOUtils, Winapi.Windows,
   GpString, gppCommon,
-  CastaliaPasLex;
+  CastaliaPasLex, gpParser.Units.ParserStack;
 
 
 { ========================= TUnitList ========================= }
@@ -502,8 +502,8 @@ type
     , stWaitSemi // Parse till semicolon
     );
 var
-  parser: TmwPasLex;
-  stream: TMemoryStream;
+  LUnitParserStack : TUnitParserStack;
+  LUnitParserStackEntry : TUnitParserStackEntry;
   state: TParseState;
   stateComment: (stWaitEnterBegin, stWaitEnterEnd, stWaitExitBegin,
     stWaitExitEnd, stWaitExitBegin2, stNone);
@@ -532,7 +532,7 @@ var
   apiCmd: string;
   apiStart: Integer;
   apiStartEnd: Integer;
-  parserStack: TList;
+
   incName: string;
 
   function IsBlockStartToken(token: TptTokenKind): boolean;
@@ -586,55 +586,25 @@ var
 
   function CreateNewParser(const aUnitFN, aSearchPath: string): boolean;
   var
-    zero: char;
     vUnitFullName: TFileName;
   begin
     result := true;
-    if parser <> nil then
-    begin
-      parserStack.Add(parser);
-      parserStack.Add(stream);
-    end;
-
+    if LUnitParserStackEntry <> nil then
+      LUnitParserStack.Add(LUnitParserStackEntry);
 
     if not FindOnPath(aUnitFN, aSearchPath, aDefaultDir, vUnitFullName) then
       Exit(False);
 
-    parser := TmwPasLex.Create;
-    stream := TMemoryStream.Create();
-    try
-      stream.LoadFromFile(vUnitFullName);
-    except
-      stream.Free;
-      raise;
-    end;
-
-    stream.Position := stream.Size;
-    zero := #0;
-    stream.Write(zero, 1);
-    parser.Origin := pAnsichar(stream.Memory);
-    parser.RunPos := 0;
+    LUnitParserStackEntry := TUnitParserStackEntry.Create(vUnitFullName);
   end; { CreateNewParser }
 
   function RemoveLastParser: boolean;
   begin
-    parser.Free;
-    stream.Free;
-    if parserStack.Count > 0 then
-    begin
-      parser := TmwPasLex(parserStack[parserStack.Count - 2]);
-      stream := TMemoryStream(parserStack[parserStack.Count - 1]);
-      parserStack.Delete(parserStack.Count - 1);
-      parserStack.Delete(parserStack.Count - 1);
-      parser.Next;
-      Result := true;
-    end
-    else
-    begin
-      parser := nil;
-      stream := nil;
-      Result := False;
-    end;
+    LUnitParserStackEntry.Free;
+    LUnitParserStackEntry := LUnitParserStack.GetLastEntry();
+    Result := assigned(LUnitParserStackEntry);
+    if Result then
+      LUnitParserStackEntry.Lexer.Next;
   end; { RemoveLastParser }
 
 
@@ -646,7 +616,7 @@ var
 
 begin
   unParsed := true;
-  parserStack := TList.Create;
+  LUnitParserStack := TUnitParserStack.Create;
   try
     if not aRescan then
     begin
@@ -672,7 +642,7 @@ begin
     unAPIs.Free;
     unAPIs := TAPIList.Create;
 
-    parser := nil;
+    LUnitParserStackEntry := nil;
     CreateNewParser(unFullName, '');
     if not FileAge(unFullName,unFileDate) then
       unFileDate := 0.0;
@@ -706,12 +676,12 @@ begin
       fDefines.Assign(aConditionals);
       try
         repeat
-          while parser.tokenID <> ptNull do
+          while LUnitParserStackEntry.Lexer.tokenID <> ptNull do
           begin
-            tokenID := parser.tokenID;
-            tokenData := parser.token;
-            tokenPos := parser.tokenPos;
-            tokenLN := parser.LineNumber;
+            tokenID := LUnitParserStackEntry.Lexer.tokenID;
+            tokenData := LUnitParserStackEntry.Lexer.token;
+            tokenPos := LUnitParserStackEntry.Lexer.tokenPos;
+            tokenLN := LUnitParserStackEntry.Lexer.LineNumber;
 
             LDirective := ProcessDirectives(aProject, tokenID, tokenData);
 
@@ -780,7 +750,7 @@ begin
                       (Trim(ButLast(ButFirst(tokenData,
                       2 + Length(aProject.prAPIIntro)), 2)));
 
-                  if parserStack.Count = 0 then
+                  if not LUnitParserStack.HasEntries then
                     unAPIs.AddMeta(apiCmd, tokenPos,
                       tokenPos + Length(tokenData) - 1);
                 end
@@ -790,7 +760,7 @@ begin
                   apiStartEnd := tokenPos + Length(tokenData) - 1;
                 end
                 else if tokenData = aProject.prConditEndAPI then
-                  if parserStack.Count = 0 then
+                  if not LUnitParserStack.HasEntries then
                     unAPIs.AddExpanded(apiStart, apiStartEnd, tokenPos,
                       tokenPos + Length(tokenData) - 1);
               end;
@@ -888,7 +858,7 @@ begin
                     else
                       procn := procName;
 
-                    if parserStack.Count = 0 then
+                    if not LUnitParserStack.HasEntries then
                       if (tokenID <> ptAsm) or aParseAsm then
                         unProcs.Add(procn, (tokenID = ptAsm), tokenPos, tokenLN,
                           proclnum);
@@ -951,7 +921,7 @@ begin
 
                 if block = 0 then
                 begin
-                  if parserStack.Count = 0 then
+                  if not LUnitParserStack.HasEntries then
                   begin
                     unProcs.AddEnd(procn, tokenPos, tokenLN);
                     if stateComment = stWaitExitBegin2 then
@@ -1012,7 +982,7 @@ begin
             end; // if not skipping
 
             prevTokenID := tokenID;
-            parser.Next;
+            LUnitParserStackEntry.Lexer.Next;
           end; // while
         until not RemoveLastParser;
       finally
@@ -1022,7 +992,7 @@ begin
       FreeAndNil(fSkippedList);
     end;
   finally
-    parserStack.Free;
+    LUnitParserStack.Free;
   end;
 end; { TUnit.Parse }
 
