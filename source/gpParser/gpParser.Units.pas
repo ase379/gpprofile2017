@@ -4,7 +4,8 @@ interface
 
 uses
   System.Classes, System.SysUtils, CastaliaPasLexTypes,
-  gppTree,gpParser.baseProject,gpParser.Types, gpParser.Procs, gpParser.Defines, gpParser.API, gppIDT, gpFileEdit;
+  gppTree,gpParser.baseProject,gpParser.Types,gpParser.Procs,gpParser.Defines,gpParser.API,gpParser.Units.ParserStack,
+  gppIDT, gpFileEdit;
 
 type
   TUnit = class;
@@ -33,6 +34,9 @@ type
   private
     fDefines: TDefineList;
     fSkippedList : TSkippedCodeRecList;
+    fUnitParserStack : TUnitParserStack;
+    fCurrentUnitParserStackEntry : TUnitParserStackEntry;
+
     procedure AddToIntArray(var anArray: TArray<Integer>;const aValue: Integer);
     procedure InstrumentUses(const aProject: TBaseProject; const ed: TFileEdit;const anIndex: Integer);
     procedure BackupInstrumentedFile(const aSrc: string);
@@ -40,6 +44,19 @@ type
     /// Processes the given data and return the directive string, e.g. "IFDEF" or "INCLUDE"
     /// </summary>
     function ProcessDirectives(const aProject: TBaseProject; const tokenID: TptTokenKind; const tokenData : string): string;
+
+    /// <summary>
+    /// Creates the parser for a uses or an include and stacks it away.
+    /// </summary>
+    function CreateNewParser(const aUnitFN, aSearchPath, aDefaultDir: string): boolean;
+
+    function ResolveFullyQualifiedUnitPath(const aUnitName: String; const aSearchPath, aDefDir: string;
+      out aUnitFullName: TFileName): boolean;
+
+    /// <summary>
+    /// Kills the current parser for a uses or an include and unstack the next one.
+    /// </summary>
+    function RemoveLastParser(): boolean;
 
     class function ExtractCommentBody(const comment: string): string; static;
     class function ExtractParameter(const comment: string; const parameter: Integer): string; static;
@@ -85,7 +102,7 @@ implementation
 uses
   System.IOUtils, Winapi.Windows,
   GpString, gppCommon,
-  CastaliaPasLex, gpParser.Units.ParserStack;
+  CastaliaPasLex;
 
 
 { ========================= TUnitList ========================= }
@@ -286,33 +303,36 @@ end;
 // Get full path to unit having short unit name or relative path
 // NB!!! This path can differ from location, which Delphi will use for this unit during compilation!
 // (it is just _some_ location from search paths where unit file with the given name is found)
-function FindOnPath(aUnitName: String; const aSearchPath, aDefDir: string;
+function TUnit.ResolveFullyQualifiedUnitPath(const aUnitName: String; const aSearchPath, aDefDir: string;
   out aUnitFullName: TFileName): boolean;
 var
   i: Integer;
   s: string;
-  vDefDir: string;
+  LDefDir: string;
   LExtension: string;
+  LUnitName : TFileName;
 begin
+  LUnitName := aUnitName;
+  LDefDir := MakeBackslash(aDefDir);
+
   aUnitFullName := '';
   Result := False;
 
   LExtension := ExtractFileExt(aUnitName).ToLower;
   if (LExtension <> '.pas') and (LExtension <> '.dpr') and (LExtension <> '.inc') then
-    aUnitName := aUnitName + '.pas';
+    LUnitName := aUnitName + '.pas';
 
-  if FileExists(aUnitName) then
+  if FileExists(LUnitName) then
   begin
-    aUnitFullName := LowerCase(ExpandUNCFileName(aUnitName));
+    aUnitFullName := LowerCase(ExpandUNCFileName(LUnitName));
     Result := true;
     Exit;
   end;
 
-  vDefDir := MakeBackslash(aDefDir);
 
-  if FileExists(vDefDir + aUnitName) then
+  if FileExists(LDefDir + LUnitName) then
   begin
-    aUnitFullName := LowerCase(vDefDir + aUnitName);
+    aUnitFullName := LowerCase(LDefDir + LUnitName);
     Result := true;
     Exit;
   end;
@@ -322,7 +342,7 @@ begin
     s := Compress(NthEl(aSearchPath, i, ';', -1));
     Assert(IsAbsolutePath(s));
     // Search paths must be converted to absolute before calling FindOnPath
-    s := MakeSmartBackslash(s) + aUnitName;
+    s := MakeSmartBackslash(s) + LUnitName;
     if FileExists(s) then
     begin
       aUnitFullName := LowerCase(s);
@@ -330,7 +350,7 @@ begin
       Exit;
     end;
   end;
-end; { FindOnPath }
+end;
 
 function TUnit.ProcessDirectives(const aProject: TBaseProject; const tokenID: TptTokenKind; const tokenData : string): string;
 var
@@ -486,7 +506,29 @@ begin
     Delete(Result, Length(Result), 1);
 end; { ExtractDirective }
 
+function TUnit.CreateNewParser(const aUnitFN, aSearchPath, aDefaultDir: string): boolean;
+var
+  LUnitFullName: TFileName;
+begin
+  result := true;
+  if fCurrentUnitParserStackEntry <> nil then
+    fUnitParserStack.Add(fCurrentUnitParserStackEntry);
 
+  if not ResolveFullyQualifiedUnitPath(aUnitFN, aSearchPath, aDefaultDir, LUnitFullName) then
+    Exit(False);
+
+  fCurrentUnitParserStackEntry := TUnitParserStackEntry.Create(LUnitFullName);
+end;
+
+
+function TUnit.RemoveLastParser(): boolean;
+begin
+  fCurrentUnitParserStackEntry.Free;
+  fCurrentUnitParserStackEntry := fUnitParserStack.GetLastEntry();
+  Result := assigned(fCurrentUnitParserStackEntry);
+  if Result then
+    fCurrentUnitParserStackEntry.Lexer.Next;
+end;
 
 procedure TUnit.Parse(aProject: TBaseProject; const aExclUnits, aSearchPath,
   aDefaultDir, aConditionals: String; const aRescan, aParseAsm: boolean);
@@ -502,8 +544,6 @@ type
     , stWaitSemi // Parse till semicolon
     );
 var
-  LUnitParserStack : TUnitParserStack;
-  LUnitParserStackEntry : TUnitParserStackEntry;
   state: TParseState;
   stateComment: (stWaitEnterBegin, stWaitEnterEnd, stWaitExitBegin,
     stWaitExitEnd, stWaitExitBegin2, stNone);
@@ -584,30 +624,6 @@ var
     end;
   end; { ExpandLocation }
 
-  function CreateNewParser(const aUnitFN, aSearchPath: string): boolean;
-  var
-    vUnitFullName: TFileName;
-  begin
-    result := true;
-    if LUnitParserStackEntry <> nil then
-      LUnitParserStack.Add(LUnitParserStackEntry);
-
-    if not FindOnPath(aUnitFN, aSearchPath, aDefaultDir, vUnitFullName) then
-      Exit(False);
-
-    LUnitParserStackEntry := TUnitParserStackEntry.Create(vUnitFullName);
-  end; { CreateNewParser }
-
-  function RemoveLastParser: boolean;
-  begin
-    LUnitParserStackEntry.Free;
-    LUnitParserStackEntry := LUnitParserStack.GetLastEntry();
-    Result := assigned(LUnitParserStackEntry);
-    if Result then
-      LUnitParserStackEntry.Lexer.Next;
-  end; { RemoveLastParser }
-
-
 var
   vUnitFullName: TFileName;
   LSelfBuffer: string;
@@ -616,12 +632,12 @@ var
 
 begin
   unParsed := true;
-  LUnitParserStack := TUnitParserStack.Create;
+  fUnitParserStack := TUnitParserStack.Create;
   try
     if not aRescan then
     begin
       // Anton Alisov: not sure, for what reason FindOnPath is called here with unFullName instead of unName
-      if not FindOnPath(unFullName, aSearchPath, aDefaultDir, vUnitFullName) then
+      if not ResolveFullyQualifiedUnitPath(unFullName, aSearchPath, aDefaultDir, vUnitFullName) then
       begin
         aProject.prMissingUnitNames.AddOrSetValue(unFullname,0);
         raise EUnitInSearchPathNotFoundError.Create('Unit not found in search path: ' + unFullName);
@@ -642,8 +658,8 @@ begin
     unAPIs.Free;
     unAPIs := TAPIList.Create;
 
-    LUnitParserStackEntry := nil;
-    CreateNewParser(unFullName, '');
+    fCurrentUnitParserStackEntry := nil;
+    CreateNewParser(unFullName, '', aDefaultDir);
     if not FileAge(unFullName,unFileDate) then
       unFileDate := 0.0;
     state := stScan;
@@ -676,12 +692,12 @@ begin
       fDefines.Assign(aConditionals);
       try
         repeat
-          while LUnitParserStackEntry.Lexer.tokenID <> ptNull do
+          while fCurrentUnitParserStackEntry.Lexer.tokenID <> ptNull do
           begin
-            tokenID := LUnitParserStackEntry.Lexer.tokenID;
-            tokenData := LUnitParserStackEntry.Lexer.token;
-            tokenPos := LUnitParserStackEntry.Lexer.tokenPos;
-            tokenLN := LUnitParserStackEntry.Lexer.LineNumber;
+            tokenID := fCurrentUnitParserStackEntry.Lexer.tokenID;
+            tokenData := fCurrentUnitParserStackEntry.Lexer.token;
+            tokenPos := fCurrentUnitParserStackEntry.Lexer.tokenPos;
+            tokenLN := fCurrentUnitParserStackEntry.Lexer.LineNumber;
 
             LDirective := ProcessDirectives(aProject, tokenID, tokenData);
 
@@ -705,7 +721,7 @@ begin
                     '.' + ButFirstEl(incName, '.', -1);
                 if incName = '' then
                   raise Exception.Create('Include contains empty unit name : "'+ tokenData + '".' );
-                if not CreateNewParser(incName, aSearchPath) then
+                if not CreateNewParser(incName, aSearchPath, aDefaultDir) then
                   raise EUnitInSearchPathNotFoundError.Create('Unit not found in search path: '+ incName);
                 continue;
               end
@@ -750,7 +766,7 @@ begin
                       (Trim(ButLast(ButFirst(tokenData,
                       2 + Length(aProject.prAPIIntro)), 2)));
 
-                  if not LUnitParserStack.HasEntries then
+                  if not fUnitParserStack.HasEntries then
                     unAPIs.AddMeta(apiCmd, tokenPos,
                       tokenPos + Length(tokenData) - 1);
                 end
@@ -760,7 +776,7 @@ begin
                   apiStartEnd := tokenPos + Length(tokenData) - 1;
                 end
                 else if tokenData = aProject.prConditEndAPI then
-                  if not LUnitParserStack.HasEntries then
+                  if not fUnitParserStack.HasEntries then
                     unAPIs.AddExpanded(apiStart, apiStartEnd, tokenPos,
                       tokenPos + Length(tokenData) - 1);
               end;
@@ -858,7 +874,7 @@ begin
                     else
                       procn := procName;
 
-                    if not LUnitParserStack.HasEntries then
+                    if not fUnitParserStack.HasEntries then
                       if (tokenID <> ptAsm) or aParseAsm then
                         unProcs.Add(procn, (tokenID = ptAsm), tokenPos, tokenLN,
                           proclnum);
@@ -921,7 +937,7 @@ begin
 
                 if block = 0 then
                 begin
-                  if not LUnitParserStack.HasEntries then
+                  if not fUnitParserStack.HasEntries then
                   begin
                     unProcs.AddEnd(procn, tokenPos, tokenLN);
                     if stateComment = stWaitExitBegin2 then
@@ -982,7 +998,7 @@ begin
             end; // if not skipping
 
             prevTokenID := tokenID;
-            LUnitParserStackEntry.Lexer.Next;
+            fCurrentUnitParserStackEntry.Lexer.Next;
           end; // while
         until not RemoveLastParser;
       finally
@@ -992,7 +1008,7 @@ begin
       FreeAndNil(fSkippedList);
     end;
   finally
-    LUnitParserStack.Free;
+    fUnitParserStack.Free;
   end;
 end; { TUnit.Parse }
 
