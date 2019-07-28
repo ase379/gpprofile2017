@@ -217,7 +217,7 @@ var
     res := FindFirst(MakeBackslash(vSelDir)+mask,0,S);
     if res = 0 then begin
       repeat
-        AddUnit(UpperCase(FirstEl(S.Name,'.',-1)));
+        AddUnit(UpperCase(ButLastEl(S.Name,'.',-1)));
         res := FindNext(S);
       until res <> 0;
       FindClose(S);
