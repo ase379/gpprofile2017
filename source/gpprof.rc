@@ -17,13 +17,13 @@ BEGIN
     BLOCK "040904E4"
     BEGIN
      VALUE "FileDescription", "Performance Profiler for Delphi \0"
-     VALUE "FileVersion", "1.5.2.2 \0"
+     VALUE "FileVersion", "1.5.3.0 \0"
      VALUE "InternalName", "GpProfile \0"
      VALUE "LegalCopyright", "(c) 1998, 1999 Primoz Gabrijelcic \0"
      VALUE "LegalTrademarks", " \0"
      VALUE "OriginalFileName", " \0"
      VALUE "ProductName", "GpProfile \0"
-     VALUE "ProductVersion", "1.5.2.2 \0"
+     VALUE "ProductVersion", "1.5.3.0 \0"
     END
   END
 END
