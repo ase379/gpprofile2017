@@ -341,7 +341,7 @@ begin
   begin
     s := Compress(NthEl(aSearchPath, i, ';', -1));
     Assert(IsAbsolutePath(s));
-    // Search paths must be converted to absolute before calling FindOnPath
+    // Search paths must be converted to absolute before calling ResolveFullyQualifiedUnitPath()
     s := MakeSmartBackslash(s) + LUnitName;
     if FileExists(s) then
     begin
@@ -644,7 +644,7 @@ begin
   try
     if not aRescan then
     begin
-      // Anton Alisov: not sure, for what reason FindOnPath is called here with unFullName instead of unName
+      // Anton Alisov: not sure, for what reason ResolveFullyQualifiedUnitPath() is called here with unFullName instead of unName
       if not ResolveFullyQualifiedUnitPath(unFullName, aSearchPath, aDefaultDir, vUnitFullName) then
       begin
         aProject.prMissingUnitNames.AddOrSetValue(unFullname,0);
