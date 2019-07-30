@@ -163,6 +163,11 @@ const
   DEF_PROJECT = 2;
   DEF_USER    = 3;
 
+  TAB_INDEX_INSTRUMENTATION = 0;
+  TAB_INDEX_ANALYSIS = 1;
+  TAB_INDEX_EXCLUDED_UNITS = 2;
+  TAB_INDEX_DEFINES = 3;
+
 procedure TfrmPreferences.FormKeyPress(Sender: TObject; var Key: Char);
 begin
   if Key = #27 then ModalResult := mrCancel;
@@ -201,17 +206,17 @@ end;
 
 procedure TfrmPreferences.btnInstrumentationDefaultsClick(Sender: TObject);
 begin
-  ResetDefaults(0);
+  ResetDefaults(TAB_INDEX_INSTRUMENTATION);
 end;
 
 procedure TfrmPreferences.btnAnalysisDefaultsClick(Sender: TObject);
 begin
-  ResetDefaults(1);
+  ResetDefaults(TAB_INDEX_ANALYSIS);
 end;
 
 procedure TfrmPreferences.btnExcludedUnitsDefaultsClick(Sender: TObject);
 begin
-  ResetDefaults(2);
+  ResetDefaults(TAB_INDEX_EXCLUDED_UNITS);
 end;
 
 procedure TfrmPreferences.btnClearClick(Sender: TObject);
@@ -421,7 +426,7 @@ end;
 
 procedure TfrmPreferences.btnDefinesDefaultsClick(Sender: TObject);
 begin
-  ResetDefaults(3);
+  ResetDefaults(TAB_INDEX_DEFINES);
 end;
 
 procedure TfrmPreferences.RebuildDefines(userDefines: string);
@@ -538,7 +543,8 @@ procedure TfrmPreferences.ResetDefaults(tabIndex: integer);
 begin
   with frmPreferences do begin
     case tabIndex of
-      0: begin
+      TAB_INDEX_INSTRUMENTATION:
+      begin
         if (TGlobalPreferences.CompilerVersion < 0) or (TGlobalPreferences.CompilerVersion >= cbxCompilerVersion.Items.Count)
           then TGlobalPreferences.CompilerVersion := cbxCompilerVersion.Items.Count-1;
         cbxCompilerVersion.ItemIndex := TGlobalPreferences.CompilerVersion;
@@ -555,17 +561,20 @@ begin
         cbInstrumentAssembler.Checked := TGlobalPreferences.InstrumentAssembler;
         cbMakeBackupOfInstrumentedFile.Checked := TGlobalPreferences.MakeBackupOfInstrumentedFile;
       end; // Instrumentation
-      1: begin
+      TAB_INDEX_ANALYSIS:
+      begin
         cbHideNotExecuted.Checked := TGlobalPreferences.HideNotExecuted;
         edtPerformanceOutputFilename.text := TGlobalPreferences.PrfFilenameMakro;
         if not IsGlobalPreferenceDialog then
           edtPerformanceOutputFilename.text := ResolvePrfProjectPlaceholders(edtPerformanceOutputFilename.text);
 
       end; // Analysis
-      2: begin
+      TAB_INDEX_EXCLUDED_UNITS:
+      begin
         memoExclUnits.Text := TGlobalPreferences.ExcludedUnits;
       end; // Excluded units
-      3: begin
+      TAB_INDEX_DEFINES:
+      begin
         cbStandardDefines.Checked    := TGlobalPreferences.StandardDefines;
         With TProjectAccessor.Create(TSessionData.CurrentProjectName) do
         begin
