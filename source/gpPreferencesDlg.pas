@@ -5,9 +5,8 @@ unit gpPreferencesDlg;
 interface
 
 uses
-  Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
-  StdCtrls, ComCtrls, ExtCtrls, Menus, ImgList, ActnList, ShellAPI, ShlObj,
-  System.Actions, System.ImageList;
+  Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
+  StdCtrls, ComCtrls, ExtCtrls, Menus, ImgList, ActnList, System.Actions, System.ImageList;
 
 type
   
@@ -142,7 +141,8 @@ uses
   gpRegistry,
   gppCurrentPrefs,
   gpPrfPlaceholders,
-  gpPrfPlaceholderDlg;
+  gpPrfPlaceholderDlg,
+  gpDialogs.Tools;
 
 {$R *.DFM}
 
@@ -156,29 +156,6 @@ begin
   LSubstitutes.free;
 end;
 
-
-function BrowseDialog(const Title: string; const Flag: integer): string;
-var
-  lpItemID : PItemIDList;
-  BrowseInfo : TBrowseInfo;
-  DisplayName : array[0..MAX_PATH] of char;
-  TempPath : array[0..MAX_PATH] of char;
-begin
-  Result := '';
-  FillChar(BrowseInfo, sizeof(TBrowseInfo), #0);
-  with BrowseInfo do begin
-    hwndOwner := Application.Handle;
-    pszDisplayName := @DisplayName;
-    lpszTitle := PChar(Title);
-    ulFlags := Flag;
-  end;
-  lpItemID := SHBrowseForFolder(BrowseInfo);
-  if lpItemId <> nil then begin
-    SHGetPathFromIDList(lpItemID, TempPath);
-    Result := TempPath;
-    GlobalFreePtr(lpItemID);
-  end;
-end;
 
 const
   DEF_DELPHI  = 0;
@@ -198,44 +175,14 @@ begin
 end;
 
 procedure TfrmPreferences.btnAddFromFolderClick(Sender: TObject);
-
 var
   sl: TStringList;
-  vSelDir: String;
-
-  procedure Iterate(mask: string);
-  var
-    S  : TSearchRec;
-    res: integer;
-
-    procedure AddUnit(unitName: string);
-    begin
-      if sl.IndexOf(unitName) < 0 then sl.Add(unitName);
-    end; { AddUnit }
-
-  begin
-    res := FindFirst(MakeBackslash(vSelDir)+mask,0,S);
-    if res = 0 then begin
-      repeat
-        AddUnit(UpperCase(ButLastEl(S.Name,'.',-1)));
-        res := FindNext(S);
-      until res <> 0;
-      FindClose(S);
-    end;
-  end; { Iterate }
-
 begin
   sl := TStringList.Create;
   try
     sl.Sorted := true;
     sl.Assign(memoExclUnits.Lines);
-
-    vSelDir := BrowseDialog('Choose folder', BIF_RETURNONLYFSDIRS or BIF_NEWDIALOGSTYLE);
-    if vSelDir <> '' then
-    begin
-      Iterate('*.pas');
-      Iterate('*.dcu');
-    end;
+    FillInUnitList(sl);
     memoExclUnits.Lines.Assign(sl);
   finally sl.Free; end;
 end;
