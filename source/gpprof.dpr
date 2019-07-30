@@ -53,7 +53,6 @@ uses
   gppLoadProgress in 'gppLoadProgress.pas' {frmLoadProgress},
   gppmain.FrameAnalysis in 'gppmain.FrameAnalysis.pas' {frmMainProfiling: TFrame},
   gppMain.FrameInstrumentation.SelectionInfo in 'gppMain.FrameInstrumentation.SelectionInfo.pas',
-  gpRegUnreg in 'gpRegUnreg.pas',
   gpPrfPlaceholderDlg in 'gpPrfPlaceholderDlg.pas' {frmPreferenceMacros},
   CastaliaPasLex in 'CastaliaDelphiParser\CastaliaPasLex.pas',
   CastaliaPasLexTypes in 'CastaliaDelphiParser\CastaliaPasLexTypes.pas',
