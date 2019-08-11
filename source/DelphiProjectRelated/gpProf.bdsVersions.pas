@@ -18,7 +18,8 @@ function ProductVersionToProductName(const aProductVersionString: string): strin
 /// Gets the major version for the bds version, e.g. 19.0 -> 19
 ///  This can be used to compare the versions.
 /// </summary>
-function GetBdsMajorVersion(const aBdsVersion : string) : Integer;
+function GetMajorFromProductVersion(const aProductVersionString : string) : Integer;
+function GetMinorFromProductVersion(const aProductVersionString : string) : Integer;
 
 implementation
 
@@ -43,10 +44,22 @@ begin
   end;
 end;
 
-function GetBdsMajorVersion(const aBdsVersion : string) : Integer;
+function GetMajorFromProductVersion(const aProductVersionString : string) : Integer;
+var
+  LArray : TArray<string>;
 begin
-  result := string.ToInteger(aBdsVersion);
+  LArray := aProductVersionString.Split(['.']);
+  Result := LArray[0].ToInteger();
 end;
+
+function GetMinorFromProductVersion(const aProductVersionString : string) : Integer;
+var
+  LArray : TArray<string>;
+begin
+  LArray := aProductVersionString.Split(['.']);
+  Result := LArray[1].ToInteger();
+end;
+
 
 function ProductNameToProductVersion(const aProductName: string): string;
 begin
