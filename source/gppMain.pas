@@ -572,7 +572,7 @@ begin
     currentProject := ExtractFileName(fileName);
     ParseProject(fileName,false);
     if defaultDelphi = '' then
-      defaultDelphi := RemoveDelphiPrefix(frmPreferences.cbxCompilerVersion.Items[TGlobalPreferences.CompilerVersion]);
+      defaultDelphi := RemoveHotkeyAndDelphiPrefix(frmPreferences.cbxCompilerVersion.Items[TGlobalPreferences.CompilerVersion]);
     TSessionData.selectedDelphi := TGlobalPreferences.GetProjectPref('DelphiVersion',defaultDelphi);
     RebuildDelphiVer;
     FInstrumentationFrame.chkShowAll.Checked := TGlobalPreferences.GetProjectPref('ShowAllFolders',TGlobalPreferences.ShowAllFolders);
@@ -593,7 +593,7 @@ begin
     if Items.Count >= 1 then
       Items[Items.Count-1].Checked := true;
     for i := 0 to Items.Count-1 do begin
-      if RemoveDelphiPrefix(Items[i].Caption) = TSessionData.selectedDelphi then
+      if RemoveHotkeyAndDelphiPrefix(Items[i].Caption) = TSessionData.selectedDelphi then
       begin
         Items[Items.Count-1].Checked := false;
         Items[i].Checked := true;
@@ -603,7 +603,7 @@ begin
     end;
 
     if (not found) and (Items.Count >= 1) then begin
-      TSessionData.selectedDelphi := RemoveDelphiPrefix(Items[Items.Count-1].Caption);
+      TSessionData.selectedDelphi := RemoveHotkeyAndDelphiPrefix(Items[Items.Count-1].Caption);
     end;
   end;
   Statusbar.Panels[1].Text := IFF(openProject = nil,'','Delphi '+TSessionData.selectedDelphi);
@@ -735,7 +735,7 @@ end; { TfrmMain.LoadProfile }
 
 procedure TfrmMain.DelphiVerClick(Sender: TObject);
 begin
-  TSessionData.selectedDelphi := RemoveDelphiPrefix(TMenuItem(Sender).Caption);
+  TSessionData.selectedDelphi := RemoveHotkeyAndDelphiPrefix(TMenuItem(Sender).Caption);
   RebuildDelphiVer;
   TGlobalPreferences.SetProjectPref('DelphiVersion',TSessionData.selectedDelphi);
 end;

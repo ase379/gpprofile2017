@@ -255,7 +255,7 @@ begin
   if cbStandardDefines.Checked then begin
     AddDefine('WIN32',DEF_DELPHI);
     AddDefine('CPU386',DEF_DELPHI);
-    AddDefine(DelphiVerToCompilerVersion(RemoveDelphiPrefix(cbxDelphiDefines.Text)), DEF_DELPHI);
+    AddDefine(ProductNameToCompilerVersion(RemoveHotkeyAndDelphiPrefix(cbxDelphiDefines.Text)), DEF_DELPHI);
   end
   else RemoveTag(DEF_DELPHI);
   cbxDelphiDefines.Enabled := cbStandardDefines.Checked;
@@ -534,7 +534,7 @@ begin
     else begin
       cbxCompilerVersion.ItemIndex := cbxCompilerVersion.Items.Count-1;
       cbxDelphiDefines.ItemIndex   := cbxCompilerVersion.Items.Count-1;
-      selectedDelphi := RemoveDelphiPrefix(cbxCompilerVersion.Items[cbxCompilerVersion.ItemIndex]);
+      selectedDelphi := RemoveHotkeyAndDelphiPrefix(cbxCompilerVersion.Items[cbxCompilerVersion.ItemIndex]);
     end;
 end; { TfrmPreferences.ReselectCompilerVersion }
 
@@ -653,7 +653,7 @@ begin
     TGlobalPreferences.InstrumentAssembler:= cbInstrumentAssembler.Checked;
     TGlobalPreferences.MakeBackupOfInstrumentedFile := cbMakeBackupOfInstrumentedFile.Checked;
     TGlobalPreferences.SavePreferences;
-    TSessionData.selectedDelphi := RemoveDelphiPrefix(cbxCompilerVersion.Items[TGlobalPreferences.CompilerVersion]);
+    TSessionData.selectedDelphi := RemoveHotkeyAndDelphiPrefix(cbxCompilerVersion.Items[TGlobalPreferences.CompilerVersion]);
   end;
 end;
 
@@ -721,7 +721,7 @@ begin
       TGlobalPreferences.SetProjectPref('ProfilingAutostart',cbProfilingAutostart.Checked);
       TGlobalPreferences.SetProjectPref('InstrumentAssembler',cbInstrumentAssembler.Checked);
       TGlobalPreferences.SetProjectPref('MakeBackupOfInstrumentedFile',cbMakeBackupOfInstrumentedFile.Checked);
-      TSessionData.selectedDelphi := RemoveDelphiPrefix(cbxCompilerVersion.Items[cbxCompilerVersion.ItemIndex]);
+      TSessionData.selectedDelphi := RemoveHotkeyAndDelphiPrefix(cbxCompilerVersion.Items[cbxCompilerVersion.ItemIndex]);
       if memoExclUnits.Text = TGlobalPreferences.ExcludedUnits then
         TGlobalPreferences.DelProjectPref('ExcludedUnits')
       else
