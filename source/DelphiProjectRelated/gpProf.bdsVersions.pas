@@ -27,6 +27,7 @@ uses
    System.SysUtils;
 
 
+
 const SEATTLE = '10.0 Seattle';
       BERLIN = '10.1 Berlin';
       TOKYO = '10.2 Tokyo';
@@ -61,6 +62,8 @@ begin
 end;
 
 
+
+// see https://theroadtodelphi.com/2010/10/27/detecting-installed-delphi-versions/
 function ProductNameToProductVersion(const aProductName: string): string;
 begin
   Result := '';
