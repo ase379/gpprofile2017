@@ -10,12 +10,16 @@ type
   private
     fProductVersion : string;
     fApp : string;
+    fSearchPath : string;
     function GetProductName: string;
+    procedure AppendSearchPath(const aPartToBeAppended: string);
   public
     constructor Create(const aProductVersion : string);
+
     property ProductVersion : string read fProductVersion;
     property ProductName : string read GetProductName;
     property App : string read fApp;
+    property SearchPath : string read fSearchPath;
   end;
   TDelphiRegistryEntryList = TObjectList<TDelphiRegistryEntry>;
 
@@ -33,6 +37,7 @@ type
     destructor Destroy; override;
 
     function GetByProductName(const aProductName : string) : TDelphiRegistryEntry;
+    function GetByProductVersion(const aVersion : string) : TDelphiRegistryEntry;
 
     property CheckForExistingExe : Boolean read fCheckForExistingExe write fCheckForExistingExe;
     property RegistryEntries : TDelphiRegistryEntryList read GetDelphiRegList;
@@ -104,6 +109,18 @@ begin
   end;
 end;
 
+function TRegistryAccessor.GetByProductVersion(const aVersion: string): TDelphiRegistryEntry;
+var
+  i : Integer;
+begin
+  result := nil;
+  for i := 0 to RegistryEntries.count-1 do
+  begin
+    if RegistryEntries[i].fProductVersion = aVersion then
+      Exit(RegistryEntries[i]);
+  end;
+end;
+
 function TRegistryAccessor.GetDelphiRegList(): TDelphiRegistryEntryList;
 var
 
@@ -136,14 +153,22 @@ begin
         LRegEntry := TDelphiRegistryEntry.Create(LProductVersion);
         LRegEntry.fApp := LAppPath;
         result.Add(LRegEntry);
+
+        if LRegistry.OpenKeyReadOnly(REG_PATH_BORLAND_23+'\'+LProductVersion+'\Library') then
+        begin
+          LRegEntry.AppendSearchPath(LRegistry.ReadString('SearchPath'));
+          LRegEntry.AppendSearchPath(LRegistry.ReadString('Search Path'));
+          LRegistry.CloseKey;
+        end;
+
       end;
     end;
 
-    // Enumerate Delphi versions 4(-52005-2007
+    // Enumerate Delphi versions 2005-2007
     FillInKeyNames(LRegistry, HKEY_CURRENT_USER,REG_PATH_BDS_KEYS,LProductVersionNumbers);
     for LProductVersion in LProductVersionNumbers do
     begin
-      LAppPath := GetKeyValue(LRegistry, HKEY_LOCAL_MACHINE,REG_PATH_BDS_KEYS+'\'+LProductVersion,'App');
+      LAppPath := GetKeyValue(LRegistry, HKEY_CURRENT_USER,REG_PATH_BDS_KEYS+'\'+LProductVersion,'App');
       LAddIt := true;
       if fCheckForExistingExe and not FileExists(LAppPath) then
         LAddIt := false;
@@ -152,6 +177,12 @@ begin
         LRegEntry := TDelphiRegistryEntry.Create(LProductVersion);
         LRegEntry.fApp := LAppPath;
         result.Add(LRegEntry);
+        if LRegistry.OpenKeyReadOnly(REG_PATH_BDS_KEYS +'\'+ LProductVersion + '\Library') then
+        begin
+          LRegEntry.AppendSearchPath(LRegistry.ReadString('Search Path'));
+          LRegEntry.AppendSearchPath(LRegistry.ReadString('SearchPath'));
+          LRegistry.CloseKey;
+        end;
       end;
     end;
 
@@ -159,7 +190,7 @@ begin
     FillInKeyNames(LRegistry, HKEY_CURRENT_USER,REG_PATH_EMBARCADERO_KEYS,LProductVersionNumbers);
     for LProductVersion in LProductVersionNumbers do
     begin
-      LAppPath := GetKeyValue(LRegistry, HKEY_LOCAL_MACHINE,REG_PATH_EMBARCADERO_KEYS+'\'+LProductVersion,'App');
+      LAppPath := GetKeyValue(LRegistry, HKEY_CURRENT_USER,REG_PATH_EMBARCADERO_KEYS+'\'+LProductVersion,'App');
       LAddIt := true;
       if fCheckForExistingExe and not FileExists(LAppPath) then
         LAddIt := false;
@@ -168,6 +199,20 @@ begin
         LRegEntry := TDelphiRegistryEntry.Create(LProductVersion);
         LRegEntry.fApp := LAppPath;
         result.Add(LRegEntry);
+
+        if LRegistry.OpenKeyReadOnly(REG_PATH_EMBARCADERO_KEYS +'\'+ LProductVersion + '\Library') then
+        begin
+          LRegEntry.AppendSearchPath(LRegistry.ReadString('Search Path'));
+          LRegEntry.AppendSearchPath(LRegistry.ReadString('SearchPath'));
+
+          LRegistry.CloseKey;
+        end;
+
+        if LRegistry.OpenKeyReadOnly(REG_PATH_EMBARCADERO_KEYS +'\'+ LProductVersion +'\Library\Win32') then
+        begin
+          LRegEntry.AppendSearchPath(LRegistry.ReadString('Search Path'));
+          LRegistry.CloseKey;
+        end;
       end;
     end;
 
@@ -181,6 +226,14 @@ begin
 end;
 
 { TDelphiRegistryEntry }
+
+procedure TDelphiRegistryEntry.AppendSearchPath(const aPartToBeAppended : string);
+begin
+  if (Length(fSearchPath) > 0) then
+    if not fSearchPath.EndsWith(';') then
+      fSearchPath := fSearchPath + ';';
+  fSearchPath := fSearchPath + aPartToBeAppended;
+end;
 
 constructor TDelphiRegistryEntry.Create(const aProductVersion: string);
 begin

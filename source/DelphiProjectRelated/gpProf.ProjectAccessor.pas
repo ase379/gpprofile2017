@@ -26,7 +26,8 @@ type
 implementation
 
 uses
-  System.Sysutils, Winapi.Windows, gppmain.types, GpString, gppcommon, GpRegistry, gpProf.bdsVersions;
+  System.Sysutils, Winapi.Windows, gppmain.types, GpString, gppcommon, GpRegistry, gpProf.bdsVersions,
+  gpProf.Delphi.RegistryAccessor;
 
 { TProjectAccessor }
 
@@ -160,9 +161,10 @@ function TProjectAccessor.GetSearchPath(const aDelphiCompilerVersion: string): s
 var
   LPath : string;
   LOldCurrentDir : string;
-  LRegistry : TGpRegistry;
   LFullPath : string;
   i : Integer;
+  LRegistryAccessor : TRegistryAccessor;
+  LEntry : TDelphiRegistryEntry;
 begin
   Result := '';
   LPath := '';
@@ -174,44 +176,13 @@ begin
   else if assigned(fDofReader) then
     LPath := fDofReader.GetSearchPath;
 
-  // Get settings from registry
-  LRegistry := TGpRegistry.Create();
+  LRegistryAccessor := TRegistryAccessor.Create();
   try
-    //Path for Delphi XE2-XE3
-    LRegistry.RootKey:= HKEY_CURRENT_USER;
-    if LRegistry.OpenKeyReadOnly('Software\Embarcadero\BDS\'+ProductNameToProductVersion(aDelphiCompilerVersion)+'\Library\Win32') then
-    begin
-      LPath := AppendPath(LPath, LRegistry.ReadString('Search Path',''));
-      LRegistry.CloseKey;
-    end;
-
-    // Path for Delphi 2009-XE
-    LRegistry.RootKey := HKEY_CURRENT_USER;
-    if LRegistry.OpenKeyReadOnly('SOFTWARE\Embarcadero\BDS\' + ProductNameToProductVersion(aDelphiCompilerVersion) + '\Library') then
-    begin
-      LPath := AppendPath(LPath, LRegistry.ReadString('Search Path',''));
-      LRegistry.CloseKey;
-    end;
-
-    // Path for Delphi 2005-2007
-    LRegistry.RootKey := HKEY_CURRENT_USER;
-    if LRegistry.OpenKeyReadOnly('SOFTWARE\Borland\BDS\' + ProductNameToProductVersion(aDelphiCompilerVersion) + '\Library') then
-    begin
-      LPath := AppendPath(LPath, LRegistry.ReadString('Search Path',''));
-      LPath := AppendPath(LPath, LRegistry.ReadString('SearchPath',''));
-      LRegistry.CloseKey;
-    end;
-
-    // Path for Delphi 2-7
-    LRegistry.RootKey := HKEY_LOCAL_MACHINE;
-    if LRegistry.OpenKeyReadOnly('SOFTWARE\Borland\Delphi\'+aDelphiCompilerVersion+'\Library') then
-    begin
-      LPath := AppendPath(LPath, LRegistry.ReadString('SearchPath',''));
-      LPath := AppendPath(LPath, LRegistry.ReadString('Search Path',''));
-      LRegistry.CloseKey;
-    end;
+    LEntry := LRegistryAccessor.GetByProductName(aDelphiCompilerVersion);
+    if assigned(LEntry) then
+      LPath := AppendPath(LPath, LEntry.SearchPath);
   finally
-    LRegistry.Free;
+    LRegistryAccessor.Free;
   end;
 
   // Substitute macros (environment variables) with their real values
