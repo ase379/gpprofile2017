@@ -179,7 +179,7 @@ begin
   try
     //Path for Delphi XE2-XE3
     LRegistry.RootKey:= HKEY_CURRENT_USER;
-    if LRegistry.OpenKeyReadOnly('Software\Embarcadero\BDS\'+DelphiVerToBDSVer(aDelphiCompilerVersion)+'\Library\Win32') then
+    if LRegistry.OpenKeyReadOnly('Software\Embarcadero\BDS\'+ProductNameToProductVersion(aDelphiCompilerVersion)+'\Library\Win32') then
     begin
       LPath := AppendPath(LPath, LRegistry.ReadString('Search Path',''));
       LRegistry.CloseKey;
@@ -187,7 +187,7 @@ begin
 
     // Path for Delphi 2009-XE
     LRegistry.RootKey := HKEY_CURRENT_USER;
-    if LRegistry.OpenKeyReadOnly('SOFTWARE\Embarcadero\BDS\' + DelphiVerToBDSVer(aDelphiCompilerVersion) + '\Library') then
+    if LRegistry.OpenKeyReadOnly('SOFTWARE\Embarcadero\BDS\' + ProductNameToProductVersion(aDelphiCompilerVersion) + '\Library') then
     begin
       LPath := AppendPath(LPath, LRegistry.ReadString('Search Path',''));
       LRegistry.CloseKey;
@@ -195,7 +195,7 @@ begin
 
     // Path for Delphi 2005-2007
     LRegistry.RootKey := HKEY_CURRENT_USER;
-    if LRegistry.OpenKeyReadOnly('SOFTWARE\Borland\BDS\' + DelphiVerToBDSVer(aDelphiCompilerVersion) + '\Library') then
+    if LRegistry.OpenKeyReadOnly('SOFTWARE\Borland\BDS\' + ProductNameToProductVersion(aDelphiCompilerVersion) + '\Library') then
     begin
       LPath := AppendPath(LPath, LRegistry.ReadString('Search Path',''));
       LPath := AppendPath(LPath, LRegistry.ReadString('SearchPath',''));

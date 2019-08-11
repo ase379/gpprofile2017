@@ -7,8 +7,8 @@ uses
 
 
 function RemoveHotkeyAndDelphiPrefix(const aDelphiVer: string): string;
-function DelphiVerToBDSVer(const aDelphiVer: string): string;
-function ProductNameToCompilerVersion(const aProductVersionString: string): string;
+function ProductNameToProductVersion(const aProductName: string): string;
+function ProductNameToCompilerVersion(const aProductName: string): string;
 
 /// <summary>
 /// Transforms the product version to the product name, e.g. 20.0 to '10.3 Rio'
@@ -48,81 +48,81 @@ begin
   result := string.ToInteger(aBdsVersion);
 end;
 
-function DelphiVerToBDSVer(const aDelphiVer: string): string;
+function ProductNameToProductVersion(const aProductName: string): string;
 begin
   Result := '';
-  if aDelphiVer = '2005' then
+  if aProductName = '2005' then
     Result := '3.0'
-  else if aDelphiVer = '2006' then
+  else if aProductName = '2006' then
     Result := '4.0'
-  else if aDelphiVer = '2007' then
+  else if aProductName = '2007' then
     Result := '5.0'
-  else if aDelphiVer = '2009' then
+  else if aProductName = '2009' then
     Result := '6.0'
-  else if aDelphiVer = '2010' then
+  else if aProductName = '2010' then
     Result := '7.0'
-  else if aDelphiVer = 'XE' then
+  else if aProductName = 'XE' then
     Result := '8.0'
-  else if aDelphiVer = 'XE2' then
+  else if aProductName = 'XE2' then
     Result:= '9.0'
-  else if aDelphiVer = 'XE3' then
+  else if aProductName = 'XE3' then
     Result:= '10.0'
-  else if aDelphiVer = 'XE4' then
+  else if aProductName = 'XE4' then
     Result:= '11.0'
-  else if aDelphiVer = 'XE5' then
+  else if aProductName = 'XE5' then
     Result:= '12.0'
-  else if aDelphiVer = 'XE6' then
+  else if aProductName = 'XE6' then
     Result:= '14.0'
-  else if aDelphiVer = 'XE7' then
+  else if aProductName = 'XE7' then
     Result:= '15.0'
-  else if aDelphiVer = 'XE8' then
+  else if aProductName = 'XE8' then
     Result:= '16.0'
-  else if aDelphiVer = SEATTLE then
+  else if aProductName = SEATTLE then
     Result:= '17.0'
-  else if aDelphiVer = BERLIN then
+  else if aProductName = BERLIN then
     Result:= '18.0'
-  else if aDelphiVer = TOKYO then
+  else if aProductName = TOKYO then
     Result:= '19.0'
-  else if aDelphiVer = RIO then
+  else if aProductName = RIO then
     Result:= '20.0';
 end;
 
-function ProductNameToCompilerVersion(const aProductVersionString: string): string;
+function ProductNameToCompilerVersion(const aProductName: string): string;
 begin
   Result := '';
-  if aProductVersionString = '2005' then
+  if aProductName = '2005' then
     Result := 'VER170'
-  else if aProductVersionString = '2006' then
+  else if aProductName = '2006' then
     Result := 'VER180'
-  else if aProductVersionString = '2007' then
+  else if aProductName = '2007' then
     Result := 'VER180'
-  else if aProductVersionString = '2009' then
+  else if aProductName = '2009' then
     Result := 'VER200'
-  else if aProductVersionString = '2010' then
+  else if aProductName = '2010' then
     Result := 'VER210'
-  else if aProductVersionString = 'XE' then
+  else if aProductName = 'XE' then
     Result := 'VER220'
-  else if aProductVersionString = 'XE2' then
+  else if aProductName = 'XE2' then
     Result:= 'VER230'
-  else if aProductVersionString = 'XE3' then
+  else if aProductName = 'XE3' then
     Result:= 'VER240'
-  else if aProductVersionString = 'XE4' then
+  else if aProductName = 'XE4' then
     Result:= 'VER250'
-  else if aProductVersionString = 'XE5' then
+  else if aProductName = 'XE5' then
     Result:= 'VER260'
-  else if aProductVersionString = 'XE6' then
+  else if aProductName = 'XE6' then
     Result:= 'VER270'
-  else if aProductVersionString = 'XE7' then
+  else if aProductName = 'XE7' then
     Result:= 'VER280'
-  else if aProductVersionString = 'XE8' then
+  else if aProductName = 'XE8' then
     Result:= 'VER290'
-  else if aProductVersionString = SEATTLE then
+  else if aProductName = SEATTLE then
     Result:= 'VER300'
-  else if aProductVersionString = BERLIN then
+  else if aProductName = BERLIN then
     Result:= 'VER310'
-  else if aProductVersionString = TOKYO then
+  else if aProductName = TOKYO then
     Result:= 'VER320'
-  else if aProductVersionString = RIO then
+  else if aProductName = RIO then
     Result:= 'VER330';
 end;
 
