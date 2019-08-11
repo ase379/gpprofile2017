@@ -267,6 +267,7 @@ implementation
 uses
   gpProf.bdsVersions,
   gpProf.ProjectAccessor,
+  gpProf.Delphi.RegistryAccessor,
   IniFiles,
   GpString,
   GpProfH,
@@ -750,33 +751,38 @@ end;
 
 procedure TfrmMain.FillDelphiVer;
 var
-  s : TStringList;
   mn: TMenuItem;
   i : integer;
+  LAccessor : TRegistryAccessor;
+  LRegEntryList : TDelphiRegistryEntryList;
+  LProductName : string;
 begin
-  s := TStringList.Create;
+  LAccessor := TRegistryAccessor.Create();
   try
-    FillInDelphiVersions(s);
-    for i := 0 to s.Count-1 do begin
+    LRegEntryList := LAccessor.RegistryEntries;
+    for i := 0 to LRegEntryList.Count-1 do
+    begin
+      LProductName := ProductVersionToProductName(LRegEntryList[i].ProductVersion);
       mn := TMenuItem.Create(self);
-      mn.Caption := 'Delphi &'+s[i];
+      mn.Caption := 'Delphi &'+LProductName;
       mn.OnClick := DelphiVerClick;
       popDelphiVer.Items.Insert(popDelphiVer.Items.Count,mn);
-      frmPreferences.cbxCompilerVersion.Items.Add('Delphi '+s[i]);
-      frmPreferences.cbxDelphiDefines.Items.Add('Delphi '+s[i]);
+      frmPreferences.cbxCompilerVersion.Items.Add('Delphi '+LProductName);
+      frmPreferences.cbxDelphiDefines.Items.Add('Delphi '+LProductName);
     end;
-    if s.Count = 0 then
+    if LRegEntryList.Count = 0 then
       actRun.OnExecute := nil;
-    if s.Count >= 1 then
+    if LRegEntryList.Count >= 1 then
     begin
-      if (TGlobalPreferences.CompilerVersion < 0) or (TGlobalPreferences.CompilerVersion >= s.Count) then
-        TGlobalPreferences.CompilerVersion := s.Count-1;
-      TSessionData.selectedDelphi := TGlobalPreferences.GetProjectPref('DelphiVersion', s[TGlobalPreferences.CompilerVersion]);
+      if (TGlobalPreferences.CompilerVersion < 0) or (TGlobalPreferences.CompilerVersion >= LRegEntryList.Count) then
+        TGlobalPreferences.CompilerVersion := LRegEntryList.Count-1;
+      TSessionData.selectedDelphi := TGlobalPreferences.GetProjectPref('DelphiVersion', LRegEntryList[TGlobalPreferences.CompilerVersion].ProductName);
       RebuildDelphiVer;
     end;
   finally
-    s.Free;
+    LAccessor.free;
   end;
+
 end; { TfrmMain.FillDelphiVer }
 
 

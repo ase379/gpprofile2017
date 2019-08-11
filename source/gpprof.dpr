@@ -58,6 +58,7 @@ uses
   CastaliaPasLexTypes in 'CastaliaDelphiParser\CastaliaPasLexTypes.pas',
   gpProf.bdsVersions in 'DelphiProjectRelated\gpProf.bdsVersions.pas',
   gpProf.BdsProjReader in 'DelphiProjectRelated\gpProf.BdsProjReader.pas',
+  gpProf.Delphi.RegistryAccessor in 'DelphiProjectRelated\gpProf.Delphi.RegistryAccessor.pas',
   gpProf.DProjReader in 'DelphiProjectRelated\gpProf.DProjReader.pas',
   gpParser.API in 'gpParser\gpParser.API.pas',
   gpParser.BaseProject in 'gpParser\gpParser.BaseProject.pas',
