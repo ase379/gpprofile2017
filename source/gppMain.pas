@@ -1203,25 +1203,18 @@ procedure TfrmMain.actRunExecute(Sender: TObject);
 var
   run        : string;
   startupInfo: TStartupInfo;
+  LRegAccessor : TRegistryAccessor;
+  LRegEntry : TDelphiRegistryEntry;
 begin
-  with TGpRegistry.Create do
-    try
-      RootKey := HKEY_LOCAL_MACHINE;
-      if OpenKeyReadOnly('\SOFTWARE\Borland\Delphi\' + TSessionData.selectedDelphi) then
-        run := ReadString('Delphi ' + FirstEl(TSessionData.selectedDelphi,'.',-1),'')
-      else begin
-        RootKey := HKEY_CURRENT_USER;
-        if OpenKeyReadOnly('\SOFTWARE\Borland\BDS\' + DelphiVerToBDSVer(TSessionData.selectedDelphi)) then
-          run := ReadString('App', '')
-        else if OpenKeyReadOnly('\SOFTWARE\Embarcadero\BDS\' + DelphiVerToBDSVer(TSessionData.selectedDelphi)) then
-          run := ReadString('App', '')
-        else
-          run := '';
-      end;
-    finally
-      Free;
-    end;
-
+  run := '';
+  LRegAccessor := TRegistryAccessor.Create();
+  try
+    LRegEntry := LRegAccessor.GetByProductName(TSessionData.selectedDelphi);
+    if assigned(LRegEntry) then
+      run := LRegEntry.App;
+  finally
+    LRegAccessor.Free;
+  end;
   if run = '' then
     raise Exception.Create('Can''t determine Delphi executable file location from registry.');
 
