@@ -5,10 +5,44 @@ interface
 uses
   system.Classes;
 
+type
+  TDelphiProduct =
+  (
+    unknown,
+    Delphi1,
+    Delphi2,
+    Delphi3,
+    Delphi4,
+    Delphi5,
+    Delphi6,
+    Delphi7,
+    Delphi8,
+    Delphi2005,
+    Delphi2006,
+    Delphi2007,
+    Delphi2009,
+    Delphi2010,
+    DelphiXE,
+    DelphiXE2,
+    DelphiXE3,
+    DelphiXE4,
+    DelphiXE5,
+    DelphiXE6,
+    DelphiXE7,
+    DelphiXE8,
+    DelphiSeattle,
+    DelphiBelin,
+    DelphiTokyo,
+    DelphiRio
+  );
+
+
 
 function RemoveHotkeyAndDelphiPrefix(const aDelphiVer: string): string;
-function ProductNameToProductVersion(const aProductName: string): string;
-function ProductNameToCompilerVersion(const aProductName: string): string;
+function ProductNameToProduct(const aProductName: string): TDelphiProduct;
+
+function DelphiProductToProductName(const aProductName: TDelphiProduct): string;
+function DelphiProductToCompilerVersion(const aProductName: TDelphiProduct): string;
 
 /// <summary>
 /// Transforms the product version to the product name, e.g. 20.0 to '10.3 Rio'
@@ -64,82 +98,82 @@ end;
 
 
 // see https://theroadtodelphi.com/2010/10/27/detecting-installed-delphi-versions/
-function ProductNameToProductVersion(const aProductName: string): string;
+function ProductNameToProduct(const aProductName: string): TDelphiProduct;
+var
+  LProduct : TDelphiProduct;
 begin
-  Result := '';
-  if aProductName = '2005' then
-    Result := '3.0'
-  else if aProductName = '2006' then
-    Result := '4.0'
-  else if aProductName = '2007' then
-    Result := '5.0'
-  else if aProductName = '2009' then
-    Result := '6.0'
-  else if aProductName = '2010' then
-    Result := '7.0'
-  else if aProductName = 'XE' then
-    Result := '8.0'
-  else if aProductName = 'XE2' then
-    Result:= '9.0'
-  else if aProductName = 'XE3' then
-    Result:= '10.0'
-  else if aProductName = 'XE4' then
-    Result:= '11.0'
-  else if aProductName = 'XE5' then
-    Result:= '12.0'
-  else if aProductName = 'XE6' then
-    Result:= '14.0'
-  else if aProductName = 'XE7' then
-    Result:= '15.0'
-  else if aProductName = 'XE8' then
-    Result:= '16.0'
-  else if aProductName = SEATTLE then
-    Result:= '17.0'
-  else if aProductName = BERLIN then
-    Result:= '18.0'
-  else if aProductName = TOKYO then
-    Result:= '19.0'
-  else if aProductName = RIO then
-    Result:= '20.0';
+  result := TDelphiProduct.unknown;
+  for LProduct := Low(TDelphiProduct) to High(TDelphiProduct) do
+    if DelphiProductToProductName(LProduct) = aProductName then
+      Exit(lProduct);
 end;
 
-function ProductNameToCompilerVersion(const aProductName: string): string;
+
+function DelphiProductToProductName(const aProductName: TDelphiProduct): string;
+begin
+  /// remark: 'Delphi' is added on the fly with & or without &
+  Result := '';
+  case aProductName of
+    unknown: result := 'unknown product version';
+    Delphi1: result := '1';
+    Delphi2: result := '2';
+    Delphi3: result := '3';
+    Delphi4: result := '4';
+    Delphi5: result := '5';
+    Delphi6: result := '6';
+    Delphi7: result := '7';
+    Delphi8: result := '8';
+    Delphi2005: result := '2005';
+    Delphi2006: result := '2006';
+    Delphi2007: result := '2007';
+    Delphi2009: result := '2009';
+    Delphi2010: result := '2010';
+    DelphiXE: result := 'XE';
+    DelphiXE2: result := 'XE2';
+    DelphiXE3: result := 'XE3';
+    DelphiXE4: result := 'XE4';
+    DelphiXE5: result := 'XE5';
+    DelphiXE6: result := 'XE6';
+    DelphiXE7: result := 'XE7';
+    DelphiXE8: result := 'XE8';
+    DelphiSeattle: result := '10 Seattle';
+    DelphiBelin: result := '10.1 Berlin';
+    DelphiTokyo: result := '10.2 Tokyo';
+    DelphiRio: result := '10.3 Rio';
+  end;
+end;
+
+function DelphiProductToCompilerVersion(const aProductName: TDelphiProduct): string;
 begin
   Result := '';
-  if aProductName = '2005' then
-    Result := 'VER170'
-  else if aProductName = '2006' then
-    Result := 'VER180'
-  else if aProductName = '2007' then
-    Result := 'VER180'
-  else if aProductName = '2009' then
-    Result := 'VER200'
-  else if aProductName = '2010' then
-    Result := 'VER210'
-  else if aProductName = 'XE' then
-    Result := 'VER220'
-  else if aProductName = 'XE2' then
-    Result:= 'VER230'
-  else if aProductName = 'XE3' then
-    Result:= 'VER240'
-  else if aProductName = 'XE4' then
-    Result:= 'VER250'
-  else if aProductName = 'XE5' then
-    Result:= 'VER260'
-  else if aProductName = 'XE6' then
-    Result:= 'VER270'
-  else if aProductName = 'XE7' then
-    Result:= 'VER280'
-  else if aProductName = 'XE8' then
-    Result:= 'VER290'
-  else if aProductName = SEATTLE then
-    Result:= 'VER300'
-  else if aProductName = BERLIN then
-    Result:= 'VER310'
-  else if aProductName = TOKYO then
-    Result:= 'VER320'
-  else if aProductName = RIO then
-    Result:= 'VER330';
+  case aProductName of
+    unknown: result := 'unknown product compiler';
+    Delphi1: result := 'VER80';
+    Delphi2: result := 'VER90';
+    Delphi3: result := 'VER100';
+    Delphi4: result := 'VER120';
+    Delphi5: result := 'VER130';
+    Delphi6: result := 'VER140';
+    Delphi7: result := 'VER150';
+    Delphi8: result := 'VER160';
+    Delphi2005: result := 'VER170';
+    Delphi2006: result := 'VER180';
+    Delphi2007: result := 'VER190';
+    Delphi2009: result := 'VER200';
+    Delphi2010: result := 'VER210';
+    DelphiXE: result := 'VER220';
+    DelphiXE2: result := 'VER230';
+    DelphiXE3: result := 'VER240';
+    DelphiXE4: result := 'VER250';
+    DelphiXE5: result := 'VER260';
+    DelphiXE6: result := 'VER270';
+    DelphiXE7: result := 'VER280';
+    DelphiXE8: result := 'VER290';
+    DelphiSeattle: result := 'VER300';
+    DelphiBelin: result := 'VER310';
+    DelphiTokyo: result := 'VER320';
+    DelphiRio: result := 'VER330';
+  end;
 end;
 
 

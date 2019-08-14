@@ -251,11 +251,14 @@ begin
 end;
 
 procedure TfrmPreferences.cbStandardDefinesClick(Sender: TObject);
+var
+  LProductName : string;
 begin
   if cbStandardDefines.Checked then begin
     AddDefine('WIN32',DEF_DELPHI);
     AddDefine('CPU386',DEF_DELPHI);
-    AddDefine(ProductNameToCompilerVersion(RemoveHotkeyAndDelphiPrefix(cbxDelphiDefines.Text)), DEF_DELPHI);
+    LProductName := RemoveHotkeyAndDelphiPrefix(cbxDelphiDefines.Text);
+    AddDefine(DelphiProductToCompilerVersion(ProductNameToProduct(LProductName)), DEF_DELPHI);
   end
   else RemoveTag(DEF_DELPHI);
   cbxDelphiDefines.Enabled := cbStandardDefines.Checked;
