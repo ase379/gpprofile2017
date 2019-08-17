@@ -76,6 +76,7 @@ object fmUnitWizard: TfmUnitWizard
     Header.MainColumn = -1
     TabOrder = 1
     TreeOptions.AutoOptions = [toAutoDropExpand, toAutoExpand, toAutoScrollOnExpand, toAutoSort, toAutoTristateTracking, toAutoDeleteMovedNodes, toAutoChangeScale]
+    OnExpanding = vstUnitDependenciesExpanding
     Columns = <>
   end
 end

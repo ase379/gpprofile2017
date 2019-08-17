@@ -19,6 +19,7 @@ type
     oxButton2: TButton;
     vstUnitDependencies: TVirtualStringTree;
     lblUnitDependencies: TLabel;
+    procedure vstUnitDependenciesExpanding(Sender: TBaseVirtualTree; Node: PVirtualNode; var Allowed: Boolean);
   private
     fInitialUnitName : string;
     fOpenProject : TProject;
@@ -28,7 +29,7 @@ type
     fSelectedUnitNames : TDictionary<string, Cardinal>;
     // lookup to detect unit recursion
     fProcessedUnitNames : TDictionary<string, Cardinal>;
-    procedure addUnit(const aParent : PVirtualNode; const aUnitName : string);
+    procedure addUnit(const aParent : PVirtualNode; const aUnitName : string;const aDoRecursive: boolean);
     procedure fillInUnits();
     procedure MoveSelectionsToResultList();
 
@@ -56,9 +57,15 @@ uses gppTree;
 
 
 constructor TfmUnitWizard.Create(AOwner: TComponent);
+var
+  LAutoOptions : TVTAutoOptions;
 begin
   inherited;
   fVstSelectUnitTools := TCheckableListTools.Create(vstUnitDependencies, cid_Unit);
+  LAutoOptions := vstUnitDependencies.TreeOptions.AutoOptions;
+  Exclude(LAutoOptions, toAutoTristateTracking);
+  vstUnitDependencies.TreeOptions.AutoOptions := LAutoOptions;
+
   fLocateUnitCache := TDictionary<string, TUnit>.Create();
   fSelectedUnitNames := TDictionary<string, Cardinal>.Create;
   fProcessedUnitNames := TDictionary<string, Cardinal>.Create;
@@ -75,7 +82,6 @@ end;
 
 procedure TfmUnitWizard.fillInUnits();
 var
-  LEnum : TVTVirtualNodeEnumerator;
   LNewNode : PVirtualNode;
 begin
   fVstSelectUnitTools.BeginUpdate;
@@ -86,16 +92,13 @@ begin
       vstUnitDependencies.CheckState[LNewNode] := TCheckState.csMixedNormal
     else
       vstUnitDependencies.CheckState[LNewNode] := TCheckState.csUncheckedNormal;
-    addUnit(LNewNode,fInitialUnitName);
-    LEnum := vstUnitDependencies.Nodes().GetEnumerator;
-    while(LEnum.MoveNext) do
-      vstUnitDependencies.Expanded[LEnum.Current] := True;
+    addUnit(LNewNode,fInitialUnitName, false);
   finally
     fVstSelectUnitTools.EndUpdate;
   end;
 end;
 
-procedure TfmUnitWizard.addUnit(const aParent: PVirtualNode; const aUnitName: string);
+procedure TfmUnitWizard.addUnit(const aParent: PVirtualNode; const aUnitName: string; const aDoRecursive: boolean);
 
   function LocateUnit(): TUnit;
   begin
@@ -122,12 +125,14 @@ begin
     LUnitEnumor := LUnit.unUnits.GetEnumerator();
     while LUnitEnumor.MoveNext do
     begin
+      LNewNode := nil;
       LName := LUnitEnumor.Current.Data.unName;
       LMissingUnit := fOpenProject.IsMissingUnit(LName);
-      if LMissingUnit then
-        LNewNode := nil
-      else
-        LNewNode := fVstSelectUnitTools.AddEntry(aParent,LName);
+      if not LMissingUnit then
+      begin
+        if not assigned(fVstSelectUnitTools.GetChildByName(aParent, LName)) then
+          LNewNode := fVstSelectUnitTools.AddEntry(aParent,LName);
+      end;
       if Assigned(LNewNode) then
       begin
         LRecursiveUnit := fProcessedUnitNames.ContainsKey(LName);
@@ -141,7 +146,13 @@ begin
             vstUnitDependencies.CheckState[LNewNode] := TCheckState.csMixedNormal
           else
             vstUnitDependencies.CheckState[LNewNode] := TCheckState.csUncheckedNormal;
-          addUnit(LNewNode,LName);
+          if aDoRecursive then
+             addUnit(LNewNode,LName,aDoRecursive)
+          else
+          begin
+            if LUnitEnumor.Current.Data.unUnits.Count > 0 then
+              include(LNewNode.States, vsHasChildren)
+          end;
         end;
       end;
     end;
@@ -168,6 +179,15 @@ begin
       if not fSelectedUnitNames.ContainsKey(LName) then
         fSelectedUnitNames.Add(LName, 0);
     end;
+  end;
+end;
+
+procedure TfmUnitWizard.vstUnitDependenciesExpanding(Sender: TBaseVirtualTree; Node: PVirtualNode;
+  var Allowed: Boolean);
+begin
+  if assigned(Node.Parent) then
+  begin
+    addUnit(Node,fVstSelectUnitTools.GetName(Node), False);
   end;
 end;
 

@@ -39,6 +39,7 @@ type
 
     function GetNode(const anIndex : Cardinal): PVirtualNode;
     function GetNodeByName(const aName: string): PVirtualNode;
+    function GetChildByName(const aParent : PVirtualNode;const aName: string): PVirtualNode;
 
     function GetName(const anIndex: Cardinal): string; overload;
     function GetName(const aNode : PVirtualNode) : string; overload;
@@ -143,6 +144,20 @@ begin
   end;
 end;
 
+
+function TVirtualTreeBaseTools.GetChildByName(const aParent: PVirtualNode; const aName: string): PVirtualNode;
+var
+  LChild : PVirtualNode;
+begin
+  result := nil;
+  LChild := aParent.FirstChild;
+  while(Assigned(LChild)) do
+  begin
+    if sametext(GetName(LChild), aName) then
+      Exit(LChild);
+    LChild := LChild.NextSibling;
+  end
+end;
 
 function TVirtualTreeBaseTools.GetNodeByName(const aName: string): PVirtualNode;
 var
