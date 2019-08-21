@@ -1111,7 +1111,7 @@ begin
       openProject.Instrument(not LShowAll,NotifyInstrument,
                          TGlobalPreferences.GetProjectPref('MarkerStyle',TGlobalPreferences.MarkerStyle),
                          TGlobalPreferences.GetProjectPref('KeepFileDate',TGlobalPreferences.KeepFileDate),
-                         TGlobalPreferences.GetProjectPref('MakeBackupOfInstrumentedFile',TGlobalPreferences.KeepFileDate),
+                         TGlobalPreferences.GetProjectPref('MakeBackupOfInstrumentedFile',TGlobalPreferences.MakeBackupOfInstrumentedFile),
                          fnm,LDefines,
                          GetSearchPath(openProject.Name),
                          TGlobalPreferences.GetProjectPref('InstrumentAssembler',TGlobalPreferences.InstrumentAssembler));
@@ -1147,6 +1147,11 @@ end; { TfrmMain.DoInstrument }
 procedure TfrmMain.actInstrumentExecute(Sender: TObject);
 begin
   actRescanChanged.Execute;
+  while (IsProgressBarActive) do
+  begin
+    Application.ProcessMessages;
+    Sleep(10);
+  end;
   DoInstrument;
 end;
 
