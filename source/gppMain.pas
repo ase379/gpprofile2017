@@ -1183,9 +1183,7 @@ end;
 
 procedure TfrmMain.actRescanProjectExecute(Sender: TObject);
 begin
-  if openProject = nil then
-    exit;
-  ParseProject(openProject.Name,true);
+  LoadProject(openProject.Name);
 end;
 
 
