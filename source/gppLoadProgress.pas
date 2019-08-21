@@ -39,7 +39,6 @@ type
 
 
   procedure InitProgressBar(const aOwner : TForm;const aMessage : string;const aMarquee, aCancel: Boolean);
-  function IsProgressBarActive(): Boolean;
   procedure ShowProgressBar();
   procedure HideProgressBar();
 
@@ -61,11 +60,6 @@ begin
   frmLoadProgress.Marquee := aMarquee;
   frmLoadProgress.Cancel := aCancel;
   frmLoadProgress.Text := aMessage;
-end;
-
-function IsProgressBarActive(): Boolean;
-begin
-  result := Assigned(frmLoadProgress);
 end;
 
 procedure ShowProgressBar();

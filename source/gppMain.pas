@@ -1108,12 +1108,15 @@ begin
   ExecuteAsync(
     procedure
     begin
-      openProject.Instrument(not LShowAll,NotifyInstrument,
+      openProject.Instrument(not LShowAll,
+                         TGlobalPreferences.GetProjectPref('ExcludedUnits',TGlobalPreferences.ExcludedUnits),
+                         NotifyInstrument,
                          TGlobalPreferences.GetProjectPref('MarkerStyle',TGlobalPreferences.MarkerStyle),
                          TGlobalPreferences.GetProjectPref('KeepFileDate',TGlobalPreferences.KeepFileDate),
-                         TGlobalPreferences.GetProjectPref('MakeBackupOfInstrumentedFile',TGlobalPreferences.MakeBackupOfInstrumentedFile),
+                         TGlobalPreferences.GetProjectPref('MakeBackupOfInstrumentedFile',TGlobalPreferences.KeepFileDate),
                          fnm,LDefines,
                          GetSearchPath(openProject.Name),
+                         TGlobalPreferences.GetProjectPref('UseFileDate', TGlobalPreferences.UseFileDate),
                          TGlobalPreferences.GetProjectPref('InstrumentAssembler',TGlobalPreferences.InstrumentAssembler));
 
       if FileExists(fnm) then
@@ -1146,12 +1149,6 @@ end; { TfrmMain.DoInstrument }
 
 procedure TfrmMain.actInstrumentExecute(Sender: TObject);
 begin
-  actRescanChanged.Execute;
-  while (IsProgressBarActive) do
-  begin
-    Application.ProcessMessages;
-    Sleep(10);
-  end;
   DoInstrument;
 end;
 
@@ -1186,7 +1183,9 @@ end;
 
 procedure TfrmMain.actRescanProjectExecute(Sender: TObject);
 begin
-  LoadProject(openProject.Name);
+  if openProject = nil then
+    exit;
+  ParseProject(openProject.Name,true);
 end;
 
 
@@ -1200,7 +1199,6 @@ end;
 
 procedure TfrmMain.actRemoveInstrumentationExecute(Sender: TObject);
 begin
-  actRescanChanged.Execute;
   FInstrumentationFrame.RemoveInstrumentation(DoInstrument);
 end;
 
@@ -1360,7 +1358,6 @@ end;
 
 procedure TfrmMain.actInstrumentRunExecute(Sender: TObject);
 begin
-  actRescanChanged.Execute;
   DoInstrument;
   actRun.Execute;
 end;
