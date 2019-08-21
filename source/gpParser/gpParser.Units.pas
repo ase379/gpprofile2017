@@ -94,7 +94,7 @@ type
     function AnyInstrumented: boolean;
     function AnyChange: boolean;
     function DidFileTimestampChange(): boolean;
-
+    function NeedsToBeReparsed(const aUseFileTimestamp: Boolean) : Boolean;
   end;
 
 implementation
@@ -254,7 +254,9 @@ begin
     un := TUnit.Create(unitName, unitLocation, excluded);
     Result := AppendNode(un).Data;
   end;
-end; { TGlbUnitList.LocateCreate }
+end;
+
+{ TGlbUnitList.LocateCreate }
 
 
 { ========================= TUnit ========================= }
@@ -297,6 +299,21 @@ begin
     LOutDateTime := 0.0;
   result := unFileDate <> LOutDateTime;
 end;
+
+function TUnit.NeedsToBeReparsed(const aUseFileTimestamp: Boolean): Boolean;
+begin
+  Result := false;
+  if (not unExcluded) and (unProcs.Count > 0) then
+  begin
+    if aUseFileTimestamp then
+    begin
+      result := DidFileTimestampChange()
+    end
+    else
+      Result := True;
+  end;
+end;
+
 
 { TUnit.Destroy }
 

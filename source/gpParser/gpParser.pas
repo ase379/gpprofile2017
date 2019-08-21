@@ -30,7 +30,7 @@ type
     procedure Parse(aExclUnits: String;const aSearchPath, aConditionals: String; aNotify: TNotifyProc;
       aCommentType: TCommentType; aParseAsm: boolean;const anErrorList : TStrings);
     procedure Rescan(aExclUnits: String;const aSearchPath, aConditionals: string;
-      aCommentType: TCommentType; aIgnoreFileDate: boolean; aParseAsm: boolean);
+      aCommentType: TCommentType; aUseFileDate: boolean; aParseAsm: boolean);
     property Name: string read prName;
     procedure GetUnitList(var aSL: TStringList;const aProjectDirOnly, aGetInstrumented: boolean);
     procedure GetProcList(unitName: string; s: TStringList;getInstrumented: boolean);
@@ -42,9 +42,9 @@ type
     function AllInstrumented(projectDirOnly: boolean): boolean;
     function NoneInstrumented(projectDirOnly: boolean): boolean;
     function AnyInstrumented(projectDirOnly: boolean): boolean;
-    procedure Instrument(aProjectDirOnly: boolean; aNotify: TNotifyInstProc;
+    procedure Instrument(aProjectDirOnly: boolean; aExclUnits: String;aNotify: TNotifyInstProc;
       aCommentType: TCommentType; aKeepDate, aBackupFile: boolean;
-      aIncFileName, aConditionals, aSearchPath: string; aParseAsm: boolean);
+      aIncFileName, aConditionals, aSearchPath: string; aUseFileDate,aParseAsm: boolean);
     function GetFirstLine(unitName, procName: string): Integer;
     function AnyChange(projectDirOnly: boolean): boolean;
     function LocateUnit(const aUnitName: string): TUnit;
@@ -268,10 +268,10 @@ begin
   Result := prUnits.AreAllUnitsInstrumented(projectDirOnly);
 end;
 
-procedure TProject.Instrument(aProjectDirOnly: boolean;
+procedure TProject.Instrument(aProjectDirOnly: boolean; aExclUnits: String;
   aNotify: TNotifyInstProc; aCommentType: TCommentType;
   aKeepDate, aBackupFile: boolean; aIncFileName, aConditionals,
-  aSearchPath: string; aParseAsm: boolean);
+  aSearchPath: string; aUseFileDate, aParseAsm: boolean);
 
   procedure DoNotify(const aFullname, aUnitName: string; const aParse : Boolean);
   begin
@@ -305,6 +305,10 @@ begin
           while LUnitEnumor.MoveNext do
           begin
             un := LUnitEnumor.Current.Data;
+
+            if un.NeedsToBeReparsed(aUseFileDate) then
+              un.Parse(self, aExclUnits, aSearchPath, ExtractFilePath(prName),aConditionals, true, aParseAsm);
+
             if (not un.unExcluded) and (un.unProcs.Count > 0) then
             begin
               DoNotify(un.unFullName, un.unName, False);
@@ -397,7 +401,7 @@ end;
 
 procedure TProject.Rescan(aExclUnits: String;
   const aSearchPath, aConditionals: string;
-  aCommentType: TCommentType; aIgnoreFileDate: boolean; aParseAsm: boolean);
+  aCommentType: TCommentType; aUseFileDate: boolean; aParseAsm: boolean);
 var
   un: TUnit;
   LUnitEnumor: TRootNode<TUnit>.TEnumerator;
@@ -416,8 +420,7 @@ begin
       while LUnitEnumor.MoveNext do
       begin
         un := LUnitEnumor.Current.Data;
-        if (not un.unExcluded) and (un.unProcs.Count > 0) and
-          (aIgnoreFileDate or (un.DidFileTimestampChange())) then
+        if un.NeedsToBeReparsed(aUseFileDate) then
           un.Parse(self, aExclUnits, aSearchPath, ExtractFilePath(prName),
             aConditionals, true, aParseAsm);
       end;
