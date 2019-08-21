@@ -138,10 +138,11 @@ object frmPreferences: TfrmPreferences
         end
       end
       object GroupBox4: TGroupBox
-        Left = 8
-        Top = 96
+        Left = 15
+        Top = 95
         Width = 457
-        Height = 97
+        Height = 146
+        Hint = 'Detects changed units by using the timestamp of the unit file.'
         Caption = ' Options '
         TabOrder = 1
         object cbProfilingAutostart: TCheckBox
@@ -149,6 +150,7 @@ object frmPreferences: TfrmPreferences
           Top = 44
           Width = 257
           Height = 17
+          Hint = 'Start profiling upon init of the target module.'
           Caption = 'Start &profiling on target startup'
           Checked = True
           State = cbChecked
@@ -156,42 +158,42 @@ object frmPreferences: TfrmPreferences
         end
         object cbShowAllFolders: TCheckBox
           Left = 16
-          Top = 20
+          Top = 21
           Width = 257
           Height = 17
+          Hint = 'Show all units. If disabled: show only units of the dpr/dpk.'
           Caption = 'Show &all folders'
           TabOrder = 0
         end
         object cbKeepFileDate: TCheckBox
           Left = 16
-          Top = 108
+          Top = 92
           Width = 257
           Height = 17
+          Hint = 'Restore original timestamp after changing the unit file.'
           TabStop = False
           Caption = '&Keep file date unchanged when instrumenting'
-          Enabled = False
           TabOrder = 3
-          Visible = False
           OnClick = cbKeepFileDateClick
         end
         object cbUseFileDate: TCheckBox
           Left = 16
-          Top = 132
+          Top = 116
           Width = 257
           Height = 17
+          Hint = 'Mark unit as changed if the unit file timestamp changes.'
           TabStop = False
           Caption = '&Use file date as file change indicator'
           Checked = True
-          Enabled = False
           State = cbChecked
           TabOrder = 4
-          Visible = False
         end
         object cbInstrumentAssembler: TCheckBox
           Left = 16
           Top = 68
           Width = 257
           Height = 17
+          Hint = 'Instrument pure asm functions.'
           Caption = '&Instrument pure assembler procedures'
           TabOrder = 2
         end
@@ -217,10 +219,6 @@ object frmPreferences: TfrmPreferences
     object tabAnalysis: TTabSheet
       Caption = 'Analysis'
       ImageIndex = -1
-      ExplicitLeft = 0
-      ExplicitTop = 0
-      ExplicitWidth = 0
-      ExplicitHeight = 0
       object grpAnalysisSettings: TGroupBox
         AlignWithMargins = True
         Left = 3
@@ -263,7 +261,7 @@ object frmPreferences: TfrmPreferences
           AlignWithMargins = True
           Left = 10
           Top = 23
-          Width = 243
+          Width = 449
           Height = 13
           Margins.Left = 8
           Margins.Top = 8
@@ -271,6 +269,7 @@ object frmPreferences: TfrmPreferences
           Margins.Bottom = 8
           Align = alTop
           Caption = 'Performance output file name: (without extension)'
+          ExplicitWidth = 243
         end
         object Panel2: TPanel
           AlignWithMargins = True
@@ -315,10 +314,6 @@ object frmPreferences: TfrmPreferences
     object tabExcluded: TTabSheet
       Caption = 'Excluded units'
       ImageIndex = -1
-      ExplicitLeft = 0
-      ExplicitTop = 0
-      ExplicitWidth = 0
-      ExplicitHeight = 0
       object GroupBox2: TGroupBox
         Left = 8
         Top = 8
@@ -371,10 +366,6 @@ object frmPreferences: TfrmPreferences
     object tabDefines: TTabSheet
       Caption = 'Conditional defines'
       ImageIndex = 3
-      ExplicitLeft = 0
-      ExplicitTop = 0
-      ExplicitWidth = 0
-      ExplicitHeight = 0
       object GroupBox5: TGroupBox
         Left = 8
         Top = 8
