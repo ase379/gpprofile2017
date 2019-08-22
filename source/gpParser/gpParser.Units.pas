@@ -58,6 +58,8 @@ type
     /// </summary>
     function RemoveLastParser(): boolean;
 
+    class function IsAnExcludedUnit(const aUnitName, aExclUnits : string): boolean;static;
+
     class function ExtractCommentBody(const comment: string): string; static;
     class function ExtractParameter(const comment: string; const parameter: Integer): string; static;
     class function ExtractNumElements(const comment: string): integer;
@@ -555,6 +557,14 @@ begin
   end;
 end;
 
+class function TUnit.IsAnExcludedUnit(const aUnitName, aExclUnits : string):boolean;
+var
+  LSearchKey : string;
+begin
+  LSearchKey := #13#10 + UpperCase(aUnitName) + #13#10;
+  result := (Pos(LSearchKey, aExclUnits) <> 0);
+end;
+
 procedure TUnit.Parse(aProject: TBaseProject; const aExclUnits, aSearchPath,
   aDefaultDir, aConditionals: String; const aRescan, aParseAsm: boolean);
 type
@@ -824,7 +834,7 @@ begin
                   begin
                     uun := UpperCase(unName);
                     unUnits.Add(aProject.LocateOrCreateUnit(unName, ExpandLocation(unLocation),
-                      (Pos(#13#10 + uun + #13#10, aExclUnits) <> 0) or (uun = ugpprof))as TUnit);
+                      IsAnExcludedUnit(uun, aExclUnits) or (uun = ugpprof))as TUnit);
                   end;
                   unName := '';
                   unLocation := '';

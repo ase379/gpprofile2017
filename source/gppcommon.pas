@@ -106,7 +106,7 @@ begin
     LStringList.LoadFromFile(LExcludedUnitsFile);
     if LStringList.Count>0 then
     begin
-      Result := result + sLineBreak + LStringList.GetText();
+      Result := result + sLineBreak + UpperCase(LStringList.GetText());
     end;
     LStringList.Free;
   end;
