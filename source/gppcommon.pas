@@ -80,6 +80,9 @@ const
     'CONTNRS'#13#10'ACCCTRL'#13#10'ANSISTRINGS'#13#10'DATEUTILS'#13#10'VARUTILS'#13#10 +
     'WINTYPES'#13#10'WINPROCS'#13#10'ACTNMAN'#13#10'THEMES'#13#10'ACLAPI'#13#10'OLESERVER';
 
+
+
+function GetDefaultExcludedUnits(): string;
 procedure KillFile(fName: String);
 function WinExecAndWait32(FileName: String; Visibility: integer): LongWord;
 function HasParameter(const aParam: String): Boolean;
@@ -88,8 +91,27 @@ function IsAbsolutePath(const aPath: String): Boolean;
 implementation
 
 uses
-  SysUtils,
-  GpString;
+  System.Classes, System.SysUtils, GpString, Vcl.Forms;
+
+function GetDefaultExcludedUnits(): string;
+var
+  LExcludedUnitsFile : string;
+  LStringList : TStringList;
+begin
+  result := defaultExcludedUnits;
+  LExcludedUnitsFile := ChangeFileExt(Application.ExeName, '.eul');
+  if FileExists(LExcludedUnitsFile) then
+  begin
+    LStringList := TStringList.Create();
+    LStringList.LoadFromFile(LExcludedUnitsFile);
+    if LStringList.Count>0 then
+    begin
+      Result := result + sLineBreak + LStringList.GetText();
+    end;
+    LStringList.Free;
+  end;
+end;
+
 
 procedure KillFile(fName: String);
 begin

@@ -94,7 +94,7 @@ begin
       RootKey := HKEY_CURRENT_USER;
       OpenKey(cRegistryRoot+'\Preferences', True);
       try
-        ExcludedUnits      := ReadString ('ExcludedUnits',defaultExcludedUnits);
+        ExcludedUnits      := ReadString ('ExcludedUnits',GetDefaultExcludedUnits);
         MarkerStyle        := ReadInteger('MarkerStyle',0);
         SpeedSize          := ReadInteger('SpeedSize',1);
         CompilerVersion    := ReadInteger('CompilerVersion',-1);
