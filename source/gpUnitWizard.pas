@@ -57,15 +57,11 @@ uses gppTree;
 
 
 constructor TfmUnitWizard.Create(AOwner: TComponent);
-var
-  LAutoOptions : TVTAutoOptions;
 begin
   inherited;
   fVstSelectUnitTools := TCheckableListTools.Create(vstUnitDependencies, cid_Unit);
-  LAutoOptions := vstUnitDependencies.TreeOptions.AutoOptions;
-  Exclude(LAutoOptions, toAutoTristateTracking);
-  vstUnitDependencies.TreeOptions.AutoOptions := LAutoOptions;
-
+  vstUnitDependencies.TreeOptions.AutoOptions := vstUnitDependencies.TreeOptions.AutoOptions - [toAutoTristateTracking];
+  vstUnitDependencies.TreeOptions.SelectionOptions := vstUnitDependencies.TreeOptions.SelectionOptions - [toSyncCheckboxesWithSelection];
   fLocateUnitCache := TDictionary<string, TUnit>.Create();
   fSelectedUnitNames := TDictionary<string, Cardinal>.Create;
   fProcessedUnitNames := TDictionary<string, Cardinal>.Create;
@@ -89,10 +85,11 @@ begin
   try
     LNewNode := fVstSelectUnitTools.AddEntry(nil,fInitialUnitName);
     if fSelectedUnitNames.ContainsKey(fInitialUnitName) then
-      vstUnitDependencies.CheckState[LNewNode] := TCheckState.csMixedNormal
+      vstUnitDependencies.CheckState[LNewNode] := TCheckState.csCheckedNormal
     else
       vstUnitDependencies.CheckState[LNewNode] := TCheckState.csUncheckedNormal;
     addUnit(LNewNode,fInitialUnitName, false);
+    vstUnitDependencies.Expanded[LNewNode] := True;
   finally
     fVstSelectUnitTools.EndUpdate;
   end;
@@ -130,8 +127,12 @@ begin
       LMissingUnit := fOpenProject.IsMissingUnit(LName);
       if not LMissingUnit then
       begin
-        if not assigned(fVstSelectUnitTools.GetChildByName(aParent, LName)) then
+        LNewNode := fVstSelectUnitTools.GetChildByName(aParent, LName);
+        if not assigned(LNewNode) then
+        begin
           LNewNode := fVstSelectUnitTools.AddEntry(aParent,LName);
+          LNewNode.CheckType := ctCheckBox;
+        end;
       end;
       if Assigned(LNewNode) then
       begin
@@ -143,7 +144,7 @@ begin
         else
         begin
           if fSelectedUnitNames.ContainsKey(LName) then
-            vstUnitDependencies.CheckState[LNewNode] := TCheckState.csMixedNormal
+            vstUnitDependencies.CheckState[LNewNode] := TCheckState.csCheckedNormal
           else
             vstUnitDependencies.CheckState[LNewNode] := TCheckState.csUncheckedNormal;
           if aDoRecursive then
@@ -186,9 +187,7 @@ procedure TfmUnitWizard.vstUnitDependenciesExpanding(Sender: TBaseVirtualTree; N
   var Allowed: Boolean);
 begin
   if assigned(Node.Parent) then
-  begin
     addUnit(Node,fVstSelectUnitTools.GetName(Node), False);
-  end;
 end;
 
 function TfmUnitWizard.Execute(const aOpenProject: TProject; const aInitialUnitName: String): Boolean;
