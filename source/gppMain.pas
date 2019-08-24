@@ -12,7 +12,7 @@ uses
   SynEditHighlighter, SynEditCodeFolding, SynHighlighterPas, System.ImageList,
   System.Actions,gppCurrentPrefs, VirtualTrees,
   virtualTree.tools.checkable,
-  gppmain.FrameInstrumentation, gppmain.FrameAnalysis, gppmain.types;
+  gppmain.FrameInstrumentation, gppmain.FrameAnalysis, gppmain.types, System.Win.TaskbarCore, Vcl.Taskbar;
 
 type
   TAsyncExecuteProc = reference to procedure();
@@ -127,6 +127,7 @@ type
     actSaveInstrumentationSelection: TAction;
     imgListAnalysisSmall: TImageList;
     imgListInstrumentationMedium: TImageList;
+    ApplicationTaskbar: TTaskbar;
     procedure FormCreate(Sender: TObject);
     procedure MRUClick(Sender: TObject; LatestFile: String);
     procedure FormDestroy(Sender: TObject);
@@ -468,7 +469,8 @@ begin
   begin
     FInstrumentationFrame.openProject := nil;
     FreeAndNil(openProject);
-    InitProgressBar(self,'Parsing units...', true, false);
+    InitProgressBar(self,self.ApplicationTaskbar, 'Parsing units...', true, false);
+    SetProgressBarOverlayHint('Parsing units...');
     FInstrumentationFrame.FillUnitTree(true); // clear all listboxes
     openProject := TProject.Create(aProject);
     TSessionData.CurrentProjectName := aProject;
@@ -491,11 +493,12 @@ begin
       begin
         TThread.Synchronize(nil, procedure
         begin
-          HideProgressBar;
           if vErrList.Count > 0 then
           begin
+            SetProgressBarPause();
             TfmSimpleReport.Execute(TSessionData.CurrentProjectName + '- error list', vErrList);
           end;
+          HideProgressBar;
           vErrList.Free;
           RestoreUIAfterParseProject();
           StatusPanel0('Parsing finished, it took '+aNeededSeconds.ToString+' seconds.',false);
@@ -505,7 +508,8 @@ begin
   end
   else
   begin
-    InitProgressBar(self,'Rescanning units...', true, false);
+    InitProgressBar(self,self.ApplicationTaskbar,'Rescanning units...', true, false);
+    SetProgressBarOverlayHint('Rescanning units...');
     RebuildDefines;
     LDefines := frmPreferences.ExtractAllDefines;
     ExecuteAsync(
@@ -648,7 +652,8 @@ begin
   Enabled := false;
   DisablePC2;
   ResetProfile();
-  InitProgressBar(Self,'Parsing profiling results...',false, True);
+  InitProgressBar(Self,self.ApplicationTaskbar,'Parsing profiling results...',false, True);
+  SetProgressBarOverlayHint('Parsing profiling results...');
   StatusPanel0('Loading '+profile,false);
   ExecuteAsync(
     procedure
@@ -675,6 +680,7 @@ begin
     NoProfile;
     actDelUndelProfile.Enabled := false;
     StatusPanel0('Load error',true);
+    SetProgressBarError();
   end
   else
   begin
@@ -1099,7 +1105,7 @@ var
   LShowAll : Boolean;
   LDefines : string;
 begin
-  InitProgressBar(self,'Instrumenting units...',true, false);
+  InitProgressBar(self,self.ApplicationTaskbar,'Instrumenting units...',true, false);
   outDir := GetOutputDir(openProject.Name);
   fnm := MakeSmartBackslash(outDir)+ChangeFileExt(ExtractFileName(openProject.Name),'.gpi');
   LShowAll := FInstrumentationFrame.chkShowAll.Checked;

@@ -3638,4 +3638,10 @@ object frmMain: TfrmMain
       000000000000000000000000FFFFFFFFF0000000000000000000000000000000
       00000000000000000000000000000000000000000000}
   end
+  object ApplicationTaskbar: TTaskbar
+    TaskBarButtons = <>
+    TabProperties = []
+    Left = 736
+    Top = 336
+  end
 end
