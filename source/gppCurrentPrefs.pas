@@ -5,6 +5,9 @@ interface
 type
 
   TGlobalPreferences = class
+  private
+    class function GetRegPathToProject(): string;
+    class function GetRegPathToProfile(): string;
   public
   class var
     ExcludedUnits         : string;
@@ -146,7 +149,7 @@ end; { SavePreferences }
 
 class procedure TGlobalPreferences.SetProjectPref(name: string; value: variant);
 begin
-  TGpRegistryTools.SetPref('\Projects\'+ReplaceAll(TSessionData.CurrentProjectName,'\','/'),name,value);
+  TGpRegistryTools.SetPref(GetRegPathToProject(),name,value);
 end; { SetProjectPref }
 
 class function TGlobalPreferences.GetProjectPref(name: string; defval: variant): variant;
@@ -154,18 +157,30 @@ begin
   if not TSessionData.HasOpenProject then
     Result := defval
   else
-    Result := TGpRegistryTools.GetPref('\Projects\'+ReplaceAll(TSessionData.CurrentProjectName,'\','/'),name,defval);
-end; { GetProjectPref }
+    Result := TGpRegistryTools.GetPref(GetRegPathToProject(),name,defval);
+end;
+
+class function TGlobalPreferences.GetRegPathToProfile: string;
+begin
+  result := '\Profiles\'+ReplaceAll(TSessionData.CurrentProjectName,'\','/');
+end;
+
+class function TGlobalPreferences.GetRegPathToProject: string;
+begin
+  result := '\Projects\'+ReplaceAll(TSessionData.CurrentProjectName,'\','/');
+end;
+
+{ GetProjectPref }
 
 class procedure TGlobalPreferences.DelProjectPref(name: string);
 begin
   if TSessionData.HasOpenProject then
-    TGpRegistryTools.DelPref('\Projects\'+ReplaceAll(TSessionData.CurrentProjectName,'\','/'),name);
+    TGpRegistryTools.DelPref(GetRegPathToProject(),name);
 end; { DelProjectPref }
 
 class procedure TGlobalPreferences.SetProfilePref(name: string; value: variant);
 begin
-  TGpRegistryTools.SetPref('\Profiles\'+ReplaceAll(TSessionData.CurrentProjectName,'\','/'),name,value);
+  TGpRegistryTools.SetPref(GetRegPathToProfile(),name,value);
 end; { SetProfilePref }
 
 class function TGlobalPreferences.GetProfilePref(name: string; defval: variant): variant;
@@ -173,7 +188,7 @@ begin
   if not TSessionData.HasOpenProject then
     Result := defval
   else
-    Result := TGpRegistryTools.GetPref('\Profiles\'+ReplaceAll(TSessionData.CurrentProjectName,'\','/'),name,defval);
+    Result := TGpRegistryTools.GetPref(GetRegPathToProfile(),name,defval);
 end;
 
 { TSessionData }
