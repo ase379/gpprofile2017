@@ -24,6 +24,8 @@ type
     prName: string;
     prUnit: TUnit;
     prUnits: TGlbUnitList;
+
+
   public
     constructor Create(projName: string);
     destructor Destroy; override;
@@ -112,12 +114,12 @@ procedure TProject.Parse(aExclUnits: String;
 var
   un: TUnit;
   vOldCurDir: string;
+
 begin
   PrepareComments(aCommentType);
-  if Last(aExclUnits, 2) <> #13#10 then
-    aExclUnits := aExclUnits + #13#10;
-  if First(aExclUnits, 2) <> #13#10 then
-    aExclUnits := #13#10 + aExclUnits;
+
+  StoreExcludedUnits(aExclUnits);
+
   prUnits.ClearNodes;
   prUnit := self.LocateOrCreateUnit(prName, '', False) as TUnit;
   prUnit.unInProjectDir := true;
@@ -131,7 +133,7 @@ begin
     repeat
       DoNotify(un.unName);
       try
-        un.Parse(self, aExclUnits, aSearchPath, ExtractFilePath(prName),
+        un.Parse(self, aSearchPath, ExtractFilePath(prName),
           aConditionals, False, aParseAsm);
       except
         on e: EUnitInSearchPathNotFoundError do
@@ -290,6 +292,8 @@ var
   LUnitEnumor: TRootNode<TUnit>.TEnumerator;
 begin
   PrepareComments(aCommentType);
+  StoreExcludedUnits(aExclUnits);
+
   Rescan := TList<TUnit>.Create;
   try
     idt := TIDTable.Create;
@@ -307,7 +311,7 @@ begin
             un := LUnitEnumor.Current.Data;
 
             if un.NeedsToBeReparsed(aUseFileDate) then
-              un.Parse(self, aExclUnits, aSearchPath, ExtractFilePath(prName),aConditionals, true, aParseAsm);
+              un.Parse(self, aSearchPath, ExtractFilePath(prName),aConditionals, true, aParseAsm);
 
             if (not un.unExcluded) and (un.unProcs.Count > 0) then
             begin
@@ -347,7 +351,7 @@ begin
     for i := 0 to Rescan.Count - 1 do
     begin
       DoNotify(Rescan[i].unFullName, Rescan[i].unName, true);
-      Rescan[i].Parse(self, '', aSearchPath, ExtractFilePath(prName),
+      Rescan[i].Parse(self, aSearchPath, ExtractFilePath(prName),
         aConditionals, true, aParseAsm);
     end;
   finally
@@ -408,12 +412,12 @@ var
   vOldCurDir: string;
 begin
   PrepareComments(aCommentType);
+  StoreExcludedUnits(aExclUnits);
+
   vOldCurDir := GetCurrentDir;
   if not SetCurrentDir(ExtractFilePath(prUnit.unFullName)) then
     Assert(False);
   try
-    if Last(aExclUnits, 2) <> #13#10 then
-      aExclUnits := aExclUnits + #13#10;
     with prUnits do
     begin
       LUnitEnumor := GetEnumerator();
@@ -421,7 +425,7 @@ begin
       begin
         un := LUnitEnumor.Current.Data;
         if un.NeedsToBeReparsed(aUseFileDate) then
-          un.Parse(self, aExclUnits, aSearchPath, ExtractFilePath(prName),
+          un.Parse(self, aSearchPath, ExtractFilePath(prName),
             aConditionals, true, aParseAsm);
       end;
     end;

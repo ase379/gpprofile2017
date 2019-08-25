@@ -29,6 +29,7 @@ function GetDefaultExcludedUnits(): string;
 var
   LExcludedUnitsFile : string;
   LStringList : TStringList;
+  i : Integer;
 begin
   result := '';
   LExcludedUnitsFile := ChangeFileExt(Application.ExeName, '.eul');
@@ -36,6 +37,10 @@ begin
   begin
     LStringList := TStringList.Create();
     LStringList.LoadFromFile(LExcludedUnitsFile);
+    for i := LStringList.Count-1 downto 0 do
+      if Trim(LStringList[i]) ='' then
+        LStringList.Delete(i);
+    LStringList.Sort;
     if LStringList.Count>0 then
     begin
       Result := result + sLineBreak + UpperCase(LStringList.GetText());

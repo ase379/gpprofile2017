@@ -27,9 +27,8 @@ type
     fProfileAPI: string;
     fGpprofDot: string;
 
-
     fMissingUnitNames : TDictionary<String, Cardinal>;
-
+    fExcludedUnitDict : TDictionary<string, Byte>;
   protected
     procedure PrepareComments(const aCommentType: TCommentType);
 
@@ -38,6 +37,8 @@ type
     constructor Create();
     destructor Destroy; override;
     function GetFullUnitName(): string;
+    procedure StoreExcludedUnits(aExclUnits: String);
+    function IsAnExcludedUnit(const aUnitName : string):boolean;
     property prAPIIntro: string read fAPIIntro;
     property prMissingUnitNames : TDictionary<String, Cardinal> read fMissingUnitNames;
     property prConditStart: string read fConditStart;
@@ -62,25 +63,33 @@ type
 
 implementation
 
+uses
+  System.Classes, System.SysUtils, GpString;
+
 { TBaseProject }
 
 constructor TBaseProject.Create;
 begin
   inherited Create();
   fMissingUnitNames := TDictionary<String, Cardinal>.Create;
-
+  fExcludedUnitDict := TDictionary<string, Byte>.Create();
 end;
 
 destructor TBaseProject.Destroy;
 begin
   fMissingUnitNames.free;
-
+  fExcludedUnitDict.Free;
   inherited;
 end;
 
 function TBaseProject.GetFullUnitName: string;
 begin
   result := fFullUnitName;
+end;
+
+function TBaseProject.IsAnExcludedUnit(const aUnitName: string): boolean;
+begin
+  result := fExcludedUnitDict.ContainsKey(UpperCase(aUnitName));
 end;
 
 procedure TBaseProject.PrepareComments(const aCommentType: TCommentType);
@@ -121,7 +130,31 @@ begin
   fAPIIntro := 'GPP:';
   fNameThreadForDebugging := 'namethreadfordebugging';
   fGpprofDot := 'gpprof.';
-end; { TProject.PrepareComments }
+end;
+
+procedure TBaseProject.StoreExcludedUnits(aExclUnits: String);
+var
+  LExcludedList : TStringList;
+  i : Integer;
+begin
+  if Last(aExclUnits, 2) <> #13#10 then
+    aExclUnits := aExclUnits + #13#10;
+  if First(aExclUnits, 2) <> #13#10 then
+    aExclUnits := #13#10 + aExclUnits;
+  LExcludedList := TStringList.Create();
+  LExcludedList.Duplicates := TDuplicates.dupIgnore;
+  LExcludedList.CaseSensitive := false;
+  LExcludedList.SetText(PWideChar(aExclUnits));
+  for i := 0 to LExcludedList.Count -1 do
+  begin
+    if Length(Trim(LExcludedList[i])) = 0 then
+      Continue;
+    fExcludedUnitDict.AddOrSetValue(UpperCase(LExcludedList[i]),0);
+  end;
+  LExcludedList.Free;
+end;
+
+{ TProject.PrepareComments }
 
 
 end.

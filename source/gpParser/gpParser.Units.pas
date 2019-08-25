@@ -58,7 +58,6 @@ type
     /// </summary>
     function RemoveLastParser(): boolean;
 
-    class function IsAnExcludedUnit(const aUnitName, aExclUnits : string): boolean;static;
 
     class function ExtractCommentBody(const comment: string): string; static;
     class function ExtractParameter(const comment: string; const parameter: Integer): string; static;
@@ -83,7 +82,7 @@ type
     unFileDate: TDateTime;
     constructor Create(const aUnitName: String;const aUnitLocation: String = ''; aExcluded: boolean = False);
     destructor Destroy; override;
-    procedure Parse(aProject: TBaseProject; const aExclUnits, aSearchPath,aDefaultDir, aConditionals: string;
+    procedure Parse(aProject: TBaseProject; const aSearchPath,aDefaultDir, aConditionals: string;
       const aRescan, aParseAsm: boolean);
     procedure CheckInstrumentedProcs;
     function LocateUnit(unitName: string): TUnit;
@@ -557,15 +556,7 @@ begin
   end;
 end;
 
-class function TUnit.IsAnExcludedUnit(const aUnitName, aExclUnits : string):boolean;
-var
-  LSearchKey : string;
-begin
-  LSearchKey := #13#10 + UpperCase(aUnitName) + #13#10;
-  result := (Pos(LSearchKey, aExclUnits) <> 0);
-end;
-
-procedure TUnit.Parse(aProject: TBaseProject; const aExclUnits, aSearchPath,
+procedure TUnit.Parse(aProject: TBaseProject; const aSearchPath,
   aDefaultDir, aConditionals: String; const aRescan, aParseAsm: boolean);
 type
   TParseState = (stScan, stParseUses
@@ -834,7 +825,7 @@ begin
                   begin
                     uun := UpperCase(unName);
                     unUnits.Add(aProject.LocateOrCreateUnit(unName, ExpandLocation(unLocation),
-                      IsAnExcludedUnit(uun, aExclUnits) or (uun = ugpprof))as TUnit);
+                      (uun = ugpprof) or aProject.IsAnExcludedUnit(uun))as TUnit);
                   end;
                   unName := '';
                   unLocation := '';
