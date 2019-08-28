@@ -27,6 +27,8 @@ type
     procedure setCancel(const Value: boolean);
     function getText: string;
     procedure setText(const Value: string);
+    function getPercentage: Integer;
+    procedure setPercentage(const Value: Integer);
     { Private declarations }
   public
     constructor Create(AOwner: TComponent);override;
@@ -34,13 +36,12 @@ type
     property Cancel : boolean read fCancel write setCancel;
     property Text : string read getText write setText;
     property CancelPressed : boolean read fCancelPressed;
+    property Percentage : Integer read getPercentage write setPercentage;
     property ProgressTaskbar : TTaskBar read fProgressTaskbar write fProgressTaskbar;
   end;
 
 
   procedure InitProgressBar(const aOwner : TForm;const aTaskBar : TTaskbar;const aMessage : string;const aMarquee, aCancel: Boolean);
-  procedure SetProgressBarNormal();
-  procedure SetProgressBarIndeterminante();
   procedure SetProgressBarPause();
   procedure SetProgressBarError();
   procedure SetProgressBarOverlayHint(const aHint : string);
@@ -73,16 +74,14 @@ begin
   frmLoadProgress.Show;
 end;
 
-procedure SetProgressBarNormal();
-begin
-
-end;
-
-procedure SetProgressBarIndeterminante();
+procedure SetProgressBarPercent(const aValue : Integer);
 begin
   if assigned(frmLoadProgress.ProgressTaskbar) then
-    frmLoadProgress.ProgressTaskbar.ProgressState := TTaskBarProgressState.Indeterminate;
+  begin
+    frmLoadProgress.ProgressTaskbar.ProgressValue := aValue;
+  end;
 end;
+
 
 procedure SetProgressBarPause();
 begin
@@ -105,6 +104,10 @@ end;
 
 procedure HideProgressBar();
 begin
+  frmLoadProgress.setMarquee(False);
+  frmLoadProgress.Percentage := 0;
+  if assigned(frmLoadProgress.ProgressTaskbar) then
+    frmLoadProgress.ProgressTaskbar.ProgressState := TTaskBarProgressState.None;
   FreeAndNil(frmLoadProgress);
 end;
 
@@ -113,6 +116,11 @@ end;
 procedure TfrmLoadProgress.FormKeyPress(Sender: TObject; var Key: Char);
 begin
   if Key = #27 then Hide;
+end;
+
+function TfrmLoadProgress.getPercentage: Integer;
+begin
+  result := frmLoadProgress.ProgressBar1.Position;
 end;
 
 function TfrmLoadProgress.getText: string;
@@ -146,8 +154,22 @@ begin
   else
   begin
     if assigned(ProgressTaskbar) then
+    begin
       ProgressTaskbar.ProgressState := TTaskBarProgressState.Normal;
+      ProgressTaskbar.ProgressMaxValue := 100;
+    end;
     ProgressBar1.Style := TProgressBarStyle.pbstNormal;
+  end;
+end;
+
+procedure TfrmLoadProgress.setPercentage(const Value: Integer);
+begin
+  ProgressBar1.Position := Value;
+  if Assigned(ProgressTaskbar) then
+  begin
+    ProgressTaskbar.ProgressValue := ProgressTaskbar.ProgressValue+1;
+    if ProgressTaskbar.ProgressValue >= ProgressTaskbar.ProgressMaxValue then
+      ProgressTaskbar.ProgressValue := ProgressTaskbar.ProgressMaxValue;
   end;
 end;
 

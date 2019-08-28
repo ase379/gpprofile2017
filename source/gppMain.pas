@@ -642,7 +642,7 @@ end;
 
 function TfrmMain.ParseProfileCallback(percent: integer): boolean;
 begin
-  frmLoadProgress.ProgressBar1.Position := percent;
+  frmLoadProgress.Percentage := percent;
   Result := not frmLoadProgress.CancelPressed;
 end; { TfrmMain.ParseProfileCallback }
 
