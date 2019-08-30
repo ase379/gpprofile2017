@@ -12,7 +12,7 @@ uses
   SynEditHighlighter, SynEditCodeFolding, SynHighlighterPas, System.ImageList,
   System.Actions,gppCurrentPrefs, VirtualTrees,
   virtualTree.tools.checkable,
-  gppmain.FrameInstrumentation, gppmain.FrameAnalysis, gppmain.types, System.Win.TaskbarCore, Vcl.Taskbar;
+  gppmain.FrameInstrumentation, gppmain.FrameAnalysis, gppmain.types, System.Win.TaskbarCore, Vcl.Taskbar, Vcl.JumpList;
 
 type
   TAsyncExecuteProc = reference to procedure();
@@ -128,6 +128,7 @@ type
     imgListAnalysisSmall: TImageList;
     imgListInstrumentationMedium: TImageList;
     ApplicationTaskbar: TTaskbar;
+    JumpList1: TJumpList;
     procedure FormCreate(Sender: TObject);
     procedure MRUClick(Sender: TObject; LatestFile: String);
     procedure FormDestroy(Sender: TObject);
@@ -209,6 +210,8 @@ type
     inLVResize                : boolean;
     FInstrumentationFrame     : TfrmMainInstrumentation;
     FProfilingFrame           : TfrmMainProfiling;
+    procedure ReloadJumpList();
+
     procedure ExecuteAsync(const aProc: TAsyncExecuteProc;const aOnFinishedProc: TAsyncFinishedProc;const aActionName : string);
     procedure ParseProject(const aProject: string; const aJustRescan: boolean);
     procedure LoadProject(fileName: string; defaultDelphi: string = '');
@@ -452,6 +455,7 @@ begin
   actRemoveInstrumentation.Enabled := true;
   actRun.Enabled                   := true;
   actProjectOptions.Enabled        := true;
+
   actLoadInstrumentationSelection.Enabled := true;
   actSaveInstrumentationSelection.Enabled := true;
   FInstrumentationFrame.openProject := openProject;
@@ -566,12 +570,9 @@ end;
 
 procedure TfrmMain.LoadProject(fileName: string; defaultDelphi: string = '');
 begin
-  if not FileExists(fileName) then
-  begin
-    StatusPanel0('File "'+fileName+'" does not exist!',true);
-    raise Exception.Create('File "'+fileName+'" does not exist.');
-  end
-  else begin
+  try
+    if not FileExists(fileName) then
+      raise Exception.Create('File '+fileName+ ' not found.');
     MRU.LatestFile := fileName;
     currentProject := ExtractFileName(fileName);
     ParseProject(fileName,false);
@@ -583,7 +584,16 @@ begin
     PageControl1.ActivePage := tabInstrumentation;
     SetCaption;
     SetSource;
+  except
+    on e:Exception do
+    if ShowErrorYesNo('Error while loading file "'+fileName+'"'+slinebreak+'Delete it from the MRU list ?') = mrYes then
+    begin
+      MRU.DeleteFromMenu(fileName);
+      MRU.SaveToRegistry();
+      MRU.LoadFromRegistry();
+    end;
   end;
+  ReloadJumpList();
 end; { TfrmMain.LoadProject }
 
 procedure TfrmMain.RebuildDelphiVer;
@@ -728,15 +738,23 @@ end;
 
 procedure TfrmMain.LoadProfile(fileName: string);
 begin
-  if not FileExists(fileName) then StatusPanel0('File '+fileName+' does not exist!',true)
-  else begin
+  try
+    if not FileExists(fileName) then
+      raise Exception.Create('File '+fileName+ ' not found.');
     MRUPrf.LatestFile := fileName;
     currentProfile := ExtractFileName(fileName);
     PageControl1.ActivePage := tabAnalysis;
     ClearSource;
     ParseProfile(fileName);
-
+  except on e:Exception do
+    if ShowErrorYesNo('Error while loading file "'+fileName+'"'+slinebreak+'Delete it from the MRU list ?') = mrYes then
+    begin
+      MRUPrf.DeleteFromMenu(fileName);
+      MRUPrf.SaveToRegistry();
+      MRUPrf.LoadFromRegistry();
+    end;
   end;
+  ReloadJumpList();
 end; { TfrmMain.LoadProfile }
 
 procedure TfrmMain.DelphiVerClick(Sender: TObject);
@@ -928,6 +946,7 @@ begin
   MRU.LoadFromRegistry;
   MRUPrf.RegistryKey := cRegistryRoot+'\MRU\PRF';
   MRUPrf.LoadFromRegistry;
+  ReloadJumpList();
   undelProject := '';
   SlidersMoved;
   
@@ -939,6 +958,32 @@ begin
     tbrInstrument.Images := imgListInstrumentationMedium;
   end;
   TDragNDropHandler.setDragNDropEnabled(self.Handle, true);
+end;
+
+procedure TfrmMain.ReloadJumpList();
+
+  procedure AddMenu(const aMenu: TGPMRUFiles; const aCategory : string);
+  var
+    i : integer;
+    LCategoryIndex : Integer;
+    LPath : string;
+  begin
+    LCategoryIndex := JumpList1.AddCategory(aCategory);
+    for i := 0 to aMenu.PopupMenu.Items.Count-1 do
+    begin
+      LPath := aMenu.PopupMenu.Items[i].Caption;
+      if Length(LPath) < 4 then
+        Continue;
+      LPath := Copy(LPath,4, 256);
+      JumpList1.AddItemToCategory(LCategoryIndex, ExtractFileName(LPath),'',LPath);
+    end;
+  end;
+
+begin
+  JumpList1.ApplicationID := 'GpProf2017';
+  JumpList1.CustomCategories.Clear();
+  AddMenu(MRU, 'Instrument');
+  AddMenu(MRUPrf, 'Analyse');
 end;
 
 procedure TfrmMain.MRUClick(Sender: TObject; LatestFile: String);
@@ -1346,18 +1391,7 @@ end;
 procedure TfrmMain.MRUPrfClick(Sender: TObject; LatestFile: String);
 begin
   if (openProfile = nil) or (openProfile.FileName <> LatestFile) or loadCanceled then
-  try
-    if not FileExists(LatestFile) then
-      raise Exception.Create('File '+LatestFile+ ' not found.');
     LoadProfile(LatestFile);
-  except on e:Exception do
-    if ShowErrorYesNo('Error while loading file "'+LatestFile+'"'+slinebreak+'Delete it from the MRU list ?') = mrYes then
-    begin
-      MRUPrf.DeleteFromMenu(LatestFile);
-      MRUPrf.SaveToRegistry();
-      MRUPrf.LoadFromRegistry();
-    end;
-  end;
 end;
 
 procedure TfrmMain.actInstrumentRunExecute(Sender: TObject);
@@ -1537,11 +1571,20 @@ const
         end;
       end;
       UseDelphiSettings(delphiVer);
-      if (ParamCount > 1) or (defDelphi = '') then begin
-        dpkName := ChangeFileExt(ParamStr(1),'.dpk');
-        if FileExists(dpkName)
-          then LoadProject(dpkName,defDelphi)
-          else LoadProject(ChangeFileExt(ParamStr(1),'.dpr'),defDelphi);
+      if (ParamCount > 1) or (defDelphi = '') then
+      begin
+        if ParamStr(1).EndsWith('.prf', true) then
+        begin
+          LoadProfile(ParamStr(1));
+        end
+        else
+        begin
+          dpkName := ChangeFileExt(ParamStr(1),'.dpk');
+          if FileExists(dpkName) then
+            LoadProject(dpkName,defDelphi)
+          else
+            LoadProject(ChangeFileExt(ParamStr(1),'.dpr'),defDelphi);
+        end;
       end;
     end
     else begin

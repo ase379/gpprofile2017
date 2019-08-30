@@ -3644,4 +3644,13 @@ object frmMain: TfrmMain
     Left = 736
     Top = 336
   end
+  object JumpList1: TJumpList
+    AutoRefresh = True
+    Enabled = True
+    CustomCategories = <>
+    ShowRecent = True
+    TaskList = <>
+    Left = 672
+    Top = 336
+  end
 end
