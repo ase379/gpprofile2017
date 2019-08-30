@@ -283,20 +283,18 @@ procedure TProject.Instrument(aProjectDirOnly: boolean; aExclUnits: String;
 
 var
   vOldCurDir: string;
-  un: TUnit;
-  idt: TIDTable;
-  Rescan: TList<TUnit>;
-  i: Integer;
-  unAny: boolean;
-  anyInst: boolean;
+  LUnit: TUnit;
+  LProcIdTable: TIDTable;
+  LIsAnyUnitInProjectInstrumented : Boolean;
+  LIsAnyProcOfUnitInstrumented: boolean;
+  LHasBeenReparsed : Boolean;
   LUnitEnumor: TRootNode<TUnit>.TEnumerator;
+  LOldProcs : TProcList;
 begin
   PrepareComments(aCommentType);
   StoreExcludedUnits(aExclUnits);
 
-  Rescan := TList<TUnit>.Create;
-  try
-    idt := TIDTable.Create;
+    LProcIdTable := TIDTable.Create;
     try
       vOldCurDir := GetCurrentDir;
       if not SetCurrentDir(ExtractFileDir(prUnit.unFullName)) then
@@ -304,30 +302,38 @@ begin
       try
         with prUnits do
         begin
-          anyInst := False;
+          LIsAnyUnitInProjectInstrumented := False;
           LUnitEnumor := GetEnumerator();
           while LUnitEnumor.MoveNext do
           begin
-            un := LUnitEnumor.Current.Data;
+            LUnit := LUnitEnumor.Current.Data;
 
-            if un.NeedsToBeReparsed(aUseFileDate) then
-              un.Parse(self, aSearchPath, ExtractFilePath(prName),aConditionals, true, aParseAsm);
-
-            if (not un.unExcluded) and (un.unProcs.Count > 0) then
+            LHasBeenReparsed := LUnit.NeedsToBeReparsed(aUseFileDate);
+            if LUnit.NeedsToBeReparsed(aUseFileDate) then
             begin
-              DoNotify(un.unFullName, un.unName, False);
+              LOldProcs := LUnit.unProcs.Clone;
+              try
+                LUnit.Parse(self, aSearchPath, ExtractFilePath(prName),aConditionals, true, aParseAsm);
+                LUnit.unProcs.ApplyProcSelectionIfExists(LOldProcs);
+              finally
+                LOldProcs.Free;
+              end;
+            end;
 
-              unAny := un.AnyInstrumented;
-              if unAny then
-                anyInst := true;
+            if (not LUnit.unExcluded) and (LUnit.unProcs.Count > 0) then
+            begin
+              DoNotify(LUnit.unFullName, LUnit.unName, False);
 
-              if un.AnyChange or unAny then
+              LIsAnyProcOfUnitInstrumented := LUnit.AnyInstrumented;
+              if LIsAnyProcOfUnitInstrumented then
+                LIsAnyUnitInProjectInstrumented := true;
+
+              if LUnit.AnyChange or LIsAnyProcOfUnitInstrumented or LHasBeenReparsed then
               begin
-                un.Instrument(self, idt, aKeepDate, aBackupFile);
-                Rescan.Add(un);
+                  LUnit.Instrument(self, LProcIdTable, aKeepDate, aBackupFile);
               end
               else
-                un.RegisterProcs(idt);
+                LUnit.RegisterProcs(LProcIdTable);
             end;
           end;
           LUnitEnumor.Free;
@@ -336,27 +342,18 @@ begin
           raise Exception.Create('Could not create output folder ' +
             ExtractFileDir(aIncFileName) + ': ' +
             SysErrorMessage(GetLastError));
-        idt.Dump(aIncFileName);
+        LProcIdTable.Dump(aIncFileName);
       finally
         SetCurrentDir(vOldCurDir);
       end;
     finally
-      idt.Free;
+      LProcIdTable.Free;
     end;
-    if not anyInst then
+    if not LIsAnyUnitInProjectInstrumented then
     begin
       System.SysUtils.DeleteFile(aIncFileName);
       System.SysUtils.DeleteFile(ChangeFileExt(aIncFileName, '.gpd'));
     end;
-    for i := 0 to Rescan.Count - 1 do
-    begin
-      DoNotify(Rescan[i].unFullName, Rescan[i].unName, true);
-      Rescan[i].Parse(self, aSearchPath, ExtractFilePath(prName),
-        aConditionals, true, aParseAsm);
-    end;
-  finally
-    Rescan.Free;
-  end;
 end; { TProject.Instrument }
 
 function TProject.NoneInstrumented(projectDirOnly: boolean): boolean;

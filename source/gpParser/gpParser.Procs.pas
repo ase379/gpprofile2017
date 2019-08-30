@@ -44,6 +44,8 @@ type
     constructor Create(procName: string; offset: Integer = 0;
       lineNum: Integer = 0; headerLineNum: Integer = 0);
     destructor Destroy; override;
+
+    function Clone(): TProc;
     // the unicode name
     property Name : String read GetName;
     property prHeaderLineNum: integer read fHeaderLineNum;
@@ -75,7 +77,8 @@ type
     procedure AddInstrumented(procName: string;cmtEnterBegin, cmtEnterEnd, cmtExitBegin, cmtExitEnd: Integer);
     procedure SetAllInstrumented(const aValue : Boolean);
     function FindNode(const aLookupKey : string; out aResultNode: INode<TProc>) : boolean; overload;
-
+    function Clone() : TProcList;
+    procedure ApplyProcSelectionIfExists(const aProcList : TProcList);
   end;
 
 
@@ -124,6 +127,21 @@ begin
   inherited;
 end; { TProc.Destroy }
 
+
+function TProc.Clone: TProc;
+var
+  LNamesEnumor: TRootNode<TProcSetThreadName>.TEnumerator;
+begin
+  result := TProc.Create(prName, fStartOffset, fStartLineNum, fHeaderLineNum);
+  result.fInstrumented := fInstrumented;
+  LNamesEnumor := fSetThreadNames.GetEnumerator();
+  while LNamesEnumor.MoveNext do
+  begin
+    Result.fSetThreadNames.AddPosition(LNamesEnumor.Current.Data.tpstnPos,LNamesEnumor.Current.Data.tpstnWithSelf);
+  end;
+  LNamesEnumor.Free;
+end;
+
 function TProc.GetName: String;
 begin
   result := String(prName);
@@ -142,6 +160,35 @@ begin
   inherited Create();
   CompareFunc := @CompareProc;
 end;
+
+function TProcList.Clone: TProcList;
+var
+  LProcEnumor: TRootNode<TProc>.TEnumerator;
+begin
+  Result := TProcList.Create();
+  LProcEnumor := GetEnumerator();
+  while LProcEnumor.MoveNext do
+    result.AppendNode(LProcEnumor.Current.Data.Clone());
+  LProcEnumor.Free;
+end;
+
+procedure TProcList.ApplyProcSelectionIfExists(const aProcList: TProcList);
+var
+  LProcEnumor: TRootNode<TProc>.TEnumerator;
+  LFoundNode : INode<TProc>;
+begin
+  LProcEnumor := aProcList.GetEnumerator();
+  while LProcEnumor.MoveNext do
+  begin
+    self.FindNode(LProcEnumor.Current.Data.GetName, LFoundNode);
+    if assigned(LFoundNode) then
+    begin
+      LFoundNode.Data.fInstrumented := LProcEnumor.Current.Data.fInstrumented;
+    end;
+  end;
+  LProcEnumor.Free;
+end;
+
 
 function TProcList.FindNode(const aLookupKey: string; out aResultNode: INode<TProc>): boolean;
 begin
@@ -252,7 +299,6 @@ begin
   result := AnsiLowerCase(aName);
 end;
 
-{ TProcList.AddInstrumented }
 
 
 end.
