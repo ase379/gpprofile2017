@@ -50,7 +50,7 @@ type
     actMakeCopyProfile: TAction;
     actRenameMoveProfile: TAction;
     tbrInstrument: TToolBar;
-    BtnOpenProject: TToolButton;
+    btnOpenProject: TToolButton;
     btnRescanProject: TToolButton;
     btnInstrument: TToolButton;
     btnRemoveInstrumentation: TToolButton;
@@ -118,15 +118,17 @@ type
     SynPasSyn: TSynPasSyn;
     ImageListMedium: TImageList;
     imgListInstrumentationSmall: TImageList;
-    ToolButton1: TToolButton;
-    ToolButton2: TToolButton;
-    ToolButton3: TToolButton;
+    btnLoadSelection: TToolButton;
+    btnSaveSelection: TToolButton;
+    btnInstrumentDelimiter3: TToolButton;
     actLoadInstrumentationSelection: TAction;
     actSaveInstrumentationSelection: TAction;
     imgListAnalysisSmall: TImageList;
     imgListInstrumentationMedium: TImageList;
     ApplicationTaskbar: TTaskbar;
     JumpList1: TJumpList;
+    popRecentGis: TPopupMenu;
+    MRUGis: TGPMRUFiles;
     procedure FormCreate(Sender: TObject);
     procedure MRUClick(Sender: TObject; LatestFile: String);
     procedure FormDestroy(Sender: TObject);
@@ -188,6 +190,7 @@ type
     procedure clbClassesKeyPress(Sender: TObject; var Key: Char);
     procedure actLoadInstrumentationSelectionExecute(Sender: TObject);
     procedure actSaveInstrumentationSelectionExecute(Sender: TObject);
+    procedure MRUGisClick(Sender: TObject; LatestFile: string);
   private
     openProject               : TProject;
     openProfile               : TResults;
@@ -944,6 +947,8 @@ begin
   MRU.LoadFromRegistry;
   MRUPrf.RegistryKey := cRegistryRoot+'\MRU\PRF';
   MRUPrf.LoadFromRegistry;
+  MRUGis.RegistryKey := cRegistryRoot+'\MRU\GIS';
+  MRUGis.LoadFromRegistry;
   ReloadJumpList();
   undelProject := '';
   SlidersMoved;
@@ -982,6 +987,7 @@ begin
   JumpList1.CustomCategories.Clear();
   AddMenu(MRU, 'Instrument');
   AddMenu(MRUPrf, 'Analyse');
+  // GIS is excluded, as we need to load an instrument project for GIS
 end;
 
 procedure TfrmMain.MRUClick(Sender: TObject; LatestFile: String);
@@ -990,6 +996,14 @@ begin
     CloseDelphiHandles;
     LoadProject(LatestFile);
   end;
+end;
+
+procedure TfrmMain.MRUGisClick(Sender: TObject; LatestFile: string);
+begin
+  openProject.LoadInstrumentalizationSelection(LatestFile);
+  TSessionData.SetLastSelectedGisFolder(LatestFile);
+  // an auto-click is done... ignore instrumentation upon select
+  FInstrumentationFrame.TriggerSelectionReload;
 end;
 
 procedure TfrmMain.SaveMetrics(layoutName: string);
@@ -1063,6 +1077,7 @@ begin
   end;
   MRU.SaveToRegistry;
   MRUPrf.SaveToRegistry;
+  MRUGis.SaveToRegistry;
   FreeAndNil(openProject);
   ResetProfile();
 end;
@@ -1985,19 +2000,28 @@ begin
 
   if openProject = nil then
     Exit;
-  LFilename := ChangeFileExt(TSessionData.GetLastSelectedGisFolder(),TUIStrings.GPProfInstrumentationSelectionExt);
   LOpenDialog := TOpenDialog.Create(self);
-  LOpenDialog.DefaultExt := 'gis';
-  LOpenDialog.FileName := ExtractFilename(LFilename);
-  LOpenDialog.InitialDir := ExtractFileDir(LFilename);
-  LOpenDialog.Filter := TUIStrings.InstrumentationSelectionFilter();
-  LOpenDialog.Title := 'Load instrumentation selection...';
-  if LOpenDialog.Execute then
-  begin
-    openProject.LoadInstrumentalizationSelection(LOpenDialog.FileName);
-    TSessionData.SetLastSelectedGisFolder(LOpenDialog.FileName);
-    // an auto-click is done... ignore instrumentation upon select
-    FInstrumentationFrame.TriggerSelectionReload;
+  try
+    LFilename := ChangeFileExt(TSessionData.GetLastSelectedGisFolder(),TUIStrings.GPProfInstrumentationSelectionExt);
+    LOpenDialog.DefaultExt := 'gis';
+    LOpenDialog.FileName := ExtractFilename(LFilename);
+    LOpenDialog.InitialDir := ExtractFileDir(LFilename);
+    LOpenDialog.Filter := TUIStrings.InstrumentationSelectionFilter();
+    LOpenDialog.Title := 'Load instrumentation selection...';
+    if LOpenDialog.Execute then
+    begin
+      LFilename := LOpenDialog.FileName;
+      MRUGisClick(self,LFilename);
+      MRUGis.LatestFile := LFilename;
+    end;
+  except
+    on e:Exception do
+    if ShowErrorYesNo('Error while loading file "'+LFilename+'"'+slinebreak+'Delete it from the MRU list ?') = mrYes then
+    begin
+      MRUGis.DeleteFromMenu(LFilename);
+      MRUGis.SaveToRegistry();
+      MRUGis.LoadFromRegistry();
+    end;
   end;
   LOpenDialog.Free;
 end;

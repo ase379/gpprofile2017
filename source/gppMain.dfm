@@ -88,7 +88,7 @@ object frmMain: TfrmMain
             ShowCaptions = True
             ShowHint = True
             TabOrder = 0
-            object BtnOpenProject: TToolButton
+            object btnOpenProject: TToolButton
               Left = 0
               Top = 0
               Action = actOpen
@@ -132,28 +132,30 @@ object frmMain: TfrmMain
               ImageIndex = 9
               Style = tbsSeparator
             end
-            object ToolButton1: TToolButton
+            object btnLoadSelection: TToolButton
               Left = 553
               Top = 0
               Action = actLoadInstrumentationSelection
+              DropdownMenu = popRecentGis
               ImageIndex = 6
+              Style = tbsDropDown
             end
-            object ToolButton2: TToolButton
-              Left = 685
+            object btnSaveSelection: TToolButton
+              Left = 700
               Top = 0
               Action = actSaveInstrumentationSelection
               ImageIndex = 7
             end
-            object ToolButton3: TToolButton
-              Left = 817
+            object btnInstrumentDelimiter3: TToolButton
+              Left = 832
               Top = 0
               Width = 8
-              Caption = 'ToolButton3'
+              Caption = 'btnInstrumentDelimiter3'
               ImageIndex = 9
               Style = tbsSeparator
             end
             object btnProjectOptions: TToolButton
-              Left = 825
+              Left = 840
               Top = 0
               Action = actProjectOptions
               ParentShowHint = False
@@ -631,7 +633,7 @@ object frmMain: TfrmMain
   end
   object popRecent: TPopupMenu
     Left = 197
-    Top = 134
+    Top = 294
   end
   object MRU: TGPMRUFiles
     PopupMenu = popRecent
@@ -707,12 +709,12 @@ object frmMain: TfrmMain
     end
   end
   object popDelphiVer: TPopupMenu
-    Left = 197
-    Top = 164
+    Left = 189
+    Top = 180
   end
   object popRecentPrf: TPopupMenu
     Left = 197
-    Top = 194
+    Top = 234
   end
   object MRUPrf: TGPMRUFiles
     PopupMenu = popRecentPrf
@@ -3643,5 +3645,18 @@ object frmMain: TfrmMain
     TaskList = <>
     Left = 672
     Top = 336
+  end
+  object popRecentGis: TPopupMenu
+    Left = 317
+    Top = 210
+  end
+  object MRUGis: TGPMRUFiles
+    PopupMenu = popRecentGis
+    MaxFiles = 9
+    StandAloneMenu = True
+    DeleteEntry = False
+    OnClick = MRUGisClick
+    Left = 107
+    Top = 204
   end
 end
