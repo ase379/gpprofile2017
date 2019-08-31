@@ -368,10 +368,6 @@ object frmMain: TfrmMain
       OnSelectItem = lvLayoutsSelectItem
     end
   end
-  object OpenDialog: TOpenDialog
-    Left = 167
-    Top = 134
-  end
   object ActionList1: TActionList
     Left = 413
     Top = 118

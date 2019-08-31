@@ -19,7 +19,6 @@ type
   TAsyncFinishedProc = reference to procedure(const aNeededSeconds : Double);
 
   TfrmMain = class(TForm)
-    OpenDialog: TOpenDialog;
     StatusBar: TStatusBar;
     ActionList1: TActionList;
     actInstrument: TAction;
@@ -1206,19 +1205,21 @@ procedure TfrmMain.actOpenExecute(Sender: TObject);
 var
   LSourceFilename: TFileName;
   LFilename : string;
+  LOpenDialog : TOpenDialog;
 begin
-  OpenDialog.DefaultExt := TUIStrings.DelphiProjectSourceDefaultExt;
+  LOpenDialog := TOpenDialog.Create(Self);
+  LOpenDialog.DefaultExt := TUIStrings.DelphiProjectSourceDefaultExt;
   LFilename := '';
   if assigned(openProfile) then
     LFileName := ChangeFileExt(openProfile.FileName, TUIStrings.DelphiProjectSourceExt);
-  OpenDialog.FileName := ExtractFilename(LFilename);
-  OpenDialog.InitialDir := ExtractFileDir(LFilename);
-  OpenDialog.Filter := TUIStrings.ProjectSelectionFilter();
-  OpenDialog.Title := TUIStrings.LoadProjectCaption();
-  if OpenDialog.Execute then
+  LOpenDialog.FileName := ExtractFilename(LFilename);
+  LOpenDialog.InitialDir := ExtractFileDir(LFilename);
+  LOpenDialog.Filter := TUIStrings.ProjectSelectionFilter();
+  LOpenDialog.Title := TUIStrings.LoadProjectCaption();
+  if LOpenDialog.Execute(Self.Handle) then
   begin
-    LSourceFilename := OpenDialog.FileName;
-    if AnsiLowerCase(ExtractFileExt(OpenDialog.FileName)) = TUIStrings.DelphiProjectExt then
+    LSourceFilename := LOpenDialog.FileName;
+    if AnsiLowerCase(ExtractFileExt(LOpenDialog.FileName)) = TUIStrings.DelphiProjectExt then
     begin
       // convert to dpk if exists, else to dpr
       if FileExists(ChangeFileExt(LSourceFilename, TUIStrings.DelphiPackageSourceExt)) then
@@ -1229,6 +1230,7 @@ begin
     CloseDelphiHandles;
     LoadProject(LSourceFilename);
   end;
+  LOpenDialog.Free;
 end;
 
 procedure TfrmMain.actRescanProjectExecute(Sender: TObject);
@@ -1309,16 +1311,20 @@ begin
 end;
 
 procedure TfrmMain.actOpenProfileExecute(Sender: TObject);
+var
+  LOpenDialog : TOpenDialog;
 begin
-  with OpenDialog do
-  begin
-    Title := 'Load profile data...';
-    DefaultExt := 'prf';
-    if openProject = nil then FileName := '*.prf'
-                         else FileName := ChangeFileExt(openProject.Name,'.prf');
-    Filter     := 'Profile data|*.prf|Any file|*.*';
-    if Execute then LoadProfile(FileName);
-  end;
+  LOpenDialog := TOpenDialog.Create(self);
+  LOpenDialog.Title := 'Load profile data...';
+  LOpenDialog.DefaultExt := 'prf';
+  if openProject = nil then
+    LOpenDialog.FileName := '*.prf'
+  else
+    LOpenDialog.FileName := ChangeFileExt(openProject.Name,'.prf');
+  LOpenDialog.Filter     := 'Profile data|*.prf|Any file|*.*';
+  if LOpenDialog.Execute(self.Handle) then
+    LoadProfile(LOpenDialog.FileName);
+  LOpenDialog.Free;
 end;
 
 procedure TfrmMain.ResetSourcePreview(reposition: boolean);
@@ -1974,22 +1980,26 @@ end;
 procedure TfrmMain.actLoadInstrumentationSelectionExecute(Sender: TObject);
 var
   LFilename : String;
+  LOpenDialog : TOpenDialog;
 begin
+
   if openProject = nil then
     Exit;
   LFilename := ChangeFileExt(TSessionData.GetLastSelectedGisFolder(),TUIStrings.GPProfInstrumentationSelectionExt);
-  OpenDialog.DefaultExt := 'gis';
-  OpenDialog.FileName := ExtractFilename(LFilename);
-  OpenDialog.InitialDir := ExtractFileDir(LFilename);
-  OpenDialog.Filter := TUIStrings.InstrumentationSelectionFilter();
-  OpenDialog.Title := 'Load instrumentation selection...';
-  if OpenDialog.Execute then
+  LOpenDialog := TOpenDialog.Create(self);
+  LOpenDialog.DefaultExt := 'gis';
+  LOpenDialog.FileName := ExtractFilename(LFilename);
+  LOpenDialog.InitialDir := ExtractFileDir(LFilename);
+  LOpenDialog.Filter := TUIStrings.InstrumentationSelectionFilter();
+  LOpenDialog.Title := 'Load instrumentation selection...';
+  if LOpenDialog.Execute then
   begin
-    openProject.LoadInstrumentalizationSelection(OpenDialog.FileName);
-    TSessionData.SetLastSelectedGisFolder(OpenDialog.FileName);
+    openProject.LoadInstrumentalizationSelection(LOpenDialog.FileName);
+    TSessionData.SetLastSelectedGisFolder(LOpenDialog.FileName);
     // an auto-click is done... ignore instrumentation upon select
     FInstrumentationFrame.TriggerSelectionReload;
   end;
+  LOpenDialog.Free;
 end;
 
 procedure TfrmMain.SpeedButton1Click(Sender: TObject);
