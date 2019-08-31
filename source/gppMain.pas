@@ -67,7 +67,6 @@ type
     btnAnalysisDelimiter1: TToolButton;
     actDelUndelProfile: TAction;
     btnDelUndelProfile: TToolButton;
-    SaveDialog1: TSaveDialog;
     Panel0: TPanel;
     Panel1: TPanel;
     PageControl1: TPageControl;
@@ -1792,27 +1791,32 @@ end;
 procedure TfrmMain.actMakeCopyProfileExecute(Sender: TObject);
 var LSrc : string;
   LFilename : string;
+  LSaveDialog : TSaveDialog;
 begin
-  try
-    LFilename := ButLast(openProfile.FileName,Length(ExtractFileExt(openProfile.FileName)))+
+  LFilename := ButLast(openProfile.FileName,Length(ExtractFileExt(openProfile.FileName)))+
                 FormatDateTime('_ddmmyy',Now)+'.prf';
-    SaveDialog1.InitialDir := ExtractFileDir(LFilename);
-    SaveDialog1.FileName := ExtractFilename(LFilename);
-    SaveDialog1.Title := 'Make copy of '+openProfile.FileName+'...';
-    SaveDialog1.Filter := 'Profile data|*.prf|Any file|*.*';
-    if SaveDialog1.Execute then begin
-      if ExtractFileExt(SaveDialog1.FileName) = '' then
-        SaveDialog1.FileName := SaveDialog1.FileName + '.prf';
-    LSrc := openProfile.FileName;
-    TFile.Copy(LSrc,SaveDialog1.FileName,true);
-    MRUPrf.LatestFile := SaveDialog1.FileName;
-    MRUPrf.LatestFile := openProfile.FileName;
-  end;
-  except on e: Exception do
+  LSaveDialog := TSaveDialog.Create(Self);
+  try
+    LSaveDialog.InitialDir := ExtractFileDir(LFilename);
+    LSaveDialog.FileName := ExtractFilename(LFilename);
+    LSaveDialog.Title := 'Make copy of '+openProfile.FileName+'...';
+    LSaveDialog.Filter := 'Profile data|*.prf|Any file|*.*';
+    if LSaveDialog.Execute(self.Handle) then
+    begin
+      if ExtractFileExt(LSaveDialog.FileName) = '' then
+        LSaveDialog.FileName := LSaveDialog.FileName + '.prf';
+      LSrc := openProfile.FileName;
+      TFile.Copy(LSrc,LSaveDialog.FileName,true);
+      MRUPrf.LatestFile := LSaveDialog.FileName;
+      MRUPrf.LatestFile := openProfile.FileName;
+    end;
+  except
+    on e: Exception do
     begin
       ShowError(e.Message);
     end;
   end;
+  LSaveDialog.Free;
 end;
 
 procedure TfrmMain.actDelUndelProfileExecute(Sender: TObject);
@@ -1864,28 +1868,31 @@ end;
 procedure TfrmMain.actRenameMoveProfileExecute(Sender: TObject);
 var
   LFilename : string;
+  LSaveDialog : TSaveDialog;
 begin
+  LSaveDialog := TSaveDialog.Create(Self);
   try
     LFilename := ButLast(openProfile.FileName,Length(ExtractFileExt(openProfile.FileName)))+
                 FormatDateTime('_ddmmyy',Now)+'.prf';
-    SaveDialog1.InitialDir := ExtractFileDir(LFilename);
-    SaveDialog1.FileName := ExtractFilename(LFilename);
-    SaveDialog1.Title := 'Rename/Move '+openProfile.FileName+'...';
-    SaveDialog1.Filter := 'Profile data|*.prf|Any file|*.*';
-    if SaveDialog1.Execute then begin
-      if ExtractFileExt(SaveDialog1.FileName) = '' then
-        SaveDialog1.FileName := SaveDialog1.FileName + '.prf';
-      TFile.Move(openProfile.FileName,SaveDialog1.FileName);
-      openProfile.Rename(SaveDialog1.FileName);
-      currentProfile := ExtractFileName(SaveDialog1.FileName);
+    LSaveDialog.InitialDir := ExtractFileDir(LFilename);
+    LSaveDialog.FileName := ExtractFilename(LFilename);
+    LSaveDialog.Title := 'Rename/Move '+openProfile.FileName+'...';
+    LSaveDialog.Filter := 'Profile data|*.prf|Any file|*.*';
+    if LSaveDialog.Execute then begin
+      if ExtractFileExt(LSaveDialog.FileName) = '' then
+        LSaveDialog.FileName := LSaveDialog.FileName + '.prf';
+      TFile.Move(openProfile.FileName,LSaveDialog.FileName);
+      openProfile.Rename(LSaveDialog.FileName);
+      currentProfile := ExtractFileName(LSaveDialog.FileName);
       SetCaption;
-      MRUPrf.LatestFile := SaveDialog1.FileName;
+      MRUPrf.LatestFile := LSaveDialog.FileName;
     end;
   except on e: Exception do
     begin
       ShowError(e.Message);
     end
   end;
+  LSaveDialog.Free;
 end;
 
 procedure TfrmMain.ResetProfile();
@@ -2199,27 +2206,30 @@ end;
 procedure TfrmMain.actSaveInstrumentationSelectionExecute(Sender: TObject);
 var
   LFilename : string;
+  LSaveDialog : TSaveDialog;
 begin
   if openProject = nil then
     Exit;
+  LSaveDialog := TSaveDialog.Create(Self);
   try
     LFilename := ChangeFileExt(TSessionData.GetLastSelectedGisFolder,TUIStrings.GPProfInstrumentationSelectionExt);
-    SaveDialog1.FileName := ExtractFileName(LFilename);
-    SaveDialog1.InitialDir := ExtractFileDir(LFilename);
-    SaveDialog1.Title := TUIStrings.SaveInstrumentationSelectionCaption;
-    SaveDialog1.Filter := TUIStrings.InstrumentationSelectionFilter;
-    if SaveDialog1.Execute then
+    LSaveDialog.FileName := ExtractFileName(LFilename);
+    LSaveDialog.InitialDir := ExtractFileDir(LFilename);
+    LSaveDialog.Title := TUIStrings.SaveInstrumentationSelectionCaption;
+    LSaveDialog.Filter := TUIStrings.InstrumentationSelectionFilter;
+    if LSaveDialog.Execute then
     begin
-       if ExtractFileExt(SaveDialog1.FileName) = '' then
-          SaveDialog1.FileName := SaveDialog1.FileName + TUIStrings.GPProfInstrumentationSelectionExt;
-      openProject.SaveInstrumentalizationSelection(SaveDialog1.FileName);
-      TSessionData.SetLastSelectedGisFolder(SaveDialog1.FileName);
+       if ExtractFileExt(LSaveDialog.FileName) = '' then
+          LSaveDialog.FileName := LSaveDialog.FileName + TUIStrings.GPProfInstrumentationSelectionExt;
+      openProject.SaveInstrumentalizationSelection(LSaveDialog.FileName);
+      TSessionData.SetLastSelectedGisFolder(LSaveDialog.FileName);
     end;
     except on e: Exception do
     begin
       ShowError(e.Message);
     end;
   end;
+  LSaveDialog.free;
 end;
 
 procedure TfrmMain.actShowHideCalleesExecute(Sender: TObject);

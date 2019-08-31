@@ -727,11 +727,6 @@ object frmMain: TfrmMain
     Left = 107
     Top = 164
   end
-  object SaveDialog1: TSaveDialog
-    Filter = 'Profiling results|*.prf|Any file|*.*'
-    Left = 167
-    Top = 164
-  end
   object popLayout: TPopupMenu
     Left = 293
     Top = 270
