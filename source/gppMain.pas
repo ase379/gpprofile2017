@@ -778,7 +778,7 @@ var
   LRegEntryList : TDelphiRegistryEntryList;
   LProductName : string;
 begin
-  LAccessor := TRegistryAccessor.Create();
+  LAccessor := TRegistryAccessor.Create('');
   try
     LRegEntryList := LAccessor.RegistryEntries;
     for i := 0 to LRegEntryList.Count-1 do
@@ -1270,7 +1270,7 @@ var
   LRegEntry : TDelphiRegistryEntry;
 begin
   run := '';
-  LRegAccessor := TRegistryAccessor.Create();
+  LRegAccessor := TRegistryAccessor.Create('');
   try
     LRegEntry := LRegAccessor.GetByProductName(TSessionData.selectedDelphi);
     if assigned(LRegEntry) then
