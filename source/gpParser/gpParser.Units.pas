@@ -387,22 +387,18 @@ begin
   end;
 
   // resolve namespace if not found
-  // only source files support them
-  if (LExtension = '') or (LExtension = EXT_PAS_SOURCE) then
+  for i := Low(fProject.SearchPathes) to High(fProject.SearchPathes) do
   begin
-    for i := Low(fProject.SearchPathes) to High(fProject.SearchPathes) do
+    LSearchPath := fProject.SearchPathes[i];
+    for k := Low(fProject.Namespaces) to High(fProject.Namespaces) do
     begin
-      LSearchPath := fProject.SearchPathes[i];
-      for k := Low(fProject.Namespaces) to High(fProject.Namespaces) do
+      LUnitPath := MakeSmartBackslash(LSearchPath);
+      LUnitPath := LUnitPath + fProject.Namespaces[k] + '.' + LUnitName ;
+      if FileExists(LUnitPath) then
       begin
-        LUnitPath := MakeSmartBackslash(LSearchPath);
-        LUnitPath := LUnitPath + fProject.Namespaces[k] + '.' + LUnitName ;
-        if FileExists(LUnitPath) then
-        begin
-          aUnitFullName := LowerCase(LUnitPath);
-          Result := true;
-          Exit;
-        end;
+        aUnitFullName := LowerCase(LUnitPath);
+        Result := true;
+        Exit;
       end;
     end;
   end;
