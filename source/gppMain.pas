@@ -233,7 +233,6 @@ type
     function  ParseProfileCallback(percent: integer): boolean;
     procedure ParseProfileDone;
     procedure FillDelphiVer;
-    function  GetOutputDir(const aProject: string): string;
     procedure FindMyDelphi;
     procedure CloseDelphiHandles;
     procedure LoadSource(const fileName: String; focusOn: integer);
@@ -443,7 +442,7 @@ end; { TfrmMain.EnablePC }
 
 procedure TFrmMain.RestoreUIAfterParseProject();
 begin
-  GetOutputDir(openProject.Name);
+  TSessionData.ProjectOutputDir := openProject.OutputDir;
   StatusPanel0('Parsed', True);
   EnablePC;
   Enabled := true;
@@ -1161,7 +1160,7 @@ var
   LDefines : string;
 begin
   InitProgressBar(self,self.ApplicationTaskbar,'Instrumenting units...',true, false);
-  outDir := GetOutputDir(openProject.Name);
+  outDir := openProject.OutputDir;
   fnm := MakeSmartBackslash(outDir)+ChangeFileExt(ExtractFileName(openProject.Name),'.gpi');
   LShowAll := FInstrumentationFrame.chkShowAll.Checked;
   LDefines := frmPreferences.ExtractAllDefines;
@@ -1657,23 +1656,6 @@ begin
     end;
   end;
 end;
-
-{ TfrmMain.GetSearchPath }
-
-function TfrmMain.GetOutputDir(const aProject: string): string;
-var
-  LProjectAccessor : TProjectAccessor;
-begin
-  Result := '';
-
-  LProjectAccessor := TProjectAccessor.Create(aProject);
-  try
-    result := LProjectAccessor.GetOutputDir()
-  finally
-    LProjectAccessor.Free;
-  end;
-  TSessionData.ProjectOutputDir := result;
-end; { TfrmMain.GetOutputDir }
 
 procedure TfrmMain.actRescanProfileExecute(Sender: TObject);
 begin

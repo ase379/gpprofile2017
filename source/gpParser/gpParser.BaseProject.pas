@@ -29,6 +29,7 @@ type
     fProjectName: string;
     fSelectedDelphiVersion : string;
     fIsConsoleProject : Boolean;
+    fOutputDir : string;
     fSearchPathes : TArray<string>;
     fNamespaces : TArray<string>;
 
@@ -63,6 +64,7 @@ type
     property prGpprofDot: string read fGpprofDot;
     property Name: string read fProjectName;
     property IsConsoleProject : boolean read fIsConsoleProject;
+    property OutputDir : string read fOutputDir;
     property SearchPathes : TArray<string> read fSearchPathes;
     property Namespaces : TArray<string> read fNamespaces;
 
@@ -92,6 +94,7 @@ begin
   try
     LProjectAccessor := TProjectAccessor.Create(fProjectName);
     fIsConsoleProject := LProjectAccessor.IsConsoleProject(true);
+    fOutputDir := LProjectAccessor.GetOutputDir();
     fSearchPathes := SplitString(LProjectAccessor.GetSearchPath(aSelectedDelphiVersion), ';');
     fNamespaces := SplitString(LProjectAccessor.GetNamespaces(aSelectedDelphiVersion), ';');
     for i := Low(fSearchPathes) to high(fSearchPathes) do
