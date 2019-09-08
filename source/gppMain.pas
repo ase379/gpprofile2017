@@ -233,7 +233,6 @@ type
     function  ParseProfileCallback(percent: integer): boolean;
     procedure ParseProfileDone;
     procedure FillDelphiVer;
-    function  GetSearchPath(const aProject: string): string;
     function  GetOutputDir(const aProject: string): string;
     procedure FindMyDelphi;
     procedure CloseDelphiHandles;
@@ -487,7 +486,6 @@ begin
       begin
         openProject.Parse(
           TGlobalPreferences.GetProjectPref('ExcludedUnits',TGlobalPreferences.ExcludedUnits),
-          GetSearchPath(aProject),
           LDefines, NotifyParse,
           TGlobalPreferences.GetProjectPref('MarkerStyle', TGlobalPreferences.MarkerStyle),
           TGlobalPreferences.GetProjectPref('InstrumentAssembler', TGlobalPreferences.InstrumentAssembler),
@@ -522,7 +520,6 @@ begin
       begin
         openProject.Rescan(
           TGlobalPreferences.GetProjectPref('ExcludedUnits', TGlobalPreferences.ExcludedUnits),
-          GetSearchPath(aProject),
           LDefines,
           TGlobalPreferences.GetProjectPref('MarkerStyle', TGlobalPreferences.MarkerStyle),
           TGlobalPreferences.GetProjectPref('UseFileDate', TGlobalPreferences.UseFileDate),
@@ -1179,7 +1176,6 @@ begin
                          TGlobalPreferences.GetProjectPref('KeepFileDate',TGlobalPreferences.KeepFileDate),
                          TGlobalPreferences.GetProjectPref('MakeBackupOfInstrumentedFile',TGlobalPreferences.KeepFileDate),
                          fnm,LDefines,
-                         GetSearchPath(openProject.Name),
                          TGlobalPreferences.GetProjectPref('UseFileDate', TGlobalPreferences.UseFileDate),
                          TGlobalPreferences.GetProjectPref('InstrumentAssembler',TGlobalPreferences.InstrumentAssembler));
 
@@ -1661,21 +1657,6 @@ begin
     end;
   end;
 end;
-
-function TfrmMain.GetSearchPath(const aProject: string): string;
-var
-  vPath: string;
-  LProjectAccessor : TProjectAccessor;
-begin
-  vPath := '';
-  LProjectAccessor := TProjectAccessor.Create(aProject);
-  try
-    Result := LProjectAccessor.GetSearchPath(TSessionData.selectedDelphi);
-  finally
-    LProjectAccessor.Free;
-  end;
-end;
-
 
 { TfrmMain.GetSearchPath }
 

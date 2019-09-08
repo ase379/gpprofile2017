@@ -52,7 +52,7 @@ type
     /// <summary>
     /// Creates the parser for a uses or an include and stacks it away.
     /// </summary>
-    function CreateNewParser(const aUnitFN, aSearchPath, aDefaultDir: string): boolean;
+    function CreateNewParser(const aUnitFN, aDefaultDir: string): boolean;
 
     function ResolveFullyQualifiedUnitPath(const aUnitName: String; const aDefDir: string;
       out aUnitFullName: TFileName): boolean;
@@ -86,7 +86,7 @@ type
     unFileDate: TDateTime;
     constructor Create(const aProject: TBaseProject;const aUnitName: String;const aUnitLocation: String = ''; aExcluded: boolean = False);
     destructor Destroy; override;
-    procedure Parse(const aSearchPath,aDefaultDir, aConditionals: string;
+    procedure Parse(const aDefaultDir, aConditionals: string;
       const aRescan, aParseAsm: boolean);
     procedure CheckInstrumentedProcs;
     function LocateUnit(const unitName: string): TUnit;
@@ -562,7 +562,7 @@ begin
     Delete(Result, Length(Result), 1);
 end; { ExtractDirective }
 
-function TUnit.CreateNewParser(const aUnitFN, aSearchPath, aDefaultDir: string): boolean;
+function TUnit.CreateNewParser(const aUnitFN, aDefaultDir: string): boolean;
 var
   LUnitFullName: TFileName;
 begin
@@ -594,7 +594,7 @@ begin
   end;
 end;
 
-procedure TUnit.Parse(const aSearchPath,  aDefaultDir, aConditionals: String; const aRescan, aParseAsm: boolean);
+procedure TUnit.Parse(const aDefaultDir, aConditionals: String; const aRescan, aParseAsm: boolean);
 type
   TParseState = (stScan, stParseUses
     // Parse uses list (with optional "in" clause in dpr-file)
@@ -722,7 +722,7 @@ begin
     unAPIs := TAPIList.Create;
 
     fCurrentUnitParserStackEntry := nil;
-    CreateNewParser(unFullName, '', aDefaultDir);
+    CreateNewParser(unFullName, aDefaultDir);
     if not FileAge(unFullName,unFileDate) then
       unFileDate := 0.0;
     state := stScan;
@@ -784,7 +784,7 @@ begin
                     '.' + ButFirstEl(incName, '.', -1);
                 if incName = '' then
                   raise Exception.Create('Include contains empty unit name : "'+ tokenData + '".' );
-                if not CreateNewParser(incName, aSearchPath, aDefaultDir) then
+                if not CreateNewParser(incName, aDefaultDir) then
                   raise EUnitInSearchPathNotFoundError.Create('Unit not found in search path: '+ incName);
                 continue;
               end
