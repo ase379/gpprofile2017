@@ -20,6 +20,7 @@ type
     function GetOutputDir(): string;
     function GetProjectDefines(): string;
     function GetSearchPath(const aDelphiCompilerVersion: string): string;
+    function GetNamespaces(const aDelphiCompilerVersion: string): string;
   end;
 
 
@@ -145,6 +146,16 @@ begin
     Result := fBdsProjReader.GetProjectDefines
   else if assigned(fDofReader) then
     Result := fDofReader.GetProjectDefines;
+end;
+
+function TProjectAccessor.GetNamespaces(const aDelphiCompilerVersion: string): string;
+begin
+  Result := '';
+
+  if assigned(fDProjReader) then
+  begin
+    Result := fDProjReader.GetProjectNamespaces();
+  end;
 end;
 
 function TProjectAccessor.GetSearchPath(const aDelphiCompilerVersion: string): string;
