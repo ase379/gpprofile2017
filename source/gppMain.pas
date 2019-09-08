@@ -477,7 +477,7 @@ begin
     InitProgressBar(self,self.ApplicationTaskbar, 'Parsing units...', true, false);
     SetProgressBarOverlayHint('Parsing units...');
     FInstrumentationFrame.FillUnitTree(true); // clear all listboxes
-    openProject := TProject.Create(aProject);
+    openProject := TProject.Create(aProject, TSessionData.selectedDelphi);
     TSessionData.CurrentProjectName := aProject;
     RebuildDefines;
     vErrList := TStringList.Create;
