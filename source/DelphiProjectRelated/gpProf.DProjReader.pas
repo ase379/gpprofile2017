@@ -54,6 +54,7 @@ type
     function GetSearchPath: String;
     function GetProjectDefines: string;
     function GetProjectNamespaces(): string;
+    function GetPlatformOfCurrentConfig(): string;
   end;
 
 function IfThen(const aCond: Boolean; const aIfTrue: String; const aIfFalse: string = ''): String;
@@ -92,6 +93,16 @@ begin
   FXML := nil;
   fDProjConfigs.free;
   inherited;
+end;
+
+function TDProjReader.GetPlatformOfCurrentConfig: string;
+var
+  LConfig : DProjConfig;
+begin
+  result := '';
+  LConfig := fDProjConfigs.FindConfigByCurrentSettings();
+  if assigned(LConfig) then
+    Exit(LConfig.PlatformName);
 end;
 
 function TDProjReader.GetProjectDefines: string;

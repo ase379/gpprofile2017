@@ -28,13 +28,14 @@ type
   private
     fDelphiRegList : TDelphiRegistryEntryList;
     fCheckForExistingExe : Boolean;
+    fPlatform: string;
     procedure FillInKeyNames(const aRegistry: TRegistry;const aRootKey: HKEY;const aKey: string; const aTargetStringList: TStringList);
     function GetKeyValue(const aRegistry: TRegistry;const aRootKey: HKEY;const aKey, aValue: string): string;
 
     function GetDelphiRegList(): TDelphiRegistryEntryList;
 
   public
-    constructor Create();
+    constructor Create(const aPlatform: string);
     destructor Destroy; override;
 
     function GetByProductName(const aProductName : string) : TDelphiRegistryEntry;
@@ -57,10 +58,11 @@ const
 
 { TRegistryAccessor }
 
-constructor TRegistryAccessor.Create();
+constructor TRegistryAccessor.Create(const aPlatform: string);
 begin
   inherited Create();
   fCheckForExistingExe := True;
+  fPlatform := aPlatform;
 end;
 
 destructor TRegistryAccessor.Destroy;
@@ -211,7 +213,7 @@ begin
           LRegistry.CloseKey;
         end;
 
-        if LRegistry.OpenKeyReadOnly(REG_PATH_EMBARCADERO_KEYS +'\'+ LProductVersion +'\Library\Win32') then
+        if LRegistry.OpenKeyReadOnly(REG_PATH_EMBARCADERO_KEYS +'\'+ LProductVersion +'\Library\'+fPlatform) then
         begin
           LRegEntry.AppendSearchPath(LRegistry.ReadString('Search Path'));
           LRegEntry.AppendSearchPath(LRegistry.ReadString('Browsing Path'));

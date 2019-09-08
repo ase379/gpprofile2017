@@ -173,21 +173,26 @@ var
   LPath : string;
   LOldCurrentDir : string;
   LFullPath : string;
+  LPlatform : string;
   i : Integer;
   LRegistryAccessor : TRegistryAccessor;
   LEntry : TDelphiRegistryEntry;
 begin
   Result := '';
   LPath := '';
+  LPlatform := '';
 
   if assigned(fDProjReader) then
-    LPath := fDProjReader.GetSearchPath
+  begin
+    LPath := fDProjReader.GetSearchPath;
+    LPlatform := fDProjReader.GetPlatformOfCurrentConfig();
+  end
   else if assigned(fBdsProjReader) then
     LPath := fBdsProjReader.GetSearchPath
   else if assigned(fDofReader) then
     LPath := fDofReader.GetSearchPath;
 
-  LRegistryAccessor := TRegistryAccessor.Create();
+  LRegistryAccessor := TRegistryAccessor.Create(LPlatform);
   try
     LEntry := LRegistryAccessor.GetByProductName(aDelphiCompilerVersion);
     if assigned(LEntry) then
