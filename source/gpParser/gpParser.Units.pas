@@ -15,13 +15,16 @@ type
     function GetLookupKey(const aValue : TUnit) : string; override;
     function AdjustKey(const aKey : string) : string;
   private
-    constructor Create; reintroduce;
+    constructor Create();
     procedure Add(anUnit: TUnit);
     function FindNode(const aLookupKey: string; out aResultNode: INode<TUnit>): boolean; overload;
   end;
 
   TGlbUnitList = class(TUnitList)
+  strict private
+    fProject : TBaseProject;
   public
+    constructor Create(const aProject : TBaseProject);
     function Locate(unitName: string): TUnit;
     function LocateCreate(unitName, unitLocation: string;excluded: boolean): TUnit;
     function AreAllUnitsInstrumented(const aCheckProjectDirOnly: Boolean): Boolean;
@@ -32,13 +35,14 @@ type
 
   TUnit = class(TBaseUnit)
   private
+    fProject : TBaseProject;
     fDefines: TDefineList;
     fSkippedList : TSkippedCodeRecList;
     fUnitParserStack : TUnitParserStack;
     fCurrentUnitParserStackEntry : TUnitParserStackEntry;
 
     procedure AddToIntArray(var anArray: TArray<Integer>;const aValue: Integer);
-    procedure InstrumentUses(const aProject: TBaseProject; const ed: TFileEdit;const anIndex: Integer);
+    procedure InstrumentUses(const ed: TFileEdit;const anIndex: Integer);
     procedure BackupInstrumentedFile(const aSrc: string);
     /// <summary>
     /// Processes the given data and return the directive string, e.g. "IFDEF" or "INCLUDE"
@@ -50,7 +54,7 @@ type
     /// </summary>
     function CreateNewParser(const aUnitFN, aSearchPath, aDefaultDir: string): boolean;
 
-    function ResolveFullyQualifiedUnitPath(const aUnitName: String; const aSearchPath, aDefDir: string;
+    function ResolveFullyQualifiedUnitPath(const aUnitName: String; const aDefDir: string;
       out aUnitFullName: TFileName): boolean;
 
     /// <summary>
@@ -80,14 +84,14 @@ type
     unStartUses: TArray<Integer>;
     unEndUses: TArray<Integer>;
     unFileDate: TDateTime;
-    constructor Create(const aUnitName: String;const aUnitLocation: String = ''; aExcluded: boolean = False);
+    constructor Create(const aProject: TBaseProject;const aUnitName: String;const aUnitLocation: String = ''; aExcluded: boolean = False);
     destructor Destroy; override;
-    procedure Parse(aProject: TBaseProject; const aSearchPath,aDefaultDir, aConditionals: string;
+    procedure Parse(const aSearchPath,aDefaultDir, aConditionals: string;
       const aRescan, aParseAsm: boolean);
     procedure CheckInstrumentedProcs;
-    function LocateUnit(unitName: string): TUnit;
+    function LocateUnit(const unitName: string): TUnit;
     function LocateProc(const aProcName: string): TProc;
-    procedure Instrument(aProject: TBaseProject; aIDT: TIDTable;aKeepDate, aBackupFile: boolean);
+    procedure Instrument(aIDT: TIDTable;aKeepDate, aBackupFile: boolean);
     /// <summary>
     /// Registers the procs of this unit at the given TIDTable.
     /// </summary>
@@ -118,7 +122,7 @@ begin
   result := AnsiLowerCase(aKey);
 end;
 
-constructor TUnitList.Create;
+constructor TUnitList.Create();
 begin
   inherited Create();
   CompareFunc := @CompareUnit;
@@ -189,6 +193,12 @@ begin
 end;
 
 
+constructor TGlbUnitList.Create(const aProject: TBaseProject);
+begin
+  inherited Create();
+  fProject := aProject;
+end;
+
 function TGlbUnitList.DidAnyTimestampChange(const aCheckProjectDirOnly: Boolean): boolean;
 var
   un: TUnit;
@@ -252,7 +262,7 @@ begin
   Result := Locate(unitName);
   if Result = nil then
   begin
-    un := TUnit.Create(unitName, unitLocation, excluded);
+    un := TUnit.Create(fProject, unitName, unitLocation, excluded);
     Result := AppendNode(un).Data;
   end;
 end;
@@ -262,9 +272,11 @@ end;
 
 { ========================= TUnit ========================= }
 
-constructor TUnit.Create(const aUnitName: String;
+constructor TUnit.Create(const aProject: TBaseProject;const aUnitName: String;
   const aUnitLocation: String = ''; aExcluded: boolean = False);
 begin
+  inherited Create();
+  fProject := aProject;
   unName := ExtractFileName(aUnitName);
   if aUnitLocation = '' then
     unFullName := aUnitName
@@ -321,14 +333,18 @@ end;
 // Get full path to unit having short unit name or relative path
 // NB!!! This path can differ from location, which Delphi will use for this unit during compilation!
 // (it is just _some_ location from search paths where unit file with the given name is found)
-function TUnit.ResolveFullyQualifiedUnitPath(const aUnitName: String; const aSearchPath, aDefDir: string;
+function TUnit.ResolveFullyQualifiedUnitPath(const aUnitName: String; const aDefDir: string;
   out aUnitFullName: TFileName): boolean;
+const
+  EXT_INCLUDE = '.inc';
+  EXT_PAS_SOURCE = '.pas';
 var
-  i: Integer;
-  s: string;
+  i, k: Integer;
   LDefDir: string;
   LExtension: string;
   LUnitName : TFileName;
+  LSearchPath : TFileName;
+  LUnitPath : TFileName;
 begin
   LUnitName := aUnitName;
   LDefDir := MakeBackslash(aDefDir);
@@ -337,8 +353,8 @@ begin
   Result := False;
 
   LExtension := ExtractFileExt(aUnitName).ToLower;
-  if (LExtension <> '.pas') and (LExtension <> '.dpr') and (LExtension <> '.inc') then
-    LUnitName := aUnitName + '.pas';
+  if (LExtension <> EXT_PAS_SOURCE) and (LExtension <> '.dpr') and (LExtension <> EXT_INCLUDE) then
+    LUnitName := aUnitName + EXT_PAS_SOURCE;
 
   if FileExists(LUnitName) then
   begin
@@ -355,17 +371,39 @@ begin
     Exit;
   end;
 
-  for i := 1 to NumElements(aSearchPath, ';', -1) do
+  for i := Low(fProject.SearchPathes) to High(fProject.SearchPathes) do
   begin
-    s := Compress(NthEl(aSearchPath, i, ';', -1));
-    Assert(IsAbsolutePath(s));
+    LSearchPath := fProject.SearchPathes[i];
+    Assert(IsAbsolutePath(LSearchPath));
     // Search paths must be converted to absolute before calling ResolveFullyQualifiedUnitPath()
-    s := MakeSmartBackslash(s) + LUnitName;
-    if FileExists(s) then
+    LUnitPath := MakeSmartBackslash(LSearchPath) + LUnitName;
+    if FileExists(LUnitPath) then
     begin
-      aUnitFullName := LowerCase(s);
+      aUnitFullName := LowerCase(LUnitPath);
       Result := true;
       Exit;
+    end;
+
+  end;
+
+  // resolve namespace if not found
+  // only source files support them
+  if (LExtension = '') or (LExtension = EXT_PAS_SOURCE) then
+  begin
+    for i := Low(fProject.SearchPathes) to High(fProject.SearchPathes) do
+    begin
+      LSearchPath := fProject.SearchPathes[i];
+      for k := Low(fProject.Namespaces) to High(fProject.Namespaces) do
+      begin
+        LUnitPath := MakeSmartBackslash(LSearchPath);
+        LUnitPath := LUnitPath + fProject.Namespaces[k] + '.' + LUnitName ;
+        if FileExists(LUnitPath) then
+        begin
+          aUnitFullName := LowerCase(LUnitPath);
+          Result := true;
+          Exit;
+        end;
+      end;
     end;
   end;
 end;
@@ -532,7 +570,7 @@ begin
   if fCurrentUnitParserStackEntry <> nil then
     fUnitParserStack.Add(fCurrentUnitParserStackEntry);
 
-  if not ResolveFullyQualifiedUnitPath(aUnitFN, aSearchPath, aDefaultDir, LUnitFullName) then
+  if not ResolveFullyQualifiedUnitPath(aUnitFN, aDefaultDir, LUnitFullName) then
     Exit(False);
 
   fCurrentUnitParserStackEntry := TUnitParserStackEntry.Create(LUnitFullName);
@@ -556,8 +594,7 @@ begin
   end;
 end;
 
-procedure TUnit.Parse(aProject: TBaseProject; const aSearchPath,
-  aDefaultDir, aConditionals: String; const aRescan, aParseAsm: boolean);
+procedure TUnit.Parse(const aSearchPath,  aDefaultDir, aConditionals: String; const aRescan, aParseAsm: boolean);
 type
   TParseState = (stScan, stParseUses
     // Parse uses list (with optional "in" clause in dpr-file)
@@ -645,7 +682,7 @@ var
       else
         // Relative path: full unit path = dpr path + relative unit location
         Result := ExpandFileName
-          (MakeBackslash(ExtractFilePath(aProject.GetFullUnitName())) +
+          (MakeBackslash(ExtractFilePath(fProject.GetFullUnitName())) +
           vLocation);
     end;
   end; { ExpandLocation }
@@ -663,16 +700,16 @@ begin
     if not aRescan then
     begin
       // Anton Alisov: not sure, for what reason ResolveFullyQualifiedUnitPath() is called here with unFullName instead of unName
-      if not ResolveFullyQualifiedUnitPath(unFullName, aSearchPath, aDefaultDir, vUnitFullName) then
+      if not ResolveFullyQualifiedUnitPath(unFullName, aDefaultDir, vUnitFullName) then
       begin
-        aProject.prMissingUnitNames.AddOrSetValue(unFullname,0);
+        fProject.prMissingUnitNames.AddOrSetValue(unFullname,0);
         raise EUnitInSearchPathNotFoundError.Create('Unit not found in search path: ' + unFullName);
       end;
       unFullName := vUnitFullName;
       Assert(IsAbsolutePath(unFullName));
-      unInProjectDir := (self.unFullName = aProject.GetFullUnitName) or
+      unInProjectDir := (self.unFullName = fProject.GetFullUnitName) or
         AnsiSameText(ExtractFilePath(self.unFullName),
-        ExtractFilePath(aProject.GetFullUnitName));
+        ExtractFilePath(fProject.GetFullUnitName));
     end
     else
     begin
@@ -725,7 +762,7 @@ begin
             tokenPos := fCurrentUnitParserStackEntry.Lexer.tokenPos;
             tokenLN := fCurrentUnitParserStackEntry.Lexer.LineNumber;
 
-            LDirective := ProcessDirectives(aProject, tokenID, tokenData);
+            LDirective := ProcessDirectives(fProject, tokenID, tokenData);
 
             if not fSkippedList.SkippingCode then
             begin // we're not in the middle of conditionally removed block
@@ -772,36 +809,36 @@ begin
               if (tokenID = ptBorComment) or (tokenID = ptAnsiComment) or
                 (tokenID = ptCompDirect) then
               begin
-                if tokenData = aProject.prConditStartUses then
+                if tokenData = fProject.prConditStartUses then
                   AddToIntArray(unStartUses, tokenPos)
-                else if tokenData = aProject.prConditEndUses then
+                else if tokenData = fProject.prConditEndUses then
                   AddToIntArray(unEndUses, tokenPos)
                 else if ((tokenID = ptBorComment) and
-                  (Copy(tokenData, 1, 1 + Length(aProject.prAPIIntro)) = '{' +
-                  aProject.prAPIIntro)) or
+                  (Copy(tokenData, 1, 1 + Length(fProject.prAPIIntro)) = '{' +
+                  fProject.prAPIIntro)) or
                   ((tokenID = ptAnsiComment) and
-                  (Copy(tokenData, 1, 2 + Length(aProject.prAPIIntro)) = '(*' +
-                  aProject.prAPIIntro)) then
+                  (Copy(tokenData, 1, 2 + Length(fProject.prAPIIntro)) = '(*' +
+                  fProject.prAPIIntro)) then
                 begin
                   if tokenID = ptBorComment then
                     apiCmd := TrimL
                       (Trim(ButLast(ButFirst(tokenData,
-                      1 + Length(aProject.prAPIIntro)), 1)))
+                      1 + Length(fProject.prAPIIntro)), 1)))
                   else
                     apiCmd := TrimL
                       (Trim(ButLast(ButFirst(tokenData,
-                      2 + Length(aProject.prAPIIntro)), 2)));
+                      2 + Length(fProject.prAPIIntro)), 2)));
 
                   if not fUnitParserStack.HasEntries then
                     unAPIs.AddMeta(apiCmd, tokenPos,
                       tokenPos + Length(tokenData) - 1);
                 end
-                else if tokenData = aProject.prConditStartAPI then
+                else if tokenData = fProject.prConditStartAPI then
                 begin
                   apiStart := tokenPos;
                   apiStartEnd := tokenPos + Length(tokenData) - 1;
                 end
-                else if tokenData = aProject.prConditEndAPI then
+                else if tokenData = fProject.prConditEndAPI then
                   if not fUnitParserStack.HasEntries then
                     unAPIs.AddExpanded(apiStart, apiStartEnd, tokenPos,
                       tokenPos + Length(tokenData) - 1);
@@ -824,8 +861,8 @@ begin
                   if unName <> '' then
                   begin
                     uun := UpperCase(unName);
-                    unUnits.Add(aProject.LocateOrCreateUnit(unName, ExpandLocation(unLocation),
-                      (uun = ugpprof) or aProject.IsAnExcludedUnit(uun))as TUnit);
+                    unUnits.Add(fProject.LocateOrCreateUnit(unName, ExpandLocation(unLocation),
+                      (uun = ugpprof) or fProject.IsAnExcludedUnit(uun))as TUnit);
                   end;
                   unName := '';
                   unLocation := '';
@@ -919,7 +956,7 @@ begin
 
                 if (tokenID = ptBorComment) or (tokenID = ptCompDirect) then
                 begin
-                  if tokenData = aProject.prConditStart then
+                  if tokenData = fProject.prConditStart then
                   begin
                     if stateComment = stWaitEnterBegin then
                     begin
@@ -933,7 +970,7 @@ begin
                       stateComment := stWaitExitEnd;
                     end;
                   end
-                  else if tokenData = aProject.prConditEnd then
+                  else if tokenData = fProject.prConditEnd then
                   begin
                     if stateComment = stWaitEnterEnd then
                     begin
@@ -951,7 +988,7 @@ begin
                 else if (tokenID = ptIdentifier) then
                 begin
                   LDataLowerCase := tokenData.ToLowerInvariant;
-                  if LDataLowerCase = aProject.prNameThreadForDebugging then
+                  if LDataLowerCase = fProject.prNameThreadForDebugging then
                   begin
                     unProcs.Last.Data.unSetThreadNames.AddPosition(tokenPos,
                       LSelfBuffer);
@@ -1058,13 +1095,13 @@ begin
   end;
 end; { TUnit.CheckInstrumentedProcs }
 
-function TUnit.LocateUnit(unitName: string): TUnit;
+function TUnit.LocateUnit(const unitName: string): TUnit;
 var
   LSearchEntry: INode<TUnit>;
   LFoundEntry: INode<TUnit>;
 begin
   LSearchEntry := TNode<TUnit>.Create();
-  LSearchEntry.Data := TUnit.Create(unitName);
+  LSearchEntry.Data := TUnit.Create(fProject, unitName);
   if unUnits.FindNode(unitName, LFoundEntry) then
     Result := LFoundEntry.Data
   else
@@ -1105,8 +1142,7 @@ begin
   TFile.Copy(aSrc, justName + '.bk1', true);
 end;
 
-procedure TUnit.InstrumentUses(const aProject: TBaseProject; const ed: TFileEdit;
-  const anIndex: Integer);
+procedure TUnit.InstrumentUses(const ed: TFileEdit; const anIndex: Integer);
 
   function LGetValueOrZero(const anArray: TArray<Integer>;
     const anIndex: Integer): Integer;
@@ -1133,23 +1169,22 @@ begin
   LImplementationOffset := LGetValueOrZero(unImplementOffset, anIndex);
   haveUses := (LStartUses > 0) and (LEndUses > LStartUses);
   if haveUses and (not any) then
-    ed.Remove(LStartUses, LEndUses + Length(aProject.prConditEndUses) - 1)
+    ed.Remove(LStartUses, LEndUses + Length(fProject.prConditEndUses) - 1)
   else if (not haveUses) and any then
   begin
     LUnit := LocateUnit(cProfUnitName);
     if (LUnit = nil) then
     begin
       if LUsesOffset > 0 then
-        ed.Insert(LUsesOffset + Length('uses'), aProject.prAppendUses)
+        ed.Insert(LUsesOffset + Length('uses'), fProject.prAppendUses)
       else
         ed.Insert(LImplementationOffset + Length('implementation'),
-          aProject.prCreateUses);
+          fProject.prCreateUses);
     end;
   end;
 end;
 
-procedure TUnit.Instrument(aProject: TBaseProject; aIDT: TIDTable;
-  aKeepDate, aBackupFile: boolean);
+procedure TUnit.Instrument(aIDT: TIDTable; aKeepDate, aBackupFile: boolean);
 
   function LAdjustUsesCount: Integer;
   begin
@@ -1186,7 +1221,7 @@ begin { TUnit.Instrument }
   try
     // update uses...
     for i := 0 to LAdjustUsesCount - 1 do
-      InstrumentUses(aProject, ed, i);
+      InstrumentUses(ed, i);
 
     any := AnyInstrumented;
     LApiEnumor := unAPIs.GetEnumerator();
@@ -1198,7 +1233,7 @@ begin { TUnit.Instrument }
         if api.apiMeta then
         begin
           ed.Remove(api.apiBeginOffs, api.apiEndOffs);
-          ed.Insert(api.apiBeginOffs, Format(aProject.prProfileAPI,
+          ed.Insert(api.apiBeginOffs, Format(fProject.prProfileAPI,
             [api.apiCommands]));
         end
       end
@@ -1207,7 +1242,7 @@ begin { TUnit.Instrument }
         if not api.apiMeta then
         begin
           ed.Remove(api.apiBeginOffs, api.apiEndOffs);
-          ed.Insert(api.apiBeginOffs, '{' + aProject.prAPIIntro);
+          ed.Insert(api.apiBeginOffs, '{' + fProject.prAPIIntro);
           ed.Remove(api.apiExitBegin, api.apiExitEnd);
           ed.Insert(api.apiExitBegin, '}');
         end;
@@ -1225,15 +1260,15 @@ begin { TUnit.Instrument }
         if haveInst then
         begin // remove instrumentation
           ed.Remove(pr.prCmtEnterBegin, pr.prCmtEnterEnd +
-            Length(aProject.prConditEnd) - 1);
+            Length(fProject.prConditEnd) - 1);
           ed.Remove(pr.prCmtExitBegin, pr.prCmtExitEnd +
-            Length(aProject.prConditEnd) - 1);
+            Length(fProject.prConditEnd) - 1);
 
           // remove gpprof in from of NameThreadForDebugging interceptor
           LProcSetThreadNameEnumor := pr.unSetThreadNames.GetEnumerator;
           while LProcSetThreadNameEnumor.MoveNext do
           begin
-            LPosition := LProcSetThreadNameEnumor.Current.Data.tpstnPos - Length(aProject.prGpprofDot);
+            LPosition := LProcSetThreadNameEnumor.Current.Data.tpstnPos - Length(fProject.prGpprofDot);
             if LProcSetThreadNameEnumor.Current.Data.tpstnWithSelf <> '' then
               LPosition := LPosition - 1; // remove } as well
             ed.Remove(LPosition, LProcSetThreadNameEnumor.Current.Data.tpstnPos - 1);
@@ -1253,21 +1288,21 @@ begin { TUnit.Instrument }
 
         if haveInst then
           ed.Remove(pr.prCmtEnterBegin, pr.prCmtEnterEnd +
-            Length(aProject.prConditEnd) - 1);
+            Length(fProject.prConditEnd) - 1);
 
         if pr.prPureAsm then
           ed.Insert(pr.prStartOffset + Length('asm'),
-            Format(aProject.prProfileEnterAsm, [nameId]))
+            Format(fProject.prProfileEnterAsm, [nameId]))
         else
           ed.Insert(pr.prStartOffset + Length('begin'),
-            Format(aProject.prProfileEnterProc, [nameId]));
+            Format(fProject.prProfileEnterProc, [nameId]));
 
         if haveInst then
         begin
           LProcSetThreadNameEnumor := pr.unSetThreadNames.GetEnumerator;
           while LProcSetThreadNameEnumor.MoveNext do
           begin
-            LPosition := LProcSetThreadNameEnumor.Current.Data.tpstnPos - Length(aProject.prGpprofDot);
+            LPosition := LProcSetThreadNameEnumor.Current.Data.tpstnPos - Length(fProject.prGpprofDot);
             ed.Remove(LPosition, LProcSetThreadNameEnumor.Current.Data.tpstnPos - 1);
           end;
           LProcSetThreadNameEnumor.Free;
@@ -1280,21 +1315,21 @@ begin { TUnit.Instrument }
           if LProcSetThreadNameEnumor.Current.Data.tpstnWithSelf <> '' then
           begin
             ed.Insert(LPosition - Length('self') - 1, '{');
-            ed.Insert(LPosition, '}' + aProject.prGpprofDot);
+            ed.Insert(LPosition, '}' + fProject.prGpprofDot);
           end
           else
-            ed.Insert(LPosition, aProject.prGpprofDot);
+            ed.Insert(LPosition, fProject.prGpprofDot);
         end;
         LProcSetThreadNameEnumor.Free;
 
         if haveInst then
           ed.Remove(pr.prCmtExitBegin, pr.prCmtExitEnd +
-            Length(aProject.prConditEnd) - 1);
+            Length(fProject.prConditEnd) - 1);
 
         if pr.prPureAsm then
-          ed.Insert(pr.prEndOffset, Format(aProject.prProfileExitAsm, [nameId]))
+          ed.Insert(pr.prEndOffset, Format(fProject.prProfileExitAsm, [nameId]))
         else
-          ed.Insert(pr.prEndOffset, Format(aProject.prProfileExitProc, [nameId]));
+          ed.Insert(pr.prEndOffset, Format(fProject.prProfileExitProc, [nameId]));
       end;
     end;
     LProcEnumor.Free;
