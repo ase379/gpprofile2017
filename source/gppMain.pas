@@ -573,7 +573,7 @@ procedure TfrmMain.LoadProject(fileName: string; defaultDelphi: string = '');
 begin
   try
     if not FileExists(fileName) then
-      raise Exception.Create('File '+fileName+ ' not found.');
+      raise EFileNotFoundException.Create('File '+fileName+ ' not found.');
     MRU.LatestFile := fileName;
     currentProject := ExtractFileName(fileName);
     ParseProject(fileName,false);
@@ -587,12 +587,20 @@ begin
     SetSource;
   except
     on e:Exception do
-    if ShowErrorYesNo(TUIStrings.ErrorLoadingMRUDeleteIt(fileName)) = mrYes then
+    if Assigned(MRUGis.FindItem(fileName)) then
     begin
-      MRU.DeleteFromMenu(fileName);
-      MRU.SaveToRegistry();
-      MRU.LoadFromRegistry();
+      if ShowErrorYesNo(TUIStrings.ErrorLoadingMRUDeleteIt(fileName)) = mrYes then
+      begin
+        MRU.DeleteFromMenu(fileName);
+        MRU.SaveToRegistry();
+        MRU.LoadFromRegistry();
+      end;
+    end
+    else
+    begin
+      ShowError(TUIStrings.ErrorLoading(fileName));
     end;
+
   end;
   ReloadJumpList();
 end; { TfrmMain.LoadProject }
