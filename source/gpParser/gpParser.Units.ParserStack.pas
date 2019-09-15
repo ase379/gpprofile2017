@@ -10,12 +10,14 @@ type
   private
     fStream : TStream;
     fLexer : TmwPasLex;
+    fFilename : string;
   public
     constructor Create(const aFilename : TFileName);
     destructor Destroy; override;
 
     property Stream : TStream read fStream;
     property Lexer : TmwPasLex read fLexer;
+    property Filename : string read fFilename;
   end;
 
   TUnitParserStack = class
@@ -83,6 +85,7 @@ begin
   fLexer := TmwPasLex.Create;
   LStream := TMemoryStream.Create();
   fStream := LStream;
+  fFilename := aFilename;
 
   try
     LStream.LoadFromFile(aFilename);
