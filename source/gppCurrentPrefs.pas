@@ -68,14 +68,7 @@ type
     class procedure SetLastSelectedGisFolder(const aValue : string);
 
     class function HasOpenProject: boolean;static;
-
   end;
-
-
-
-
-
-
 
 implementation
 
