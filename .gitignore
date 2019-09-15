@@ -11,3 +11,11 @@ source/__history
 *.bak
 *.bk1
 *.stat
+DCU64/
+bin64/*.exe
+BIN/*exe
+bin64/*.prf
+BIN/*prf
+bin64/*.map
+BIN/*.map
+source/CastaliaDelphiParser/__history/

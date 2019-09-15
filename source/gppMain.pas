@@ -8,16 +8,17 @@ uses
   Registry, Messages, Classes, Forms, Windows, SysUtils, Graphics, Controls,
   Dialogs, StdCtrls, Menus, ComCtrls, GpParser, ExtCtrls, gpMRU,
   ActnList, ImgList, Buttons, ToolWin, gppResults, Grids,
-  DProjUnit, SynEdit,
+  SynEdit,
   SynEditHighlighter, SynEditCodeFolding, SynHighlighterPas, System.ImageList,
   System.Actions,gppCurrentPrefs, VirtualTrees,
   virtualTree.tools.checkable,
-  gppmain.FrameInstrumentation, gppmain.FrameAnalysis;
+  gppmain.FrameInstrumentation, gppmain.FrameAnalysis, gppmain.types, System.Win.TaskbarCore, Vcl.Taskbar, Vcl.JumpList;
 
 type
+  TAsyncExecuteProc = reference to procedure();
+  TAsyncFinishedProc = reference to procedure(const aNeededSeconds : Double);
 
   TfrmMain = class(TForm)
-    OpenDialog: TOpenDialog;
     StatusBar: TStatusBar;
     ActionList1: TActionList;
     actInstrument: TAction;
@@ -49,7 +50,7 @@ type
     actMakeCopyProfile: TAction;
     actRenameMoveProfile: TAction;
     tbrInstrument: TToolBar;
-    BtnOpenProject: TToolButton;
+    btnOpenProject: TToolButton;
     btnRescanProject: TToolButton;
     btnInstrument: TToolButton;
     btnRemoveInstrumentation: TToolButton;
@@ -65,7 +66,6 @@ type
     btnAnalysisDelimiter1: TToolButton;
     actDelUndelProfile: TAction;
     btnDelUndelProfile: TToolButton;
-    SaveDialog1: TSaveDialog;
     Panel0: TPanel;
     Panel1: TPanel;
     PageControl1: TPageControl;
@@ -118,13 +118,17 @@ type
     SynPasSyn: TSynPasSyn;
     ImageListMedium: TImageList;
     imgListInstrumentationSmall: TImageList;
-    ToolButton1: TToolButton;
-    ToolButton2: TToolButton;
-    ToolButton3: TToolButton;
+    btnLoadSelection: TToolButton;
+    btnSaveSelection: TToolButton;
+    btnInstrumentDelimiter3: TToolButton;
     actLoadInstrumentationSelection: TAction;
     actSaveInstrumentationSelection: TAction;
     imgListAnalysisSmall: TImageList;
     imgListInstrumentationMedium: TImageList;
+    ApplicationTaskbar: TTaskbar;
+    JumpList1: TJumpList;
+    popRecentGis: TPopupMenu;
+    MRUGis: TGPMRUFiles;
     procedure FormCreate(Sender: TObject);
     procedure MRUClick(Sender: TObject; LatestFile: String);
     procedure FormDestroy(Sender: TObject);
@@ -186,6 +190,7 @@ type
     procedure clbClassesKeyPress(Sender: TObject; var Key: Char);
     procedure actLoadInstrumentationSelectionExecute(Sender: TObject);
     procedure actSaveInstrumentationSelectionExecute(Sender: TObject);
+    procedure MRUGisClick(Sender: TObject; LatestFile: string);
   private
     openProject               : TProject;
     openProfile               : TResults;
@@ -206,7 +211,9 @@ type
     inLVResize                : boolean;
     FInstrumentationFrame     : TfrmMainInstrumentation;
     FProfilingFrame           : TfrmMainProfiling;
-    procedure ExecuteAsync(const aProc,aOnFinishedProc: System.Sysutils.TProc;const aActionName : string);
+    procedure ReloadJumpList();
+
+    procedure ExecuteAsync(const aProc: TAsyncExecuteProc;const aOnFinishedProc: TAsyncFinishedProc;const aActionName : string);
     procedure ParseProject(const aProject: string; const aJustRescan: boolean);
     procedure LoadProject(fileName: string; defaultDelphi: string = '');
     procedure NotifyParse(const aUnitName: string);
@@ -226,8 +233,6 @@ type
     function  ParseProfileCallback(percent: integer): boolean;
     procedure ParseProfileDone;
     procedure FillDelphiVer;
-    function  GetSearchPath(const aProject: string): string;
-    function  GetOutputDir(const aProject: string): string;
     procedure FindMyDelphi;
     procedure CloseDelphiHandles;
     procedure LoadSource(const fileName: String; focusOn: integer);
@@ -252,11 +257,9 @@ type
     procedure RebuildDefines;
     procedure SlidersMoved;
     function  IsProjectConsole: boolean;
-    function  ReplaceMacros(s: string): string;
     procedure ResetSourcePreview(reposition: boolean);
     procedure RestoreUIAfterParseProject;
- public
-    function  GetDOFSetting(section,key,defval: string): string;
+    procedure WMDropFiles (var aMsg: TMessage); message WM_DROPFILES;
  end;
 
 var
@@ -265,8 +268,9 @@ var
 implementation
 
 uses
-  BdsProjUnit,
-  BdsVersions,
+  gpProf.bdsVersions,
+  gpProf.ProjectAccessor,
+  gpProf.Delphi.RegistryAccessor,
   IniFiles,
   GpString,
   GpProfH,
@@ -285,7 +289,7 @@ uses
   ioUtils,
   Diagnostics,
   Winapi.ActiveX,
-  System.Threading;
+  System.Threading, gppmain.dragNdrop;
 
 
 {$R *.DFM}
@@ -438,7 +442,7 @@ end; { TfrmMain.EnablePC }
 
 procedure TFrmMain.RestoreUIAfterParseProject();
 begin
-  GetOutputDir(openProject.Name);
+  TSessionData.ProjectOutputDir := openProject.OutputDir;
   StatusPanel0('Parsed', True);
   EnablePC;
   Enabled := true;
@@ -450,6 +454,7 @@ begin
   actRemoveInstrumentation.Enabled := true;
   actRun.Enabled                   := true;
   actProjectOptions.Enabled        := true;
+
   actLoadInstrumentationSelection.Enabled := true;
   actSaveInstrumentationSelection.Enabled := true;
   FInstrumentationFrame.openProject := openProject;
@@ -467,61 +472,65 @@ begin
   begin
     FInstrumentationFrame.openProject := nil;
     FreeAndNil(openProject);
-    InitProgressBar(self,'Parsing units...', true, false);
+    InitProgressBar(self,self.ApplicationTaskbar, 'Parsing units...', true, false);
+    SetProgressBarOverlayHint('Parsing units...');
     FInstrumentationFrame.FillUnitTree(true); // clear all listboxes
-    openProject := TProject.Create(aProject);
-    CurrentProjectName := aProject;
+    openProject := TProject.Create(aProject, TSessionData.selectedDelphi);
+    TSessionData.CurrentProjectName := aProject;
     RebuildDefines;
     vErrList := TStringList.Create;
-    LDefines := frmPreferences.ExtractDefines;
+    LDefines := frmPreferences.ExtractAllDefines;
     ExecuteAsync(
       procedure
       begin
-        openProject.Parse(GetProjectPref('ExcludedUnits',prefExcludedUnits),
-                  GetSearchPath(aProject),
-                  LDefines, NotifyParse,
-                  GetProjectPref('MarkerStyle', prefMarkerStyle),
-                  GetProjectPref('InstrumentAssembler', prefInstrumentAssembler),
-                  vErrList);
+        openProject.Parse(
+          TGlobalPreferences.GetProjectPref('ExcludedUnits',TGlobalPreferences.ExcludedUnits),
+          LDefines, NotifyParse,
+          TGlobalPreferences.GetProjectPref('MarkerStyle', TGlobalPreferences.MarkerStyle),
+          TGlobalPreferences.GetProjectPref('InstrumentAssembler', TGlobalPreferences.InstrumentAssembler),
+          vErrList);
 
       end,
-      procedure
+      procedure(const aNeededSeconds : Double)
       begin
         TThread.Synchronize(nil, procedure
         begin
-          HideProgressBar;
           if vErrList.Count > 0 then
           begin
-            TfmSimpleReport.Execute(CurrentProjectName + '- error list', vErrList);
+            SetProgressBarPause();
+            TfmSimpleReport.Execute(TSessionData.CurrentProjectName + '- error list', vErrList);
           end;
+          HideProgressBar;
           vErrList.Free;
           RestoreUIAfterParseProject();
+          StatusPanel0('Parsing finished, it took '+aNeededSeconds.ToString+' seconds.',false);
         end);
       end,
       'parsing');
   end
   else
   begin
-    LDefines := frmPreferences.ExtractDefines;
-    InitProgressBar(self,'Rescanning units...', true, false);
+    InitProgressBar(self,self.ApplicationTaskbar,'Rescanning units...', true, false);
+    SetProgressBarOverlayHint('Rescanning units...');
     RebuildDefines;
-    LDefines := frmPreferences.ExtractDefines;
+    LDefines := frmPreferences.ExtractAllDefines;
     ExecuteAsync(
       procedure
       begin
-        openProject.Rescan(GetProjectPref('ExcludedUnits', prefExcludedUnits),
-                   GetSearchPath(aProject),
-                   LDefines,
-                   GetProjectPref('MarkerStyle', prefMarkerStyle),
-                   GetProjectPref('UseFileDate', prefUseFileDate),
-                   GetProjectPref('InstrumentAssembler', prefInstrumentAssembler));
+        openProject.Rescan(
+          TGlobalPreferences.GetProjectPref('ExcludedUnits', TGlobalPreferences.ExcludedUnits),
+          LDefines,
+          TGlobalPreferences.GetProjectPref('MarkerStyle', TGlobalPreferences.MarkerStyle),
+          TGlobalPreferences.GetProjectPref('UseFileDate', TGlobalPreferences.UseFileDate),
+          TGlobalPreferences.GetProjectPref('InstrumentAssembler', TGlobalPreferences.InstrumentAssembler));
       end,
-      procedure
+      procedure(const aNeededSeconds : Double)
       begin
         TThread.Synchronize(nil, procedure
         begin
           HideProgressBar;
           RestoreUIAfterParseProject();
+          StatusPanel0('Rescanning finished, it took '+aNeededSeconds.ToString+' seconds.',false);
         end);
       end,'rescanning');
   end;
@@ -532,9 +541,14 @@ end; { TfrmMain.ParseProject }
 function TfrmMain.IsProjectConsole: boolean;
 begin
   Result := false;
-  if assigned(openProject) then begin
+  if assigned(openProject) then
+  begin
     // Don't know why but ConsoleApp=1 means that app is NOT a console app!
-    Result := not GetDOFSettingBool('Linker','ConsoleApp',true);
+    with TProjectAccessor.Create(TSessionData.CurrentProjectName) do
+    begin
+      Result := IsConsoleProject(true);
+      Free;
+    end;
     // Also, CONSOLE is defined only if Linker option is set, not if
     // {$APPTYPE CONSOLE} is specified in main program!
     // Stupid, but that's how Delphi works.
@@ -543,36 +557,48 @@ end;
 
 procedure TfrmMain.RebuildDefines;
 begin
-  with frmPreferences do begin
-    ReselectCompilerVersion(selectedDelphi);
-    cbStandardDefines.Checked    := GetProjectPref('StandardDefines',prefStandardDefines);
-    cbConsoleDefines.Checked     := GetProjectPref('ConsoleDefines',IsProjectConsole);
-    cbProjectDefines.Checked     := GetProjectPref('ProjectDefines',prefProjectDefines);
-    cbDisableUserDefines.Checked := GetProjectPref('DisableUserDefines',prefDisableUserDefines);
-    RebuildDefines(GetProjectPref('UserDefines',prefUserDefines));
-  end;
+  frmPreferences.ReselectCompilerVersion(TSessionData.selectedDelphi);
+  frmPreferences.cbStandardDefines.Checked    := TGlobalPreferences.GetProjectPref('StandardDefines',TGlobalPreferences.StandardDefines);
+  frmPreferences.cbConsoleDefines.Checked     := TGlobalPreferences.GetProjectPref('ConsoleDefines',IsProjectConsole);
+  frmPreferences.cbProjectDefines.Checked     := TGlobalPreferences.GetProjectPref('ProjectDefines',TGlobalPreferences.ProjectDefines);
+  frmPreferences.cbDisableUserDefines.Checked := TGlobalPreferences.GetProjectPref('DisableUserDefines',TGlobalPreferences.DisableUserDefines);
+  frmPreferences.RebuildDefines(TGlobalPreferences.GetProjectPref('UserDefines',TGlobalPreferences.UserDefines));
 end;
 
 procedure TfrmMain.LoadProject(fileName: string; defaultDelphi: string = '');
 begin
-  if not FileExists(fileName) then
-  begin
-    StatusPanel0('File "'+fileName+'" does not exist!',true);
-    raise Exception.Create('File "'+fileName+'" does not exist.');
-  end
-  else begin
+  try
+    if not FileExists(fileName) then
+      raise EFileNotFoundException.Create('File '+fileName+ ' not found.');
     MRU.LatestFile := fileName;
     currentProject := ExtractFileName(fileName);
     ParseProject(fileName,false);
     if defaultDelphi = '' then
-      defaultDelphi := RemoveDelphiPrefix(frmPreferences.cbxCompilerVersion.Items[prefCompilerVersion]);
-    selectedDelphi := GetProjectPref('DelphiVersion',defaultDelphi);
+      defaultDelphi := RemoveHotkeyAndDelphiPrefix(frmPreferences.cbxCompilerVersion.Items[TGlobalPreferences.CompilerVersion]);
+    TSessionData.selectedDelphi := TGlobalPreferences.GetProjectPref('DelphiVersion',defaultDelphi);
     RebuildDelphiVer;
-    FInstrumentationFrame.chkShowAll.Checked := GetProjectPref('ShowAllFolders',prefShowAllFolders);
+    FInstrumentationFrame.chkShowAll.Checked := TGlobalPreferences.GetProjectPref('ShowAllFolders',TGlobalPreferences.ShowAllFolders);
     PageControl1.ActivePage := tabInstrumentation;
     SetCaption;
     SetSource;
+  except
+    on e:Exception do
+    if Assigned(MRUGis.FindItem(fileName)) then
+    begin
+      if ShowErrorYesNo(TUIStrings.ErrorLoadingMRUDeleteIt(fileName)) = mrYes then
+      begin
+        MRU.DeleteFromMenu(fileName);
+        MRU.SaveToRegistry();
+        MRU.LoadFromRegistry();
+      end;
+    end
+    else
+    begin
+      ShowError(TUIStrings.ErrorLoading(fileName));
+    end;
+
   end;
+  ReloadJumpList();
 end; { TfrmMain.LoadProject }
 
 procedure TfrmMain.RebuildDelphiVer;
@@ -586,7 +612,7 @@ begin
     if Items.Count >= 1 then
       Items[Items.Count-1].Checked := true;
     for i := 0 to Items.Count-1 do begin
-      if RemoveDelphiPrefix(Items[i].Caption) = selectedDelphi then
+      if RemoveHotkeyAndDelphiPrefix(Items[i].Caption) = TSessionData.selectedDelphi then
       begin
         Items[Items.Count-1].Checked := false;
         Items[i].Checked := true;
@@ -596,12 +622,12 @@ begin
     end;
 
     if (not found) and (Items.Count >= 1) then begin
-      selectedDelphi := RemoveDelphiPrefix(Items[Items.Count-1].Caption);
+      TSessionData.selectedDelphi := RemoveHotkeyAndDelphiPrefix(Items[Items.Count-1].Caption);
     end;
   end;
-  Statusbar.Panels[1].Text := IFF(openProject = nil,'','Delphi '+selectedDelphi);
-  if selectedDelphi <> '' then // <-- Added by Alisov A.
-    UseDelphiSettings(Ord(selectedDelphi[1])-Ord(48));
+  Statusbar.Panels[1].Text := IFF(openProject = nil,'','Delphi '+TSessionData.selectedDelphi);
+  if TSessionData.selectedDelphi <> '' then // <-- Added by Alisov A.
+    UseDelphiSettings(Ord(TSessionData.selectedDelphi[1])-Ord(48));
 end; { TfrmMain.RebuildDelphiVer }
 
 procedure TfrmMain.DisablePC2;
@@ -631,7 +657,7 @@ end;
 
 function TfrmMain.ParseProfileCallback(percent: integer): boolean;
 begin
-  frmLoadProgress.ProgressBar1.Position := percent;
+  frmLoadProgress.Percentage := percent;
   Result := not frmLoadProgress.CancelPressed;
 end; { TfrmMain.ParseProfileCallback }
 
@@ -641,16 +667,18 @@ begin
   Enabled := false;
   DisablePC2;
   ResetProfile();
-  InitProgressBar(Self,'Parsing profiling results...',false, True);
+  InitProgressBar(Self,self.ApplicationTaskbar,'Parsing profiling results...',false, True);
+  SetProgressBarOverlayHint('Parsing profiling results...');
   StatusPanel0('Loading '+profile,false);
   ExecuteAsync(
     procedure
     begin
       openProfile := TResults.Create(profile,ParseProfileCallback);
     end,
-    procedure
+    procedure(const aNeededSeconds : Double)
     begin
       TThread.Synchronize(nil,ParseProfileDone);
+      StatusPanel0('Parsing of results finished, it took '+aNeededSeconds.ToString+' seconds.',false);
     end,
     'loading profile'
   );
@@ -667,6 +695,7 @@ begin
     NoProfile;
     actDelUndelProfile.Enabled := false;
     StatusPanel0('Load error',true);
+    SetProgressBarError();
   end
   else
   begin
@@ -695,7 +724,7 @@ begin
   begin
     SetCaption;
     SetSource;
-    actHideNotExecuted.Checked := GetProfilePref('HideNotExecuted', prefHideNotExecuted);
+    actHideNotExecuted.Checked := TGlobalPreferences.GetProfilePref('HideNotExecuted', TGlobalPreferences.HideNotExecuted);
     FProfilingFrame.FillViews(1);
     FProfilingFrame.ClearBreakdown;
     actHideNotExecuted.Enabled   := true;
@@ -714,22 +743,39 @@ end;
 
 procedure TfrmMain.LoadProfile(fileName: string);
 begin
-  if not FileExists(fileName) then StatusPanel0('File '+fileName+' does not exist!',true)
-  else begin
+  try
+    if not FileExists(fileName) then
+      raise EFileNotFoundException.Create('File '+fileName+ ' not found.');
     MRUPrf.LatestFile := fileName;
     currentProfile := ExtractFileName(fileName);
     PageControl1.ActivePage := tabAnalysis;
     ClearSource;
     ParseProfile(fileName);
-
+  except on e:Exception do
+    begin
+      if Assigned(MRUGis.FindItem(fileName)) then
+      begin
+        if ShowErrorYesNo(TUIStrings.ErrorLoadingMRUDeleteIt(fileName)) = mrYes then
+        begin
+          MRUPrf.DeleteFromMenu(fileName);
+          MRUPrf.SaveToRegistry();
+          MRUPrf.LoadFromRegistry();
+        end
+      end
+      else
+      begin
+        ShowError(TUIStrings.ErrorLoading(fileName));
+      end;
+    end;
   end;
+  ReloadJumpList();
 end; { TfrmMain.LoadProfile }
 
 procedure TfrmMain.DelphiVerClick(Sender: TObject);
 begin
-  selectedDelphi := RemoveDelphiPrefix(TMenuItem(Sender).Caption);
+  TSessionData.selectedDelphi := RemoveHotkeyAndDelphiPrefix(TMenuItem(Sender).Caption);
   RebuildDelphiVer;
-  SetProjectPref('DelphiVersion',selectedDelphi);
+  TGlobalPreferences.SetProjectPref('DelphiVersion',TSessionData.selectedDelphi);
 end;
 
 procedure TfrmMain.LayoutClick(Sender: TObject);
@@ -743,33 +789,38 @@ end;
 
 procedure TfrmMain.FillDelphiVer;
 var
-  s : TStringList;
   mn: TMenuItem;
   i : integer;
+  LAccessor : TRegistryAccessor;
+  LRegEntryList : TDelphiRegistryEntryList;
+  LProductName : string;
 begin
-  s := TStringList.Create;
+  LAccessor := TRegistryAccessor.Create('');
   try
-    FillInDelphiVersions(s);
-    for i := 0 to s.Count-1 do begin
+    LRegEntryList := LAccessor.RegistryEntries;
+    for i := 0 to LRegEntryList.Count-1 do
+    begin
+      LProductName := ProductVersionToProductName(LRegEntryList[i].ProductVersion);
       mn := TMenuItem.Create(self);
-      mn.Caption := 'Delphi &'+s[i];
+      mn.Caption := 'Delphi &'+LProductName;
       mn.OnClick := DelphiVerClick;
       popDelphiVer.Items.Insert(popDelphiVer.Items.Count,mn);
-      frmPreferences.cbxCompilerVersion.Items.Add('Delphi '+s[i]);
-      frmPreferences.cbxDelphiDefines.Items.Add('Delphi '+s[i]);
+      frmPreferences.cbxCompilerVersion.Items.Add('Delphi '+LProductName);
+      frmPreferences.cbxDelphiDefines.Items.Add('Delphi '+LProductName);
     end;
-    if s.Count = 0 then
+    if LRegEntryList.Count = 0 then
       actRun.OnExecute := nil;
-    if s.Count >= 1 then
+    if LRegEntryList.Count >= 1 then
     begin
-      if (prefCompilerVersion < 0) or (prefCompilerVersion >= s.Count) then
-        prefCompilerVersion := s.Count-1;
-      selectedDelphi := GetProjectPref('DelphiVersion', s[prefCompilerVersion]);
+      if (TGlobalPreferences.CompilerVersion < 0) or (TGlobalPreferences.CompilerVersion >= LRegEntryList.Count) then
+        TGlobalPreferences.CompilerVersion := LRegEntryList.Count-1;
+      TSessionData.selectedDelphi := TGlobalPreferences.GetProjectPref('DelphiVersion', LRegEntryList[TGlobalPreferences.CompilerVersion].ProductName);
       RebuildDelphiVer;
     end;
   finally
-    s.Free;
+    LAccessor.free;
   end;
+
 end; { TfrmMain.FillDelphiVer }
 
 
@@ -898,17 +949,20 @@ begin
     hProcess := 0;
     hThread  := 0;
   end;
-  LoadPreferences;
+  TGlobalPreferences.LoadPreferences;
   PageControl1.ActivePage := tabInstrumentation;
   DisablePC2;
   DisablePC;
   loadCanceled := false;
-  CurrentProjectName := '';
+  TSessionData.CurrentProjectName := '';
 
   MRU.RegistryKey := cRegistryRoot+'\MRU\DPR';
   MRU.LoadFromRegistry;
   MRUPrf.RegistryKey := cRegistryRoot+'\MRU\PRF';
   MRUPrf.LoadFromRegistry;
+  MRUGis.RegistryKey := cRegistryRoot+'\MRU\GIS';
+  MRUGis.LoadFromRegistry;
+  ReloadJumpList();
   undelProject := '';
   SlidersMoved;
   
@@ -919,7 +973,34 @@ begin
   begin
     tbrInstrument.Images := imgListInstrumentationMedium;
   end;
+  TDragNDropHandler.setDragNDropEnabled(self.Handle, true);
+end;
 
+procedure TfrmMain.ReloadJumpList();
+
+  procedure AddMenu(const aMenu: TGPMRUFiles; const aCategory : string);
+  var
+    i : integer;
+    LCategoryIndex : Integer;
+    LPath : string;
+  begin
+    LCategoryIndex := JumpList1.AddCategory(aCategory);
+    for i := 0 to aMenu.PopupMenu.Items.Count-1 do
+    begin
+      LPath := aMenu.PopupMenu.Items[i].Caption;
+      if Length(LPath) < 4 then
+        Continue;
+      LPath := Copy(LPath,4, 256);
+      JumpList1.AddItemToCategory(LCategoryIndex, ExtractFileName(LPath),'',LPath);
+    end;
+  end;
+
+begin
+  JumpList1.ApplicationID := 'GpProf2017';
+  JumpList1.CustomCategories.Clear();
+  AddMenu(MRU, 'Instrument');
+  AddMenu(MRUPrf, 'Analyse');
+  // GIS is excluded, as we need to load an instrument project for GIS
 end;
 
 procedure TfrmMain.MRUClick(Sender: TObject; LatestFile: String);
@@ -928,6 +1009,33 @@ begin
     CloseDelphiHandles;
     LoadProject(LatestFile);
   end;
+end;
+
+procedure TfrmMain.MRUGisClick(Sender: TObject; LatestFile: string);
+begin
+  try
+    openProject.LoadInstrumentalizationSelection(LatestFile);
+    // an auto-click is done... ignore instrumentation upon select
+    FInstrumentationFrame.TriggerSelectionReload;
+  except
+    on e:Exception do
+    begin
+      if Assigned(MRUGis.FindItem(LatestFile)) then
+      begin
+        if ShowErrorYesNo(TUIStrings.ErrorLoadingMRUDeleteIt(LatestFile)) = mrYes then
+        begin
+          MRUGis.DeleteFromMenu(LatestFile);
+          MRUGis.SaveToRegistry();
+          MRUGis.LoadFromRegistry();
+        end;
+      end
+      else
+      begin
+        ShowError(TUIStrings.ErrorLoading(LatestFile));
+      end;
+    end;
+  end;
+
 end;
 
 procedure TfrmMain.SaveMetrics(layoutName: string);
@@ -1001,6 +1109,7 @@ begin
   end;
   MRU.SaveToRegistry;
   MRUPrf.SaveToRegistry;
+  MRUGis.SaveToRegistry;
   FreeAndNil(openProject);
   ResetProfile();
 end;
@@ -1028,7 +1137,7 @@ end;
 procedure TfrmMain.cbProfileChange(Sender: TObject);
 begin
   FInstrumentationFrame.FillUnitTree(not FInstrumentationFrame.chkShowAll.Checked);
-  SetProjectPref('ShowAllFolders',FInstrumentationFrame.chkShowAll.Checked);
+  TGlobalPreferences.SetProjectPref('ShowAllFolders',FInstrumentationFrame.chkShowAll.Checked);
 end;
 
 
@@ -1039,23 +1148,28 @@ begin
   inherited;
 end;
 
-procedure TfrmMain.ExecuteAsync(const aProc, aOnFinishedProc: System.Sysutils.TProc;const aActionName : string);
+procedure TfrmMain.ExecuteAsync(const aProc: TAsyncExecuteProc;const aOnFinishedProc: TAsyncFinishedProc;const aActionName : string);
 var
   LTask : ITask;
   LExceptionMsg : string;
 begin
   LTask := tTask.Create(procedure
+    var
+      LStopwatch : TStopwatch;
     begin
       try
         Coinitialize(nil);
         try
+          LStopwatch := TStopWatch.StartNew();
           aProc();
         finally
+          LStopwatch.Stop;
           CoUninitialize
         end;
       except
         on E:Exception do
         begin
+          LStopwatch.Reset;
           LExceptionMsg := e.Message;
           TThread.Synchronize(nil,procedure
             begin
@@ -1067,7 +1181,7 @@ begin
       end;
       if assigned(aOnFinishedProc) then
       begin
-        aOnFinishedProc;
+        aOnFinishedProc(LStopwatch.Elapsed.TotalSeconds);
       end;
     end);
   LTask.Start;
@@ -1080,43 +1194,38 @@ var
   outDir: string;
   LShowAll : Boolean;
   LDefines : string;
-  LNeededTimeString : string;
 begin
-  InitProgressBar(self,'Instrumenting units...',true, false);
-  outDir := GetOutputDir(openProject.Name);
+  InitProgressBar(self,self.ApplicationTaskbar,'Instrumenting units...',true, false);
+  outDir := openProject.OutputDir;
   fnm := MakeSmartBackslash(outDir)+ChangeFileExt(ExtractFileName(openProject.Name),'.gpi');
   LShowAll := FInstrumentationFrame.chkShowAll.Checked;
-  LDefines := frmPreferences.ExtractDefines;
+  LDefines := frmPreferences.ExtractAllDefines;
   Enabled := false;
-  LNeededTimeString := '';
   ExecuteAsync(
     procedure
-    var
-      LStopwatch : TStopwatch;
     begin
-      LStopwatch := TStopWatch.StartNew();
-      openProject.Instrument(not LShowAll,NotifyInstrument,
-                         GetProjectPref('MarkerStyle',prefMarkerStyle),
-                         GetProjectPref('KeepFileDate',prefKeepFileDate),
-                         GetProjectPref('MakeBackupOfInstrumentedFile',prefKeepFileDate),
+      openProject.Instrument(not LShowAll,
+                         TGlobalPreferences.GetProjectPref('ExcludedUnits',TGlobalPreferences.ExcludedUnits),
+                         NotifyInstrument,
+                         TGlobalPreferences.GetProjectPref('MarkerStyle',TGlobalPreferences.MarkerStyle),
+                         TGlobalPreferences.GetProjectPref('KeepFileDate',TGlobalPreferences.KeepFileDate),
+                         TGlobalPreferences.GetProjectPref('MakeBackupOfInstrumentedFile',TGlobalPreferences.KeepFileDate),
                          fnm,LDefines,
-                         GetSearchPath(openProject.Name),
-                         GetProjectPref('InstrumentAssembler',prefInstrumentAssembler));
+                         TGlobalPreferences.GetProjectPref('UseFileDate', TGlobalPreferences.UseFileDate),
+                         TGlobalPreferences.GetProjectPref('InstrumentAssembler',TGlobalPreferences.InstrumentAssembler));
 
       if FileExists(fnm) then
         with TIniFile.Create(fnm) do
           try
-            WriteBool('Performance','ProfilingAutostart',GetProjectPref('ProfilingAutostart',prefProfilingAutostart));
-            WriteBool('Performance','CompressTicks',GetProjectPref('SpeedSize',prefSpeedSize)>1);
-            WriteBool('Performance','CompressThreads',GetProjectPref('SpeedSize',prefSpeedSize)>2);
-            WriteString('Output','PrfOutputFilename',ResolvePrfProjectPlaceholders(GetProjectPref('PrfFilenameMakro',prefPrfFilenameMakro)));
+            WriteBool('Performance','ProfilingAutostart',TGlobalPreferences.GetProjectPref('ProfilingAutostart',TGlobalPreferences.ProfilingAutostart));
+            WriteBool('Performance','CompressTicks',TGlobalPreferences.GetProjectPref('SpeedSize',TGlobalPreferences.SpeedSize)>1);
+            WriteBool('Performance','CompressThreads',TGlobalPreferences.GetProjectPref('SpeedSize',TGlobalPreferences.SpeedSize)>2);
+            WriteString('Output','PrfOutputFilename',ResolvePrfProjectPlaceholders(TGlobalPreferences.GetProjectPref('PrfFilenameMakro',TGlobalPreferences.PrfFilenameMakro)));
           finally
             Free;
           end;
-      LStopwatch.Stop;
-      LNeededTimeString := LStopwatch.Elapsed.TotalSeconds.ToString();
     end,
-    procedure
+    procedure(const aNeededSeconds : Double)
     begin
       TThread.Synchronize(nil,
       procedure
@@ -1124,7 +1233,7 @@ begin
           Enabled := true;
           HideProgressBar();
           FInstrumentationFrame.ReloadSource;
-          StatusPanel0('Instrumentation finished, it took '+LNeededTimeString+' seconds.',false);
+          StatusPanel0('Instrumentation finished, it took '+aNeededSeconds.ToString+' seconds.',false);
         end
       );
     end,
@@ -1135,31 +1244,39 @@ end; { TfrmMain.DoInstrument }
 
 procedure TfrmMain.actInstrumentExecute(Sender: TObject);
 begin
-  actRescanChanged.Execute;
   DoInstrument;
 end;
 
 procedure TfrmMain.actOpenExecute(Sender: TObject);
 var
-  vFN: TFileName;
+  LSourceFilename: TFileName;
   LFilename : string;
+  LOpenDialog : TOpenDialog;
 begin
-  OpenDialog.DefaultExt := 'dpr';
+  LOpenDialog := TOpenDialog.Create(Self);
+  LOpenDialog.DefaultExt := TUIStrings.DelphiProjectSourceDefaultExt;
   LFilename := '';
   if assigned(openProfile) then
-    LFileName := ChangeFileExt(openProfile.FileName,'.dpr');
-  OpenDialog.FileName := ExtractFilename(LFilename);
-  OpenDialog.InitialDir := ExtractFileDir(LFilename);
-  OpenDialog.Filter := 'Delphi project (*.dpr)|*.dpr|Delphi package (*.dpk)|*.dpk|Any file (*.*)|*.*';
-  OpenDialog.Title := 'Load delphi project/package...';
-  if OpenDialog.Execute then
+    LFileName := ChangeFileExt(openProfile.FileName, TUIStrings.DelphiProjectSourceExt);
+  LOpenDialog.FileName := ExtractFilename(LFilename);
+  LOpenDialog.InitialDir := ExtractFileDir(LFilename);
+  LOpenDialog.Filter := TUIStrings.ProjectSelectionFilter();
+  LOpenDialog.Title := TUIStrings.LoadProjectCaption();
+  if LOpenDialog.Execute(Self.Handle) then
   begin
-    vFN := OpenDialog.FileName;
-    if AnsiUpperCase(ExtractFileExt(OpenDialog.FileName)) = '.DPROJ' then
-      vFN := ChangeFileExt(vFN, '.DPR');
+    LSourceFilename := LOpenDialog.FileName;
+    if AnsiLowerCase(ExtractFileExt(LOpenDialog.FileName)) = TUIStrings.DelphiProjectExt then
+    begin
+      // convert to dpk if exists, else to dpr
+      if FileExists(ChangeFileExt(LSourceFilename, TUIStrings.DelphiPackageSourceExt)) then
+        LSourceFilename := ChangeFileExt(LSourceFilename, TUIStrings.DelphiPackageSourceExt)
+      else
+        LSourceFilename := ChangeFileExt(LSourceFilename, TUIStrings.DelphiProjectSourceExt);
+    end;
     CloseDelphiHandles;
-    LoadProject(vFN);
+    LoadProject(LSourceFilename);
   end;
+  LOpenDialog.Free;
 end;
 
 procedure TfrmMain.actRescanProjectExecute(Sender: TObject);
@@ -1178,7 +1295,6 @@ end;
 
 procedure TfrmMain.actRemoveInstrumentationExecute(Sender: TObject);
 begin
-  actRescanChanged.Execute;
   FInstrumentationFrame.RemoveInstrumentation(DoInstrument);
 end;
 
@@ -1186,25 +1302,18 @@ procedure TfrmMain.actRunExecute(Sender: TObject);
 var
   run        : string;
   startupInfo: TStartupInfo;
+  LRegAccessor : TRegistryAccessor;
+  LRegEntry : TDelphiRegistryEntry;
 begin
-  with TGpRegistry.Create do
-    try
-      RootKey := HKEY_LOCAL_MACHINE;
-      if OpenKeyReadOnly('\SOFTWARE\Borland\Delphi\' + selectedDelphi) then
-        run := ReadString('Delphi ' + FirstEl(selectedDelphi,'.',-1),'')
-      else begin
-        RootKey := HKEY_CURRENT_USER;
-        if OpenKeyReadOnly('\SOFTWARE\Borland\BDS\' + DelphiVerToBDSVer(selectedDelphi)) then
-          run := ReadString('App', '')
-        else if OpenKeyReadOnly('\SOFTWARE\Embarcadero\BDS\' + DelphiVerToBDSVer(selectedDelphi)) then
-          run := ReadString('App', '')
-        else
-          run := '';
-      end;
-    finally
-      Free;
-    end;
-
+  run := '';
+  LRegAccessor := TRegistryAccessor.Create('');
+  try
+    LRegEntry := LRegAccessor.GetByProductName(TSessionData.selectedDelphi);
+    if assigned(LRegEntry) then
+      run := LRegEntry.App;
+  finally
+    LRegAccessor.Free;
+  end;
   if run = '' then
     raise Exception.Create('Can''t determine Delphi executable file location from registry.');
 
@@ -1248,16 +1357,20 @@ begin
 end;
 
 procedure TfrmMain.actOpenProfileExecute(Sender: TObject);
+var
+  LOpenDialog : TOpenDialog;
 begin
-  with OpenDialog do
-  begin
-    Title := 'Load profile data...';
-    DefaultExt := 'prf';
-    if openProject = nil then FileName := '*.prf'
-                         else FileName := ChangeFileExt(openProject.Name,'.prf');
-    Filter     := 'Profile data|*.prf|Any file|*.*';
-    if Execute then LoadProfile(FileName);
-  end;
+  LOpenDialog := TOpenDialog.Create(self);
+  LOpenDialog.Title := 'Load profile data...';
+  LOpenDialog.DefaultExt := 'prf';
+  if openProject = nil then
+    LOpenDialog.FileName := '*.prf'
+  else
+    LOpenDialog.FileName := ChangeFileExt(openProject.Name,'.prf');
+  LOpenDialog.Filter     := 'Profile data|*.prf|Any file|*.*';
+  if LOpenDialog.Execute(self.Handle) then
+    LoadProfile(LOpenDialog.FileName);
+  LOpenDialog.Free;
 end;
 
 procedure TfrmMain.ResetSourcePreview(reposition: boolean);
@@ -1329,23 +1442,11 @@ end;
 procedure TfrmMain.MRUPrfClick(Sender: TObject; LatestFile: String);
 begin
   if (openProfile = nil) or (openProfile.FileName <> LatestFile) or loadCanceled then
-  try
-    if not FileExists(LatestFile) then
-      raise Exception.Create('File '+LatestFile+ ' not found.');
     LoadProfile(LatestFile);
-  except on e:Exception do
-    if ShowErrorYesNo('Error while loading file "'+LatestFile+'"'+slinebreak+'Delete it from the MRU list ?') = mrYes then
-    begin
-      MRUPrf.DeleteFromMenu(LatestFile);
-      MRUPrf.SaveToRegistry();
-      MRUPrf.LoadFromRegistry();
-    end;
-  end;
 end;
 
 procedure TfrmMain.actInstrumentRunExecute(Sender: TObject);
 begin
-  actRescanChanged.Execute;
   DoInstrument;
   actRun.Execute;
 end;
@@ -1450,7 +1551,7 @@ var
 begin
   s := TStringList.Create;
   try
-    FillInDelphiVersions(s);
+    SynPasSyn.EnumUserSettings(s);
     verch := Chr(delphiVer+Ord('0'));
     setting := s.Count-1;
     for i := 0 to s.Count-2 do
@@ -1465,6 +1566,32 @@ begin
 end;
 
 
+
+procedure TfrmMain.WMDropFiles(var aMsg: TMessage);
+var
+  LDragNDropHandler : TDragNDropHandler;
+  LFilename : string;
+begin
+  LDragNDropHandler := TDragNDropHandler.Create(aMsg.WParam);
+  try
+    LDragNDropHandler.DetermineDroppedFiles();
+    for LFilename in LDragNDropHandler.Filenames do
+    begin
+      if LFilename.EndsWith('.dpr', true) then
+      begin
+        LoadProject(LFilename);
+        Break;
+      end
+      else if LFilename.EndsWith('.prf', True) then
+      begin
+        LoadProfile(LFilename);
+        Break;
+      end;
+    end;
+  finally
+    LDragNDropHandler.free;
+  end;
+end;
 
 { TfrmMain.UseDelphiSettings }
 
@@ -1495,11 +1622,20 @@ const
         end;
       end;
       UseDelphiSettings(delphiVer);
-      if (ParamCount > 1) or (defDelphi = '') then begin
-        dpkName := ChangeFileExt(ParamStr(1),'.dpk');
-        if FileExists(dpkName)
-          then LoadProject(dpkName,defDelphi)
-          else LoadProject(ChangeFileExt(ParamStr(1),'.dpr'),defDelphi);
+      if (ParamCount > 1) or (defDelphi = '') then
+      begin
+        if ParamStr(1).EndsWith('.prf', true) then
+        begin
+          LoadProfile(ParamStr(1));
+        end
+        else
+        begin
+          dpkName := ChangeFileExt(ParamStr(1),'.dpk');
+          if FileExists(dpkName) then
+            LoadProject(dpkName,defDelphi)
+          else
+            LoadProject(ChangeFileExt(ParamStr(1),'.dpr'),defDelphi);
+        end;
       end;
     end
     else begin
@@ -1540,7 +1676,7 @@ procedure TfrmMain.actHideNotExecutedExecute(Sender: TObject);
 begin
   actHideNotExecuted.Checked := not actHideNotExecuted.Checked;
   FProfilingFrame.FillViews;
-  SetProfilePref('HideNotExecuted', actHideNotExecuted.Checked);
+  TGlobalPreferences.SetProfilePref('HideNotExecuted', actHideNotExecuted.Checked);
 end;
 
 procedure TfrmMain.actProjectOptionsExecute(Sender: TObject);
@@ -1556,254 +1692,6 @@ begin
     end;
   end;
 end;
-
-function TfrmMain.ReplaceMacros(s: string): string;
-
-  function GetDelphiXE2Var(const aVarName: string): string;
-  begin
-    if lowercase(aVarName) = 'platform' then Result:= 'Win32';
-    if lowercase(aVarName) = 'config' then Result:= 'Release';
-  end;
-
-  function GetEnvVar(const aVarName: String): String;
-  var
-    vSize: Integer;
-  begin
-    Result := '';
-    vSize := GetEnvironmentVariable(PChar(aVarName), nil, 0);
-    if vSize > 0 then
-    begin
-      SetLength(Result, vSize);
-      GetEnvironmentVariable(PChar(aVarName), PChar(Result), vSize);
-      // Cut out #0 char
-      if Result <> '' then
-        Result := Copy(Result, 1, Length(Result)-1);
-    end;
-  end;
-
-var
-  vMacroValue: String;
-  vMacros: array of String;
-  vInMacro: Boolean;
-  vMacroSt: Integer;
-  i, p: Integer;
-begin
-  Result := s;
-
-  // First, build full macros list from Search Path (macro is found by $(MacroName))
-  vMacros := nil;
-  vMacroSt := -1;
-  vInMacro := False;
-  for i := 1 to Length(Result) do
-    if Copy((Result+' '), i, 2) = '$(' then
-    begin
-      vInMacro := True;
-      vMacroSt := i;
-    end
-    else if vInMacro and (Result[i] = ')') then
-    begin
-      vInMacro := False;
-
-      // Get macro name (without round brackets: $( ) )
-      p := Length(vMacros);
-      SetLength(vMacros, p+1);
-      vMacros[p] := Copy(Result, vMacroSt+2, i-1-(vMacroSt+2)+1);
-    end;
-
-  for i := 0 to High(vMacros) do
-  begin
-    // NB! Paths from DCC_UnitSearchPath element of *.dproj file are already added,
-    // so simply skip this macro
-    if AnsiUpperCase(vMacros[i]) = 'DCC_UNITSEARCHPATH' then
-      Continue;
-
-    vMacroValue := GetEnvVar(vMacros[i]);
-    if (vMacroValue = '') then vMacroValue:= GetDelphiXE2Var(vMacros[i]);
-    // ToDo: Not all macros are possible to get throug environment variables
-    // Neet to find out, how to resolve the rest macros
-    if vMacroValue <> '' then
-      Result := StringReplace(Result, '$(' + vMacros[i] + ')', vMacroValue, [rfReplaceAll]);
-  end;
-end; { TfrmMain.ReplaceMacros }
-
-function TfrmMain.GetSearchPath(const aProject: string): string;
-var
-  vPath: string;
-  vDofFN: TFileName;
-  vDProjFN: TFileName;
-  vBdsProjFN: TFileName;
-  vDProj: TDProj;
-  vBdsProj: TBdsProj;
-  vOldCurDir: String;
-  vFullPath: String;
-  i: Integer;
-begin
-  vPath := '';
-
-  // Get settings from obsolete dof-file
-  vDofFN := ChangeFileExt(aProject, '.dof');
-  if FileExists(vDofFN) then
-    with TIniFile.Create(vDofFN) do
-    try
-      vPath := ReadString('Directories', 'SearchPath', '');
-    finally
-      Free;
-    end;
-
-  // Get settings from dproj-file
-  vDProjFN := ChangeFileExt(aProject, '.dproj');
-  if FileExists(vDProjFN) then
-  begin
-    vDProj := TDProj.Create(vDProjFN);
-    try
-      vPath := IfThen((vPath <> '') and (vPath[Length(vPath)] <> ';'), ';') + vDProj.SearchPath;
-    finally
-      vDProj.Free;
-    end;
-  end;
-
-  // Get settings from bdsproj-file
-  vBdsProjFN := ChangeFileExt(aProject, '.bdsproj');
-  if FileExists(vBdsProjFN) then
-  begin
-    vBdsProj := TBdsProj.Create(vBdsProjFN);
-    try
-      vPath := IfThen((vPath <> '') and (vPath[Length(vPath)] <> ';'), ';') + vBdsProj.SearchPath;
-    finally
-      vBdsProj.Free;
-    end;
-  end;
-
-  // Get settings from registry
-  with TGpRegistry.Create do begin
-    try
-      //Path for Delphi XE2-XE3
-      RootKey:= HKEY_CURRENT_USER;
-      if OpenKeyReadOnly('HKEY_CURRENT_USER\Software\Embarcadero\BDS\'+DelphiVerToBDSVer(selectedDelphi)+'\Library\Win32') then begin
-        vPath := vPath + IfThen((vPath <> '') and (vPath[Length(vPath)] <> ';'), ';') + ReadString('Search Path','');
-        CloseKey;
-      end;
-
-      // Path for Delphi 2009-XE
-      RootKey := HKEY_CURRENT_USER;
-      if OpenKeyReadOnly('SOFTWARE\Embarcadero\BDS\' + DelphiVerToBDSVer(selectedDelphi) + '\Library') then
-      begin
-        vPath := vPath + IfThen((vPath <> '') and (vPath[Length(vPath)] <> ';'), ';') + ReadString('Search Path','');
-        CloseKey;
-      end;
-
-      // Path for Delphi 2005-2007
-      RootKey := HKEY_CURRENT_USER;
-      if OpenKeyReadOnly('SOFTWARE\Borland\BDS\' + DelphiVerToBDSVer(selectedDelphi) + '\Library') then
-      begin
-        vPath := vPath + IfThen((vPath <> '') and (vPath[Length(vPath)] <> ';'), ';') + ReadString('Search Path','');
-        vPath := vPath + IfThen((vPath <> '') and (vPath[Length(vPath)] <> ';'), ';') + ReadString('SearchPath','');
-        CloseKey;
-      end;
-
-      // Path for Delphi 2-7
-      RootKey := HKEY_LOCAL_MACHINE;
-      if OpenKeyReadOnly('SOFTWARE\Borland\Delphi\'+selectedDelphi+'\Library') then
-      begin
-        vPath := vPath + IfThen((vPath <> '') and (vPath[Length(vPath)] <> ';'), ';') + ReadString('SearchPath','');
-        vPath := vPath + IfThen((vPath <> '') and (vPath[Length(vPath)] <> ';'), ';') + ReadString('Search Path','');
-        CloseKey;
-      end;
-    finally
-      Free;
-    end;
-  end;
-
-  // Substitute macros (environment variables) with their real values
-  vPath := ReplaceMacros(vPath);
-
-  // Transform all search paths into absolute
-  Result := '';
-  vOldCurDir := GetCurrentDir;
-  if not SetCurrentDir(ExtractFileDir(aProject)) then
-    Assert(False);
-  try
-    for i := 1 to NumElements(vPath, ';', -1) do
-    begin
-      vFullPath := ExpandUNCFileName(NthEl(vPath, i, ';', -1));
-      if DirectoryExists(vFullPath) then
-        Result := Result + IfThen(Result <> '', ';') + vFullPath;
-    end;
-  finally
-    SetCurrentDir(vOldCurDir);
-  end;
-end;
-
-
-{ TfrmMain.GetSearchPath }
-
-function TfrmMain.GetOutputDir(const aProject: string): string;
-const
-  cPlatform = '$(Platform)';
-  cConfig = '$(Config)';
-var
-  vDProj: TDProj;
-  vDProjFN: TFileName;
-  vDofFN: TFileName;
-  vBdsProjFN: TFileName;
-  vBdsProj: TBdsProj;
-  vOldCurDir: String;
-begin
-  Result := '';
-
-  vDProjFN := ChangeFileExt(aProject, '.dproj');
-  if FileExists(vDProjFN) then
-  begin
-    vDProj := TDProj.Create(vDProjFN);
-    try
-      Result := vDProj.OutputDir;
-    finally
-      vDProj.Free;
-    end;
-  end
-  else begin
-    vDofFN := ChangeFileExt(aProject, '.dof');
-    if FileExists(vDofFN) then
-      with TIniFile.Create(vDofFN) do
-      try
-        Result := ReadString('Directories', 'OutputDir', '');
-      finally
-        Free;
-      end
-    else begin
-      vBdsProjFN := ChangeFileExt(aProject, '.bdsproj');
-      if FileExists(vBdsProjFN) then
-      begin
-        vBdsProj := TBdsProj.Create(vBdsProjFN);
-        try
-          Result := vBdsProj.OutputDir;
-        finally
-          vBdsProj.Free;
-        end
-      end;
-    end;
-  end;
-
-  Result := ReplaceMacros(Result);
-
-  // If getting output dir was not successful - use project dir as output dir
-  if Result = '' then
-    Result := ExtractFilePath(aProject);
-
-  // Transform path to absolute
-  if not IsAbsolutePath(Result) then
-  begin
-    vOldCurDir := GetCurrentDir;
-    try
-      if not SetCurrentDir(ExtractFileDir(aProject)) then
-        Assert(False);
-      Result := ExpandUNCFileName(Result);
-    finally
-      SetCurrentDir(vOldCurDir)
-    end;
-  end;
-  ProjectOutputDir := result;
-end; { TfrmMain.GetOutputDir }
 
 procedure TfrmMain.actRescanProfileExecute(Sender: TObject);
 begin
@@ -1841,7 +1729,9 @@ begin
       sourceCodeEdit.TopLine := focusOn+1;
       StatusPanel0(fileName,true);
     end;
-  except sourceCodeEdit.Lines.Clear; end;
+  except
+    sourceCodeEdit.Lines.Clear;
+  end;
 end; { TfrmMain.LoadSource }
 
 procedure TfrmMain.ClearSource;
@@ -1921,27 +1811,32 @@ end;
 procedure TfrmMain.actMakeCopyProfileExecute(Sender: TObject);
 var LSrc : string;
   LFilename : string;
+  LSaveDialog : TSaveDialog;
 begin
-  try
-    LFilename := ButLast(openProfile.FileName,Length(ExtractFileExt(openProfile.FileName)))+
+  LFilename := ButLast(openProfile.FileName,Length(ExtractFileExt(openProfile.FileName)))+
                 FormatDateTime('_ddmmyy',Now)+'.prf';
-    SaveDialog1.InitialDir := ExtractFileDir(LFilename);
-    SaveDialog1.FileName := ExtractFilename(LFilename);
-    SaveDialog1.Title := 'Make copy of '+openProfile.FileName+'...';
-    SaveDialog1.Filter := 'Profile data|*.prf|Any file|*.*';
-    if SaveDialog1.Execute then begin
-      if ExtractFileExt(SaveDialog1.FileName) = '' then
-        SaveDialog1.FileName := SaveDialog1.FileName + '.prf';
-    LSrc := openProfile.FileName;
-    TFile.Copy(LSrc,SaveDialog1.FileName,true);
-    MRUPrf.LatestFile := SaveDialog1.FileName;
-    MRUPrf.LatestFile := openProfile.FileName;
-  end;
-  except on e: Exception do
+  LSaveDialog := TSaveDialog.Create(Self);
+  try
+    LSaveDialog.InitialDir := ExtractFileDir(LFilename);
+    LSaveDialog.FileName := ExtractFilename(LFilename);
+    LSaveDialog.Title := 'Make copy of '+openProfile.FileName+'...';
+    LSaveDialog.Filter := 'Profile data|*.prf|Any file|*.*';
+    if LSaveDialog.Execute(self.Handle) then
+    begin
+      if ExtractFileExt(LSaveDialog.FileName) = '' then
+        LSaveDialog.FileName := LSaveDialog.FileName + '.prf';
+      LSrc := openProfile.FileName;
+      TFile.Copy(LSrc,LSaveDialog.FileName,true);
+      MRUPrf.LatestFile := LSaveDialog.FileName;
+      MRUPrf.LatestFile := openProfile.FileName;
+    end;
+  except
+    on e: Exception do
     begin
       ShowError(e.Message);
     end;
   end;
+  LSaveDialog.Free;
 end;
 
 procedure TfrmMain.actDelUndelProfileExecute(Sender: TObject);
@@ -1993,28 +1888,31 @@ end;
 procedure TfrmMain.actRenameMoveProfileExecute(Sender: TObject);
 var
   LFilename : string;
+  LSaveDialog : TSaveDialog;
 begin
+  LSaveDialog := TSaveDialog.Create(Self);
   try
     LFilename := ButLast(openProfile.FileName,Length(ExtractFileExt(openProfile.FileName)))+
                 FormatDateTime('_ddmmyy',Now)+'.prf';
-    SaveDialog1.InitialDir := ExtractFileDir(LFilename);
-    SaveDialog1.FileName := ExtractFilename(LFilename);
-    SaveDialog1.Title := 'Rename/Move '+openProfile.FileName+'...';
-    SaveDialog1.Filter := 'Profile data|*.prf|Any file|*.*';
-    if SaveDialog1.Execute then begin
-      if ExtractFileExt(SaveDialog1.FileName) = '' then
-        SaveDialog1.FileName := SaveDialog1.FileName + '.prf';
-      TFile.Move(openProfile.FileName,SaveDialog1.FileName);
-      openProfile.Rename(SaveDialog1.FileName);
-      currentProfile := ExtractFileName(SaveDialog1.FileName);
+    LSaveDialog.InitialDir := ExtractFileDir(LFilename);
+    LSaveDialog.FileName := ExtractFilename(LFilename);
+    LSaveDialog.Title := 'Rename/Move '+openProfile.FileName+'...';
+    LSaveDialog.Filter := 'Profile data|*.prf|Any file|*.*';
+    if LSaveDialog.Execute then begin
+      if ExtractFileExt(LSaveDialog.FileName) = '' then
+        LSaveDialog.FileName := LSaveDialog.FileName + '.prf';
+      TFile.Move(openProfile.FileName,LSaveDialog.FileName);
+      openProfile.Rename(LSaveDialog.FileName);
+      currentProfile := ExtractFileName(LSaveDialog.FileName);
       SetCaption;
-      MRUPrf.LatestFile := SaveDialog1.FileName;
+      MRUPrf.LatestFile := LSaveDialog.FileName;
     end;
   except on e: Exception do
     begin
       ShowError(e.Message);
     end
   end;
+  LSaveDialog.Free;
 end;
 
 procedure TfrmMain.ResetProfile();
@@ -2041,8 +1939,6 @@ begin
   actRenameMoveProfile.Enabled := false;
   actMakeCopyProfile.Enabled   := false;
   actProfileOptions.Enabled    := false;
-  actLoadInstrumentationSelection.Enabled := false;
-  actSaveInstrumentationSelection.Enabled := false;
   DisablePC2;
 end;
 
@@ -2071,7 +1967,7 @@ begin
   if openProject = nil then
     Exit;
 
-  if (not GetProjectPref('UseFileDate', prefUseFileDate)) or
+  if (not TGlobalPreferences.GetProjectPref('UseFileDate', TGlobalPreferences.UseFileDate)) or
     openProject.AnyChange(false) then
   begin
     FInstrumentationFrame.RescanProject(ParseProject);
@@ -2098,29 +1994,33 @@ end;
 procedure TfrmMain.actLoadInstrumentationSelectionExecute(Sender: TObject);
 var
   LFilename : String;
-  LOldEvent : TVTChangeEvent;
-  LLastSelectedIndex : integer;
+  LOpenDialog : TOpenDialog;
 begin
+
   if openProject = nil then
     Exit;
-  LFilename := ChangeFileExt(openProject.Name,'.gis');
-  OpenDialog.DefaultExt := 'gis';
-  OpenDialog.FileName := ExtractFilename(LFilename);
-  OpenDialog.InitialDir := ExtractFileDir(LFilename);
-  OpenDialog.Filter := 'GPProf instrumentation selection (*.gis)|*.gis|Any file (*.*)|*.*';
-  OpenDialog.Title := 'Load instrumentation selection...';
-  if OpenDialog.Execute then
-  begin
-    openProject.LoadInstrumentalizationSelection(OpenDialog.FileName);
-    // an auto-click is done... ignore instrumentation upon select
-    LLastSelectedIndex := FInstrumentationFrame.SelectedUnitIndex;
-    LOldEvent := FInstrumentationFrame.vstSelectUnits.OnChecked;
-    FInstrumentationFrame.vstSelectUnits.OnChecked := nil;
-    cbProfileChange(nil);
-    FInstrumentationFrame.vstSelectUnits.OnChecked := LOldEvent;
-    if LLastSelectedIndex <> -1 then
-      FInstrumentationFrame.SelectedUnitIndex := LLastSelectedIndex;
+  LOpenDialog := TOpenDialog.Create(self);
+  try
+
+    LFilename := MRUGis.LatestFile;
+    LOpenDialog.DefaultExt := 'gis';
+    LOpenDialog.FileName := ExtractFilename(LFilename);
+    LOpenDialog.InitialDir := ExtractFileDir(LFilename);
+    LOpenDialog.Filter := TUIStrings.InstrumentationSelectionFilter();
+    LOpenDialog.Title := 'Load instrumentation selection...';
+    if LOpenDialog.Execute then
+    begin
+      LFilename := LOpenDialog.FileName;
+      MRUGisClick(self,LFilename);
+      MRUGis.LatestFile := LFilename;
+    end;
+  except
+    on e:Exception do
+    begin
+      ShowError(e.message);
+    end;
   end;
+  LOpenDialog.Free;
 end;
 
 procedure TfrmMain.SpeedButton1Click(Sender: TObject);
@@ -2337,25 +2237,30 @@ end;
 procedure TfrmMain.actSaveInstrumentationSelectionExecute(Sender: TObject);
 var
   LFilename : string;
+  LSaveDialog : TSaveDialog;
 begin
   if openProject = nil then
     Exit;
+  LSaveDialog := TSaveDialog.Create(Self);
   try
-    LFilename := ChangeFileExt(openProject.Name,'.gis');
-    SaveDialog1.FileName := ExtractFileName(LFilename);
-    SaveDialog1.InitialDir := ExtractFileDir(LFilename);
-    SaveDialog1.Title := 'Save instrumentation selection...';
-    SaveDialog1.Filter := 'GPProf instrumentation selection (*.gis)|*.gis|Any file (*.*)|*.*';
-    if SaveDialog1.Execute then begin
-      if ExtractFileExt(SaveDialog1.FileName) = '' then
-        SaveDialog1.FileName := SaveDialog1.FileName + '.gis';
-    openProject.SaveInstrumentalizationSelection(SaveDialog1.FileName);
-  end;
+    LFilename := MRUGis.LatestFile;
+    LSaveDialog.FileName := ExtractFileName(LFilename);
+    LSaveDialog.InitialDir := ExtractFileDir(LFilename);
+    LSaveDialog.Title := TUIStrings.SaveInstrumentationSelectionCaption;
+    LSaveDialog.Filter := TUIStrings.InstrumentationSelectionFilter;
+    if LSaveDialog.Execute then
+    begin
+       if ExtractFileExt(LSaveDialog.FileName) = '' then
+          LSaveDialog.FileName := LSaveDialog.FileName + TUIStrings.GPProfInstrumentationSelectionExt;
+      openProject.SaveInstrumentalizationSelection(LSaveDialog.FileName);
+      MRUGis.LatestFile := LFilename;
+    end;
     except on e: Exception do
     begin
       ShowError(e.Message);
     end;
   end;
+  LSaveDialog.free;
 end;
 
 procedure TfrmMain.actShowHideCalleesExecute(Sender: TObject);
@@ -2386,22 +2291,6 @@ begin
     with openProfile do
       LoadSource(resUnits[resProcedures[integer((Sender as TListView).Selected.Data)].peUID].FilePath,
                  resProcedures[integer((Sender as TListView).Selected.Data)].peFirstLn);
-end;
-
-function TfrmMain.GetDOFSetting(section, key, defval: string): string;
-begin
-  Result := '';
-  if Assigned(openProject) then
-  begin
-    with TIniFile.Create(ChangeFileExt(openProject.Name,'.dof')) do
-      try
-        Result := ReadString(section, key, defval);
-      finally
-        Free;
-      end;
-  end
-  else
-    Result := '(project defines)';
 end;
 
 procedure TfrmMain.splitCallersMoved(Sender: TObject);

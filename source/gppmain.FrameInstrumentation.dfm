@@ -49,7 +49,7 @@ object frmMainInstrumentation: TfrmMainInstrumentation
       AlignWithMargins = True
       Left = 3
       Top = 3
-      Width = 123
+      Width = 39
       Height = 17
       Align = alTop
       Caption = '&Units:'
@@ -65,7 +65,9 @@ object frmMainInstrumentation: TfrmMainInstrumentation
       Header.Height = 20
       Header.MainColumn = -1
       Header.MinHeight = 20
+      PopupMenu = PopupMenu1
       TabOrder = 1
+      TreeOptions.AutoOptions = [toAutoDropExpand, toAutoExpand, toAutoScrollOnExpand, toAutoSort, toAutoTristateTracking, toAutoDeleteMovedNodes, toAutoChangeScale]
       TreeOptions.MiscOptions = [toAcceptOLEDrop, toCheckSupport, toFullRepaintOnResize, toInitOnSave, toToggleOnDblClick, toWheelPanning]
       TreeOptions.PaintOptions = [toShowButtons, toShowDropmark, toThemeAware, toUseBlendedImages]
       OnAddToSelection = vstSelectUnitsAddToSelection
@@ -85,7 +87,7 @@ object frmMainInstrumentation: TfrmMainInstrumentation
       AlignWithMargins = True
       Left = 3
       Top = 3
-      Width = 131
+      Width = 51
       Height = 17
       Align = alTop
       Caption = '&Classes:'
@@ -121,7 +123,7 @@ object frmMainInstrumentation: TfrmMainInstrumentation
       AlignWithMargins = True
       Left = 3
       Top = 3
-      Width = 713
+      Width = 69
       Height = 17
       Align = alTop
       Caption = 'P&rocedures:'
@@ -143,6 +145,14 @@ object frmMainInstrumentation: TfrmMainInstrumentation
       OnAddToSelection = vstSelectProcsAddToSelection
       OnChecked = vstSelectProcsChecked
       Columns = <>
+    end
+  end
+  object PopupMenu1: TPopupMenu
+    Left = 392
+    Top = 313
+    object mnuUnitWizard: TMenuItem
+      Caption = 'Unit Selection Wizard...'
+      OnClick = mnuUnitWizardClick
     end
   end
 end

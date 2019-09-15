@@ -32,10 +32,13 @@ type
   public
     constructor Create(const aList: TVirtualStringTree; const aListType : TCheckableItemDataEnum);
     destructor Destroy;override;
-    function AddEntry(const aName : String): PVirtualNode;
+    function AddEntry(const aName : String): PVirtualNode; overload;
+    function AddEntry(const aParent : PVirtualNode;const aName : String): PVirtualNode;overload;
+
     function InsertEntry(const anIndex : integer; const aName : string):PVirtualNode;
 
-    function GetCheckedState(const anIndex: Cardinal): TCheckedState;
+    function GetCheckedState(const anIndex: Cardinal): TCheckedState; overload;
+    function GetCheckedState(const aNode: PVirtualNode): TCheckedState; overload;
     procedure SetCheckedState(const anIndex: Cardinal;const aCheckedState : TCheckedState); overload;
     procedure SetCheckedState(const aNode: PVirtualNode;const aCheckedState : TCheckedState); overload;
 
@@ -58,6 +61,7 @@ begin
   fList.OnFreeNode := self.OnFreeNode;
   fList.OnCompareNodes := self.OnCompareNodes;
   fList.ongettext := OnGetText;
+  fList.TreeOptions.MiscOptions := fList.TreeOptions.MiscOptions + [tocheckSupport];
   fList.TreeOptions.SelectionOptions := fList.TreeOptions.SelectionOptions + [toSyncCheckboxesWithSelection];
 end;
 
@@ -74,8 +78,16 @@ begin
   result := TCheckedState.unchecked;
   LNode := GetNode(anIndex);
   if Assigned(LNode) then
+    result := GetCheckedState(LNode);
+end;
+
+
+function TCheckableListTools.GetCheckedState(const aNode: PVirtualNode): TCheckedState;
+begin
+  result := TCheckedState.unchecked;
+  if Assigned(aNode) then
   begin
-    case LNode.CheckState of
+    case aNode.CheckState of
       TCheckState.csUncheckedNormal,
       TCheckState.csUncheckedPressed,
       TCheckState.csUncheckedDisabled : result := TCheckedState.unchecked;
@@ -88,7 +100,6 @@ begin
     end;
   end;
 end;
-
 
 procedure TCheckableListTools.SetCheckedState(const anIndex: Cardinal;const aCheckedState : TCheckedState);
 begin
@@ -110,10 +121,16 @@ end;
 
 
 function TCheckableListTools.AddEntry(const aName : String): PVirtualNode;
+begin
+  Result := self.AddEntry(nil, aName);
+end;
+
+
+function TCheckableListTools.AddEntry(const aParent : PVirtualNode;const aName : String): PVirtualNode;
 var
   LData : PCheckableItemData;
 begin
-  result := flist.AddChild(nil);
+  result := flist.AddChild(aParent);
   result.CheckType := ctTriStateCheckBox;
   LData := PCheckableItemData(result.GetData);
   case fListType of

@@ -56,6 +56,7 @@ type
     for i := 0 to editList.Count-1 do
       Dispose(PFECmd(editList.Objects[i]));
     editList.Free;
+    inherited;
   end; { TFileEdit.Destroy }
 
   procedure TFileEdit.Execute(const keepDate: boolean);

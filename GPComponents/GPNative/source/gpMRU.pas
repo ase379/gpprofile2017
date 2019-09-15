@@ -37,6 +37,8 @@ type
     procedure SaveToRegistry;
     procedure LoadFromRegistry;
     procedure DeleteFromMenu(const aRecentFile: string);
+    function FindItem(const aRecentFile : string) : TMenuItem;
+
     property LatestFile: string read FLatestFile write SetLatestFile;
   published
     property Menu           : TMenuItem read FMenu write FMenu;
@@ -265,11 +267,12 @@ begin
   end;
 end;
 
-procedure TGPMRUFiles.DeleteFromMenu(const aRecentFile: string);
+function TGPMRUFiles.FindItem(const aRecentFile : string) : TMenuItem;
 var
   n         : integer;
   LDividerPos: integer;
 begin
+  result := nil;
   if (Menu <> nil) or (PopupMenu <> nil)then
   begin
     LDividerPos:=DividerPlace;
@@ -277,22 +280,30 @@ begin
       for n:=LDividerPos+1 to Menu.Count-1 do
       begin
         if Menu.Items[n].Caption.EndsWith(aRecentFile) then
-        begin
-          Menu.remove(Menu.Items[n]);
-          Break;
-        end;
+          Exit(Menu.Items[n]);
       end;
     if assigned(PopupMenu) then
       for n:=LDividerPos+1 to PopupMenu.items.Count-1 do
       begin
         if PopupMenu.items[n].Caption.EndsWith(aRecentFile) then
-        begin
-          PopupMenu.items.remove(PopupMenu.items[n]);
-          Break;
-        end;
+          Exit(PopupMenu.items[n]);
       end;
   end;
 
+end;
+
+procedure TGPMRUFiles.DeleteFromMenu(const aRecentFile: string);
+var
+  LItem : TMenuItem;
+begin
+  LItem := FindItem(aRecentFile);
+  if assigned(LItem) then
+  begin
+    if Assigned(Menu) then
+      Menu.remove(LItem);
+    if Assigned(PopupMenu) then
+      PopupMenu.items.remove(LItem);
+  end;
 end;
 
 

@@ -5,8 +5,8 @@ interface
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes,
   Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.Dialogs, VirtualTrees, Vcl.StdCtrls, Vcl.ExtCtrls,
-  virtualTree.tools.checkable,
-  gpParser;
+  virtualTree.tools.checkable,System.Generics.Collections,
+  gpParser, Vcl.Menus;
 
 type
   TOnShowStatusBarMessage = procedure (const msg: string; const beep: boolean) of object;
@@ -28,12 +28,15 @@ type
     pnlProcs: TPanel;
     lblProcs: TStaticText;
     vstSelectProcs: TVirtualStringTree;
+    PopupMenu1: TPopupMenu;
+    mnuUnitWizard: TMenuItem;
     procedure vstSelectProcsAddToSelection(Sender: TBaseVirtualTree; Node: PVirtualNode);
     procedure vstSelectProcsChecked(Sender: TBaseVirtualTree; Node: PVirtualNode);
     procedure vstSelectClassesAddToSelection(Sender: TBaseVirtualTree; Node: PVirtualNode);
     procedure vstSelectClassesChecked(Sender: TBaseVirtualTree; Node: PVirtualNode);
     procedure vstSelectUnitsAddToSelection(Sender: TBaseVirtualTree; Node: PVirtualNode);
     procedure vstSelectUnitsChecked(Sender: TBaseVirtualTree; Node: PVirtualNode);
+    procedure mnuUnitWizardClick(Sender: TObject);
   private
     fVstSelectUnitTools       : TCheckableListTools;
     fVstSelectClassTools      : TCheckableListTools;
@@ -74,6 +77,8 @@ type
     procedure RescanProject(const aOnRescan : TOnParseProject);
     procedure RemoveInstrumentation(const aOnDoInstrument : TOnDoInstrument);
 
+    procedure TriggerSelectionReload();
+
     property openProject : TProject read fOpenProject write fOpenProject;
     property OnShowStatusBarMessage : TOnShowStatusBarMessage read fOnShowStatusBarMessage write fOnShowStatusBarMessage;
     property OnReloadSource : TReloadSourceEvent read fOnReloadSource write fOnReloadSource;
@@ -83,7 +88,7 @@ type
 implementation
 
 uses
-  GpString,
+  GpString, gpUnitWizard, gpParser.Units, gpParser.Selections,
   gppMain.FrameInstrumentation.SelectionInfo;
 
 {$R *.dfm}
@@ -223,6 +228,7 @@ begin
   finally
     s.free;
   end;
+  mnuUnitWizard.Enabled := false;
   if assigned(LFirstNode) then
   begin
     fVstSelectUnitTools.setSelectedIndex(0);
@@ -238,6 +244,53 @@ end;
 function TfrmMainInstrumentation.GetSelectedUnitName: string;
 begin
   result := fVstSelectUnitTools.GetName(fVstSelectUnitTools.GetSelectedIndex);
+end;
+
+
+procedure TfrmMainInstrumentation.mnuUnitWizardClick(Sender: TObject);
+var
+  LEnum : TVTVirtualNodeEnumerator;
+  LWizard : tfmUnitWizard;
+  LUnitSelectionList : TUnitSelectionList;
+  LUnitSelection : TUnitSelection;
+  LKey : string;
+  LCheckedState : TCheckedState;
+  LName : string;
+begin
+  if not assigned(fopenProject) then
+    exit;
+
+  LWizard := tfmUnitWizard.Create(Self);
+  try
+    LEnum := vstSelectUnits.Nodes().GetEnumerator;
+    while(LEnum.MoveNext) do
+    begin
+      // we are using a tree, so avoid the index
+      LName := fVstSelectUnitTools.GetName(LEnum.Current);
+      LCheckedState := fVstSelectUnitTools.GetCheckedState(LEnum.Current);
+      if LCheckedState = TCheckedState.checked then
+        LWizard.SelectedUnitNames.AddOrSetValue(Lname, 0);
+    end;
+
+    if LWizard.Execute(fopenProject, fVstSelectUnitTools.GetName(fVstSelectUnitTools.GetSelectedIndex)) then
+    begin
+      LUnitSelectionList := TUnitSelectionList.Create;
+      try
+        for LKey in LWizard.SelectedUnitNames.Keys do
+        begin
+          LUnitSelection := TUnitSelection.Create(LKey);
+          LUnitSelection.SelectedProcedures.Add('*');
+          LUnitSelectionList.Add(LUnitSelection)
+        end;
+        fopenProject.ApplySelections(LUnitSelectionList, true);
+        TriggerSelectionReload();
+      finally
+        LUnitSelectionList.Free;
+      end;
+    end;
+  finally
+    LWizard.Free;
+  end;
 end;
 
 procedure TfrmMainInstrumentation.vstSelectClassesAddToSelection(Sender: TBaseVirtualTree; Node: PVirtualNode);
@@ -294,7 +347,7 @@ end;
 procedure TfrmMainInstrumentation.ClickProcs(index: integer; recreateCl: boolean);
 var
   i : integer;
-  un: TUnit;
+  LUnit: TUnit;
   LFqProcName : string;
   LEnumor : TVTVirtualNodeEnumerator;
 
@@ -330,10 +383,10 @@ begin
     else
       LFqProcName := GetSelectedClassName + '.' + fVstSelectProcTools.GetName(index);
     openProject.InstrumentProc(GetSelectedUnitName, LFqProcName, fVstSelectProcTools.IsChecked(index));
-    un := openProject.LocateUnit(GetSelectedUnitName);
-    if un.unAllInst then
+    LUnit := openProject.LocateUnit(GetSelectedUnitName);
+    if LUnit.unAllInst then
       fVstSelectProcTools.SetCheckedState(0, TCheckedState.checked)
-    else if un.unNoneInst then
+    else if LUnit.unNoneInst then
       fVstSelectProcTools.SetCheckedState(0, TCheckedState.unchecked)
     else
       fVstSelectProcTools.Getnode(0).CheckState := TCheckState.csCheckedDisabled;
@@ -525,7 +578,7 @@ procedure TfrmMainInstrumentation.clbUnitsClick();
 var
   LIndex : integer;
   LSelectedNode : PVirtualNode;
-
+  LUnitPath : string;
 begin
   fVstSelectProcTools.BeginUpdate;
   try
@@ -534,6 +587,7 @@ begin
     try
       fVstSelectClassTools.Clear;
       LIndex := 0;
+      LUnitPath := '';
       LSelectedNode := fVstSelectUnitTools.GetSelectedNode();
       if assigned(lSelectedNode) then
         LIndex := LSelectedNode.Index;
@@ -543,11 +597,13 @@ begin
         RecreateClasses(false);
         ChangeClassSelectionWithoutEvent(0);
         clbClassesClick(self);
-        OnShowStatusBarMessage(openProject.GetUnitPath(fVstSelectUnitTools.GetName(lSelectedNode.Index)), false)
+        LUnitPath := openProject.GetUnitPath(fVstSelectUnitTools.GetName(lSelectedNode.Index));
+        OnShowStatusBarMessage(LUnitPath, false)
       end
       else if openProject <> nil then
         OnShowStatusBarMessage(openProject.Name, false);
-      OnReloadSource('',0); // force reset
+      OnReloadSource(LUnitPath,0); // force reset
+      mnuUnitWizard.Enabled := LIndex > 0;
     finally
       fVstSelectClassTools.EndUpdate;
     end;
@@ -695,6 +751,21 @@ end;
 procedure TfrmMainInstrumentation.SetSelectedUnitIndex(const anIndex: integer);
 begin
   fVstSelectUnitTools.setSelectedIndex(anIndex);
+end;
+
+procedure TfrmMainInstrumentation.TriggerSelectionReload;
+var
+  LLastSelectedIndex : integer;
+  LOldEvent : TVTChangeEvent;
+begin
+    // an auto-click is done... ignore instrumentation upon select
+  LLastSelectedIndex := SelectedUnitIndex;
+  LOldEvent := vstSelectUnits.OnChecked;
+  vstSelectUnits.OnChecked := nil;
+  chkShowAll.OnClick(nil);     // triggers reload
+  vstSelectUnits.OnChecked := LOldEvent;
+  if LLastSelectedIndex <> -1 then
+    SelectedUnitIndex := LLastSelectedIndex;
 end;
 
 { TfrmMain.RebloadSource }

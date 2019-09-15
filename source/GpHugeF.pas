@@ -132,6 +132,7 @@ const
   destructor TGpHugeFile.Destroy;
   begin
     Close;
+    inherited
   end; { TGpHugeFile.Destroy }
 
   function TGpHugeFile.FileExists: boolean;
@@ -359,7 +360,7 @@ const
 
   function OffsetPtr(ptr: pointer; offset: DWORD): pointer;
   begin
-    Result := pointer(DWORD(ptr)+offset);
+    Result := pointer(PByte(ptr)+offset);
   end; { OffsetPtr }
 
   procedure TGpHugeFile.Transmit(const buf; count: DWORD; var transferred: DWORD);

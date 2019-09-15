@@ -16,6 +16,8 @@ Additional features are:
 - The PRF output filename can be now be configured using several placeholders, e.g. the ModuleName or the ProcessName and ID.
 - The help system now uses CHM instead of HLP. HLP is not supported anymore by modern OSes.
 
+Redesigned UI with high DPI support starting with version 1.5.0.
+
 # Credits #
 
 GpProfile allows easily find bottlenecks and significantly improve perfomance of your Delphi applications. It is a must-have tool for any Delphi developer.
@@ -36,7 +38,7 @@ It was released under the GPLv2.
 
 GpProfile is a source code instrumenting profiler for Delphi.
 
-The source codes for the UI of gpprofile2017 can be compiled using Delphi XE7 and higher. For proper hogh DPI support, you should use Delphi Tokyo or above.
+The source codes for the UI of gpprofile2017 can be compiled using Delphi XE7 and higher. For proper high DPI support, you should use Delphi Tokyo or above.
 
 The executable file (gpprof.exe) is able to work and profile sources for Delphi XE and higher.
 
