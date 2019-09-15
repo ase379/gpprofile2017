@@ -749,18 +749,27 @@ procedure TfrmMain.LoadProfile(fileName: string);
 begin
   try
     if not FileExists(fileName) then
-      raise Exception.Create('File '+fileName+ ' not found.');
+      raise EFileNotFoundException.Create('File '+fileName+ ' not found.');
     MRUPrf.LatestFile := fileName;
     currentProfile := ExtractFileName(fileName);
     PageControl1.ActivePage := tabAnalysis;
     ClearSource;
     ParseProfile(fileName);
   except on e:Exception do
-    if ShowErrorYesNo(TUIStrings.ErrorLoadingMRUDeleteIt(fileName)) = mrYes then
     begin
-      MRUPrf.DeleteFromMenu(fileName);
-      MRUPrf.SaveToRegistry();
-      MRUPrf.LoadFromRegistry();
+      if Assigned(MRUGis.FindItem(fileName)) then
+      begin
+        if ShowErrorYesNo(TUIStrings.ErrorLoadingMRUDeleteIt(fileName)) = mrYes then
+        begin
+          MRUPrf.DeleteFromMenu(fileName);
+          MRUPrf.SaveToRegistry();
+          MRUPrf.LoadFromRegistry();
+        end
+      end
+      else
+      begin
+        ShowError(TUIStrings.ErrorLoading(fileName));
+      end;
     end;
   end;
   ReloadJumpList();
