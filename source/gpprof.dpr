@@ -33,7 +33,6 @@ uses
   gppmain.FrameInstrumentation in 'gppmain.FrameInstrumentation.pas' {frmMainInstrumentation: TFrame},
   gppTree in 'gppTree.pas',
   gppMain in 'gppMain.pas' {frmMain},
-  gpFileEdit in 'gpFileEdit.pas',
   GpVersion in 'GpVersion.pas',
   gppIDT in 'gppIDT.pas',
   gpUnitWizard in 'gpUnitWizard.pas' {fmUnitWizard},
