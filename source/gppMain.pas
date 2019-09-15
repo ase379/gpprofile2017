@@ -991,7 +991,7 @@ procedure TfrmMain.ReloadJumpList();
       if Length(LPath) < 4 then
         Continue;
       LPath := Copy(LPath,4, 256);
-      JumpList1.AddItemToCategory(LCategoryIndex, ExtractFileName(LPath),'',LPath);
+      JumpList1.AddItemToCategory(LCategoryIndex, ExtractFileName(LPath),'',AnsiQuotedStr(LPath, '"'));
     end;
   end;
 
