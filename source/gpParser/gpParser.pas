@@ -434,10 +434,6 @@ begin
   end;
 end;
 
-
-
-
-
 procedure TProject.SaveInstrumentalizationSelection(const aFilename: string);
 var
   LInstrumentedUnits : TStringList;
