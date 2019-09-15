@@ -432,15 +432,16 @@ begin
 end;
 
 procedure TProject.LoadInstrumentalizationSelection(const aFilename: string);
-
 var
   LUnitSelections: TUnitSelectionList;
-
 begin
   LUnitSelections := TUnitSelectionList.Create(true);
-  LUnitSelections.LoadSelectionFile(aFilename);
-  ApplySelections(LUnitSelections, false);
-  LUnitSelections.Free;
+  try
+    LUnitSelections.LoadSelectionFile(aFilename);
+    ApplySelections(LUnitSelections, false);
+  finally
+    LUnitSelections.Free;
+  end;
 end;
 
 

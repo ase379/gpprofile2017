@@ -573,7 +573,7 @@ procedure TfrmMain.LoadProject(fileName: string; defaultDelphi: string = '');
 begin
   try
     if not FileExists(fileName) then
-      raise Exception.Create('File '+fileName+ ' not found.');
+      raise EFileNotFoundException.Create('File '+fileName+ ' not found.');
     MRU.LatestFile := fileName;
     currentProject := ExtractFileName(fileName);
     ParseProject(fileName,false);
@@ -587,12 +587,20 @@ begin
     SetSource;
   except
     on e:Exception do
-    if ShowErrorYesNo('Error while loading file "'+fileName+'"'+slinebreak+'Delete it from the MRU list ?') = mrYes then
+    if Assigned(MRUGis.FindItem(fileName)) then
     begin
-      MRU.DeleteFromMenu(fileName);
-      MRU.SaveToRegistry();
-      MRU.LoadFromRegistry();
+      if ShowErrorYesNo(TUIStrings.ErrorLoadingMRUDeleteIt(fileName)) = mrYes then
+      begin
+        MRU.DeleteFromMenu(fileName);
+        MRU.SaveToRegistry();
+        MRU.LoadFromRegistry();
+      end;
+    end
+    else
+    begin
+      ShowError(TUIStrings.ErrorLoading(fileName));
     end;
+
   end;
   ReloadJumpList();
 end; { TfrmMain.LoadProject }
@@ -741,18 +749,27 @@ procedure TfrmMain.LoadProfile(fileName: string);
 begin
   try
     if not FileExists(fileName) then
-      raise Exception.Create('File '+fileName+ ' not found.');
+      raise EFileNotFoundException.Create('File '+fileName+ ' not found.');
     MRUPrf.LatestFile := fileName;
     currentProfile := ExtractFileName(fileName);
     PageControl1.ActivePage := tabAnalysis;
     ClearSource;
     ParseProfile(fileName);
   except on e:Exception do
-    if ShowErrorYesNo('Error while loading file "'+fileName+'"'+slinebreak+'Delete it from the MRU list ?') = mrYes then
     begin
-      MRUPrf.DeleteFromMenu(fileName);
-      MRUPrf.SaveToRegistry();
-      MRUPrf.LoadFromRegistry();
+      if Assigned(MRUGis.FindItem(fileName)) then
+      begin
+        if ShowErrorYesNo(TUIStrings.ErrorLoadingMRUDeleteIt(fileName)) = mrYes then
+        begin
+          MRUPrf.DeleteFromMenu(fileName);
+          MRUPrf.SaveToRegistry();
+          MRUPrf.LoadFromRegistry();
+        end
+      end
+      else
+      begin
+        ShowError(TUIStrings.ErrorLoading(fileName));
+      end;
     end;
   end;
   ReloadJumpList();
@@ -1000,10 +1017,29 @@ end;
 
 procedure TfrmMain.MRUGisClick(Sender: TObject; LatestFile: string);
 begin
-  openProject.LoadInstrumentalizationSelection(LatestFile);
-  TSessionData.SetLastSelectedGisFolder(LatestFile);
-  // an auto-click is done... ignore instrumentation upon select
-  FInstrumentationFrame.TriggerSelectionReload;
+  try
+    openProject.LoadInstrumentalizationSelection(LatestFile);
+    // an auto-click is done... ignore instrumentation upon select
+    FInstrumentationFrame.TriggerSelectionReload;
+  except
+    on e:Exception do
+    begin
+      if Assigned(MRUGis.FindItem(LatestFile)) then
+      begin
+        if ShowErrorYesNo(TUIStrings.ErrorLoadingMRUDeleteIt(LatestFile)) = mrYes then
+        begin
+          MRUGis.DeleteFromMenu(LatestFile);
+          MRUGis.SaveToRegistry();
+          MRUGis.LoadFromRegistry();
+        end;
+      end
+      else
+      begin
+        ShowError(TUIStrings.ErrorLoading(LatestFile));
+      end;
+    end;
+  end;
+
 end;
 
 procedure TfrmMain.SaveMetrics(layoutName: string);
@@ -2002,7 +2038,8 @@ begin
     Exit;
   LOpenDialog := TOpenDialog.Create(self);
   try
-    LFilename := ChangeFileExt(TSessionData.GetLastSelectedGisFolder(),TUIStrings.GPProfInstrumentationSelectionExt);
+
+    LFilename := MRUGis.LatestFile;
     LOpenDialog.DefaultExt := 'gis';
     LOpenDialog.FileName := ExtractFilename(LFilename);
     LOpenDialog.InitialDir := ExtractFileDir(LFilename);
@@ -2016,11 +2053,8 @@ begin
     end;
   except
     on e:Exception do
-    if ShowErrorYesNo('Error while loading file "'+LFilename+'"'+slinebreak+'Delete it from the MRU list ?') = mrYes then
     begin
-      MRUGis.DeleteFromMenu(LFilename);
-      MRUGis.SaveToRegistry();
-      MRUGis.LoadFromRegistry();
+      ShowError(e.message);
     end;
   end;
   LOpenDialog.Free;
@@ -2246,7 +2280,7 @@ begin
     Exit;
   LSaveDialog := TSaveDialog.Create(Self);
   try
-    LFilename := ChangeFileExt(TSessionData.GetLastSelectedGisFolder,TUIStrings.GPProfInstrumentationSelectionExt);
+    LFilename := MRUGis.LatestFile;
     LSaveDialog.FileName := ExtractFileName(LFilename);
     LSaveDialog.InitialDir := ExtractFileDir(LFilename);
     LSaveDialog.Title := TUIStrings.SaveInstrumentationSelectionCaption;
@@ -2256,7 +2290,7 @@ begin
        if ExtractFileExt(LSaveDialog.FileName) = '' then
           LSaveDialog.FileName := LSaveDialog.FileName + TUIStrings.GPProfInstrumentationSelectionExt;
       openProject.SaveInstrumentalizationSelection(LSaveDialog.FileName);
-      TSessionData.SetLastSelectedGisFolder(LSaveDialog.FileName);
+      MRUGis.LatestFile := LFilename;
     end;
     except on e: Exception do
     begin
