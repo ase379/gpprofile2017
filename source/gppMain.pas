@@ -233,8 +233,6 @@ type
     function  ParseProfileCallback(percent: integer): boolean;
     procedure ParseProfileDone;
     procedure FillDelphiVer;
-    function  GetSearchPath(const aProject: string): string;
-    function  GetOutputDir(const aProject: string): string;
     procedure FindMyDelphi;
     procedure CloseDelphiHandles;
     procedure LoadSource(const fileName: String; focusOn: integer);
@@ -444,7 +442,7 @@ end; { TfrmMain.EnablePC }
 
 procedure TFrmMain.RestoreUIAfterParseProject();
 begin
-  GetOutputDir(openProject.Name);
+  TSessionData.ProjectOutputDir := openProject.OutputDir;
   StatusPanel0('Parsed', True);
   EnablePC;
   Enabled := true;
@@ -477,7 +475,7 @@ begin
     InitProgressBar(self,self.ApplicationTaskbar, 'Parsing units...', true, false);
     SetProgressBarOverlayHint('Parsing units...');
     FInstrumentationFrame.FillUnitTree(true); // clear all listboxes
-    openProject := TProject.Create(aProject);
+    openProject := TProject.Create(aProject, TSessionData.selectedDelphi);
     TSessionData.CurrentProjectName := aProject;
     RebuildDefines;
     vErrList := TStringList.Create;
@@ -487,7 +485,6 @@ begin
       begin
         openProject.Parse(
           TGlobalPreferences.GetProjectPref('ExcludedUnits',TGlobalPreferences.ExcludedUnits),
-          GetSearchPath(aProject),
           LDefines, NotifyParse,
           TGlobalPreferences.GetProjectPref('MarkerStyle', TGlobalPreferences.MarkerStyle),
           TGlobalPreferences.GetProjectPref('InstrumentAssembler', TGlobalPreferences.InstrumentAssembler),
@@ -522,7 +519,6 @@ begin
       begin
         openProject.Rescan(
           TGlobalPreferences.GetProjectPref('ExcludedUnits', TGlobalPreferences.ExcludedUnits),
-          GetSearchPath(aProject),
           LDefines,
           TGlobalPreferences.GetProjectPref('MarkerStyle', TGlobalPreferences.MarkerStyle),
           TGlobalPreferences.GetProjectPref('UseFileDate', TGlobalPreferences.UseFileDate),
@@ -799,7 +795,7 @@ var
   LRegEntryList : TDelphiRegistryEntryList;
   LProductName : string;
 begin
-  LAccessor := TRegistryAccessor.Create();
+  LAccessor := TRegistryAccessor.Create('');
   try
     LRegEntryList := LAccessor.RegistryEntries;
     for i := 0 to LRegEntryList.Count-1 do
@@ -1200,7 +1196,7 @@ var
   LDefines : string;
 begin
   InitProgressBar(self,self.ApplicationTaskbar,'Instrumenting units...',true, false);
-  outDir := GetOutputDir(openProject.Name);
+  outDir := openProject.OutputDir;
   fnm := MakeSmartBackslash(outDir)+ChangeFileExt(ExtractFileName(openProject.Name),'.gpi');
   LShowAll := FInstrumentationFrame.chkShowAll.Checked;
   LDefines := frmPreferences.ExtractAllDefines;
@@ -1215,7 +1211,6 @@ begin
                          TGlobalPreferences.GetProjectPref('KeepFileDate',TGlobalPreferences.KeepFileDate),
                          TGlobalPreferences.GetProjectPref('MakeBackupOfInstrumentedFile',TGlobalPreferences.KeepFileDate),
                          fnm,LDefines,
-                         GetSearchPath(openProject.Name),
                          TGlobalPreferences.GetProjectPref('UseFileDate', TGlobalPreferences.UseFileDate),
                          TGlobalPreferences.GetProjectPref('InstrumentAssembler',TGlobalPreferences.InstrumentAssembler));
 
@@ -1311,7 +1306,7 @@ var
   LRegEntry : TDelphiRegistryEntry;
 begin
   run := '';
-  LRegAccessor := TRegistryAccessor.Create();
+  LRegAccessor := TRegistryAccessor.Create('');
   try
     LRegEntry := LRegAccessor.GetByProductName(TSessionData.selectedDelphi);
     if assigned(LRegEntry) then
@@ -1697,38 +1692,6 @@ begin
     end;
   end;
 end;
-
-function TfrmMain.GetSearchPath(const aProject: string): string;
-var
-  vPath: string;
-  LProjectAccessor : TProjectAccessor;
-begin
-  vPath := '';
-  LProjectAccessor := TProjectAccessor.Create(aProject);
-  try
-    Result := LProjectAccessor.GetSearchPath(TSessionData.selectedDelphi);
-  finally
-    LProjectAccessor.Free;
-  end;
-end;
-
-
-{ TfrmMain.GetSearchPath }
-
-function TfrmMain.GetOutputDir(const aProject: string): string;
-var
-  LProjectAccessor : TProjectAccessor;
-begin
-  Result := '';
-
-  LProjectAccessor := TProjectAccessor.Create(aProject);
-  try
-    result := LProjectAccessor.GetOutputDir()
-  finally
-    LProjectAccessor.Free;
-  end;
-  TSessionData.ProjectOutputDir := result;
-end; { TfrmMain.GetOutputDir }
 
 procedure TfrmMain.actRescanProfileExecute(Sender: TObject);
 begin

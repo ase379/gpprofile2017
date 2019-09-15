@@ -20,6 +20,7 @@ type
     function GetOutputDir(): string;
     function GetProjectDefines(): string;
     function GetSearchPath(const aDelphiCompilerVersion: string): string;
+    function GetNamespaces(const aDelphiCompilerVersion: string): string;
   end;
 
 
@@ -147,6 +148,16 @@ begin
     Result := fDofReader.GetProjectDefines;
 end;
 
+function TProjectAccessor.GetNamespaces(const aDelphiCompilerVersion: string): string;
+begin
+  Result := '';
+
+  if assigned(fDProjReader) then
+  begin
+    Result := fDProjReader.GetProjectNamespaces();
+  end;
+end;
+
 function TProjectAccessor.GetSearchPath(const aDelphiCompilerVersion: string): string;
 
   function AppendPath(const aPath, aPartToBeAppended : string): string;
@@ -162,21 +173,26 @@ var
   LPath : string;
   LOldCurrentDir : string;
   LFullPath : string;
+  LPlatform : string;
   i : Integer;
   LRegistryAccessor : TRegistryAccessor;
   LEntry : TDelphiRegistryEntry;
 begin
   Result := '';
   LPath := '';
+  LPlatform := '';
 
   if assigned(fDProjReader) then
-    LPath := fDProjReader.GetSearchPath
+  begin
+    LPath := fDProjReader.GetSearchPath;
+    LPlatform := fDProjReader.GetPlatformOfCurrentConfig();
+  end
   else if assigned(fBdsProjReader) then
     LPath := fBdsProjReader.GetSearchPath
   else if assigned(fDofReader) then
     LPath := fDofReader.GetSearchPath;
 
-  LRegistryAccessor := TRegistryAccessor.Create();
+  LRegistryAccessor := TRegistryAccessor.Create(LPlatform);
   try
     LEntry := LRegistryAccessor.GetByProductName(aDelphiCompilerVersion);
     if assigned(LEntry) then

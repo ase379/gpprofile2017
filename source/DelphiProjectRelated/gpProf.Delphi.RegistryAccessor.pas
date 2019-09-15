@@ -10,16 +10,17 @@ type
   private
     fProductVersion : string;
     fApp : string;
-    fSearchPath : string;
+    fSearchPathes : TDictionary<String, Byte>;
     function GetProductName: string;
     procedure AppendSearchPath(const aPartToBeAppended: string);
+    function getSearchPath: string;
   public
     constructor Create(const aProductVersion : string);
-
+    destructor Destroy; override;
     property ProductVersion : string read fProductVersion;
     property ProductName : string read GetProductName;
     property App : string read fApp;
-    property SearchPath : string read fSearchPath;
+    property SearchPath : string read getSearchPath;
   end;
   TDelphiRegistryEntryList = TObjectList<TDelphiRegistryEntry>;
 
@@ -27,13 +28,14 @@ type
   private
     fDelphiRegList : TDelphiRegistryEntryList;
     fCheckForExistingExe : Boolean;
+    fPlatform: string;
     procedure FillInKeyNames(const aRegistry: TRegistry;const aRootKey: HKEY;const aKey: string; const aTargetStringList: TStringList);
     function GetKeyValue(const aRegistry: TRegistry;const aRootKey: HKEY;const aKey, aValue: string): string;
 
     function GetDelphiRegList(): TDelphiRegistryEntryList;
 
   public
-    constructor Create();
+    constructor Create(const aPlatform: string);
     destructor Destroy; override;
 
     function GetByProductName(const aProductName : string) : TDelphiRegistryEntry;
@@ -56,10 +58,11 @@ const
 
 { TRegistryAccessor }
 
-constructor TRegistryAccessor.Create();
+constructor TRegistryAccessor.Create(const aPlatform: string);
 begin
   inherited Create();
   fCheckForExistingExe := True;
+  fPlatform := aPlatform;
 end;
 
 destructor TRegistryAccessor.Destroy;
@@ -158,6 +161,7 @@ begin
         begin
           LRegEntry.AppendSearchPath(LRegistry.ReadString('SearchPath'));
           LRegEntry.AppendSearchPath(LRegistry.ReadString('Search Path'));
+          LRegEntry.AppendSearchPath(LRegistry.ReadString('Browsing Path'));
           LRegistry.CloseKey;
         end;
 
@@ -181,6 +185,7 @@ begin
         begin
           LRegEntry.AppendSearchPath(LRegistry.ReadString('Search Path'));
           LRegEntry.AppendSearchPath(LRegistry.ReadString('SearchPath'));
+          LRegEntry.AppendSearchPath(LRegistry.ReadString('Browsing Path'));
           LRegistry.CloseKey;
         end;
       end;
@@ -208,9 +213,10 @@ begin
           LRegistry.CloseKey;
         end;
 
-        if LRegistry.OpenKeyReadOnly(REG_PATH_EMBARCADERO_KEYS +'\'+ LProductVersion +'\Library\Win32') then
+        if LRegistry.OpenKeyReadOnly(REG_PATH_EMBARCADERO_KEYS +'\'+ LProductVersion +'\Library\'+fPlatform) then
         begin
           LRegEntry.AppendSearchPath(LRegistry.ReadString('Search Path'));
+          LRegEntry.AppendSearchPath(LRegistry.ReadString('Browsing Path'));
           LRegistry.CloseKey;
         end;
       end;
@@ -228,22 +234,51 @@ end;
 { TDelphiRegistryEntry }
 
 procedure TDelphiRegistryEntry.AppendSearchPath(const aPartToBeAppended : string);
+var
+  LPathes : TArray<string>;
+  i : Integer;
+  LKey : string;
 begin
-  if (Length(fSearchPath) > 0) then
-    if not fSearchPath.EndsWith(';') then
-      fSearchPath := fSearchPath + ';';
-  fSearchPath := fSearchPath + aPartToBeAppended;
+  LPathes := aPartToBeAppended.Split([';']);
+  for i := Low(LPathes) to High(LPathes) do
+  begin
+    LKey := Trim(LPathes[i]).ToLower;
+    if not fSearchPathes.ContainsKey(LKey) then
+      fSearchPathes.Add(LKey, 0);
+  end;
 end;
 
 constructor TDelphiRegistryEntry.Create(const aProductVersion: string);
 begin
   inherited Create();
   fProductVersion := aProductVersion;
+  fSearchPathes := TDictionary<String, Byte>.Create();
+end;
+
+destructor TDelphiRegistryEntry.Destroy;
+begin
+  fSearchPathes.Free;
+  inherited;
 end;
 
 function TDelphiRegistryEntry.GetProductName: string;
 begin
   result := ProductVersionToProductName(fProductVersion);
+end;
+
+function TDelphiRegistryEntry.getSearchPath: string;
+var
+  LEnumerator : TDictionary<string,byte>.TKeyEnumerator;
+begin
+  result := '';
+  LEnumerator := fSearchPathes.Keys.GetEnumerator();
+  while(LEnumerator.MoveNext) do
+  begin
+    result := result + LEnumerator.Current + ';';
+  end;
+  LEnumerator.Free;
+  if result.EndsWith(';') then
+    Delete(result,Length(result),1);
 end;
 
 end.

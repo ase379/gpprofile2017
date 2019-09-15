@@ -16,6 +16,7 @@ type
     IsEnabledConfig : boolean;
     ExeOutput : string; // the exe path (with inheritance)
     Defines : string;
+    Namespaces : string;
   end;
 
   TDProjConfigs = class(TObjectList<DProjConfig>)
@@ -52,6 +53,8 @@ type
     function IsConsoleApp(const aDefaultIfNotFound: Boolean): Boolean;
     function GetSearchPath: String;
     function GetProjectDefines: string;
+    function GetProjectNamespaces(): string;
+    function GetPlatformOfCurrentConfig(): string;
   end;
 
 function IfThen(const aCond: Boolean; const aIfTrue: String; const aIfFalse: string = ''): String;
@@ -92,6 +95,16 @@ begin
   inherited;
 end;
 
+function TDProjReader.GetPlatformOfCurrentConfig: string;
+var
+  LConfig : DProjConfig;
+begin
+  result := '';
+  LConfig := fDProjConfigs.FindConfigByCurrentSettings();
+  if assigned(LConfig) then
+    Exit(LConfig.PlatformName);
+end;
+
 function TDProjReader.GetProjectDefines: string;
 var
   LConfig : DProjConfig;
@@ -100,6 +113,16 @@ begin
   LConfig := fDProjConfigs.FindConfigByCurrentSettings();
   if assigned(LConfig) then
     Exit(LConfig.Defines);
+end;
+
+function TDProjReader.GetProjectNamespaces: string;
+var
+  LConfig : DProjConfig;
+begin
+  Result := '';
+  LConfig := fDProjConfigs.FindConfigByCurrentSettings();
+  if assigned(LConfig) then
+    Exit(LConfig.Namespaces);
 end;
 
 function TDProjReader.IsConsoleApp(const aDefaultIfNotFound: Boolean): Boolean;
@@ -167,6 +190,8 @@ begin
             LNewConfig.IsEnabledConfig := true;
         if (LPropertyGroupNode.ChildValues['CfgParent'] <> Null) then
           LNewConfig.ConfigParentName := LPropertyGroupNode.ChildValues['CfgParent'];
+        if LPropertyGroupNode.ChildValues['DCC_Namespace'] <> Null then
+            LNewConfig.Namespaces := LPropertyGroupNode.ChildValues['DCC_Namespace'];
         fDProjConfigs.add(LNewConfig);
       end
       else
@@ -179,7 +204,8 @@ begin
             LNewConfig.ExeOutput := LPropertyGroupNode.ChildValues['DCC_ExeOutput'];
           if LPropertyGroupNode.ChildValues['DCC_Define'] <> Null then
             LNewConfig.Defines := LPropertyGroupNode.ChildValues['DCC_Define'];
-
+          if LPropertyGroupNode.ChildValues['DCC_Namespace'] <> Null then
+            LNewConfig.Namespaces := LPropertyGroupNode.ChildValues['DCC_Namespace'];
         end;
 
       end;
@@ -317,6 +343,8 @@ procedure TDProjConfigs.ApplySettingInheritance;
       anEntry.ExeOutput := LBaseEntry.ExeOutput;
     if anEntry.ConfigType = '' then
       anEntry.ConfigType := LBaseEntry.ConfigType;
+    if anEntry.Namespaces = '' then
+      anEntry.Namespaces := LBaseEntry.Namespaces;
     MergeDefines(anEntry, LBaseEntry);
   end;
 
