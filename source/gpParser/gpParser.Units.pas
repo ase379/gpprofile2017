@@ -338,6 +338,7 @@ function TUnit.ResolveFullyQualifiedUnitPath(const aUnitName: String; const aDef
 const
   EXT_INCLUDE = '.inc';
   EXT_PAS_SOURCE = '.pas';
+  EXT_PAS_PROJECT_SOURCE = '.dpr';
 var
   i, k: Integer;
   LDefDir: string;
@@ -353,8 +354,13 @@ begin
   Result := False;
 
   LExtension := ExtractFileExt(aUnitName).ToLower;
-  if (LExtension <> EXT_PAS_SOURCE) and (LExtension <> '.dpr') and (LExtension <> EXT_INCLUDE) then
+  if (LExtension <> EXT_PAS_SOURCE) and (LExtension <> EXT_PAS_PROJECT_SOURCE) and (LExtension <> EXT_INCLUDE) then
+  begin
     LUnitName := aUnitName + EXT_PAS_SOURCE;
+    LExtension := EXT_PAS_SOURCE;
+  end;
+
+  Assert(LExtension <> '');
 
   if FileExists(LUnitName) then
   begin
@@ -386,20 +392,36 @@ begin
 
   end;
 
-  // resolve namespace if not found
-  for i := Low(fProject.SearchPathes) to High(fProject.SearchPathes) do
+  if LExtension <> EXT_INCLUDE then
   begin
-    LSearchPath := fProject.SearchPathes[i];
-    for k := Low(fProject.Namespaces) to High(fProject.Namespaces) do
+    // resolve namespace if not found
+    for i := Low(fProject.SearchPathes) to High(fProject.SearchPathes) do
     begin
-      LUnitPath := MakeSmartBackslash(LSearchPath);
-      LUnitPath := LUnitPath + fProject.Namespaces[k] + '.' + LUnitName ;
-      if FileExists(LUnitPath) then
+      LSearchPath := fProject.SearchPathes[i];
+      for k := Low(fProject.Namespaces) to High(fProject.Namespaces) do
       begin
-        aUnitFullName := LowerCase(LUnitPath);
-        Result := true;
-        Exit;
+        LUnitPath := MakeSmartBackslash(LSearchPath);
+        LUnitPath := LUnitPath + fProject.Namespaces[k] + '.' + LUnitName ;
+        if FileExists(LUnitPath) then
+        begin
+          aUnitFullName := LowerCase(LUnitPath);
+          Result := true;
+          Exit;
+        end;
       end;
+    end;
+  end;
+  if (LExtension = EXT_INCLUDE) and fUnitParserStack.HasEntries() then
+  begin
+    // the include has been used in a unit and referenced from there.
+    // assume they are in the same path.
+    LUnitPath := ExtractFilePath(fUnitParserStack.GetLastEntry.Filename);
+    LUnitPath := TPath.Combine(LUnitPath, aUnitName);
+    if FileExists(LUnitPath) then
+    begin
+      aUnitFullName := LowerCase(LUnitPath);
+      Result := true;
+      Exit;
     end;
   end;
 end;
