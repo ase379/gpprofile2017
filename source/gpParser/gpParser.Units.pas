@@ -1219,7 +1219,7 @@ var
   pr: TProc;
   any: boolean;
   haveInst: boolean;
-  ed: TFileEdit;
+  LFileEdit: TFileEdit;
   nameId: Integer;
   api: TAPI;
   LApiEnumor: TRootNode<TAPI>.TEnumerator;
@@ -1235,11 +1235,11 @@ begin { TUnit.Instrument }
   if aBackupFile then
     BackupInstrumentedFile(unFullName);
 
-  ed := TFileEdit.Create(unFullName);
+  LFileEdit := TFileEdit.Create(unFullName);
   try
     // update uses...
     for i := 0 to LAdjustUsesCount - 1 do
-      InstrumentUses(ed, i);
+      InstrumentUses(LFileEdit, i);
 
     any := AnyInstrumented;
     LApiEnumor := unAPIs.GetEnumerator();
@@ -1250,8 +1250,8 @@ begin { TUnit.Instrument }
       begin
         if api.apiMeta then
         begin
-          ed.Remove(api.apiBeginOffs, api.apiEndOffs);
-          ed.Insert(api.apiBeginOffs, Format(fProject.prProfileAPI,
+          LFileEdit.Remove(api.apiBeginOffs, api.apiEndOffs);
+          LFileEdit.Insert(api.apiBeginOffs, Format(fProject.prProfileAPI,
             [api.apiCommands]));
         end
       end
@@ -1259,10 +1259,10 @@ begin { TUnit.Instrument }
       begin
         if not api.apiMeta then
         begin
-          ed.Remove(api.apiBeginOffs, api.apiEndOffs);
-          ed.Insert(api.apiBeginOffs, '{' + fProject.prAPIIntro);
-          ed.Remove(api.apiExitBegin, api.apiExitEnd);
-          ed.Insert(api.apiExitBegin, '}');
+          LFileEdit.Remove(api.apiBeginOffs, api.apiEndOffs);
+          LFileEdit.Insert(api.apiBeginOffs, '{' + fProject.prAPIIntro);
+          LFileEdit.Remove(api.apiExitBegin, api.apiExitEnd);
+          LFileEdit.Insert(api.apiExitBegin, '}');
         end;
       end;
     end;
@@ -1277,9 +1277,9 @@ begin { TUnit.Instrument }
       begin
         if haveInst then
         begin // remove instrumentation
-          ed.Remove(pr.prCmtEnterBegin, pr.prCmtEnterEnd +
+          LFileEdit.Remove(pr.prCmtEnterBegin, pr.prCmtEnterEnd +
             Length(fProject.prConditEnd) - 1);
-          ed.Remove(pr.prCmtExitBegin, pr.prCmtExitEnd +
+          LFileEdit.Remove(pr.prCmtExitBegin, pr.prCmtExitEnd +
             Length(fProject.prConditEnd) - 1);
 
           // remove gpprof in from of NameThreadForDebugging interceptor
@@ -1289,11 +1289,11 @@ begin { TUnit.Instrument }
             LPosition := LProcSetThreadNameEnumor.Current.Data.tpstnPos - Length(fProject.prGpprofDot);
             if LProcSetThreadNameEnumor.Current.Data.tpstnWithSelf <> '' then
               LPosition := LPosition - 1; // remove } as well
-            ed.Remove(LPosition, LProcSetThreadNameEnumor.Current.Data.tpstnPos - 1);
+            LFileEdit.Remove(LPosition, LProcSetThreadNameEnumor.Current.Data.tpstnPos - 1);
             if LProcSetThreadNameEnumor.Current.Data.tpstnWithSelf <> '' then
             begin
               LPosition := LPosition - 2 - Length(LProcSetThreadNameEnumor.Current.Data.tpstnWithSelf);
-              ed.Remove(LPosition, LPosition);
+              LFileEdit.Remove(LPosition, LPosition);
             end;
           end;
           LProcSetThreadNameEnumor.Free;
@@ -1305,14 +1305,14 @@ begin { TUnit.Instrument }
           pr.prHeaderLineNum);
 
         if haveInst then
-          ed.Remove(pr.prCmtEnterBegin, pr.prCmtEnterEnd +
+          LFileEdit.Remove(pr.prCmtEnterBegin, pr.prCmtEnterEnd +
             Length(fProject.prConditEnd) - 1);
 
         if pr.prPureAsm then
-          ed.Insert(pr.prStartOffset + Length('asm'),
+          LFileEdit.Insert(pr.prStartOffset + Length('asm'),
             Format(fProject.prProfileEnterAsm, [nameId]))
         else
-          ed.Insert(pr.prStartOffset + Length('begin'),
+          LFileEdit.Insert(pr.prStartOffset + Length('begin'),
             Format(fProject.prProfileEnterProc, [nameId]));
 
         if haveInst then
@@ -1321,7 +1321,7 @@ begin { TUnit.Instrument }
           while LProcSetThreadNameEnumor.MoveNext do
           begin
             LPosition := LProcSetThreadNameEnumor.Current.Data.tpstnPos - Length(fProject.prGpprofDot);
-            ed.Remove(LPosition, LProcSetThreadNameEnumor.Current.Data.tpstnPos - 1);
+            LFileEdit.Remove(LPosition, LProcSetThreadNameEnumor.Current.Data.tpstnPos - 1);
           end;
           LProcSetThreadNameEnumor.Free;
         end;
@@ -1332,29 +1332,29 @@ begin { TUnit.Instrument }
           LPosition := LProcSetThreadNameEnumor.Current.Data.tpstnPos;
           if LProcSetThreadNameEnumor.Current.Data.tpstnWithSelf <> '' then
           begin
-            ed.Insert(LPosition - Length('self') - 1, '{');
-            ed.Insert(LPosition, '}' + fProject.prGpprofDot);
+            LFileEdit.Insert(LPosition - Length('self') - 1, '{');
+            LFileEdit.Insert(LPosition, '}' + fProject.prGpprofDot);
           end
           else
-            ed.Insert(LPosition, fProject.prGpprofDot);
+            LFileEdit.Insert(LPosition, fProject.prGpprofDot);
         end;
         LProcSetThreadNameEnumor.Free;
 
         if haveInst then
-          ed.Remove(pr.prCmtExitBegin, pr.prCmtExitEnd +
+          LFileEdit.Remove(pr.prCmtExitBegin, pr.prCmtExitEnd +
             Length(fProject.prConditEnd) - 1);
 
         if pr.prPureAsm then
-          ed.Insert(pr.prEndOffset, Format(fProject.prProfileExitAsm, [nameId]))
+          LFileEdit.Insert(pr.prEndOffset, Format(fProject.prProfileExitAsm, [nameId]))
         else
-          ed.Insert(pr.prEndOffset, Format(fProject.prProfileExitProc, [nameId]));
+          LFileEdit.Insert(pr.prEndOffset, Format(fProject.prProfileExitProc, [nameId]));
       end;
     end;
     LProcEnumor.Free;
 
-    ed.Execute(aKeepDate);
+    LFileEdit.Execute(aKeepDate);
   finally
-    ed.Free;
+    LFileEdit.Free;
   end;
 end; { TUnit.Instrument }
 
