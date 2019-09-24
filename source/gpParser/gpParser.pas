@@ -10,7 +10,7 @@ uses
   gppIDT,
   Dialogs,
   gppTree,
-  gpFileEdit, gpParser.BaseProject, gpParser.types, gpParser.Units, gpParser.Selections;
+  gpParser.BaseProject, gpParser.types, gpParser.Units, gpParser.Selections;
 
 type
   TNotifyProc = procedure(const aUnitName: String) of object;
@@ -21,19 +21,15 @@ type
 
   TProject = class(TBaseProject)
   private
-    prName: string;
     prUnit: TUnit;
     prUnits: TGlbUnitList;
-
-
   public
-    constructor Create(projName: string);
+    constructor Create(const aProjectName: string;const aSelectedDelphiVersion : string);
     destructor Destroy; override;
-    procedure Parse(aExclUnits: String;const aSearchPath, aConditionals: String; aNotify: TNotifyProc;
+    procedure Parse(aExclUnits: String;const aConditionals: String; aNotify: TNotifyProc;
       aCommentType: TCommentType; aParseAsm: boolean;const anErrorList : TStrings);
-    procedure Rescan(aExclUnits: String;const aSearchPath, aConditionals: string;
+    procedure Rescan(aExclUnits: String;const aConditionals: string;
       aCommentType: TCommentType; aUseFileDate: boolean; aParseAsm: boolean);
-    property Name: string read prName;
     procedure GetUnitList(var aSL: TStringList;const aProjectDirOnly, aGetInstrumented: boolean);
     procedure GetProcList(unitName: string; s: TStringList;getInstrumented: boolean);
     function GetUnitPath(unitName: string): string;
@@ -46,7 +42,7 @@ type
     function AnyInstrumented(projectDirOnly: boolean): boolean;
     procedure Instrument(aProjectDirOnly: boolean; aExclUnits: String;aNotify: TNotifyInstProc;
       aCommentType: TCommentType; aKeepDate, aBackupFile: boolean;
-      aIncFileName, aConditionals, aSearchPath: string; aUseFileDate,aParseAsm: boolean);
+      aIncFileName, aConditionals: string; aUseFileDate,aParseAsm: boolean);
     function GetFirstLine(unitName, procName: string): Integer;
     function AnyChange(projectDirOnly: boolean): boolean;
     function LocateUnit(const aUnitName: string): TUnit;
@@ -68,22 +64,20 @@ uses
 
 { ========================= TProject ========================= }
 
-constructor TProject.Create(projName: string);
+constructor TProject.Create(const aProjectName: string;const aSelectedDelphiVersion : string);
 begin
-  inherited Create();
-  prUnits := TGlbUnitList.Create();
-  prName := projName;
-  prUnit := nil;
-end; { TProject.Create }
+  inherited Create(aProjectName,aSelectedDelphiVersion);
+  prUnits := TGlbUnitList.Create(self);
+end;
 
 destructor TProject.Destroy;
 begin
   prUnits.Free;
   inherited;
-end; { TProject.Destroy }
+end;
 
 procedure TProject.Parse(aExclUnits: String;
-  const aSearchPath, aConditionals: string; aNotify: TNotifyProc;
+  const aConditionals: string; aNotify: TNotifyProc;
   aCommentType: TCommentType; aParseAsm: boolean; const anErrorList : TStrings);
 
   procedure DoNotify(const aUnitName: string);
@@ -117,11 +111,10 @@ var
 
 begin
   PrepareComments(aCommentType);
-
   StoreExcludedUnits(aExclUnits);
 
   prUnits.ClearNodes;
-  prUnit := self.LocateOrCreateUnit(prName, '', False) as TUnit;
+  prUnit := self.LocateOrCreateUnit(Name, '', False) as TUnit;
   prUnit.unInProjectDir := true;
   fFullUnitName := prUnit.unFullName;
 
@@ -133,8 +126,7 @@ begin
     repeat
       DoNotify(un.unName);
       try
-        un.Parse(self, aSearchPath, ExtractFilePath(prName),
-          aConditionals, False, aParseAsm);
+        un.Parse(ExtractFilePath(Name), aConditionals, False, aParseAsm);
       except
         on e: EUnitInSearchPathNotFoundError do
         begin
@@ -272,8 +264,7 @@ end;
 
 procedure TProject.Instrument(aProjectDirOnly: boolean; aExclUnits: String;
   aNotify: TNotifyInstProc; aCommentType: TCommentType;
-  aKeepDate, aBackupFile: boolean; aIncFileName, aConditionals,
-  aSearchPath: string; aUseFileDate, aParseAsm: boolean);
+  aKeepDate, aBackupFile: boolean; aIncFileName, aConditionals: string; aUseFileDate, aParseAsm: boolean);
 
   procedure DoNotify(const aFullname, aUnitName: string; const aParse : Boolean);
   begin
@@ -283,20 +274,18 @@ procedure TProject.Instrument(aProjectDirOnly: boolean; aExclUnits: String;
 
 var
   vOldCurDir: string;
-  un: TUnit;
-  idt: TIDTable;
-  Rescan: TList<TUnit>;
-  i: Integer;
-  unAny: boolean;
-  anyInst: boolean;
+  LUnit: TUnit;
+  LProcIdTable: TIDTable;
+  LIsAnyUnitInProjectInstrumented : Boolean;
+  LIsAnyProcOfUnitInstrumented: boolean;
+  LHasBeenReparsed : Boolean;
   LUnitEnumor: TRootNode<TUnit>.TEnumerator;
+  LOldProcs : TProcList;
 begin
   PrepareComments(aCommentType);
   StoreExcludedUnits(aExclUnits);
 
-  Rescan := TList<TUnit>.Create;
-  try
-    idt := TIDTable.Create;
+    LProcIdTable := TIDTable.Create;
     try
       vOldCurDir := GetCurrentDir;
       if not SetCurrentDir(ExtractFileDir(prUnit.unFullName)) then
@@ -304,30 +293,38 @@ begin
       try
         with prUnits do
         begin
-          anyInst := False;
+          LIsAnyUnitInProjectInstrumented := False;
           LUnitEnumor := GetEnumerator();
           while LUnitEnumor.MoveNext do
           begin
-            un := LUnitEnumor.Current.Data;
+            LUnit := LUnitEnumor.Current.Data;
 
-            if un.NeedsToBeReparsed(aUseFileDate) then
-              un.Parse(self, aSearchPath, ExtractFilePath(prName),aConditionals, true, aParseAsm);
-
-            if (not un.unExcluded) and (un.unProcs.Count > 0) then
+            LHasBeenReparsed := LUnit.NeedsToBeReparsed(aUseFileDate);
+            if LUnit.NeedsToBeReparsed(aUseFileDate) then
             begin
-              DoNotify(un.unFullName, un.unName, False);
+              LOldProcs := LUnit.unProcs.Clone;
+              try
+                LUnit.Parse(ExtractFilePath(Name),aConditionals, true, aParseAsm);
+                LUnit.unProcs.ApplyProcSelectionIfExists(LOldProcs);
+              finally
+                LOldProcs.Free;
+              end;
+            end;
 
-              unAny := un.AnyInstrumented;
-              if unAny then
-                anyInst := true;
+            if (not LUnit.unExcluded) and (LUnit.unProcs.Count > 0) then
+            begin
+              DoNotify(LUnit.unFullName, LUnit.unName, False);
 
-              if un.AnyChange or unAny then
+              LIsAnyProcOfUnitInstrumented := LUnit.AnyInstrumented;
+              if LIsAnyProcOfUnitInstrumented then
+                LIsAnyUnitInProjectInstrumented := true;
+
+              if LUnit.AnyChange or LIsAnyProcOfUnitInstrumented or LHasBeenReparsed then
               begin
-                un.Instrument(self, idt, aKeepDate, aBackupFile);
-                Rescan.Add(un);
+                  LUnit.Instrument(LProcIdTable, aKeepDate, aBackupFile);
               end
               else
-                un.RegisterProcs(idt);
+                LUnit.RegisterProcs(LProcIdTable);
             end;
           end;
           LUnitEnumor.Free;
@@ -336,27 +333,18 @@ begin
           raise Exception.Create('Could not create output folder ' +
             ExtractFileDir(aIncFileName) + ': ' +
             SysErrorMessage(GetLastError));
-        idt.Dump(aIncFileName);
+        LProcIdTable.Dump(aIncFileName);
       finally
         SetCurrentDir(vOldCurDir);
       end;
     finally
-      idt.Free;
+      LProcIdTable.Free;
     end;
-    if not anyInst then
+    if not LIsAnyUnitInProjectInstrumented then
     begin
       System.SysUtils.DeleteFile(aIncFileName);
       System.SysUtils.DeleteFile(ChangeFileExt(aIncFileName, '.gpd'));
     end;
-    for i := 0 to Rescan.Count - 1 do
-    begin
-      DoNotify(Rescan[i].unFullName, Rescan[i].unName, true);
-      Rescan[i].Parse(self, aSearchPath, ExtractFilePath(prName),
-        aConditionals, true, aParseAsm);
-    end;
-  finally
-    Rescan.Free;
-  end;
 end; { TProject.Instrument }
 
 function TProject.NoneInstrumented(projectDirOnly: boolean): boolean;
@@ -404,7 +392,7 @@ begin
 end;
 
 procedure TProject.Rescan(aExclUnits: String;
-  const aSearchPath, aConditionals: string;
+  const aConditionals: string;
   aCommentType: TCommentType; aUseFileDate: boolean; aParseAsm: boolean);
 var
   un: TUnit;
@@ -425,8 +413,7 @@ begin
       begin
         un := LUnitEnumor.Current.Data;
         if un.NeedsToBeReparsed(aUseFileDate) then
-          un.Parse(self, aSearchPath, ExtractFilePath(prName),
-            aConditionals, true, aParseAsm);
+          un.Parse(ExtractFilePath(Name), aConditionals, true, aParseAsm);
       end;
     end;
   finally
@@ -435,20 +422,17 @@ begin
 end;
 
 procedure TProject.LoadInstrumentalizationSelection(const aFilename: string);
-
 var
   LUnitSelections: TUnitSelectionList;
-
 begin
   LUnitSelections := TUnitSelectionList.Create(true);
-  LUnitSelections.LoadSelectionFile(aFilename);
-  ApplySelections(LUnitSelections, false);
-  LUnitSelections.Free;
+  try
+    LUnitSelections.LoadSelectionFile(aFilename);
+    ApplySelections(LUnitSelections, false);
+  finally
+    LUnitSelections.Free;
+  end;
 end;
-
-
-
-
 
 procedure TProject.SaveInstrumentalizationSelection(const aFilename: string);
 var

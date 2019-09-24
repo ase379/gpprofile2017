@@ -3,7 +3,7 @@ unit gpParser.BaseProject;
 interface
 
 uses
-  System.Generics.Collections, gpParser.Types;
+  System.Classes, System.Generics.Collections, gpParser.Types;
 
 type
   TBaseProject = class
@@ -26,6 +26,12 @@ type
     fProfileExitAsm: string;
     fProfileAPI: string;
     fGpprofDot: string;
+    fProjectName: string;
+    fSelectedDelphiVersion : string;
+    fIsConsoleProject : Boolean;
+    fOutputDir : string;
+    fSearchPathes : TArray<string>;
+    fNamespaces : TArray<string>;
 
     fMissingUnitNames : TDictionary<String, Cardinal>;
     fExcludedUnitDict : TDictionary<string, Byte>;
@@ -34,7 +40,7 @@ type
 
 
   public
-    constructor Create();
+    constructor Create(const aProjectName,aSelectedDelphiVersion : string);
     destructor Destroy; override;
     function GetFullUnitName(): string;
     procedure StoreExcludedUnits(aExclUnits: String);
@@ -56,6 +62,11 @@ type
     property prProfileExitAsm: string read fProfileExitAsm;
     property prProfileAPI: string read fProfileAPI;
     property prGpprofDot: string read fGpprofDot;
+    property Name: string read fProjectName;
+    property IsConsoleProject : boolean read fIsConsoleProject;
+    property OutputDir : string read fOutputDir;
+    property SearchPathes : TArray<string> read fSearchPathes;
+    property Namespaces : TArray<string> read fNamespaces;
 
 
     function LocateOrCreateUnit(const unitName, unitLocation: string;const excluded: boolean): TBaseUnit; virtual; abstract;
@@ -64,15 +75,35 @@ type
 implementation
 
 uses
-  System.Classes, System.SysUtils, GpString;
+  System.SysUtils, System.StrUtils, GpString, gpProf.ProjectAccessor;
 
 { TBaseProject }
 
-constructor TBaseProject.Create;
+constructor TBaseProject.Create(const aProjectName,aSelectedDelphiVersion : string);
+var
+  LProjectAccessor : TProjectAccessor;
+  i : Integer;
 begin
   inherited Create();
+  fProjectName := aProjectName;
+  fSelectedDelphiVersion := aSelectedDelphiVersion;
+
   fMissingUnitNames := TDictionary<String, Cardinal>.Create;
   fExcludedUnitDict := TDictionary<string, Byte>.Create();
+  LProjectAccessor := nil;
+  try
+    LProjectAccessor := TProjectAccessor.Create(fProjectName);
+    fIsConsoleProject := LProjectAccessor.IsConsoleProject(true);
+    fOutputDir := LProjectAccessor.GetOutputDir();
+    fSearchPathes := SplitString(LProjectAccessor.GetSearchPath(aSelectedDelphiVersion), ';');
+    fNamespaces := SplitString(LProjectAccessor.GetNamespaces(aSelectedDelphiVersion), ';');
+    for i := Low(fSearchPathes) to high(fSearchPathes) do
+      fSearchPathes[i] := Trim(fSearchPathes[i]);
+    for i := Low(fNamespaces) to high(fNamespaces) do
+      fNamespaces[i] := Trim(fNamespaces[i]);
+  finally
+    LProjectAccessor.free;
+  end;
 end;
 
 destructor TBaseProject.Destroy;

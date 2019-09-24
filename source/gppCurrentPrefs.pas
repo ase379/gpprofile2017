@@ -43,9 +43,6 @@ type
   /// data regarding the current session, e.g the last selected folder, the current project, etc.
   /// </summary>
   TSessionData = class
-  private
-  class var
-    fLastSelectedGisFolder : string;
   public
   class var
 
@@ -64,18 +61,8 @@ type
     /// </summary>
     ProjectOutputDir          : string;
 
-    class function GetLastSelectedGisFolder : string;
-    class procedure SetLastSelectedGisFolder(const aValue : string);
-
     class function HasOpenProject: boolean;static;
-
   end;
-
-
-
-
-
-
 
 implementation
 
@@ -192,20 +179,6 @@ begin
 end;
 
 { TSessionData }
-
-class function TSessionData.GetLastSelectedGisFolder: string;
-begin
-  if fLastSelectedGisFolder = '' then
-    result := CurrentProjectName
-  else
-    Result := fLastSelectedGisFolder;
-
-end;
-
-class procedure TSessionData.SetLastSelectedGisFolder(const aValue: string);
-begin
-  fLastSelectedGisFolder := aValue;
-end;
 
 class function TSessionData.HasOpenProject: boolean;
 begin

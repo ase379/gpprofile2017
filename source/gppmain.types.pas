@@ -63,6 +63,9 @@ type
     /// </summary>
     class function LoadProjectCaption(): string;
 
+    class function ErrorLoading(const aFilename : string): string;
+
+    class function ErrorLoadingMRUDeleteIt(const aFilename : string): string;
   end;
 
 implementation
@@ -98,6 +101,15 @@ begin
 end;
 
 { TUIStrings }
+class function TUIStrings.ErrorLoading(const aFilename : string): string;
+begin
+  result := 'Error while loading file "'+aFilename+'".';
+end;
+
+class function TUIStrings.ErrorLoadingMRUDeleteIt(const aFilename : string): string;
+begin
+  result := 'Error while loading file "'+aFilename+'"'+slinebreak+'Delete it from the MRU list ?';
+end;
 
 class function TUIStrings.InstrumentationSelectionFilter(): string;
 begin
