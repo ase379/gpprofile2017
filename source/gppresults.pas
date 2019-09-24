@@ -938,6 +938,8 @@ begin
   resThreads[proxy.ppThreadID].teActiveProcs.UpdateDeadTime(pkt);
   proxy.Start(pkt);
   resThreads[proxy.ppThreadID].teActiveProcs.Append(proxy);
+  if proxy.ppProcID > Length(resProcedures) then
+    raise EInvalidOp.Create('Error: Instrumentation count does not fit to the prf, please reinstrument.');
   Inc(resProcedures[proxy.ppProcID].peRecLevel[proxy.ppThreadID]);
 end;
 
