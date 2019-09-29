@@ -521,7 +521,6 @@ begin
           TGlobalPreferences.GetProjectPref('ExcludedUnits', TGlobalPreferences.ExcludedUnits),
           LDefines,
           TGlobalPreferences.GetProjectPref('MarkerStyle', TGlobalPreferences.MarkerStyle),
-          TGlobalPreferences.GetProjectPref('UseFileDate', TGlobalPreferences.UseFileDate),
           TGlobalPreferences.GetProjectPref('InstrumentAssembler', TGlobalPreferences.InstrumentAssembler));
       end,
       procedure(const aNeededSeconds : Double)
@@ -1208,10 +1207,8 @@ begin
                          TGlobalPreferences.GetProjectPref('ExcludedUnits',TGlobalPreferences.ExcludedUnits),
                          NotifyInstrument,
                          TGlobalPreferences.GetProjectPref('MarkerStyle',TGlobalPreferences.MarkerStyle),
-                         TGlobalPreferences.GetProjectPref('KeepFileDate',TGlobalPreferences.KeepFileDate),
-                         TGlobalPreferences.GetProjectPref('MakeBackupOfInstrumentedFile',TGlobalPreferences.KeepFileDate),
+                         TGlobalPreferences.GetProjectPref('MakeBackupOfInstrumentedFile',TGlobalPreferences.MakeBackupOfInstrumentedFile),
                          fnm,LDefines,
-                         TGlobalPreferences.GetProjectPref('UseFileDate', TGlobalPreferences.UseFileDate),
                          TGlobalPreferences.GetProjectPref('InstrumentAssembler',TGlobalPreferences.InstrumentAssembler));
 
       if FileExists(fnm) then
@@ -1967,8 +1964,7 @@ begin
   if openProject = nil then
     Exit;
 
-  if (not TGlobalPreferences.GetProjectPref('UseFileDate', TGlobalPreferences.UseFileDate)) or
-    openProject.AnyChange(false) then
+  if openProject.AnyChange(false) then
   begin
     FInstrumentationFrame.RescanProject(ParseProject);
     SetSource;

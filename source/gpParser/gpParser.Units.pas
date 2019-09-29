@@ -91,7 +91,7 @@ type
     procedure CheckInstrumentedProcs;
     function LocateUnit(const unitName: string): TUnit;
     function LocateProc(const aProcName: string): TProc;
-    procedure Instrument(aIDT: TIDTable;aKeepDate, aBackupFile: boolean);
+    procedure Instrument(aIDT: TIDTable;aBackupFile: boolean);
     /// <summary>
     /// Registers the procs of this unit at the given TIDTable.
     /// </summary>
@@ -99,7 +99,7 @@ type
     function AnyInstrumented: boolean;
     function AnyChange: boolean;
     function DidFileTimestampChange(): boolean;
-    function NeedsToBeReparsed(const aUseFileTimestamp: Boolean) : Boolean;
+    function NeedsToBeReparsed() : Boolean;
   end;
 
 implementation
@@ -313,17 +313,12 @@ begin
   result := unFileDate <> LOutDateTime;
 end;
 
-function TUnit.NeedsToBeReparsed(const aUseFileTimestamp: Boolean): Boolean;
+function TUnit.NeedsToBeReparsed(): Boolean;
 begin
   Result := false;
   if (not unExcluded) and (unProcs.Count > 0) then
   begin
-    if aUseFileTimestamp then
-    begin
-      result := DidFileTimestampChange()
-    end
-    else
-      Result := True;
+    result := DidFileTimestampChange()
   end;
 end;
 
@@ -1202,7 +1197,7 @@ begin
   end;
 end;
 
-procedure TUnit.Instrument(aIDT: TIDTable; aKeepDate, aBackupFile: boolean);
+procedure TUnit.Instrument(aIDT: TIDTable; aBackupFile: boolean);
 
   function LAdjustUsesCount: Integer;
   begin
@@ -1352,7 +1347,7 @@ begin { TUnit.Instrument }
     end;
     LProcEnumor.Free;
 
-    LFileEdit.Execute(aKeepDate);
+    LFileEdit.Execute();
   finally
     LFileEdit.Free;
   end;

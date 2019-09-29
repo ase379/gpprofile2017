@@ -16,7 +16,7 @@ type
     destructor  Destroy; override;
     procedure   Insert(const atOffset: int64; what: string);
     procedure   Remove(const fromOffset, toOffset: int64);
-    procedure   Execute(const keepDate: boolean);
+    procedure   Execute();
   private
     editFile: string;
     editList: TStringList;
@@ -58,12 +58,11 @@ begin
   inherited;
 end; { TFileEdit.Destroy }
 
-procedure TFileEdit.Execute(const keepDate: boolean);
+procedure TFileEdit.Execute();
 var
   stream  : TMemoryStream;
   f       : file;
   i       : integer;
-  fileDate: integer;
 
   function MakeCurP: pointer;
   begin
@@ -72,13 +71,15 @@ var
 
   procedure Remove(first,lastp1: int64);
   begin
-    if first > stream.Position then BlockWrite(f,MakeCurP^,first-stream.Position);
+    if first > stream.Position then
+      BlockWrite(f,MakeCurP^,first-stream.Position);
     stream.Position := lastp1;
   end; { Remove }
 
   procedure Insert(position: int64; key: ansistring);
   begin
-    if position > stream.Position then begin
+    if position > stream.Position then
+    begin
       BlockWrite(f,MakeCurP^,position-stream.Position);
       stream.Position := position;
     end;
@@ -93,9 +94,6 @@ begin { TFileEdit.Execute }
     stream.Position := 0;
     Assign(f,editFile);
     Reset(f,1);
-    fileDate := 0;
-    if keepDate then
-      fileDate := FileGetDate(TFileRec(f).Handle);
     Rewrite(f,1);
     try
       for i := 0 to editList.Count-1 do
@@ -105,8 +103,6 @@ begin { TFileEdit.Execute }
             else Remove(fecOfs1,fecOfs2+1);
         end;
       BlockWrite(f,MakeCurP^,stream.Size-stream.Position);
-      if keepDate then
-        FileSetDate(TFileRec(f).Handle,fileDate);
     finally Close(f); end;
   finally stream.Free; end;
 end; { TFileEdit.Execute }

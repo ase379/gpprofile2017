@@ -165,29 +165,6 @@ object frmPreferences: TfrmPreferences
           Caption = 'Show &all folders'
           TabOrder = 0
         end
-        object cbKeepFileDate: TCheckBox
-          Left = 16
-          Top = 92
-          Width = 257
-          Height = 17
-          Hint = 'Restore original timestamp after changing the unit file.'
-          TabStop = False
-          Caption = '&Keep file date unchanged when instrumenting'
-          TabOrder = 3
-          OnClick = cbKeepFileDateClick
-        end
-        object cbUseFileDate: TCheckBox
-          Left = 16
-          Top = 116
-          Width = 257
-          Height = 17
-          Hint = 'Mark unit as changed if the unit file timestamp changes.'
-          TabStop = False
-          Caption = '&Use file date as file change indicator'
-          Checked = True
-          State = cbChecked
-          TabOrder = 4
-        end
         object cbInstrumentAssembler: TCheckBox
           Left = 16
           Top = 68
@@ -203,7 +180,7 @@ object frmPreferences: TfrmPreferences
           Width = 220
           Height = 17
           Caption = 'Backup Instrumented Files'
-          TabOrder = 5
+          TabOrder = 3
         end
       end
       object btnInstrumentationDefaults: TButton
