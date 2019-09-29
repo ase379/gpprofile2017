@@ -138,10 +138,10 @@ object frmPreferences: TfrmPreferences
         end
       end
       object GroupBox4: TGroupBox
-        Left = 15
+        Left = 8
         Top = 95
         Width = 457
-        Height = 146
+        Height = 98
         Hint = 'Detects changed units by using the timestamp of the unit file.'
         Caption = ' Options '
         TabOrder = 1
