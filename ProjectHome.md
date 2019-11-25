@@ -8,10 +8,8 @@ Small changes to make it work with Delphi XE2, XE3: Johan Bontes (johan@digitsol
 
 Note: source code must be compiled with CodeGear Delphi 2007, as most parts of it are not compatible with newer (Unicode) versions of Delphi.
 
-You can support the project by [Donating](http://emorio.com).
-
 You may also like:
 
-[OmniThreadLibrary](https://code.google.com/p/omnithreadlibrary) - incredible multithreading library for Delphi
+[OmniThreadLibrary](https://github.com/gabr42/OmniThreadLibrary) - incredible multithreading library for Delphi
 
 [SapMM](https://code.google.com/p/sapmm) - outstanding and mega-fast scalable memory manager for multithreaded Delphi applications.
