@@ -66,7 +66,6 @@ object frmMainInstrumentation: TfrmMainInstrumentation
       TreeOptions.AutoOptions = [toAutoDropExpand, toAutoExpand, toAutoScrollOnExpand, toAutoSort, toAutoTristateTracking, toAutoDeleteMovedNodes, toAutoChangeScale]
       TreeOptions.MiscOptions = [toAcceptOLEDrop, toCheckSupport, toFullRepaintOnResize, toInitOnSave, toToggleOnDblClick, toWheelPanning]
       TreeOptions.PaintOptions = [toShowButtons, toShowDropmark, toThemeAware, toUseBlendedImages]
-      OnAddToSelection = vstSelectUnitsAddToSelection
       OnChecked = vstSelectUnitsChecked
       Columns = <>
     end

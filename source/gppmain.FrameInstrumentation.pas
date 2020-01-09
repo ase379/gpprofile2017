@@ -34,7 +34,6 @@ type
     procedure vstSelectProcsChecked(Sender: TBaseVirtualTree; Node: PVirtualNode);
     procedure vstSelectClassesAddToSelection(Sender: TBaseVirtualTree; Node: PVirtualNode);
     procedure vstSelectClassesChecked(Sender: TBaseVirtualTree; Node: PVirtualNode);
-    procedure vstSelectUnitsAddToSelection(Sender: TBaseVirtualTree; Node: PVirtualNode);
     procedure vstSelectUnitsChecked(Sender: TBaseVirtualTree; Node: PVirtualNode);
     procedure mnuUnitWizardClick(Sender: TObject);
   private
@@ -180,8 +179,8 @@ var
   allu : boolean;
   noneu: boolean;
   LFirstNode,
-  lDirParent,
-  lParentNode,
+  lDirectoryNode,
+  lParentDirNode,
   LNode : PVirtualNode;
   lFullPath,
   lRelativePath,
@@ -207,23 +206,24 @@ begin
           lUnitName := ButLast(s[i], 2);
           lFullPath := openproject.GetUnitPath(lUnitName);
           lSplittedPath := SplitString(lFullPath, '\');
-          lDirParent := nil;
+
+          lParentDirNode := nil;
           for j := low(lSplittedPath) to high(lSplittedPath)-1 do
           begin
-            if assigned(lDirParent) then
-              lParentNode := fVstSelectUnitTools.GetChildByName(lDirParent, lSplittedPath[j])
+            if assigned(lParentDirNode) then
+              lDirectoryNode := fVstSelectUnitTools.GetChildByName(lParentDirNode, lSplittedPath[j])
             else
-              lParentNode := fVstSelectUnitTools.GetNodeByName(lSplittedPath[j]);
-            if lParentNode = nil then
+              lDirectoryNode := fVstSelectUnitTools.GetNodeByName(lSplittedPath[j]);
+            if lDirectoryNode = nil then
             begin
-              lParentNode := fVstSelectUnitTools.AddEntry(lDirParent, lSplittedPath[j], true);
+              lDirectoryNode := fVstSelectUnitTools.AddEntry(lParentDirNode, lSplittedPath[j], true);
             end;
-            lDirParent := lParentNode;
+            lParentDirNode := lDirectoryNode;
           end;
 
           // Two last chars in each element of the list, returned by GetUnitList, are the two flags,
           // ("0" and "1"): first indicates "All Instrumented", second - "None instrumented" state
-          LNode := fVstSelectUnitTools.AddEntry(lParentNode, lUnitName);
+          LNode := fVstSelectUnitTools.AddEntry(lDirectoryNode, lUnitName);
           allu  := (s[i][Length(s[i])-1] = '1');
           noneu := (s[i][Length(s[i])] = '1');
           if allu then
@@ -358,11 +358,6 @@ begin
     end
   );
   vstSelectProcs.Selected[node] := true;
-end;
-
-procedure TfrmMainInstrumentation.vstSelectUnitsAddToSelection(Sender: TBaseVirtualTree; Node: PVirtualNode);
-begin
-  //clbUnitsClick();
 end;
 
 procedure TfrmMainInstrumentation.vstSelectUnitsChecked(Sender: TBaseVirtualTree; Node: PVirtualNode);
