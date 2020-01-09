@@ -55,7 +55,7 @@ type
 
     procedure RecheckTopClass;
     procedure RecreateClasses(recheck: boolean); overload;
-    procedure RecreateClasses(recheck: boolean;const aName: string; const aDirectory : boolean);overload;
+    procedure RecreateClasses(recheck: boolean;const aName: string);overload;
     procedure RecreateProcs(const aProcName: string);
   public
     constructor Create(AOwner: TComponent); override;
@@ -183,7 +183,6 @@ var
   lParentDirNode,
   LNode : PVirtualNode;
   lFullPath,
-  lRelativePath,
   lUnitName : String;
   lSplittedPath : TStringDynArray;
   j: Integer;
@@ -207,6 +206,7 @@ begin
           lFullPath := openproject.GetUnitPath(lUnitName);
           lSplittedPath := SplitString(lFullPath, '\');
 
+          lDirectoryNode := nil;
           lParentDirNode := nil;
           for j := low(lSplittedPath) to high(lSplittedPath)-1 do
           begin
@@ -425,7 +425,7 @@ end;
 
 procedure TfrmMainInstrumentation.RecreateClasses(recheck: boolean);
 begin
-  RecreateClasses(recheck, GetSelectedUnitName(), False);
+  RecreateClasses(recheck, GetSelectedUnitName());
 end;
 
 procedure TfrmMainInstrumentation.RecheckTopClass;
@@ -464,7 +464,7 @@ begin
   DoOnUnitCheck(lSelectedNode,false);
 end; { TfrmMain.RecheckTopClass }
 
-procedure TfrmMainInstrumentation.RecreateClasses(recheck: boolean;const aName: string; const aDirectory : boolean);
+procedure TfrmMainInstrumentation.RecreateClasses(recheck: boolean;const aName: string);
 
   procedure SearchAndConfigureItem(const aNode : PVirtualNode;const aSelection : TClassInfo; const aCaption : string);
   var
@@ -743,7 +743,7 @@ begin
     chk := chkShowAll.Checked;
     chkShowAll.Checked := true;
     fVstSelectUnitTools.SetCheckedState(0,TCheckedState.unchecked);
-    clbUnitsClickCheck(0);
+    clbUnitsClickCheck(nil);
     clbUnitsClick();
     aOnDoInstrument;
     chkShowAll.Checked := chk;
