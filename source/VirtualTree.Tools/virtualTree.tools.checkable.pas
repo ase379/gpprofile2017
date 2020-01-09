@@ -14,6 +14,7 @@ type
   PCheckableItemData = ^TCheckableItemData;
   TCheckableItemData = record
     Name : string;
+    IsDirectory : boolean;
   end;
 
   {$SCOPEDENUMS ON}
@@ -34,8 +35,13 @@ type
     destructor Destroy;override;
     function AddEntry(const aName : String): PVirtualNode; overload;
     function AddEntry(const aParent : PVirtualNode;const aName : String): PVirtualNode;overload;
+    function AddEntry(const aParent : PVirtualNode;const aName : String; const aDirectory : boolean): PVirtualNode;overload;
+
+    function GetName(const aNode : PVirtualNode) : string; override;
 
     function InsertEntry(const anIndex : integer; const aName : string):PVirtualNode;
+
+    function GetIsDirectory(const aNode : PVirtualNode) : boolean;
 
     function GetCheckedState(const anIndex: Cardinal): TCheckedState; overload;
     function GetCheckedState(const aNode: PVirtualNode): TCheckedState; overload;
@@ -52,6 +58,24 @@ uses
   GpIFF,
   gpString;
 
+
+function TCheckableListTools.AddEntry(const aParent: PVirtualNode; const aName: String; const aDirectory: boolean): PVirtualNode;
+var
+  LData : PCheckableItemData;
+begin
+  result := flist.AddChild(aParent);
+  result.CheckType := ctTriStateCheckBox;
+  LData := PCheckableItemData(result.GetData);
+  case fListType of
+    cid_unit,
+    cid_Class,
+    cid_Procs :
+    begin
+      LData.Name := aName;
+      lData.IsDirectory := aDirectory;
+    end;
+  end;
+end;
 
 constructor TCheckableListTools.Create(const aList: TVirtualStringTree; const aListType : TCheckableItemDataEnum);
 begin
@@ -101,6 +125,40 @@ begin
   end;
 end;
 
+function TCheckableListTools.GetIsDirectory(const aNode: PVirtualNode): boolean;
+var
+  LData : PCheckableItemData;
+begin
+  case fListType of
+    cid_unit,
+    cid_Class,
+    cid_Procs :
+    begin
+      LData := PCheckableItemData(aNode.GetData);
+      result := lData.IsDirectory;
+    end
+    else
+      result := false;
+  end;
+end;
+
+function TCheckableListTools.GetName(const aNode: PVirtualNode): string;
+var
+  LData : PCheckableItemData;
+begin
+  case fListType of
+    cid_unit,
+    cid_Class,
+    cid_Procs :
+    begin
+      LData := PCheckableItemData(aNode.GetData);
+      result := lData.Name;
+    end
+    else
+      result := inherited GetName(aNode);
+  end;
+end;
+
 procedure TCheckableListTools.SetCheckedState(const anIndex: Cardinal;const aCheckedState : TCheckedState);
 begin
   SetCheckedState(GetNode(anIndex), aCheckedState);
@@ -127,20 +185,8 @@ end;
 
 
 function TCheckableListTools.AddEntry(const aParent : PVirtualNode;const aName : String): PVirtualNode;
-var
-  LData : PCheckableItemData;
 begin
-  result := flist.AddChild(aParent);
-  result.CheckType := ctTriStateCheckBox;
-  LData := PCheckableItemData(result.GetData);
-  case fListType of
-    cid_unit,
-    cid_Class,
-    cid_Procs :
-    begin
-      LData.Name := aName;
-    end;
-  end;
+  result := AddEntry(aParent, aName, False);
 end;
 
 

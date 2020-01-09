@@ -8,15 +8,11 @@ object frmMainInstrumentation: TfrmMainInstrumentation
     Left = 129
     Top = 25
     Height = 564
-    ExplicitTop = -172
-    ExplicitHeight = 412
   end
   object Splitter2: TSplitter
     Left = 269
     Top = 25
     Height = 564
-    ExplicitTop = -172
-    ExplicitHeight = 412
   end
   object pnlTop: TPanel
     Left = 0
@@ -49,7 +45,7 @@ object frmMainInstrumentation: TfrmMainInstrumentation
       AlignWithMargins = True
       Left = 3
       Top = 3
-      Width = 39
+      Width = 123
       Height = 17
       Align = alTop
       Caption = '&Units:'
@@ -87,7 +83,7 @@ object frmMainInstrumentation: TfrmMainInstrumentation
       AlignWithMargins = True
       Left = 3
       Top = 3
-      Width = 51
+      Width = 131
       Height = 17
       Align = alTop
       Caption = '&Classes:'
@@ -123,7 +119,7 @@ object frmMainInstrumentation: TfrmMainInstrumentation
       AlignWithMargins = True
       Left = 3
       Top = 3
-      Width = 69
+      Width = 713
       Height = 17
       Align = alTop
       Caption = 'P&rocedures:'
