@@ -317,7 +317,7 @@ begin
         LWizard.SelectedUnitNames.AddOrSetValue(Lname, 0);
     end;
 
-    if LWizard.Execute(fopenProject, fVstSelectUnitTools.GetName(fVstSelectUnitTools.GetSelectedIndex)) then
+    if LWizard.Execute(fopenProject, fVstSelectUnitTools.GetName(fVstSelectUnitTools.GetSelectedNode)) then
     begin
       LUnitSelectionList := TUnitSelectionList.Create;
       try
@@ -626,7 +626,6 @@ end;
 
 procedure TfrmMainInstrumentation.clbUnitsClick();
 var
-  LIndex : integer;
   LSelectedNode : PVirtualNode;
   LUnitPath : string;
 begin
@@ -637,27 +636,27 @@ begin
     fVstSelectUnitTools.BeginUpdate();
     try
       fVstSelectClassTools.Clear;
-      LIndex := 0;
       LUnitPath := '';
       LSelectedNode := fVstSelectUnitTools.GetSelectedNode();
-      if assigned(lSelectedNode) then
-        LIndex := LSelectedNode.Index;
       // skip all items
-      if LIndex > 0 then
+      if Assigned(LSelectedNode) then
       begin
         RecreateClasses(false);
         ChangeClassSelectionWithoutEvent(0);
         clbClassesClick(self);
         if not fVstSelectUnitTools.GetIsDirectory(lSelectedNode) then
         begin
-          LUnitPath := openProject.GetUnitPath(fVstSelectUnitTools.GetName(lSelectedNode));
-          OnShowStatusBarMessage(LUnitPath, false);
+          if assigned(openProject.LocateUnit(fVstSelectUnitTools.GetName(lSelectedNode))) then
+          begin
+            LUnitPath := openProject.GetUnitPath(fVstSelectUnitTools.GetName(lSelectedNode));
+            OnShowStatusBarMessage(LUnitPath, false);
+          end;
         end;
       end
       else if openProject <> nil then
         OnShowStatusBarMessage(openProject.Name, false);
       OnReloadSource(LUnitPath,0); // force reset
-      mnuUnitWizard.Enabled := LIndex > 0;
+      mnuUnitWizard.Enabled := assigned(LSelectedNode);
     finally
       fVstSelectUnitTools.EndUpdate();
       fVstSelectClassTools.EndUpdate;
