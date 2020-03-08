@@ -38,6 +38,7 @@ type
     procedure vstSelectUnitsChecked(Sender: TBaseVirtualTree; Node: PVirtualNode);
     procedure mnuUnitWizardClick(Sender: TObject);
     procedure chkShowDirStructureClick(Sender: TObject);
+    procedure vstSelectUnitsAddToSelection(Sender: TBaseVirtualTree; Node: PVirtualNode);
   private
     fVstSelectUnitTools       : TCheckableListTools;
     fVstSelectClassTools      : TCheckableListTools;
@@ -371,6 +372,11 @@ begin
   vstSelectProcs.Selected[node] := true;
 end;
 
+procedure TfrmMainInstrumentation.vstSelectUnitsAddToSelection(Sender: TBaseVirtualTree; Node: PVirtualNode);
+begin
+  clbUnitsClick();
+end;
+
 procedure TfrmMainInstrumentation.vstSelectUnitsChecked(Sender: TBaseVirtualTree; Node: PVirtualNode);
 begin
   clbUnitsClickCheck(node);
@@ -557,7 +563,7 @@ end;
 
 procedure TfrmMainInstrumentation.chkShowDirStructureClick(Sender: TObject);
 begin
-  FillUnitTree(chkShowAll.Checked, chkShowDirStructure.Checked);
+  FillUnitTree(not chkShowAll.Checked, chkShowDirStructure.Checked);
 end;
 
 procedure TfrmMainInstrumentation.clbClassesClick(Sender: TObject);
