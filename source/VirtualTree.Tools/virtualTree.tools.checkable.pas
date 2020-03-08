@@ -146,6 +146,8 @@ function TCheckableListTools.GetName(const aNode: PVirtualNode): string;
 var
   LData : PCheckableItemData;
 begin
+  if not Assigned(aNode) then
+    Exit('');
   case fListType of
     cid_unit,
     cid_Class,
