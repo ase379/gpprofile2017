@@ -22,6 +22,17 @@ object frmMainInstrumentation: TfrmMainInstrumentation
     Align = alTop
     BevelOuter = bvNone
     TabOrder = 0
+    object chkShowDirStructure: TCheckBox
+      AlignWithMargins = True
+      Left = 108
+      Top = 3
+      Width = 155
+      Height = 19
+      Align = alLeft
+      Caption = 'Show Directory Structure'
+      TabOrder = 0
+      OnClick = chkShowDirStructureClick
+    end
     object chkShowAll: TCheckBox
       AlignWithMargins = True
       Left = 3
@@ -30,7 +41,9 @@ object frmMainInstrumentation: TfrmMainInstrumentation
       Height = 19
       Align = alLeft
       Caption = '&Show all folders'
-      TabOrder = 0
+      TabOrder = 1
+      ExplicitLeft = 11
+      ExplicitTop = 6
     end
   end
   object pnlUnits: TPanel

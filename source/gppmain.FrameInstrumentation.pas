@@ -18,7 +18,7 @@ type
     Splitter1: TSplitter;
     Splitter2: TSplitter;
     pnlTop: TPanel;
-    chkShowAll: TCheckBox;
+    chkShowDirStructure: TCheckBox;
     pnlUnits: TPanel;
     lblUnits: TStaticText;
     vstSelectUnits: TVirtualStringTree;
@@ -30,12 +30,14 @@ type
     vstSelectProcs: TVirtualStringTree;
     PopupMenu1: TPopupMenu;
     mnuUnitWizard: TMenuItem;
+    chkShowAll: TCheckBox;
     procedure vstSelectProcsAddToSelection(Sender: TBaseVirtualTree; Node: PVirtualNode);
     procedure vstSelectProcsChecked(Sender: TBaseVirtualTree; Node: PVirtualNode);
     procedure vstSelectClassesAddToSelection(Sender: TBaseVirtualTree; Node: PVirtualNode);
     procedure vstSelectClassesChecked(Sender: TBaseVirtualTree; Node: PVirtualNode);
     procedure vstSelectUnitsChecked(Sender: TBaseVirtualTree; Node: PVirtualNode);
     procedure mnuUnitWizardClick(Sender: TObject);
+    procedure chkShowDirStructureClick(Sender: TObject);
   private
     fVstSelectUnitTools       : TCheckableListTools;
     fVstSelectClassTools      : TCheckableListTools;
@@ -72,7 +74,7 @@ type
     procedure clbClassesClick(Sender: TObject);
     procedure clbClassesClickCheck(Sender: TObject; const aNode: PVirtualNode);
 
-    procedure FillUnitTree(const aOnlyUnitsOfDPR: boolean);
+    procedure FillUnitTree(const aOnlyUnitsOfDPR: boolean;const aShowDirectories: boolean);
 
     procedure RescanProject(const aOnRescan : TOnParseProject);
     procedure RemoveInstrumentation(const aOnDoInstrument : TOnDoInstrument);
@@ -116,6 +118,7 @@ end;
 procedure TfrmMainInstrumentation.DisablePC;
 begin
   chkShowAll.Enabled                 := false;
+  chkShowDirStructure.Enabled        := false;
   lblUnits.Enabled                   := false;
   lblClasses.Enabled                 := false;
   lblProcs.Enabled                   := false;
@@ -162,6 +165,7 @@ end; { TfrmMain.DoOnUnitCheck }
 procedure TfrmMainInstrumentation.EnablePC;
 begin
   chkShowAll.Enabled                 := true;
+  chkShowDirStructure.Enabled        := true;
   lblUnits.Enabled                   := true;
   lblClasses.Enabled                 := true;
   lblProcs.Enabled                   := true;
@@ -170,7 +174,7 @@ begin
   vstSelectProcs.Enabled             := true;
 end;
 
-procedure TfrmMainInstrumentation.FillUnitTree(const aOnlyUnitsOfDPR: boolean);
+procedure TfrmMainInstrumentation.FillUnitTree(const aOnlyUnitsOfDPR: boolean; const aShowDirectories: boolean);
 var
   s    : TStringList;
   i    : integer;
@@ -203,27 +207,34 @@ begin
         for i := 0 to s.Count-1 do
         begin
           lUnitName := ButLast(s[i], 2);
-          lFullPath := openproject.GetUnitPath(lUnitName);
-          lSplittedPath := SplitString(lFullPath, '\');
-
-          lDirectoryNode := nil;
-          lParentDirNode := nil;
-          for j := low(lSplittedPath) to high(lSplittedPath)-1 do
+          if aShowDirectories then
           begin
-            if assigned(lParentDirNode) then
-              lDirectoryNode := fVstSelectUnitTools.GetChildByName(lParentDirNode, lSplittedPath[j])
-            else
-              lDirectoryNode := fVstSelectUnitTools.GetNodeByName(lSplittedPath[j]);
-            if lDirectoryNode = nil then
+            lFullPath := openproject.GetUnitPath(lUnitName);
+            lSplittedPath := SplitString(lFullPath, '\');
+
+            lDirectoryNode := nil;
+            lParentDirNode := nil;
+            for j := low(lSplittedPath) to high(lSplittedPath)-1 do
             begin
-              lDirectoryNode := fVstSelectUnitTools.AddEntry(lParentDirNode, lSplittedPath[j], true);
+              if assigned(lParentDirNode) then
+                lDirectoryNode := fVstSelectUnitTools.GetChildByName(lParentDirNode, lSplittedPath[j])
+              else
+                lDirectoryNode := fVstSelectUnitTools.GetNodeByName(lSplittedPath[j]);
+              if lDirectoryNode = nil then
+              begin
+                lDirectoryNode := fVstSelectUnitTools.AddEntry(lParentDirNode, lSplittedPath[j], true);
+              end;
+              lParentDirNode := lDirectoryNode;
             end;
-            lParentDirNode := lDirectoryNode;
+            LNode := fVstSelectUnitTools.AddEntry(lDirectoryNode, lUnitName);
+          end
+          else
+          begin
+            LNode := fVstSelectUnitTools.AddEntry(lUnitName);
           end;
 
           // Two last chars in each element of the list, returned by GetUnitList, are the two flags,
           // ("0" and "1"): first indicates "All Instrumented", second - "None instrumented" state
-          LNode := fVstSelectUnitTools.AddEntry(lDirectoryNode, lUnitName);
           allu  := (s[i][Length(s[i])-1] = '1');
           noneu := (s[i][Length(s[i])] = '1');
           if allu then
@@ -542,6 +553,11 @@ begin
     LInfoList.Free;
     LUnitProcsList.free;
   end;
+end;
+
+procedure TfrmMainInstrumentation.chkShowDirStructureClick(Sender: TObject);
+begin
+  FillUnitTree(chkShowAll.Checked, chkShowDirStructure.Checked);
 end;
 
 procedure TfrmMainInstrumentation.clbClassesClick(Sender: TObject);

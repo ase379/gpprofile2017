@@ -458,7 +458,7 @@ begin
   actLoadInstrumentationSelection.Enabled := true;
   actSaveInstrumentationSelection.Enabled := true;
   FInstrumentationFrame.openProject := openProject;
-  FInstrumentationFrame.FillUnitTree(not FInstrumentationFrame.chkShowAll.Checked);
+  FInstrumentationFrame.FillUnitTree(not FInstrumentationFrame.chkShowAll.Checked, FInstrumentationFrame.chkShowDirStructure.Checked);
 end;
 
 procedure TfrmMain.ParseProject(const aProject: string; const aJustRescan: boolean);
@@ -474,7 +474,7 @@ begin
     FreeAndNil(openProject);
     InitProgressBar(self,self.ApplicationTaskbar, 'Parsing units...', true, false);
     SetProgressBarOverlayHint('Parsing units...');
-    FInstrumentationFrame.FillUnitTree(true); // clear all listboxes
+    FInstrumentationFrame.FillUnitTree(true, false); // clear all listboxes
     openProject := TProject.Create(aProject, TSessionData.selectedDelphi);
     TSessionData.CurrentProjectName := aProject;
     RebuildDefines;
@@ -1135,7 +1135,7 @@ end;
 
 procedure TfrmMain.cbProfileChange(Sender: TObject);
 begin
-  FInstrumentationFrame.FillUnitTree(not FInstrumentationFrame.chkShowAll.Checked);
+  FInstrumentationFrame.FillUnitTree(not FInstrumentationFrame.chkShowAll.Checked, FInstrumentationFrame.chkShowDirStructure.Checked);
   TGlobalPreferences.SetProjectPref('ShowAllFolders',FInstrumentationFrame.chkShowAll.Checked);
 end;
 
