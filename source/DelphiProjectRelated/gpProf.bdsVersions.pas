@@ -183,11 +183,7 @@ end;
 function ProductVersionToProductName(const aProductVersionString: string): string;
 begin
   result := '';
-  if ProductVersionMapping.ContainsKey(aProductVersionString) then
-  begin
-    exit(ProductVersionMapping[aProductVersionString]);
-  end
-  else
+  if not ProductVersionMapping.TryGetValue(aProductVersionString, Result) then
   begin
     exit('Embarcadero BDS ' +aProductVersionString);
   end;
