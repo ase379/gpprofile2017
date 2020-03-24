@@ -3,7 +3,7 @@ unit gpProf.ProjectAccessor;
 interface
 
 uses
-  system.Classes, gpProf.DofReader, gpProf.DProjReader, gpProf.BdsProjReader;
+  system.Classes, System.generics.collections, gpProf.DofReader, gpProf.DProjReader, gpProf.BdsProjReader;
 
 type
   TProjectType = (dofReader, bdsReader, dprojReader);
@@ -13,12 +13,14 @@ type
     fDProjReader : TDProjReader;
     fBdsProjReader : TBdsProjReader;
     fDofReader : TDofReader;
-    function ReplaceMacros(const aMacro : string) : string;
+
+    function InnerReplaceMacros(const aMacro : string; const aProductVersion: string) : string;
+    function ReplaceMacros(const aMacro : string; const aProductVersion: string) : string;
   public
     constructor Create(const aFilename : string);
     function IsConsoleProject(const aDefaultIfNotFound : boolean): boolean;
-    function GetOutputDir(): string;
-    function GetProjectDefines(): string;
+    function GetOutputDir(const aProductVersion: string): string;
+    function GetProjectDefines(const aProductVersion: string): string;
     function GetSearchPath(const aDelphiCompilerVersion: string): string;
     function GetNamespaces(const aDelphiCompilerVersion: string): string;
   end;
@@ -27,7 +29,7 @@ type
 implementation
 
 uses
-  System.Sysutils, Winapi.Windows, gppmain.types, GpString, gppcommon, GpRegistry, gpProf.bdsVersions,
+  System.Sysutils, System.Win.Registry, Winapi.Windows, gppmain.types, GpString, gppcommon, GpRegistry, gpProf.bdsVersions,
   gpProf.Delphi.RegistryAccessor;
 
 { TProjectAccessor }
@@ -39,6 +41,7 @@ var
 begin
   inherited Create();
   fFilename := aFilename;
+
   // try .dproj first... its the current version format
   LFn := ChangeFileExt(fFilename,TUIStrings.DelphiProjectExt);
   LFileFound := FileExists(LFn);
@@ -73,8 +76,20 @@ begin
     Result := fDofReader.IsConsoleApp(aDefaultIfNotFound);
 end;
 
+function TProjectAccessor.ReplaceMacros(const aMacro: string; const aProductVersion: string): string;
+var
+  tmp: string;
+begin
+  Result := aMacro;
+  tmp := '';
+  while Result <> tmp do
+  begin
+    tmp := Result;
+    Result := InnerReplaceMacros(Result, aProductVersion);
+  end;
+end;
 
-function TProjectAccessor.ReplaceMacros(const aMacro: string): string;
+function TProjectAccessor.InnerReplaceMacros(const aMacro: string; const aProductVersion: string): string;
 
   function GetDelphiXE2Var(const aVarName: string): string;
   begin
@@ -83,8 +98,27 @@ function TProjectAccessor.ReplaceMacros(const aMacro: string): string;
   end;
 
   function GetEnvVar(const aVarName: String): String;
+  var
+    reg: TRegistry;
+    reg2: TRegistry;
   begin
     Result := GetEnvironmentVariable(aVarName);
+
+    if Result.Trim() = '' then
+    begin
+      reg := TRegistry.Create();
+      try
+        reg.RootKey := HKEY_CURRENT_USER;
+        reg.OpenKey(Format('Software\Embarcadero\BDS\%s\Environment Variables', [aProductVersion]), false);
+
+        if reg.ValueExists(aVarName) then
+        begin
+          Result := reg.ReadString(aVarName);
+        end;
+      finally
+        reg.Free();
+      end;
+    end;
   end;
 
 var
@@ -133,14 +167,14 @@ begin
 end;
 
 
-function TProjectAccessor.GetProjectDefines: string;
+function TProjectAccessor.GetProjectDefines(const aProductVersion: string): string;
 begin
   Result := '';
 
   if assigned(fDProjReader) then
   begin
     Result := fDProjReader.GetProjectDefines();
-    Result := ReplaceMacros(Result);
+    Result := ReplaceMacros(Result, aProductVersion);
   end
   else if assigned(fBdsProjReader) then
     Result := fBdsProjReader.GetProjectDefines
@@ -202,7 +236,7 @@ begin
   end;
 
   // Substitute macros (environment variables) with their real values
-  LPath := ReplaceMacros(LPath);
+  LPath := ReplaceMacros(LPath, ProductNameToProductVersion(aDelphiCompilerVersion));
 
   // Transform all search paths into absolute
   Result := '';
@@ -221,7 +255,7 @@ begin
   end;
 end;
 
-function TProjectAccessor.GetOutputDir(): string;
+function TProjectAccessor.GetOutputDir(const aProductVersion: string): string;
 var
   vOldCurDir: String;
 begin
@@ -234,7 +268,7 @@ begin
   else if assigned(fDofReader) then
     Result := fDofReader.OutputDir;
 
-  Result := ReplaceMacros(Result);
+  Result := ReplaceMacros(Result, aProductVersion);
 
   // If getting output dir was not successful - use project dir as output dir
   if Result = '' then

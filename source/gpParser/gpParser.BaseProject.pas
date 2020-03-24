@@ -75,11 +75,11 @@ type
 implementation
 
 uses
-  System.SysUtils, System.StrUtils, GpString, gpProf.ProjectAccessor;
+  System.SysUtils, System.StrUtils, GpString, gpProf.ProjectAccessor, gpProf.bdsVersions;
 
 { TBaseProject }
 
-constructor TBaseProject.Create(const aProjectName,aSelectedDelphiVersion : string);
+constructor TBaseProject.Create(const aProjectName, aSelectedDelphiVersion : string);
 var
   LProjectAccessor : TProjectAccessor;
   i : Integer;
@@ -94,7 +94,7 @@ begin
   try
     LProjectAccessor := TProjectAccessor.Create(fProjectName);
     fIsConsoleProject := LProjectAccessor.IsConsoleProject(true);
-    fOutputDir := LProjectAccessor.GetOutputDir();
+    fOutputDir := LProjectAccessor.GetOutputDir(ProductNameToProductVersion(aSelectedDelphiVersion));
     fSearchPathes := SplitString(LProjectAccessor.GetSearchPath(aSelectedDelphiVersion), ';');
     fNamespaces := SplitString(LProjectAccessor.GetNamespaces(aSelectedDelphiVersion), ';');
     for i := Low(fSearchPathes) to high(fSearchPathes) do

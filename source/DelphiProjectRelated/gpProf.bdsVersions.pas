@@ -48,6 +48,7 @@ function DelphiProductToCompilerVersion(const aProductName: TDelphiProduct): str
 /// Transforms the product version to the product name, e.g. 20.0 to '10.3 Rio'
 /// </summary>
 function ProductVersionToProductName(const aProductVersionString: string): string;
+function ProductNameToProductVersion(const aProductNameString: string): string;
 /// <summary>
 /// Gets the major version for the bds version, e.g. 19.0 -> 19
 ///  This can be used to compare the versions.
@@ -58,14 +59,16 @@ function GetMinorFromProductVersion(const aProductVersionString : string) : Inte
 implementation
 
 uses
+   System.Generics.Collections,
    System.SysUtils;
-
-
 
 const SEATTLE = '10.0 Seattle';
       BERLIN = '10.1 Berlin';
       TOKYO = '10.2 Tokyo';
       RIO = '10.3 Rio';
+
+var
+  ProductVersionMapping: TDictionary<String, String>;
 
 function RemoveHotkeyAndDelphiPrefix(const aDelphiVer: string): string;
 begin
@@ -180,36 +183,47 @@ end;
 function ProductVersionToProductName(const aProductVersionString: string): string;
 begin
   result := '';
-  if aProductVersionString = '20.0' then
-    exit(RIO)
-  else if aProductVersionString = '19.0' then
-    exit(TOKYO)
-  else if aProductVersionString = '18.0' then
-    exit(BERLIN)
-  else if aProductVersionString = '17.0' then
-    exit(SEATTLE)
-  else if aProductVersionString = '16.0' then
-    exit('XE8')
-  else if aProductVersionString = '15.0' then
-    exit('XE7')
-  else if aProductVersionString = '14.0' then
-    exit('XE6')
-  else if aProductVersionString = '12.0' then
-    exit('XE5')
-  else if aProductVersionString = '11.0' then
-    exit('XE4')
-  else if aProductVersionString = '10.0' then
-    exit('XE3')
-  else if aProductVersionString = '9.0' then
-    exit('XE2')
-  else if aProductVersionString = '8.0' then
-    exit('XE')
-  else if aProductVersionString = '7.0' then
-    exit('2010')
-  else if aProductVersionString = '6.0' then
-    exit('2009')
+  if ProductVersionMapping.ContainsKey(aProductVersionString) then
+  begin
+    exit(ProductVersionMapping[aProductVersionString]);
+  end
   else
+  begin
     exit('Embarcadero BDS ' +aProductVersionString);
+  end;
 end;
+
+function ProductNameToProductVersion(const aProductNameString: string): string;
+var
+  kv: TPair<String, String>;
+begin
+  for kv in ProductVersionMapping do
+  begin
+    if SameText(kv.Value, aProductNameString) then
+    begin
+      Exit(kv.Key);
+    end;
+  end;
+
+  Exit(aProductNameString.Replace('Embarcadero BDS', '', [rfReplaceAll, rfIgnoreCase]).Trim());
+end;
+
+Initialization
+
+ProductVersionMapping := TDictionary<String, String>.Create();
+ProductVersionMapping.add('20.0', RIO);
+ProductVersionMapping.add('19.0', TOKYO);
+ProductVersionMapping.add('18.0', BERLIN);
+ProductVersionMapping.add('17.0', SEATTLE);
+ProductVersionMapping.add('16.0', 'XE8');
+ProductVersionMapping.add('15.0', 'XE7');
+ProductVersionMapping.add('14.0', 'XE6');
+ProductVersionMapping.add('12.0', 'XE5');
+ProductVersionMapping.add('11.0', 'XE4');
+ProductVersionMapping.add('10.0', 'XE3');
+ProductVersionMapping.add('9.0', 'XE2');
+ProductVersionMapping.add('8.0', 'XE');
+ProductVersionMapping.add('7.0', '2010');
+ProductVersionMapping.add('6.0', '2009');
 
 end.
