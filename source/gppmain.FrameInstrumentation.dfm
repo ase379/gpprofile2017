@@ -43,14 +43,14 @@ object frmMainInstrumentation: TfrmMainInstrumentation
       Caption = '&Show all folders'
       TabOrder = 1
     end
-    object Button1: TButton
+    object btnSelectAll: TButton
       Left = 275
       Top = 3
       Width = 57
       Height = 19
       Caption = 'Select All'
       TabOrder = 2
-      OnClick = Button1Click
+      OnClick = btnSelectAllClick
     end
   end
   object pnlUnits: TPanel

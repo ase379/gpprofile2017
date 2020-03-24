@@ -31,7 +31,7 @@ type
     PopupMenu1: TPopupMenu;
     mnuUnitWizard: TMenuItem;
     chkShowAll: TCheckBox;
-    Button1: TButton;
+    btnSelectAll: TButton;
     procedure vstSelectProcsAddToSelection(Sender: TBaseVirtualTree; Node: PVirtualNode);
     procedure vstSelectProcsChecked(Sender: TBaseVirtualTree; Node: PVirtualNode);
     procedure vstSelectClassesAddToSelection(Sender: TBaseVirtualTree; Node: PVirtualNode);
@@ -40,7 +40,7 @@ type
     procedure mnuUnitWizardClick(Sender: TObject);
     procedure chkShowDirStructureClick(Sender: TObject);
     procedure vstSelectUnitsAddToSelection(Sender: TBaseVirtualTree; Node: PVirtualNode);
-    procedure Button1Click(Sender: TObject);
+    procedure btnSelectAllClick(Sender: TObject);
   private
     fVstSelectUnitTools       : TCheckableListTools;
     fVstSelectClassTools      : TCheckableListTools;
@@ -616,7 +616,7 @@ begin
   ReloadSource;
 end;
 
-procedure TfrmMainInstrumentation.Button1Click(Sender: TObject);
+procedure TfrmMainInstrumentation.btnSelectAllClick(Sender: TObject);
 begin
   vstSelectUnits.SetCheckStateForAll(csCheckedNormal, false);
 end;
