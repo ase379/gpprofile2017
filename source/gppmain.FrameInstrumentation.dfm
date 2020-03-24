@@ -42,8 +42,15 @@ object frmMainInstrumentation: TfrmMainInstrumentation
       Align = alLeft
       Caption = '&Show all folders'
       TabOrder = 1
-      ExplicitLeft = 11
-      ExplicitTop = 6
+    end
+    object btnSelectAll: TButton
+      Left = 275
+      Top = 3
+      Width = 57
+      Height = 19
+      Caption = 'Select All'
+      TabOrder = 2
+      OnClick = btnSelectAllClick
     end
   end
   object pnlUnits: TPanel

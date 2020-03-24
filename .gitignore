@@ -1,16 +1,15 @@
-DCU/*.dcu
 BIN/gpprof.drc
 BIN/gpprof.exe
 BIN/gpprof.map
 *.~dsk
 tests/Win32/Debug/*.*
-source/__history
 *.identcache
-*.rsm
+*.rsmres
 *.res
 *.bak
 *.bk1
 *.stat
+*.dcu
 DCU64/
 bin64/*.exe
 BIN/*exe
@@ -18,4 +17,5 @@ bin64/*.prf
 BIN/*prf
 bin64/*.map
 BIN/*.map
-source/CastaliaDelphiParser/__history/
+*.dproj.local
+**/__history

@@ -262,12 +262,14 @@ var
   i       : integer;
   LAccessor : TProjectAccessor;
   LConditionals : string;
+  LCompilerVersion : string;
 begin
   if cbProjectDefines.Checked then
   begin
     LAccessor := TProjectAccessor.Create(TSessionData.CurrentProjectName);
     try
-      LConditionals := LAccessor.GetProjectDefines();
+      LCompilerVersion := cbxCompilerVersion.Items[cbxCompilerVersion.ItemIndex].Replace('Delphi', '', [rfIgnoreCase, rfReplaceAll]).Trim();
+      LConditionals := LAccessor.GetProjectDefines(ProductNameToProductVersion(LCompilerVersion));
     finally
       LAccessor.Free;
     end;
