@@ -6,7 +6,7 @@
         <DCC_DCCCompiler>DCC32</DCC_DCCCompiler>
         <DCC_DependencyCheckOutputName>..\BIN\gpprof.exe</DCC_DependencyCheckOutputName>
         <FrameworkType>VCL</FrameworkType>
-        <ProjectVersion>18.8</ProjectVersion>
+        <ProjectVersion>18.7</ProjectVersion>
         <Base>True</Base>
         <Config Condition="'$(Config)'==''">Debug</Config>
         <Platform Condition="'$(Platform)'==''">Win32</Platform>
@@ -213,6 +213,7 @@
         <DCCReference Include="gppMain.pas">
             <Form>frmMain</Form>
         </DCCReference>
+        <DCCReference Include="gpFileEdit.pas"/>
         <DCCReference Include="GpVersion.pas"/>
         <DCCReference Include="gppIDT.pas"/>
         <DCCReference Include="gpUnitWizard.pas">
