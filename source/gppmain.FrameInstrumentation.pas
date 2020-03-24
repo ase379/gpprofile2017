@@ -618,7 +618,7 @@ end;
 
 procedure TfrmMainInstrumentation.Button1Click(Sender: TObject);
 begin
-  vstSelectUnits.CheckedNodes();
+  vstSelectUnits.SetCheckStateForAll(csCheckedNormal, false);
 end;
 
 procedure TfrmMainInstrumentation.ChangeClassSelectionWithoutEvent(const anIndex : integer);
