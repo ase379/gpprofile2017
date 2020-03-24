@@ -99,24 +99,19 @@ function TProjectAccessor.InnerReplaceMacros(const aMacro: string; const aProduc
 
   function GetEnvVar(const aVarName: String): String;
   var
-    reg: TRegistry;
-    reg2: TRegistry;
+    LRegistryAccessor : TRegistryAccessor;
+    LEntry : TDelphiRegistryEntry;
   begin
     Result := GetEnvironmentVariable(aVarName);
 
     if Result.Trim() = '' then
     begin
-      reg := TRegistry.Create();
+      LRegistryAccessor := TRegistryAccessor.Create('');
       try
-        reg.RootKey := HKEY_CURRENT_USER;
-        reg.OpenKey(Format('Software\Embarcadero\BDS\%s\Environment Variables', [aProductVersion]), false);
-
-        if reg.ValueExists(aVarName) then
-        begin
-          Result := reg.ReadString(aVarName);
-        end;
+        LEntry := LRegistryAccessor.GetByProductVersion(aProductVersion);
+        Result := LEntry.GetEnvVar(aVarName);
       finally
-        reg.Free();
+        LRegistryAccessor.Free();
       end;
     end;
   end;
