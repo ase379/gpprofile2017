@@ -36,8 +36,6 @@ type
     cbShowAllFolders: TCheckBox;
     btnInstrumentationDefaults: TButton;
     btnAnalysisDefaults: TButton;
-    cbKeepFileDate: TCheckBox;
-    cbUseFileDate: TCheckBox;
     tabDefines: TTabSheet;
     GroupBox5: TGroupBox;
     lvDefines: TListView;
@@ -78,7 +76,6 @@ type
     procedure btnAnalysisDefaultsClick(Sender: TObject);
     procedure btnExcludedUnitsDefaultsClick(Sender: TObject);
     procedure btnClearClick(Sender: TObject);
-    procedure cbKeepFileDateClick(Sender: TObject);
     procedure cbxCompilerVersionChange(Sender: TObject);
     procedure cbxDelphiDefinesChange(Sender: TObject);
     procedure cbStandardDefinesClick(Sender: TObject);
@@ -224,18 +221,6 @@ begin
   memoExclUnits.Clear;
 end;
 
-procedure TfrmPreferences.cbKeepFileDateClick(Sender: TObject);
-begin
-  if cbKeepFileDate.Checked then begin
-    cbUseFileDate.Checked := false;
-    cbUseFileDate.Enabled := false;
-  end
-  else begin
-    cbUseFileDate.Checked := true;
-    cbUseFileDate.Enabled := true;
-  end;
-end;      
-
 procedure TfrmPreferences.cbxCompilerVersionChange(Sender: TObject);
 begin
   cbxDelphiDefines.ItemIndex := cbxCompilerVersion.ItemIndex;
@@ -277,12 +262,14 @@ var
   i       : integer;
   LAccessor : TProjectAccessor;
   LConditionals : string;
+  LCompilerVersion : string;
 begin
   if cbProjectDefines.Checked then
   begin
     LAccessor := TProjectAccessor.Create(TSessionData.CurrentProjectName);
     try
-      LConditionals := LAccessor.GetProjectDefines();
+      LCompilerVersion := cbxCompilerVersion.Items[cbxCompilerVersion.ItemIndex].Replace('Delphi', '', [rfIgnoreCase, rfReplaceAll]).Trim();
+      LConditionals := LAccessor.GetProjectDefines(ProductNameToProductVersion(LCompilerVersion));
     finally
       LAccessor.Free;
     end;
@@ -558,8 +545,6 @@ begin
         else if TGlobalPreferences.SpeedSize > tbSpeedSize.Max then TGlobalPreferences.SpeedSize := tbSpeedSize.Max;
         tbSpeedSize.Position          := TGlobalPreferences.SpeedSize;
         cbShowAllFolders.Checked      := TGlobalPreferences.ShowAllFolders;
-        cbKeepFileDate.Checked        := TGlobalPreferences.KeepFileDate;
-        cbUseFileDate.Checked         := TGlobalPreferences.UseFileDate;
         cbProfilingAutostart.Checked  := TGlobalPreferences.ProfilingAutostart;
         cbInstrumentAssembler.Checked := TGlobalPreferences.InstrumentAssembler;
         cbMakeBackupOfInstrumentedFile.Checked := TGlobalPreferences.MakeBackupOfInstrumentedFile;
@@ -611,8 +596,6 @@ begin
   if TGlobalPreferences.SpeedSize < tbSpeedSize.Min then TGlobalPreferences.SpeedSize := tbSpeedSize.Min
   else if TGlobalPreferences.SpeedSize > tbSpeedSize.Max then TGlobalPreferences.SpeedSize := tbSpeedSize.Max;
   cbShowAllFolders.Checked     := TGlobalPreferences.ShowAllFolders;
-  cbKeepFileDate.Checked       := TGlobalPreferences.KeepFileDate;
-  cbUseFileDate.Checked        := TGlobalPreferences.UseFileDate;
   edtPerformanceOutputFilename.text := TGlobalPreferences.PrfFilenameMakro;
   cbStandardDefines.Checked    := TGlobalPreferences.StandardDefines;
   cbDisableUserDefines.Checked := TGlobalPreferences.DisableUserDefines;
@@ -644,8 +627,6 @@ begin
     TGlobalPreferences.ExcludedUnits      := memoExclUnits.Text;
     TGlobalPreferences.SpeedSize          := tbSpeedSize.Position;
     TGlobalPreferences.ShowAllFolders     := cbShowAllFolders.Checked;
-    TGlobalPreferences.KeepFileDate       := cbKeepFileDate.Checked;
-    TGlobalPreferences.UseFileDate        := cbUseFileDate.Checked;
     TGlobalPreferences.PrfFilenameMakro   := edtPerformanceOutputFilename.text;
 
     TGlobalPreferences.StandardDefines    := cbStandardDefines.Checked;
@@ -680,8 +661,6 @@ begin
     tbSpeedSize.Position := projSpeedSize;
     ReselectCompilerVersion(TSessionData.selectedDelphi);
     cbShowAllFolders.Checked           := aShowAll;
-    cbKeepFileDate.Checked             := TGlobalPreferences.GetProjectPref('KeepFileDate',TGlobalPreferences.KeepFileDate);
-    cbUseFileDate.Checked              := TGlobalPreferences.GetProjectPref('UseFileDate',TGlobalPreferences.UseFileDate);
     edtPerformanceOutputFilename.text  := TGlobalPreferences.GetProjectPref('PrfFilenameMakro',TGlobalPreferences.PrfFilenameMakro);
     edtPerformanceOutputFilename.text := ResolvePrfProjectPlaceholders(edtPerformanceOutputFilename.text);
   
@@ -713,8 +692,6 @@ begin
       TGlobalPreferences.SetProjectPref('MarkerStyle',cbxMarker.ItemIndex);
       TGlobalPreferences.SetProjectPref('SpeedSize',tbSpeedSize.Position);
       TGlobalPreferences.SetProjectPref('ShowAllFolders',cbShowAllFolders.Checked);
-      TGlobalPreferences.SetProjectPref('KeepFileDate',cbKeepFileDate.Checked);
-      TGlobalPreferences.SetProjectPref('UseFileDate',cbUseFileDate.Checked);
       TGlobalPreferences.SetProjectPref('PrfFilenameMakro',edtPerformanceOutputFilename.text);
       TGlobalPreferences.SetProjectPref('StandardDefines',cbStandardDefines.Checked);
       TGlobalPreferences.SetProjectPref('DisableUserDefines',cbDisableUserDefines.Checked);

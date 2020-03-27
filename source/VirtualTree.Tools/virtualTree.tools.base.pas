@@ -42,7 +42,7 @@ type
     function GetChildByName(const aParent : PVirtualNode;const aName: string): PVirtualNode;
 
     function GetName(const anIndex: Cardinal): string; overload;
-    function GetName(const aNode : PVirtualNode) : string; overload;
+    function GetName(const aNode : PVirtualNode) : string; overload; virtual;
     procedure setSelectedIndex(const anIndex : cardinal);
   end;
 

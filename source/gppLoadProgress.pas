@@ -115,7 +115,8 @@ end;
 
 procedure TfrmLoadProgress.FormKeyPress(Sender: TObject; var Key: Char);
 begin
-  if Key = #27 then Hide;
+  if fCancel and (Key = #27) then
+    btnCancelLoadClick(btnCancelLoad);
 end;
 
 function TfrmLoadProgress.getPercentage: Integer;

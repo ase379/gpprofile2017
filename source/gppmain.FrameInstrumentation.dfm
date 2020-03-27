@@ -8,15 +8,11 @@ object frmMainInstrumentation: TfrmMainInstrumentation
     Left = 129
     Top = 25
     Height = 564
-    ExplicitTop = -172
-    ExplicitHeight = 412
   end
   object Splitter2: TSplitter
     Left = 269
     Top = 25
     Height = 564
-    ExplicitTop = -172
-    ExplicitHeight = 412
   end
   object pnlTop: TPanel
     Left = 0
@@ -26,6 +22,17 @@ object frmMainInstrumentation: TfrmMainInstrumentation
     Align = alTop
     BevelOuter = bvNone
     TabOrder = 0
+    object chkShowDirStructure: TCheckBox
+      AlignWithMargins = True
+      Left = 108
+      Top = 3
+      Width = 155
+      Height = 19
+      Align = alLeft
+      Caption = 'Show Directory Structure'
+      TabOrder = 0
+      OnClick = chkShowDirStructureClick
+    end
     object chkShowAll: TCheckBox
       AlignWithMargins = True
       Left = 3
@@ -34,7 +41,16 @@ object frmMainInstrumentation: TfrmMainInstrumentation
       Height = 19
       Align = alLeft
       Caption = '&Show all folders'
-      TabOrder = 0
+      TabOrder = 1
+    end
+    object btnSelectAll: TButton
+      Left = 275
+      Top = 3
+      Width = 57
+      Height = 19
+      Caption = 'Select All'
+      TabOrder = 2
+      OnClick = btnSelectAllClick
     end
   end
   object pnlUnits: TPanel
@@ -49,7 +65,7 @@ object frmMainInstrumentation: TfrmMainInstrumentation
       AlignWithMargins = True
       Left = 3
       Top = 3
-      Width = 39
+      Width = 123
       Height = 17
       Align = alTop
       Caption = '&Units:'
@@ -87,7 +103,7 @@ object frmMainInstrumentation: TfrmMainInstrumentation
       AlignWithMargins = True
       Left = 3
       Top = 3
-      Width = 51
+      Width = 131
       Height = 17
       Align = alTop
       Caption = '&Classes:'
@@ -123,7 +139,7 @@ object frmMainInstrumentation: TfrmMainInstrumentation
       AlignWithMargins = True
       Left = 3
       Top = 3
-      Width = 69
+      Width = 713
       Height = 17
       Align = alTop
       Caption = 'P&rocedures:'

@@ -3,7 +3,7 @@ unit gpProf.Delphi.RegistryAccessor;
 interface
 
 uses
-  System.Classes, System.Win.Registry, System.Generics.Collections, Winapi.Windows;
+  System.Classes, System.Win.Registry, System.Generics.Collections, System.Generics.Defaults, Winapi.Windows;
 
 type
   TDelphiRegistryEntry = class
@@ -11,12 +11,14 @@ type
     fProductVersion : string;
     fApp : string;
     fSearchPathes : TDictionary<String, Byte>;
+    fEnvironmentVariables: TDictionary<String, String>;
     function GetProductName: string;
     procedure AppendSearchPath(const aPartToBeAppended: string);
     function getSearchPath: string;
   public
     constructor Create(const aProductVersion : string);
     destructor Destroy; override;
+    function GetEnvVar(const aVarName: String): String;
     property ProductVersion : string read fProductVersion;
     property ProductName : string read GetProductName;
     property App : string read fApp;
@@ -133,6 +135,8 @@ var
   LAddIt : Boolean;
   LProductVersion : string;
   LRegistry : TRegistry;
+  LValueNames : TStringList;
+  LName : string;
 begin
   if assigned(fDelphiRegList) then
     Exit(fDelphiRegList);
@@ -165,6 +169,22 @@ begin
           LRegistry.CloseKey;
         end;
 
+        // TODO: Check if Delphi versions 2+3 have environment variables at this registry path
+        if LRegistry.OpenKeyReadOnly(REG_PATH_BORLAND_23 +'\'+ LProductVersion +'\Environment Variables') then
+        begin
+          LValueNames := TStringList.Create();
+          try
+            LRegistry.GetValueNames(LValueNames);
+            for LName in LValueNames do
+            begin
+              LRegEntry.fEnvironmentVariables.Add(LName, LRegistry.ReadString(LName));
+            end;
+          finally
+            LValueNames.Free();
+          end;
+          LRegistry.CloseKey;
+        end;
+
       end;
     end;
 
@@ -186,6 +206,22 @@ begin
           LRegEntry.AppendSearchPath(LRegistry.ReadString('Search Path'));
           LRegEntry.AppendSearchPath(LRegistry.ReadString('SearchPath'));
           LRegEntry.AppendSearchPath(LRegistry.ReadString('Browsing Path'));
+          LRegistry.CloseKey;
+        end;
+
+        // TODO: Check if Delphi versions 2005-2007 have environment variables at this registry path
+        if LRegistry.OpenKeyReadOnly(REG_PATH_BDS_KEYS +'\'+ LProductVersion +'\Environment Variables') then
+        begin
+          LValueNames := TStringList.Create();
+          try
+            LRegistry.GetValueNames(LValueNames);
+            for LName in LValueNames do
+            begin
+              LRegEntry.fEnvironmentVariables.Add(LName, LRegistry.ReadString(LName));
+            end;
+          finally
+            LValueNames.Free();
+          end;
           LRegistry.CloseKey;
         end;
       end;
@@ -217,6 +253,21 @@ begin
         begin
           LRegEntry.AppendSearchPath(LRegistry.ReadString('Search Path'));
           LRegEntry.AppendSearchPath(LRegistry.ReadString('Browsing Path'));
+          LRegistry.CloseKey;
+        end;
+
+        if LRegistry.OpenKeyReadOnly(REG_PATH_EMBARCADERO_KEYS +'\'+ LProductVersion +'\Environment Variables') then
+        begin
+          LValueNames := TStringList.Create();
+          try
+            LRegistry.GetValueNames(LValueNames);
+            for LName in LValueNames do
+            begin
+              LRegEntry.fEnvironmentVariables.Add(LName, LRegistry.ReadString(LName));
+            end;
+          finally
+            LValueNames.Free();
+          end;
           LRegistry.CloseKey;
         end;
       end;
@@ -253,12 +304,28 @@ begin
   inherited Create();
   fProductVersion := aProductVersion;
   fSearchPathes := TDictionary<String, Byte>.Create();
+  fEnvironmentVariables := TDictionary<String, String>.Create();
 end;
 
 destructor TDelphiRegistryEntry.Destroy;
 begin
   fSearchPathes.Free;
+  fEnvironmentVariables.Free;
   inherited;
+end;
+
+function TDelphiRegistryEntry.GetEnvVar(const aVarName: String): String;
+var
+  kv: TPair<String, String>;
+begin
+  Result := '';
+  for kv in fEnvironmentVariables do
+  begin
+    if SameText(aVarName, kv.Key) then
+    begin
+      exit(kv.Value);
+    end;
+  end;
 end;
 
 function TDelphiRegistryEntry.GetProductName: string;

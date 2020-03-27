@@ -18,7 +18,7 @@ type
     Splitter1: TSplitter;
     Splitter2: TSplitter;
     pnlTop: TPanel;
-    chkShowAll: TCheckBox;
+    chkShowDirStructure: TCheckBox;
     pnlUnits: TPanel;
     lblUnits: TStaticText;
     vstSelectUnits: TVirtualStringTree;
@@ -30,13 +30,17 @@ type
     vstSelectProcs: TVirtualStringTree;
     PopupMenu1: TPopupMenu;
     mnuUnitWizard: TMenuItem;
+    chkShowAll: TCheckBox;
+    btnSelectAll: TButton;
     procedure vstSelectProcsAddToSelection(Sender: TBaseVirtualTree; Node: PVirtualNode);
     procedure vstSelectProcsChecked(Sender: TBaseVirtualTree; Node: PVirtualNode);
     procedure vstSelectClassesAddToSelection(Sender: TBaseVirtualTree; Node: PVirtualNode);
     procedure vstSelectClassesChecked(Sender: TBaseVirtualTree; Node: PVirtualNode);
-    procedure vstSelectUnitsAddToSelection(Sender: TBaseVirtualTree; Node: PVirtualNode);
     procedure vstSelectUnitsChecked(Sender: TBaseVirtualTree; Node: PVirtualNode);
     procedure mnuUnitWizardClick(Sender: TObject);
+    procedure chkShowDirStructureClick(Sender: TObject);
+    procedure vstSelectUnitsAddToSelection(Sender: TBaseVirtualTree; Node: PVirtualNode);
+    procedure btnSelectAllClick(Sender: TObject);
   private
     fVstSelectUnitTools       : TCheckableListTools;
     fVstSelectClassTools      : TCheckableListTools;
@@ -45,17 +49,18 @@ type
     fOnShowStatusBarMessage : TOnShowStatusBarMessage;
     fOnReloadSource : TReloadSourceEvent;
     function  GetSelectedUnitName(): string;
+    function  GetSelectedIsDirectory(): boolean;
     function  GetSelectedClassName(): string;
     function  GetSelectedUnitIndex(): integer;
     procedure SetSelectedUnitIndex(const anIndex : integer);
 
     procedure ClickProcs(index: integer; recreateCl: boolean);
 
-    procedure DoOnUnitCheck(index: integer; instrument: boolean);
+    procedure DoOnUnitCheck(const aNode: PVirtualNode; instrument: boolean);
 
     procedure RecheckTopClass;
     procedure RecreateClasses(recheck: boolean); overload;
-    procedure RecreateClasses(recheck: boolean;const aUnitName : string);overload;
+    procedure RecreateClasses(recheck: boolean;const aName: string);overload;
     procedure RecreateProcs(const aProcName: string);
   public
     constructor Create(AOwner: TComponent); override;
@@ -68,11 +73,11 @@ type
 
     procedure clbProcsClick(Sender: TObject);
     procedure clbUnitsClick();
-    procedure clbUnitsClickCheck(index: Integer);
+    procedure clbUnitsClickCheck(const aNode: PVirtualNode);
     procedure clbClassesClick(Sender: TObject);
-    procedure clbClassesClickCheck(Sender: TObject; index: Integer);
+    procedure clbClassesClickCheck(Sender: TObject; const aNode: PVirtualNode);
 
-    procedure FillUnitTree(const aOnlyUnitsOfDPR: boolean);
+    procedure FillUnitTree(const aOnlyUnitsOfDPR: boolean;const aShowDirectories: boolean);
 
     procedure RescanProject(const aOnRescan : TOnParseProject);
     procedure RemoveInstrumentation(const aOnDoInstrument : TOnDoInstrument);
@@ -89,7 +94,7 @@ implementation
 
 uses
   GpString, gpUnitWizard, gpParser.Units, gpParser.Selections,
-  gppMain.FrameInstrumentation.SelectionInfo;
+  gppMain.FrameInstrumentation.SelectionInfo, System.StrUtils, System.Types;
 
 {$R *.dfm}
 
@@ -116,6 +121,7 @@ end;
 procedure TfrmMainInstrumentation.DisablePC;
 begin
   chkShowAll.Enabled                 := false;
+  chkShowDirStructure.Enabled        := false;
   lblUnits.Enabled                   := false;
   lblClasses.Enabled                 := false;
   lblProcs.Enabled                   := false;
@@ -124,12 +130,12 @@ begin
   vstSelectProcs.Enabled             := false;
 end;
 
-procedure TfrmMainInstrumentation.DoOnUnitCheck(index: integer; instrument: boolean);
+procedure TfrmMainInstrumentation.DoOnUnitCheck(const aNode: PVirtualNode; instrument: boolean);
 var
   LEnumor : TVTVirtualNodeEnumerator;
   LFirstCheckedState : TCheckedState;
 begin
-  if index = 0 then
+  if aNode = nil then
   begin
     vstSelectUnits.BeginUpdate;
     try
@@ -145,20 +151,24 @@ begin
   end
   else
   begin
-    if instrument then
-      openProject.InstrumentUnit(fVstSelectUnitTools.GetName(index), fVstSelectUnitTools.GetCheckedState(index)=TCheckedState.checked);
-    if openProject.AllInstrumented(not chkShowAll.Checked) then
-      fVstSelectUnitTools.SetCheckedState(0, TCheckedState.checked)
-    else if openProject.NoneInstrumented(not chkShowAll.Checked) then
-      fVstSelectUnitTools.SetCheckedState(0, TCheckedState.unchecked)
-    else
-      fVstSelectUnitTools.SetCheckedState(0, TCheckedState.greyed);
+    if not fVstSelectUnitTools.GetIsDirectory(aNode) then
+    begin
+      if instrument then
+        openProject.InstrumentUnit(fVstSelectUnitTools.GetName(aNode), fVstSelectUnitTools.GetCheckedState(aNode)=TCheckedState.checked);
+      if openProject.AllInstrumented(not chkShowAll.Checked) then
+        fVstSelectUnitTools.SetCheckedState(0, TCheckedState.checked)
+      else if openProject.NoneInstrumented(not chkShowAll.Checked) then
+        fVstSelectUnitTools.SetCheckedState(0, TCheckedState.unchecked)
+      else
+        fVstSelectUnitTools.SetCheckedState(0, TCheckedState.greyed);
+    end;
   end;
 end; { TfrmMain.DoOnUnitCheck }
 
 procedure TfrmMainInstrumentation.EnablePC;
 begin
   chkShowAll.Enabled                 := true;
+  chkShowDirStructure.Enabled        := true;
   lblUnits.Enabled                   := true;
   lblClasses.Enabled                 := true;
   lblProcs.Enabled                   := true;
@@ -167,7 +177,7 @@ begin
   vstSelectProcs.Enabled             := true;
 end;
 
-procedure TfrmMainInstrumentation.FillUnitTree(const aOnlyUnitsOfDPR: boolean);
+procedure TfrmMainInstrumentation.FillUnitTree(const aOnlyUnitsOfDPR: boolean; const aShowDirectories: boolean);
 var
   s    : TStringList;
   i    : integer;
@@ -176,7 +186,13 @@ var
   allu : boolean;
   noneu: boolean;
   LFirstNode,
+  lDirectoryNode,
+  lParentDirNode,
   LNode : PVirtualNode;
+  lFullPath,
+  lUnitName : String;
+  lSplittedPath : TStringDynArray;
+  j: Integer;
 begin
   LFirstNode := nil;
   s := TStringList.Create;
@@ -193,9 +209,35 @@ begin
         LFirstNode := fVstSelectUnitTools.AddEntry('<all units>');
         for i := 0 to s.Count-1 do
         begin
+          lUnitName := ButLast(s[i], 2);
+          if aShowDirectories then
+          begin
+            lFullPath := openproject.GetUnitPath(lUnitName);
+            lSplittedPath := SplitString(lFullPath, '\');
+
+            lDirectoryNode := nil;
+            lParentDirNode := nil;
+            for j := low(lSplittedPath) to high(lSplittedPath)-1 do
+            begin
+              if assigned(lParentDirNode) then
+                lDirectoryNode := fVstSelectUnitTools.GetChildByName(lParentDirNode, lSplittedPath[j])
+              else
+                lDirectoryNode := fVstSelectUnitTools.GetNodeByName(lSplittedPath[j]);
+              if lDirectoryNode = nil then
+              begin
+                lDirectoryNode := fVstSelectUnitTools.AddEntry(lParentDirNode, lSplittedPath[j], true);
+              end;
+              lParentDirNode := lDirectoryNode;
+            end;
+            LNode := fVstSelectUnitTools.AddEntry(lDirectoryNode, lUnitName);
+          end
+          else
+          begin
+            LNode := fVstSelectUnitTools.AddEntry(lUnitName);
+          end;
+
           // Two last chars in each element of the list, returned by GetUnitList, are the two flags,
           // ("0" and "1"): first indicates "All Instrumented", second - "None instrumented" state
-          LNode := fVstSelectUnitTools.AddEntry(ButLast(s[i], 2));
           allu  := (s[i][Length(s[i])-1] = '1');
           noneu := (s[i][Length(s[i])] = '1');
           if allu then
@@ -238,12 +280,17 @@ end; { TfrmMain.FillUnitTree }
 
 function TfrmMainInstrumentation.GetSelectedClassName: string;
 begin
-  result := fVstSelectClassTools.GetName(fVstSelectClassTools.GetSelectedIndex);
+  result := fVstSelectClassTools.GetName(fVstSelectClassTools.GetSelectedNode);
+end;
+
+function TfrmMainInstrumentation.GetSelectedIsDirectory: boolean;
+begin
+  result := fVstSelectUnitTools.GetIsDirectory(fVstSelectUnitTools.GetSelectedNode);
 end;
 
 function TfrmMainInstrumentation.GetSelectedUnitName: string;
 begin
-  result := fVstSelectUnitTools.GetName(fVstSelectUnitTools.GetSelectedIndex);
+  result := fVstSelectUnitTools.GetName(fVstSelectUnitTools.GetSelectedNode);
 end;
 
 
@@ -272,7 +319,7 @@ begin
         LWizard.SelectedUnitNames.AddOrSetValue(Lname, 0);
     end;
 
-    if LWizard.Execute(fopenProject, fVstSelectUnitTools.GetName(fVstSelectUnitTools.GetSelectedIndex)) then
+    if LWizard.Execute(fopenProject, fVstSelectUnitTools.GetName(fVstSelectUnitTools.GetSelectedNode)) then
     begin
       LUnitSelectionList := TUnitSelectionList.Create;
       try
@@ -300,7 +347,7 @@ end;
 
 procedure TfrmMainInstrumentation.vstSelectClassesChecked(Sender: TBaseVirtualTree; Node: PVirtualNode);
 begin
-  clbClassesClickCheck(nil, node.index);
+  clbClassesClickCheck(nil, node);
   TThread.Queue(nil,
     procedure
     begin
@@ -334,14 +381,13 @@ end;
 
 procedure TfrmMainInstrumentation.vstSelectUnitsChecked(Sender: TBaseVirtualTree; Node: PVirtualNode);
 begin
-  clbUnitsClickCheck(node.index);
+  clbUnitsClickCheck(node);
   TThread.Queue(nil,
     procedure
     begin
        clbUnitsClick();
     end
   );
-  vstSelectUnits.Selected[node] := true;
 end;
 
 procedure TfrmMainInstrumentation.ClickProcs(index: integer; recreateCl: boolean);
@@ -406,9 +452,9 @@ var
   all : boolean;
   none: boolean;
   LState : TCheckedState;
-  LSelectedIndex : cardinal;
   LEnum : TVTVirtualNodeEnumerator;
   LCheckedState : TCheckedState;
+  lSelectedNode: PVirtualNode;
 begin
   all := true;
   none := true;
@@ -429,14 +475,15 @@ begin
     LState := TCheckedState.unchecked
   else
     LState := TCheckedState.greyed;
-  fVstSelectClassTools.SetCheckedState(0, LState);
+  if fVstSelectClassTools.GetCount() > 0 then
+    fVstSelectClassTools.SetCheckedState(0, LState);
 
-  LSelectedIndex := fVstSelectUnitTools.GetSelectedIndex;
-  fVstSelectUnitTools.SetCheckedState(LSelectedIndex, LState);
-  DoOnUnitCheck(LSelectedIndex,false);
+  lSelectedNode := fVstSelectUnitTools.GetSelectedNode();
+  fVstSelectUnitTools.SetCheckedState(lSelectedNode, LState);
+  DoOnUnitCheck(lSelectedNode,false);
 end; { TfrmMain.RecheckTopClass }
 
-procedure TfrmMainInstrumentation.RecreateClasses(recheck: boolean; const aUnitName : string);
+procedure TfrmMainInstrumentation.RecreateClasses(recheck: boolean;const aName: string);
 
   procedure SearchAndConfigureItem(const aNode : PVirtualNode;const aSelection : TClassInfo; const aCaption : string);
   var
@@ -471,7 +518,7 @@ begin
   LUnitProcsList := TStringList.Create;
   try
     LInfoList := nil; // in case of exception
-    openProject.GetProcList(aUnitName,LUnitProcsList,true);
+    openProject.GetProcList(aName,LUnitProcsList,true);
     LInfoList := GetClassesFromUnit(LUnitProcsList);
     fVstSelectClassTools.BeginUpdate;
     try
@@ -516,25 +563,30 @@ begin
   end;
 end;
 
+procedure TfrmMainInstrumentation.chkShowDirStructureClick(Sender: TObject);
+begin
+  FillUnitTree(not chkShowAll.Checked, chkShowDirStructure.Checked);
+end;
+
 procedure TfrmMainInstrumentation.clbClassesClick(Sender: TObject);
 begin
   RecreateProcs(GetSelectedUnitName());
   ReloadSource;
 end;
 
-procedure TfrmMainInstrumentation.clbClassesClickCheck(Sender: TObject; index: Integer);
+procedure TfrmMainInstrumentation.clbClassesClickCheck(Sender: TObject; const aNode: PVirtualNode);
 var
   un: TStringList;
   cl: string;
   i : integer;
   p : integer;
 begin
-  if fVstSelectClassTools.getCheckedState(index) = TCheckedState.greyed then
-    fVstSelectClassTools.setCheckedState(index, TCheckedState.Checked);
-  if index = 0 then
+  if fVstSelectClassTools.getCheckedState(aNode) = TCheckedState.greyed then
+    fVstSelectClassTools.setCheckedState(aNode, TCheckedState.Checked);
+  if aNode = nil then
   begin
-    fVstSelectUnitTools.SetCheckedState(fVstSelectUnitTools.GetSelectedIndex,fVstSelectClassTools.getCheckedState(index));
-    clbUnitsClickCheck(fVstSelectUnitTools.GetSelectedIndex);
+    fVstSelectUnitTools.SetCheckedState(fVstSelectUnitTools.GetSelectedIndex,fVstSelectClassTools.getCheckedState(aNode));
+    clbUnitsClickCheck(fVstSelectUnitTools.GetSelectedNode());
     RecreateClasses(true);
   end
   else
@@ -549,7 +601,7 @@ begin
         if ((cl[1] = '<') and (p = 0)) or
           ((cl[1] <> '<') and (UpperCase(Copy(un[i], 1, p - 1)) = cl)) then
         begin
-          openProject.InstrumentProc(GetSelectedUnitName, un[i],fVstSelectClassTools.getCheckedState(index) = TCheckedState.Checked);
+          openProject.InstrumentProc(GetSelectedUnitName, un[i],fVstSelectClassTools.getCheckedState(aNode) = TCheckedState.Checked);
         end;
       end;
     finally
@@ -564,6 +616,11 @@ begin
   ReloadSource;
 end;
 
+procedure TfrmMainInstrumentation.btnSelectAllClick(Sender: TObject);
+begin
+  vstSelectUnits.SetCheckStateForAll(csCheckedNormal, false);
+end;
+
 procedure TfrmMainInstrumentation.ChangeClassSelectionWithoutEvent(const anIndex : integer);
 var
   LAddToSelectionEvent : TVTAddToSelectionEvent;
@@ -576,7 +633,6 @@ end;
 
 procedure TfrmMainInstrumentation.clbUnitsClick();
 var
-  LIndex : integer;
   LSelectedNode : PVirtualNode;
   LUnitPath : string;
 begin
@@ -584,27 +640,32 @@ begin
   try
     fVstSelectProcTools.Clear;
     fVstSelectClassTools.BeginUpdate;
+    fVstSelectUnitTools.BeginUpdate();
     try
       fVstSelectClassTools.Clear;
-      LIndex := 0;
       LUnitPath := '';
       LSelectedNode := fVstSelectUnitTools.GetSelectedNode();
-      if assigned(lSelectedNode) then
-        LIndex := LSelectedNode.Index;
       // skip all items
-      if LIndex > 0 then
+      if Assigned(LSelectedNode) then
       begin
         RecreateClasses(false);
         ChangeClassSelectionWithoutEvent(0);
         clbClassesClick(self);
-        LUnitPath := openProject.GetUnitPath(fVstSelectUnitTools.GetName(lSelectedNode.Index));
-        OnShowStatusBarMessage(LUnitPath, false)
+        if not fVstSelectUnitTools.GetIsDirectory(lSelectedNode) then
+        begin
+          if assigned(openProject.LocateUnit(fVstSelectUnitTools.GetName(lSelectedNode))) then
+          begin
+            LUnitPath := openProject.GetUnitPath(fVstSelectUnitTools.GetName(lSelectedNode));
+            OnShowStatusBarMessage(LUnitPath, false);
+          end;
+        end;
       end
       else if openProject <> nil then
         OnShowStatusBarMessage(openProject.Name, false);
       OnReloadSource(LUnitPath,0); // force reset
-      mnuUnitWizard.Enabled := LIndex > 0;
+      mnuUnitWizard.Enabled := assigned(LSelectedNode);
     finally
+      fVstSelectUnitTools.EndUpdate();
       fVstSelectClassTools.EndUpdate;
     end;
   finally
@@ -613,15 +674,15 @@ begin
 end;
 
 
-procedure TfrmMainInstrumentation.clbUnitsClickCheck(index: Integer);
+procedure TfrmMainInstrumentation.clbUnitsClickCheck(const aNode: PVirtualNode);
 begin
   if fVstSelectUnitTools.GetCount() = 1 then
-    fVstSelectUnitTools.SetCheckedState(index, TCheckedState.unchecked)
+    fVstSelectUnitTools.SetCheckedState(aNode, TCheckedState.unchecked)
   else
   begin
-    if fVstSelectUnitTools.GetCheckedState(index)=TCheckedState.greyed then
-      fVstSelectUnitTools.SetCheckedState(index, TCheckedState.checked);
-    DoOnUnitCheck(index,true);
+    if fVstSelectUnitTools.GetCheckedState(aNode)=TCheckedState.greyed then
+      fVstSelectUnitTools.SetCheckedState(aNode, TCheckedState.checked);
+    DoOnUnitCheck(aNode,true);
   end;
 end;
 
@@ -655,23 +716,26 @@ begin
       fVstSelectProcTools.BeginUpdate;
       fVstSelectProcTools.Clear;
       try
-        LInfoList := GetProcsFromUnit(LProcNameList,fVstSelectClassTools.GetSelectedIndex,GetSelectedClassName());
-        for LInfo in LInfoList do
+        if not GetSelectedIsDirectory() then
         begin
-          LIndex := fVstSelectProcTools.AddEntry(LInfo.anName).Index;
-          ConfigureCheckBox(LIndex, LInfo.anInstrument, not LInfo.anInstrument);
+          LInfoList := GetProcsFromUnit(LProcNameList,fVstSelectClassTools.GetSelectedIndex,GetSelectedClassName());
+          for LInfo in LInfoList do
+          begin
+            LIndex := fVstSelectProcTools.AddEntry(LInfo.anName).Index;
+            ConfigureCheckBox(LIndex, LInfo.anInstrument, not LInfo.anInstrument);
+          end;
+          if LInfoList.Count > 0 then
+          begin
+            if fVstSelectClassTools.GetSelectedIndex = 0 then
+              fVstSelectProcTools.InsertEntry(0, '<all procedures>')
+            else if GetSelectedClassName.StartsWith('<') then
+              fVstSelectProcTools.InsertEntry(0, '<all classless procedures>')
+            else
+              fVstSelectProcTools.InsertEntry(0, '<all ' + GetSelectedClassName + ' methods>');
+            ConfigureCheckBox(0,LInfoList.AllInstrumented, LInfoList.NoneInstrumented);
+          end;
+          LInfoList.free;
         end;
-        if LInfoList.Count > 0 then
-        begin
-          if fVstSelectClassTools.GetSelectedIndex = 0 then
-            fVstSelectProcTools.InsertEntry(0, '<all procedures>')
-          else if GetSelectedClassName.StartsWith('<') then
-            fVstSelectProcTools.InsertEntry(0, '<all classless procedures>')
-          else
-            fVstSelectProcTools.InsertEntry(0, '<all ' + GetSelectedClassName + ' methods>');
-          ConfigureCheckBox(0,LInfoList.AllInstrumented, LInfoList.NoneInstrumented);
-        end;
-        LInfoList.free;
       finally
         fVstSelectProcTools.EndUpdate;
       end;
@@ -707,7 +771,7 @@ begin
     chk := chkShowAll.Checked;
     chkShowAll.Checked := true;
     fVstSelectUnitTools.SetCheckedState(0,TCheckedState.unchecked);
-    clbUnitsClickCheck(0);
+    clbUnitsClickCheck(nil);
     clbUnitsClick();
     aOnDoInstrument;
     chkShowAll.Checked := chk;

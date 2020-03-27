@@ -3,7 +3,7 @@ unit gpParser.BaseProject;
 interface
 
 uses
-  System.Classes, System.Generics.Collections, gpParser.Types;
+  System.Classes, System.Generics.Collections, gpParser.Types, System.Types;
 
 type
   TBaseProject = class
@@ -30,8 +30,8 @@ type
     fSelectedDelphiVersion : string;
     fIsConsoleProject : Boolean;
     fOutputDir : string;
-    fSearchPathes : TArray<string>;
-    fNamespaces : TArray<string>;
+    fSearchPathes : TStringDynArray;
+    fNamespaces : TStringDynArray;
 
     fMissingUnitNames : TDictionary<String, Cardinal>;
     fExcludedUnitDict : TDictionary<string, Byte>;
@@ -65,8 +65,8 @@ type
     property Name: string read fProjectName;
     property IsConsoleProject : boolean read fIsConsoleProject;
     property OutputDir : string read fOutputDir;
-    property SearchPathes : TArray<string> read fSearchPathes;
-    property Namespaces : TArray<string> read fNamespaces;
+    property SearchPathes : TStringDynArray read fSearchPathes;
+    property Namespaces : TStringDynArray read fNamespaces;
 
 
     function LocateOrCreateUnit(const unitName, unitLocation: string;const excluded: boolean): TBaseUnit; virtual; abstract;
@@ -75,11 +75,11 @@ type
 implementation
 
 uses
-  System.SysUtils, System.StrUtils, GpString, gpProf.ProjectAccessor;
+  System.SysUtils, System.StrUtils, GpString, gpProf.ProjectAccessor, gpProf.bdsVersions;
 
 { TBaseProject }
 
-constructor TBaseProject.Create(const aProjectName,aSelectedDelphiVersion : string);
+constructor TBaseProject.Create(const aProjectName, aSelectedDelphiVersion : string);
 var
   LProjectAccessor : TProjectAccessor;
   i : Integer;
@@ -94,7 +94,7 @@ begin
   try
     LProjectAccessor := TProjectAccessor.Create(fProjectName);
     fIsConsoleProject := LProjectAccessor.IsConsoleProject(true);
-    fOutputDir := LProjectAccessor.GetOutputDir();
+    fOutputDir := LProjectAccessor.GetOutputDir(ProductNameToProductVersion(aSelectedDelphiVersion));
     fSearchPathes := SplitString(LProjectAccessor.GetSearchPath(aSelectedDelphiVersion), ';');
     fNamespaces := SplitString(LProjectAccessor.GetNamespaces(aSelectedDelphiVersion), ';');
     for i := Low(fSearchPathes) to high(fSearchPathes) do

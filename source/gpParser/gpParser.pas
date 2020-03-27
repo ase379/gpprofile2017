@@ -29,7 +29,7 @@ type
     procedure Parse(aExclUnits: String;const aConditionals: String; aNotify: TNotifyProc;
       aCommentType: TCommentType; aParseAsm: boolean;const anErrorList : TStrings);
     procedure Rescan(aExclUnits: String;const aConditionals: string;
-      aCommentType: TCommentType; aUseFileDate: boolean; aParseAsm: boolean);
+      aCommentType: TCommentType; aParseAsm: boolean);
     procedure GetUnitList(var aSL: TStringList;const aProjectDirOnly, aGetInstrumented: boolean);
     procedure GetProcList(unitName: string; s: TStringList;getInstrumented: boolean);
     function GetUnitPath(unitName: string): string;
@@ -41,8 +41,8 @@ type
     function NoneInstrumented(projectDirOnly: boolean): boolean;
     function AnyInstrumented(projectDirOnly: boolean): boolean;
     procedure Instrument(aProjectDirOnly: boolean; aExclUnits: String;aNotify: TNotifyInstProc;
-      aCommentType: TCommentType; aKeepDate, aBackupFile: boolean;
-      aIncFileName, aConditionals: string; aUseFileDate,aParseAsm: boolean);
+      aCommentType: TCommentType; aBackupFile: boolean;
+      aIncFileName, aConditionals: string; aParseAsm: boolean);
     function GetFirstLine(unitName, procName: string): Integer;
     function AnyChange(projectDirOnly: boolean): boolean;
     function LocateUnit(const aUnitName: string): TUnit;
@@ -264,7 +264,7 @@ end;
 
 procedure TProject.Instrument(aProjectDirOnly: boolean; aExclUnits: String;
   aNotify: TNotifyInstProc; aCommentType: TCommentType;
-  aKeepDate, aBackupFile: boolean; aIncFileName, aConditionals: string; aUseFileDate, aParseAsm: boolean);
+  aBackupFile: boolean; aIncFileName, aConditionals: string; aParseAsm: boolean);
 
   procedure DoNotify(const aFullname, aUnitName: string; const aParse : Boolean);
   begin
@@ -299,8 +299,8 @@ begin
           begin
             LUnit := LUnitEnumor.Current.Data;
 
-            LHasBeenReparsed := LUnit.NeedsToBeReparsed(aUseFileDate);
-            if LUnit.NeedsToBeReparsed(aUseFileDate) then
+            LHasBeenReparsed := LUnit.NeedsToBeReparsed();
+            if LUnit.NeedsToBeReparsed() then
             begin
               LOldProcs := LUnit.unProcs.Clone;
               try
@@ -321,7 +321,7 @@ begin
 
               if LUnit.AnyChange or LIsAnyProcOfUnitInstrumented or LHasBeenReparsed then
               begin
-                  LUnit.Instrument(LProcIdTable, aKeepDate, aBackupFile);
+                  LUnit.Instrument(LProcIdTable, aBackupFile);
               end
               else
                 LUnit.RegisterProcs(LProcIdTable);
@@ -393,7 +393,7 @@ end;
 
 procedure TProject.Rescan(aExclUnits: String;
   const aConditionals: string;
-  aCommentType: TCommentType; aUseFileDate: boolean; aParseAsm: boolean);
+  aCommentType: TCommentType; aParseAsm: boolean);
 var
   un: TUnit;
   LUnitEnumor: TRootNode<TUnit>.TEnumerator;
@@ -412,7 +412,7 @@ begin
       while LUnitEnumor.MoveNext do
       begin
         un := LUnitEnumor.Current.Data;
-        if un.NeedsToBeReparsed(aUseFileDate) then
+        if un.NeedsToBeReparsed() then
           un.Parse(ExtractFilePath(Name), aConditionals, true, aParseAsm);
       end;
     end;

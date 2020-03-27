@@ -20,8 +20,6 @@ type
     ProjectDefines        : boolean;
     DisableUserDefines    : boolean;
     UserDefines           : string;
-    KeepFileDate          : boolean;
-    UseFileDate           : boolean;
     PrfFilenameMakro      : string;
     ProfilingAutostart    : boolean;
     InstrumentAssembler   : boolean;
@@ -97,8 +95,6 @@ begin
         ProfilingAutostart := ReadBool   ('ProfilingAutostart',true);
         InstrumentAssembler:= ReadBool   ('InstrumentAssembler',false);
         MakeBackupOfInstrumentedFile := ReadBool('MakeBackupOfInstrumentedFile', true);
-        KeepFileDate       := ReadBool   ('KeepFileDate',false);
-        UseFileDate        := ReadBool   ('UseFileDate',true);
         PrfFilenameMakro   := ReadString ('PrfFilenameMakro',TPrfPlaceholder.PrfPlaceholderToMacro(TPrfPlaceholderType.ModulePath));
       finally
         CloseKey;
@@ -126,9 +122,6 @@ begin
     WriteBool   ('ProfilingAutostart', ProfilingAutostart);
     WriteBool   ('InstrumentAssembler',InstrumentAssembler);
     WriteBool   ('MakeBackupOfInstrumentedFile', MakeBackupOfInstrumentedFile);
-
-    WriteBool   ('KeepFileDate',       KeepFileDate);
-    WriteBool   ('UseFileDate',        UseFileDate);
     WriteString ('PrfFilenameMakro',   PrfFilenameMakro);
     Free;
   end;
