@@ -826,10 +826,10 @@ begin
     LEnumor := aTreeTool.Tree.Nodes().GetEnumerator();
     while (LEnumor.MoveNext) do
     begin
-      if lText.IsEmpty then
+      if aSearchTerm.IsEmpty then
         lVisible := true
       else
-        lVisible := ContainsText(aTreeTool.GetName(LEnumor.current),lText);
+        lVisible := ContainsText(aTreeTool.GetName(LEnumor.current),aSearchTerm);
       aTreeTool.SetVisible(LEnumor.Current, lVisible);
     end;
   finally
