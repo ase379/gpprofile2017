@@ -6,7 +6,7 @@ uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes,
   Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.Dialogs, VirtualTrees, Vcl.StdCtrls, Vcl.ExtCtrls,
   virtualTree.tools.checkable,System.Generics.Collections,
-  gpParser, Vcl.Menus;
+  gpParser, Vcl.Menus, Vcl.WinXCtrls;
 
 type
   TOnShowStatusBarMessage = procedure (const msg: string; const beep: boolean) of object;
@@ -31,7 +31,9 @@ type
     PopupMenu1: TPopupMenu;
     mnuUnitWizard: TMenuItem;
     chkShowAll: TCheckBox;
-    btnSelectAll: TButton;
+    sbUnits: TSearchBox;
+    sbProcedures: TSearchBox;
+    sbClasses: TSearchBox;
     procedure vstSelectProcsAddToSelection(Sender: TBaseVirtualTree; Node: PVirtualNode);
     procedure vstSelectProcsChecked(Sender: TBaseVirtualTree; Node: PVirtualNode);
     procedure vstSelectClassesAddToSelection(Sender: TBaseVirtualTree; Node: PVirtualNode);
@@ -41,6 +43,9 @@ type
     procedure chkShowDirStructureClick(Sender: TObject);
     procedure vstSelectUnitsAddToSelection(Sender: TBaseVirtualTree; Node: PVirtualNode);
     procedure btnSelectAllClick(Sender: TObject);
+    procedure sbUnitsInvokeSearch(Sender: TObject);
+    procedure sbClassesInvokeSearch(Sender: TObject);
+    procedure sbProceduresInvokeSearch(Sender: TObject);
   private
     fVstSelectUnitTools       : TCheckableListTools;
     fVstSelectClassTools      : TCheckableListTools;
@@ -48,6 +53,7 @@ type
     fopenProject : TProject;
     fOnShowStatusBarMessage : TOnShowStatusBarMessage;
     fOnReloadSource : TReloadSourceEvent;
+    procedure InvokeSearch(const aSearchTerm: string; const aTreeTool: TCheckableListTools);
     function  GetSelectedUnitName(): string;
     function  GetSelectedIsDirectory(): boolean;
     function  GetSelectedClassName(): string;
@@ -808,6 +814,42 @@ begin
       end;
     end;
   end;
+end;
+
+procedure TfrmMainInstrumentation.InvokeSearch(const aSearchTerm: string; const aTreeTool: TCheckableListTools);
+var
+  LEnumor : TVTVirtualNodeEnumerator;
+  lVisible : Boolean;
+begin
+  aTreeTool.Tree.BeginUpdate;
+  try
+    LEnumor := aTreeTool.Tree.Nodes().GetEnumerator();
+    while (LEnumor.MoveNext) do
+    begin
+      if lText.IsEmpty then
+        lVisible := true
+      else
+        lVisible := ContainsText(aTreeTool.GetName(LEnumor.current),lText);
+      aTreeTool.SetVisible(LEnumor.Current, lVisible);
+    end;
+  finally
+    aTreeTool.Tree.EndUpdate;
+  end;
+end;
+
+procedure TfrmMainInstrumentation.sbClassesInvokeSearch(Sender: TObject);
+begin
+  InvokeSearch(sbClasses.Text, fVstSelectClassTools);
+end;
+
+procedure TfrmMainInstrumentation.sbProceduresInvokeSearch(Sender: TObject);
+begin
+  InvokeSearch(sbProcedures.Text, fVstSelectProcTools);
+end;
+
+procedure TfrmMainInstrumentation.sbUnitsInvokeSearch(Sender: TObject);
+begin
+  InvokeSearch(sbUnits.Text, fVstSelectUnitTools);
 end;
 
 function TfrmMainInstrumentation.GetSelectedUnitIndex: integer;

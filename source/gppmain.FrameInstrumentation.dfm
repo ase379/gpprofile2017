@@ -43,15 +43,6 @@ object frmMainInstrumentation: TfrmMainInstrumentation
       Caption = '&Show all folders'
       TabOrder = 1
     end
-    object btnSelectAll: TButton
-      Left = 275
-      Top = 3
-      Width = 57
-      Height = 19
-      Caption = 'Select All'
-      TabOrder = 2
-      OnClick = btnSelectAllClick
-    end
   end
   object pnlUnits: TPanel
     Left = 0
@@ -73,9 +64,9 @@ object frmMainInstrumentation: TfrmMainInstrumentation
     end
     object vstSelectUnits: TVirtualStringTree
       Left = 0
-      Top = 23
+      Top = 44
       Width = 129
-      Height = 541
+      Height = 520
       Align = alClient
       Header.AutoSizeIndex = -1
       Header.Height = 20
@@ -88,7 +79,23 @@ object frmMainInstrumentation: TfrmMainInstrumentation
       TreeOptions.PaintOptions = [toShowButtons, toShowDropmark, toThemeAware, toUseBlendedImages]
       OnAddToSelection = vstSelectUnitsAddToSelection
       OnChecked = vstSelectUnitsChecked
+      Touch.InteractiveGestures = [igPan, igPressAndTap]
+      Touch.InteractiveGestureOptions = [igoPanSingleFingerHorizontal, igoPanSingleFingerVertical, igoPanInertia, igoPanGutter, igoParentPassthrough]
+      ExplicitWidth = 126
       Columns = <>
+    end
+    object sbUnits: TSearchBox
+      Left = 0
+      Top = 23
+      Width = 129
+      Height = 21
+      Align = alTop
+      TabOrder = 2
+      TextHint = 'Enter text to search...'
+      OnInvokeSearch = sbUnitsInvokeSearch
+      ExplicitLeft = 56
+      ExplicitTop = 16
+      ExplicitWidth = 121
     end
   end
   object pnlClasses: TPanel
@@ -99,6 +106,7 @@ object frmMainInstrumentation: TfrmMainInstrumentation
     Align = alLeft
     BevelOuter = bvNone
     TabOrder = 2
+    ExplicitTop = 28
     object lblClasses: TStaticText
       AlignWithMargins = True
       Left = 3
@@ -111,9 +119,9 @@ object frmMainInstrumentation: TfrmMainInstrumentation
     end
     object vstSelectClasses: TVirtualStringTree
       Left = 0
-      Top = 23
+      Top = 44
       Width = 137
-      Height = 541
+      Height = 520
       Align = alClient
       Header.AutoSizeIndex = -1
       Header.Height = 20
@@ -124,7 +132,22 @@ object frmMainInstrumentation: TfrmMainInstrumentation
       TreeOptions.PaintOptions = [toShowButtons, toShowDropmark, toThemeAware, toUseBlendedImages]
       OnAddToSelection = vstSelectClassesAddToSelection
       OnChecked = vstSelectClassesChecked
+      Touch.InteractiveGestures = [igPan, igPressAndTap]
+      Touch.InteractiveGestureOptions = [igoPanSingleFingerHorizontal, igoPanSingleFingerVertical, igoPanInertia, igoPanGutter, igoParentPassthrough]
+      ExplicitTop = 23
+      ExplicitHeight = 541
       Columns = <>
+    end
+    object sbClasses: TSearchBox
+      Left = 0
+      Top = 23
+      Width = 137
+      Height = 21
+      Align = alTop
+      TabOrder = 2
+      TextHint = 'Enter text to search...'
+      OnInvokeSearch = sbClassesInvokeSearch
+      ExplicitTop = 31
     end
   end
   object pnlProcs: TPanel
@@ -147,9 +170,9 @@ object frmMainInstrumentation: TfrmMainInstrumentation
     end
     object vstSelectProcs: TVirtualStringTree
       Left = 0
-      Top = 23
+      Top = 44
       Width = 719
-      Height = 541
+      Height = 520
       Align = alClient
       Header.AutoSizeIndex = -1
       Header.Height = 20
@@ -160,7 +183,22 @@ object frmMainInstrumentation: TfrmMainInstrumentation
       TreeOptions.PaintOptions = [toShowButtons, toShowDropmark, toThemeAware, toUseBlendedImages]
       OnAddToSelection = vstSelectProcsAddToSelection
       OnChecked = vstSelectProcsChecked
+      Touch.InteractiveGestures = [igPan, igPressAndTap]
+      Touch.InteractiveGestureOptions = [igoPanSingleFingerHorizontal, igoPanSingleFingerVertical, igoPanInertia, igoPanGutter, igoParentPassthrough]
+      ExplicitTop = 23
+      ExplicitHeight = 541
       Columns = <>
+    end
+    object sbProcedures: TSearchBox
+      Left = 0
+      Top = 23
+      Width = 719
+      Height = 21
+      Align = alTop
+      TabOrder = 2
+      TextHint = 'Enter text to search...'
+      OnInvokeSearch = sbProceduresInvokeSearch
+      ExplicitTop = 31
     end
   end
   object PopupMenu1: TPopupMenu

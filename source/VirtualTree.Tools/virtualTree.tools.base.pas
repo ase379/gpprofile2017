@@ -44,6 +44,9 @@ type
     function GetName(const anIndex: Cardinal): string; overload;
     function GetName(const aNode : PVirtualNode) : string; overload; virtual;
     procedure setSelectedIndex(const anIndex : cardinal);
+    procedure SetVisible(const aNode: PVirtualNode;const aVisible : boolean);
+
+    property Tree : TVirtualStringTree read fTree;
   end;
 
 implementation
@@ -129,6 +132,14 @@ begin
   begin
     fList.Selected[LEnumor.Current] := LEnumor.Current.index = anIndex;
   end;
+end;
+
+
+procedure TVirtualTreeBaseTools.SetVisible(const aNode: PVirtualNode;const aVisible : boolean);
+begin
+ if not Assigned(aNode) then
+    Exit;
+  fList.IsVisible[aNode] := aVisible;
 end;
 
 function TVirtualTreeBaseTools.GetNode(const anIndex: Cardinal): PVirtualNode;
