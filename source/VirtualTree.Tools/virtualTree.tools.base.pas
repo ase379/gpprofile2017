@@ -46,7 +46,7 @@ type
     procedure setSelectedIndex(const anIndex : cardinal);
     procedure SetVisible(const aNode: PVirtualNode;const aVisible : boolean);
 
-    property Tree : TVirtualStringTree read fTree;
+    property Tree : TVirtualStringTree read fList;
   end;
 
 implementation
