@@ -151,7 +151,7 @@ begin
   end
   else
   begin
-    if not fVstSelectUnitTools.GetIsDirectory(aNode) then
+    if not (TSpecialTagEnum.ste_Directory in fVstSelectUnitTools.GetSpecialTagSet(aNode)) then
     begin
       if instrument then
         openProject.InstrumentUnit(fVstSelectUnitTools.GetName(aNode), fVstSelectUnitTools.GetCheckedState(aNode)=TCheckedState.checked);
@@ -206,7 +206,7 @@ begin
         s.Sorted := true;
         alli := true;
         nonei := true;
-        LFirstNode := fVstSelectUnitTools.AddEntry('<all units>');
+        LFirstNode := fVstSelectUnitTools.AddEntry(nil,'<all units>', [ste_AllItem]);
         for i := 0 to s.Count-1 do
         begin
           lUnitName := ButLast(s[i], 2);
@@ -225,7 +225,7 @@ begin
                 lDirectoryNode := fVstSelectUnitTools.GetNodeByName(lSplittedPath[j]);
               if lDirectoryNode = nil then
               begin
-                lDirectoryNode := fVstSelectUnitTools.AddEntry(lParentDirNode, lSplittedPath[j], true);
+                lDirectoryNode := fVstSelectUnitTools.AddEntry(lParentDirNode, lSplittedPath[j], [ste_Directory]);
               end;
               lParentDirNode := lDirectoryNode;
             end;
@@ -233,7 +233,7 @@ begin
           end
           else
           begin
-            LNode := fVstSelectUnitTools.AddEntry(lUnitName);
+            LNode := fVstSelectUnitTools.AddEntry(nil,lUnitName);
           end;
 
           // Two last chars in each element of the list, returned by GetUnitList, are the two flags,
@@ -285,7 +285,7 @@ end;
 
 function TfrmMainInstrumentation.GetSelectedIsDirectory: boolean;
 begin
-  result := fVstSelectUnitTools.GetIsDirectory(fVstSelectUnitTools.GetSelectedNode);
+  result := TSpecialTagEnum.ste_Directory in fVstSelectUnitTools.GetSpecialTagSet(fVstSelectUnitTools.GetSelectedNode);
 end;
 
 function TfrmMainInstrumentation.GetSelectedUnitName: string;
@@ -307,6 +307,9 @@ begin
   if not assigned(fopenProject) then
     exit;
 
+  if not (fVstSelectUnitTools.GetSpecialTagSet(fVstSelectUnitTools.GetSelectedNode()) = []) then
+      exit;
+
   LWizard := tfmUnitWizard.Create(Self);
   try
     LEnum := vstSelectUnits.Nodes().GetEnumerator;
@@ -319,7 +322,7 @@ begin
         LWizard.SelectedUnitNames.AddOrSetValue(Lname, 0);
     end;
 
-    if LWizard.Execute(fopenProject, fVstSelectUnitTools.GetName(fVstSelectUnitTools.GetSelectedNode)) then
+    if LWizard.Execute(fopenProject, GetSelectedUnitName()) then
     begin
       LUnitSelectionList := TUnitSelectionList.Create;
       try
@@ -531,21 +534,21 @@ begin
           LInfo := LInfoList[i];
           LFoundNode := nil;
           if not recheck then
-            LFoundNode := fVstSelectClassTools.AddEntry(LInfo.anName);
+            LFoundNode := fVstSelectClassTools.AddEntry(nil,LInfo.anName);
           SearchAndConfigureItem(LFoundNode, LInfo, LInfo.anName);
         end;
         if not(LInfoList.ClasslessEntry.anAll and LInfoList.ClasslessEntry.anNone) then
         begin
           if not recheck then
             // need to insert it, we rebuid the items
-            LFoundNode := fVstSelectClassTools.InsertEntry(0, CLASSLESS_PROCEUDURES);
+            LFoundNode := fVstSelectClassTools.InsertEntry(0, CLASSLESS_PROCEUDURES, [ste_AllItem]);
           SearchAndConfigureItem(LFoundNode,  LInfoList.ClasslessEntry, CLASSLESS_PROCEUDURES);
         end;
         if not(LInfoList.AllClassesEntry.anAll and LInfoList.AllClassesEntry.anNone) then
         begin
           // need to insert it, we rebuid the items
           if not recheck then
-            LFoundNode := fVstSelectClassTools.InsertEntry(0, ALL_CLASSES);
+            LFoundNode := fVstSelectClassTools.InsertEntry(0, ALL_CLASSES, [ste_AllItem]);
           // need to insert it, we rebuid the items
           SearchAndConfigureItem(LFoundNode, LInfoList.AllClassesEntry, ALL_CLASSES);
         end;
@@ -651,7 +654,7 @@ begin
         RecreateClasses(false);
         ChangeClassSelectionWithoutEvent(0);
         clbClassesClick(self);
-        if not fVstSelectUnitTools.GetIsDirectory(lSelectedNode) then
+        if not (TSpecialTagEnum.ste_Directory in fVstSelectUnitTools.GetSpecialTagSet(lSelectedNode)) then
         begin
           if assigned(openProject.LocateUnit(fVstSelectUnitTools.GetName(lSelectedNode))) then
           begin
@@ -663,7 +666,7 @@ begin
       else if openProject <> nil then
         OnShowStatusBarMessage(openProject.Name, false);
       OnReloadSource(LUnitPath,0); // force reset
-      mnuUnitWizard.Enabled := assigned(LSelectedNode);
+      mnuUnitWizard.Enabled := assigned(LSelectedNode) and (fVstSelectUnitTools.GetSpecialTagSet(LSelectedNode) = []);
     finally
       fVstSelectUnitTools.EndUpdate();
       fVstSelectClassTools.EndUpdate;
@@ -721,17 +724,17 @@ begin
           LInfoList := GetProcsFromUnit(LProcNameList,fVstSelectClassTools.GetSelectedIndex,GetSelectedClassName());
           for LInfo in LInfoList do
           begin
-            LIndex := fVstSelectProcTools.AddEntry(LInfo.anName).Index;
+            LIndex := fVstSelectProcTools.AddEntry(nil,LInfo.anName).Index;
             ConfigureCheckBox(LIndex, LInfo.anInstrument, not LInfo.anInstrument);
           end;
           if LInfoList.Count > 0 then
           begin
             if fVstSelectClassTools.GetSelectedIndex = 0 then
-              fVstSelectProcTools.InsertEntry(0, '<all procedures>')
+              fVstSelectProcTools.InsertEntry(0, '<all procedures>', [ste_AllItem])
             else if GetSelectedClassName.StartsWith('<') then
-              fVstSelectProcTools.InsertEntry(0, '<all classless procedures>')
+              fVstSelectProcTools.InsertEntry(0, '<all classless procedures>', [ste_AllItem])
             else
-              fVstSelectProcTools.InsertEntry(0, '<all ' + GetSelectedClassName + ' methods>');
+              fVstSelectProcTools.InsertEntry(0, '<all ' + GetSelectedClassName + ' methods>', [ste_AllItem]);
             ConfigureCheckBox(0,LInfoList.AllInstrumented, LInfoList.NoneInstrumented);
           end;
           LInfoList.free;
