@@ -179,6 +179,8 @@ type
     procedure   CalibrationStep(pkt1, pkt2: TResPacket);
     procedure   ExitProcPkt(pkt: TResPacket);
     procedure   EnterProcPkt(pkt: TResPacket);
+    procedure   ExitMeasurePointPkt(pkt: TResPacket);
+    procedure   EnterMeasurePointPkt(pkt: TResPacket);
     procedure   LoadHeader;
     procedure   LoadTables;
     procedure   LoadCalibration;
@@ -196,6 +198,7 @@ type
     procedure   ReadThread(var thread: integer);
     procedure   ReadTicks(var ticks: int64);
     procedure   ReadID(var id: integer);
+    procedure   ReadGuid   (var guid: TGUID);
     procedure   WriteTag(tag: byte);
     procedure   WriteInt(int: integer);
     procedure   WriteInt64(i64: int64);
@@ -309,6 +312,7 @@ procedure TResults.ReadCardinal(var value: Cardinal);  begin resFile.BlockReadUn
 procedure TResults.ReadInt64(var i64: int64);    begin resFile.BlockReadUnsafe(i64,SizeOf(int64)); end;
 procedure TResults.ReadTag  (var tag: byte);     begin resFile.BlockReadUnsafe(tag,SizeOf(byte)); end;
 procedure TResults.ReadID   (var id: integer);   begin id := 0; resFile.BlockReadUnsafe(id,resProcSize); end;
+procedure TResults.ReadGuid   (var guid: TGUID);   begin guid := TGUID.Empty; resFile.BlockReadUnsafe(guid,SizeOf(TGUID)); end;
 procedure TResults.ReadAnsiString(var avalue: AnsiString);
 var LLength : Cardinal;
 begin
@@ -468,9 +472,11 @@ begin
   filesz   := resFile.FileSize;
   lastPerc := -1;
   CheckTag(PR_STARTDATA);
-  while ReadPacket(pkt) do begin
+  while ReadPacket(pkt) do 
+  begin
     Inc(cnt);
-    if (cnt mod REPORT_EVERY) = 0 then begin
+    if (cnt mod REPORT_EVERY) = 0 then 
+    begin
       Application.ProcessMessages;
       if @callback <> nil then begin
         curPerc := Round((resFile.FilePos-fpstart)/filesz*100);
@@ -480,19 +486,32 @@ begin
         end;
       end;
     end;
-    with pkt do begin
-      if rpTag = PR_ENTERPROC then begin
+    if pkt.rpTag = PR_ENTERPROC then
+    begin
         // create new procedure proxy object
-        EnterProcPkt(pkt);
-      end
-      else if rpTag = PR_EXITPROC then begin
-        // find last proxy object with matching prProcID in active procedure queue
-        // update relevant objects
-        // destroy proxy object
-        ExitProcPkt(pkt)
-      end
-      else raise Exception.Create('gppResults.TResults.LoadData: Invalid tag!');
-    end;
+      EnterProcPkt(pkt);
+    end
+    else if pkt.rpTag = PR_EXITPROC then
+    begin
+      // find last proxy object with matching prProcID in active procedure queue
+      // update relevant objects
+      // destroy proxy object
+      ExitProcPkt(pkt)
+    end
+    else if pkt.rpTag = PR_ENTER_MP then
+    begin
+        // create new measure point proxy object
+      EnterMeasurePointPkt(pkt);
+    end
+    else if pkt.rpTag = PR_EXIT_MP then
+    begin
+      // find last proxy object with matching prProcID in active procedure queue
+      // update relevant objects
+      // destroy proxy object
+      ExitMeasurePointPkt(pkt);
+    end
+    else 
+      raise Exception.Create('gppResults.TResults.LoadData: Invalid tag ('+pkt.rpTag.ToString()+').');
   end;
 end; { TResults.LoadData }
 
@@ -556,6 +575,28 @@ begin
   inherited;
 end; { TResults.ExitProcPkt }
 
+procedure TResults.EnterMeasurePointPkt(pkt: TResPacket);
+var
+  proxy: TProcProxy;
+begin
+  proxy := TMeasurePointProxy.Create(ThCreateLocate(pkt.rpThread),pkt.rpMeasurePointID);
+  EnterProc(proxy,pkt);
+end; { TResults.EnterMeasurePointPkt }
+
+
+procedure TResults.ExitMeasurePointPkt(pkt: TResPacket);
+var
+  proxy : TProcProxy;
+  parent: TProcProxy;
+begin
+  resThreads[ThLocate(pkt.rpThread)].teActiveProcs.LocateLast(pkt.rpMeasurePointID,proxy,parent);
+  if proxy = nil then raise Exception.Create('gppResults.TResults.EnterMeasurePointPkt: Entry not found!');
+  ExitProc(proxy,parent,pkt);
+  proxy.Destroy;
+  inherited;
+end; { TResults.ExitMeasurePointPkt }
+
+
 procedure TResults.AddEnterProc(pkt: TResPacket);
 begin
   if resCalibration
@@ -574,8 +615,18 @@ function TResults.ReadPacket(var pkt: TResPacket): boolean;
 begin
   with pkt do begin
     ReadTag(rpTag);
-    if (rpTag = PR_ENDDATA) or (rpTag = PR_ENDCALIB) then Result := false
-    else begin
+    if (rpTag = PR_ENDDATA) or (rpTag = PR_ENDCALIB) then
+      Result := false
+    else if (rpTag = PR_ENTER_MP) or (rpTag = PR_EXIT_MP) then
+    begin
+      ReadThread(rpThread);
+      ReadGuid(rpMeasurePointID);
+      ReadTicks(rpMeasure1);
+      ReadTicks(rpMeasure2);
+      Result := true;
+    end
+    else
+    begin
       ReadThread(rpThread);
       ReadID(rpProcID);
       ReadTicks(rpMeasure1);
@@ -608,22 +659,22 @@ var
   LInfo : TCallGraphInfo;
   LThreadID : integer;
 begin
-  LThreadID := proxy.ppThreadID;
+  LThreadID := proxy.ThreadID;
   // update resProcedures, resActiveProcs, and CallGraph
   // other structures will be recalculated at the end
-  with resProcedures[proxy.ppProcID] do
+  with resProcedures[proxy.ProcID] do
   begin
     if assigned(parent) then
-      parent.ppChildTime := parent.ppChildTime + proxy.ppTotalTime + proxy.ppChildTime;
-    Inc(peProcTime[LThreadID],proxy.ppTotalTime);
-    if proxy.ppTotalTime < peProcTimeMin[LThreadID] then
-      peProcTimeMin[LThreadID] := proxy.ppTotalTime;
-    if proxy.ppTotalTime > peProcTimeMax[LThreadID] then
-      peProcTimeMax[LThreadID] := proxy.ppTotalTime;
+      parent.ChildTime := parent.ChildTime + proxy.TotalTime + proxy.ChildTime;
+    Inc(peProcTime[LThreadID],proxy.TotalTime);
+    if proxy.TotalTime < peProcTimeMin[LThreadID] then
+      peProcTimeMin[LThreadID] := proxy.TotalTime;
+    if proxy.TotalTime > peProcTimeMax[LThreadID] then
+      peProcTimeMax[LThreadID] := proxy.TotalTime;
     if peRecLevel[LThreadID] = 0 then
     begin
-      Inc(peProcChildTime[LThreadID],proxy.ppChildTime);
-      Inc(peProcChildTime[LThreadID],proxy.ppTotalTime);
+      Inc(peProcChildTime[LThreadID],proxy.ChildTime);
+      Inc(peProcChildTime[LThreadID],proxy.TotalTime);
     end;
     Inc(peProcCnt[LThreadID],1);
   end;
@@ -633,23 +684,23 @@ begin
   if assigned(parent) then
   begin
     // assemble callstack information
-    LInfo := fCallGraphInfoDict.GetOrCreateGraphInfo(parent.ppProcID,proxy.ppProcID,High(resThreads));
+    LInfo := fCallGraphInfoDict.GetOrCreateGraphInfo(parent.ProcID,proxy.ProcID,High(resThreads));
 
-    LInfo.ProcTime.AddTime(LThreadID,proxy.ppTotalTime);
-    if proxy.ppTotalTime < LInfo.ProcTimeMin[LThreadID] then
-      LInfo.ProcTimeMin.AssignTime(LThreadID,proxy.ppTotalTime);
-    if proxy.ppTotalTime > LInfo.ProcTimeMax[LThreadID] then
-      LInfo.ProcTimeMax.AssignTime(LThreadID, proxy.ppTotalTime);
-    if resProcedures[proxy.ppProcID].peRecLevel[LThreadID] = 0 then
+    LInfo.ProcTime.AddTime(LThreadID,proxy.TotalTime);
+    if proxy.TotalTime < LInfo.ProcTimeMin[LThreadID] then
+      LInfo.ProcTimeMin.AssignTime(LThreadID,proxy.TotalTime);
+    if proxy.TotalTime > LInfo.ProcTimeMax[LThreadID] then
+      LInfo.ProcTimeMax.AssignTime(LThreadID, proxy.TotalTime);
+    if resProcedures[proxy.ProcID].peRecLevel[LThreadID] = 0 then
     begin
-      LInfo.ProcChildTime.AddTime(LThreadID,proxy.ppChildTime);
-      LInfo.ProcChildTime.AddTime(LThreadID,proxy.ppTotalTime);
+      LInfo.ProcChildTime.AddTime(LThreadID,proxy.ChildTime);
+      LInfo.ProcChildTime.AddTime(LThreadID,proxy.TotalTime);
     end
-    else if (resProcedures[proxy.ppProcID].peRecLevel[LThreadID] = 1) and
-            (parent.ppProcID = proxy.ppProcID) then
+    else if (resProcedures[proxy.ProcID].peRecLevel[LThreadID] = 1) and
+            (parent.ProcID = proxy.ProcID) then
     begin
-      LInfo.ProcChildTime.AddTime(LThreadID,proxy.ppChildTime);
-      LInfo.ProcChildTime.AddTime(LThreadID,proxy.ppTotalTime);
+      LInfo.ProcChildTime.AddTime(LThreadID,proxy.ChildTime);
+      LInfo.ProcChildTime.AddTime(LThreadID,proxy.TotalTime);
     end;
     LInfo.ProcCnt.AddCount(LThreadID,1);
   end;
@@ -897,12 +948,12 @@ begin
   // insert proxy object into active procedure queue
   // increment recursion level
   pkt.rpNullOverhead := 0;
-  resThreads[proxy.ppThreadID].teActiveProcs.UpdateDeadTime(pkt);
+  resThreads[proxy.ThreadID].teActiveProcs.UpdateDeadTime(pkt);
   proxy.Start(pkt);
-  resThreads[proxy.ppThreadID].teActiveProcs.Append(proxy);
-  if proxy.ppProcID > Length(resProcedures) then
+  resThreads[proxy.ThreadID].teActiveProcs.Append(proxy);
+  if proxy.ProcID > Length(resProcedures) then
     raise EInvalidOp.Create('Error: Instrumentation count does not fit to the prf, please reinstrument.');
-  Inc(resProcedures[proxy.ppProcID].peRecLevel[proxy.ppThreadID]);
+  Inc(resProcedures[proxy.ProcID].peRecLevel[proxy.ThreadID]);
 end;
 
 procedure TResults.ExitProc(proxy,parent: TProcProxy; pkt: TResPacket);
@@ -913,8 +964,8 @@ begin
   // update time in procedure, class, unit and thread objects
   // update time in active procedures from the same thread
   // update dead time in all active procedures
-  Dec(resProcedures[proxy.ppProcID].peRecLevel[proxy.ppThreadID]);
-  resThreads[proxy.ppThreadID].teActiveProcs.Remove(proxy);
+  Dec(resProcedures[proxy.ProcID].peRecLevel[proxy.ThreadID]);
+  resThreads[proxy.ThreadID].teActiveProcs.Remove(proxy);
   pkt.rpNullOverhead := resNullOverhead;
   resNullErrorAcc := resNullErrorAcc + resNullError;
   if resNullErrorAcc > NULL_ACCURACY then begin
@@ -923,7 +974,7 @@ begin
   end;
   proxy.Stop(pkt);
   UpdateRunningTime(proxy,parent);
-  resThreads[proxy.ppThreadID].teActiveProcs.UpdateDeadTime(pkt);
+  resThreads[proxy.ThreadID].teActiveProcs.UpdateDeadTime(pkt);
 end; { TResults.ExitProc }
 
 procedure TResults.LoadCalibration;

@@ -12,6 +12,7 @@ type
     rpMeasure1    : int64;
     rpMeasure2    : int64;
     rpNullOverhead: int64;
+    rpMeasurePointID : TGUID;
   end;
 
   TMeasurePointEntry = record
@@ -21,7 +22,7 @@ type
   end;
 
   TProcProxy = class
-  public
+  private
     ppThreadID    : integer;
     ppProcID      : integer;
     ppDeadTime    : int64;
@@ -29,11 +30,30 @@ type
     ppTotalTime   : int64;
     ppChildTime   : int64;
 
-    constructor Create(threadID, procID: integer);
+  public
+
+    constructor Create(const aThreadID, aProcID: integer);
     destructor  Destroy; override;
-    procedure   Start(pkt: TResPacket);
-    procedure   Stop(var pkt: TResPacket);
+    procedure   Start(pkt: TResPacket);  virtual;
+    procedure   Stop(var pkt: TResPacket); virtual;
     procedure   UpdateDeadTime(pkt: TResPacket);
+
+    property ThreadID : Integer read ppThreadID;
+    property ProcId : integer read ppProcID;
+    property DeadTime : int64 read ppDeadTime;
+    property StartTime : int64 read ppStartTime;
+    property TotalTime : int64 read ppTotalTime;
+    property ChildTime : int64 read ppChildTime write ppChildTime;
+  end;
+
+  TMeasurePointProxy = class(TProcProxy)
+  private
+    fMeasurePointGuid : TGUID;
+  public
+    constructor Create(const aThreadID: integer; const aMeasurePointGuid : TGUID);
+    destructor  Destroy; override;
+
+    property MeasurePointGuid : TGUID read fMeasurePointGuid;
   end;
 
   TActiveProcList = class
@@ -46,7 +66,9 @@ type
     procedure   UpdateDeadTime(pkt: TResPacket);
     procedure   Append(proxy: TProcProxy);
     procedure   Remove(proxy: TProcProxy);
-    procedure   LocateLast(procID: integer; var this,parent: TProcProxy);
+    procedure   LocateLast(const procID: integer; var this,parent: TProcProxy); overload;
+    procedure   LocateLast(const aMeasurePointGuid: TGUID; var this,parent: TProcProxy); overload;
+
   end;
 
 
@@ -61,11 +83,11 @@ const
 
 { TProcProxy }
 
-constructor TProcProxy.Create(threadID, procID: integer);
+constructor TProcProxy.Create(const aThreadID, aProcID: integer);
 begin
   inherited Create;
-  ppThreadID  := threadID;
-  ppProcID    := procID;
+  ppThreadID  := aThreadID;
+  ppProcID    := aProcID;
   ppDeadTime  := 0;
   ppStartTime := 0;
   ppTotalTime := 0;
@@ -97,6 +119,25 @@ begin
   ppDeadTime := ppDeadTime + (pkt.rpMeasure2-pkt.rpMeasure1) + pkt.rpNullOverhead;
 end; { TProcProxy.UpdateDeadTime }
 
+{ TMeasurePointProxy }
+
+constructor TMeasurePointProxy.Create(const aThreadID: integer; const aMeasurePointGuid : TGUID);
+begin
+  inherited Create(aThreadID, 0);
+  ppThreadID  := aThreadID;
+  fMeasurePointGuid := aMeasurePointGuid;
+  ppDeadTime  := 0;
+  ppStartTime := 0;
+  ppTotalTime := 0;
+  ppChildTime := 0;
+end; { TMeasurePointProxy.Create }
+
+destructor TMeasurePointProxy.Destroy;
+begin
+  inherited Destroy;
+end; { TMeasurePointProxy.Destroy }
+
+
 { TActiveProcList }
 
 procedure TActiveProcList.Append(proxy: TProcProxy);
@@ -118,7 +159,7 @@ begin
   inherited Destroy;
 end; { TActiveProcList.Destroy }
 
-procedure TActiveProcList.LocateLast(procID: integer; var this,parent: TProcProxy);
+procedure TActiveProcList.LocateLast(const procID: integer; var this,parent: TProcProxy);
 var
   i: integer;
 begin
@@ -133,6 +174,35 @@ begin
   this   := nil;
   parent := nil;
 end; { TActiveProcList.LocateLast }
+
+procedure TActiveProcList.LocateLast(const aMeasurePointGuid: TGUID; var this,parent: TProcProxy);
+var
+  i: integer;
+  lProxy : TProcProxy;
+  lMpProxy : TMeasurePointProxy;
+begin
+  for i := aplCount-1 downto Low(aplList) do
+  begin
+    lProxy := aplList[i];
+    if lProxy is TMeasurePointProxy then
+    begin
+      lMpProxy := lProxy as TMeasurePointProxy;
+      if lMpProxy.MeasurePointGuid = aMeasurePointGuid then begin
+        this := lMpProxy;
+        if i > Low(aplList) then
+          parent := aplList[i-1]
+        else
+          parent := nil;
+        Exit;
+      end;
+
+    end
+  end;
+  this   := nil;
+  parent := nil;
+end; { TActiveProcList.LocateLast }
+
+
 
 procedure TActiveProcList.Remove(proxy: TProcProxy);
 var
