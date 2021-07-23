@@ -1360,10 +1360,7 @@ begin
   LOpenDialog := TOpenDialog.Create(self);
   LOpenDialog.Title := 'Load profile data...';
   LOpenDialog.DefaultExt := 'prf';
-  if openProject = nil then
-    LOpenDialog.FileName := '*.prf'
-  else
-    LOpenDialog.FileName := ChangeFileExt(openProject.Name,'.prf');
+  LOpenDialog..InitialDir := ExtractFileDir(MRUPrf.LatestFile);
   LOpenDialog.Filter     := 'Profile data|*.prf|Any file|*.*';
   if LOpenDialog.Execute(self.Handle) then
     LoadProfile(LOpenDialog.FileName);
