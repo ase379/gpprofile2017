@@ -1252,10 +1252,7 @@ var
 begin
   LOpenDialog := TOpenDialog.Create(Self);
   LOpenDialog.DefaultExt := TUIStrings.DelphiProjectSourceDefaultExt;
-  LFilename := '';
-  if assigned(openProfile) then
-    LFileName := ChangeFileExt(openProfile.FileName, TUIStrings.DelphiProjectSourceExt);
-  LOpenDialog.FileName := ExtractFilename(LFilename);
+  LFilename := MRU.LatestFile;
   LOpenDialog.InitialDir := ExtractFileDir(LFilename);
   LOpenDialog.Filter := TUIStrings.ProjectSelectionFilter();
   LOpenDialog.Title := TUIStrings.LoadProjectCaption();
@@ -1360,7 +1357,7 @@ begin
   LOpenDialog := TOpenDialog.Create(self);
   LOpenDialog.Title := 'Load profile data...';
   LOpenDialog.DefaultExt := 'prf';
-  LOpenDialog..InitialDir := ExtractFileDir(MRUPrf.LatestFile);
+  LOpenDialog.InitialDir := ExtractFileDir(MRUPrf.LatestFile);
   LOpenDialog.Filter     := 'Profile data|*.prf|Any file|*.*';
   if LOpenDialog.Execute(self.Handle) then
     LoadProfile(LOpenDialog.FileName);
