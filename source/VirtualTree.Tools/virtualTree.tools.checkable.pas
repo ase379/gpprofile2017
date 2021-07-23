@@ -117,8 +117,8 @@ begin
   fList.OnFreeNode := self.OnFreeNode;
   fList.OnCompareNodes := self.OnCompareNodes;
   fList.ongettext := OnGetText;
-  fList.TreeOptions.MiscOptions := fList.TreeOptions.MiscOptions + [tocheckSupport];
-  fList.TreeOptions.SelectionOptions := fList.TreeOptions.SelectionOptions + [toSyncCheckboxesWithSelection];
+  fList.TreeOptions.MiscOptions := fList.TreeOptions.MiscOptions + [TVTMiscOption.toCheckSupport];
+  fList.TreeOptions.SelectionOptions := fList.TreeOptions.SelectionOptions + [TVTSelectionOption.toSyncCheckboxesWithSelection];
 end;
 
 destructor TCheckableListTools.Destroy;

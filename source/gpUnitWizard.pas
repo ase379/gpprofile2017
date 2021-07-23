@@ -60,8 +60,8 @@ constructor TfmUnitWizard.Create(AOwner: TComponent);
 begin
   inherited;
   fVstSelectUnitTools := TCheckableListTools.Create(vstUnitDependencies, cid_Unit);
-  vstUnitDependencies.TreeOptions.AutoOptions := vstUnitDependencies.TreeOptions.AutoOptions - [toAutoTristateTracking];
-  vstUnitDependencies.TreeOptions.SelectionOptions := vstUnitDependencies.TreeOptions.SelectionOptions - [toSyncCheckboxesWithSelection];
+  vstUnitDependencies.TreeOptions.AutoOptions := vstUnitDependencies.TreeOptions.AutoOptions - [TVTAutoOption.toAutoTristateTracking];
+  vstUnitDependencies.TreeOptions.SelectionOptions := vstUnitDependencies.TreeOptions.SelectionOptions - [TVTSelectionOption.toSyncCheckboxesWithSelection];
   fLocateUnitCache := TDictionary<string, TUnit>.Create();
   fSelectedUnitNames := TDictionary<string, Cardinal>.Create;
   fProcessedUnitNames := TDictionary<string, Cardinal>.Create;
