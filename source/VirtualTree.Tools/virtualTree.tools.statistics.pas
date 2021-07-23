@@ -128,7 +128,7 @@ begin
   fList.OnCompareNodes := self.OnCompareNodes;
   fList.ongettext := OnGetText;
   fList.OnAfterCellPaint := OnAftercellPaint;
-  fList.TreeOptions.SelectionOptions := fList.TreeOptions.SelectionOptions + [toFullRowSelect];
+  fList.TreeOptions.SelectionOptions := fList.TreeOptions.SelectionOptions + [TVTSelectionOption.toFullRowSelect];
 end;
 
 procedure TSimpleStatsListTools.AddEntry(const anEntryId : Cardinal);
