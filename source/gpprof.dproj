@@ -213,7 +213,6 @@
         <DCCReference Include="gppMain.pas">
             <Form>frmMain</Form>
         </DCCReference>
-        <DCCReference Include="gpFileEdit.pas"/>
         <DCCReference Include="GpVersion.pas"/>
         <DCCReference Include="gppIDT.pas"/>
         <DCCReference Include="gpUnitWizard.pas">
