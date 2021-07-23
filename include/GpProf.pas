@@ -26,8 +26,8 @@ procedure ProfilerStop;
 procedure ProfilerStartThread;
 procedure ProfilerEnterProc(const aProcID: Cardinal);
 procedure ProfilerExitProc(const aProcID: Cardinal);
-procedure ProfilerEnterMP(const aMpID : Cardinal);
-procedure ProfilerExitMP(const aMpID : Cardinal);
+procedure ProfilerEnterMP(const aMpID : TGuid);
+procedure ProfilerExitMP(const aMpID : TGuid);
 procedure ProfilerTerminate;
 procedure NameThreadForDebugging(AThreadName: AnsiString; AThreadID: TThreadID = TThreadID(-1)); overload;
 procedure NameThreadForDebugging(AThreadName: string; AThreadID: TThreadID = TThreadID(-1)); overload;
@@ -161,6 +161,7 @@ procedure WriteInt   (int: integer);  begin Transmit(int, SizeOf(integer)); end;
 procedure WriteCardinal   (value: Cardinal);  begin Transmit(value, SizeOf(Cardinal)); end;
 procedure WriteTag   (tag: byte);     begin Transmit(tag, SizeOf(byte)); end;
 procedure WriteID    (id: integer);   begin Transmit(id, profProcSize); end;
+procedure WriteGuid    (guid: TGUID);   begin Transmit(guid, SizeOf(TGUID)); end;
 procedure WriteBool  (bool: boolean); begin Transmit(bool, 1); end;
 procedure WriteAnsiString  (const value: ansistring);
 begin
@@ -260,7 +261,7 @@ begin
   end;
 end; { ProfilerExitProc }
 
-procedure ProfilerEnterMP(const aMpID : Cardinal);
+procedure ProfilerEnterMP(const aMpID : TGuid);
 var
   ct : integer;
   cnt: TLargeinteger;
@@ -275,14 +276,14 @@ begin
       FlushCounter;
       WriteTag(PR_ENTER_MP);
       WriteThread(ct);
-      WriteID(aMpID);
+      WriteGuid(aMpID);
       WriteTicks(Cnt.QuadPart);
       QueryPerformanceCounter(TInt64((@prfCounter)^));
     finally LeaveCriticalSection(prfLock); end;
   end;
 
 end;
-procedure ProfilerExitMP(const aMpID : Cardinal);
+procedure ProfilerExitMP(const aMpID : TGuid);
 var
   ct : integer;
   cnt: TLargeinteger;
@@ -297,7 +298,7 @@ begin
       FlushCounter;
       WriteTag(PR_EXIT_MP);
       WriteThread(ct);
-      WriteID(aMpID);
+      WriteGuid(aMpID);
       WriteTicks(Cnt.QuadPart);
       QueryPerformanceCounter(TInt64((@prfCounter)^));
     finally LeaveCriticalSection(prfLock); end;
