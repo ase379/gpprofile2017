@@ -243,7 +243,7 @@ object frmMainProfiling: TfrmMainProfiling
               item
                 MinWidth = 50
                 Position = 0
-                Text = 'Procedure (Callers)'
+                Text = 'Procedure'
               end
               item
                 MinWidth = 75
