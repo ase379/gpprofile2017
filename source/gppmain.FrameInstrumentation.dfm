@@ -91,7 +91,7 @@ object frmMainInstrumentation: TfrmMainInstrumentation
       Height = 21
       Align = alTop
       TabOrder = 2
-      TextHint = 'Enter text to search...'
+      TextHint = 'Filter units...'
       OnInvokeSearch = sbUnitsInvokeSearch
       ExplicitLeft = 56
       ExplicitTop = 16
@@ -145,7 +145,7 @@ object frmMainInstrumentation: TfrmMainInstrumentation
       Height = 21
       Align = alTop
       TabOrder = 2
-      TextHint = 'Enter text to search...'
+      TextHint = 'Filter classes...'
       OnInvokeSearch = sbClassesInvokeSearch
       ExplicitTop = 31
     end
@@ -196,7 +196,7 @@ object frmMainInstrumentation: TfrmMainInstrumentation
       Height = 21
       Align = alTop
       TabOrder = 2
-      TextHint = 'Enter text to search...'
+      TextHint = 'Filter procedures...'
       OnInvokeSearch = sbProceduresInvokeSearch
       ExplicitTop = 31
     end
