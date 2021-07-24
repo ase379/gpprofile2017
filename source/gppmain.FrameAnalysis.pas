@@ -196,6 +196,11 @@ procedure TfrmMainProfiling.SlidersMoved;
 begin
   callersPerc := pnlCallers.Height/tabProcedures.Height;
   calleesPerc := pnlCallees.Height/tabProcedures.Height;
+  if (calleesPerc > 1) then
+    calleesPerc := 0.25;
+    if (callersPerc > 1) then
+    callersPerc := 0.25;
+
 end;
 
 procedure TfrmMainProfiling.splitCallersMoved(Sender: TObject);
@@ -641,12 +646,12 @@ begin
   with actShowHideCallees do begin
     Tag := 1-Ord(pnlCallees.Visible);
     if Tag = 1 then begin
-      Caption := 'Show Calle&d';
-      Hint    := 'Show called';
+      Caption := 'Show Callees';
+      Hint    := 'Show callees';
     end
     else begin
-      Caption := 'Hide Calle&d';
-      Hint    := 'Hide called';
+      Caption := 'Hide Callees';
+      Hint    := 'Hide callees';
     end;
     ImageIndex := 24+Tag;
   end;
