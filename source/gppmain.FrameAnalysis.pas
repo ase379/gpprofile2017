@@ -6,7 +6,7 @@ uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes,
   Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.Dialogs, VirtualTrees, Vcl.StdCtrls, Vcl.ComCtrls, Vcl.ToolWin,
   Vcl.ExtCtrls, Vcl.Actnlist, vcl.menus,
-  gppresults,virtualTree.tools.statistics, System.Actions, System.ImageList, Vcl.ImgList;
+  gppresults,virtualTree.tools.statistics, System.Actions, System.ImageList, Vcl.ImgList, Vcl.WinXCtrls;
 
 type
   TReloadSourceEvent = procedure(const aPath : string; aLine : integer) of object;
@@ -51,6 +51,9 @@ type
     popAnalysisListview: TPopupMenu;
     mnuHideNotExecuted: TMenuItem;
     mnuExportProfile: TMenuItem;
+    sbFilterCallees: TSearchBox;
+    sbFilterProcs: TSearchBox;
+    sbFilterCallers: TSearchBox;
     procedure splitCallersMoved(Sender: TObject);
     procedure cbxSelectThreadProcChange(Sender: TObject);
     procedure cbxSelectThreadUnitChange(Sender: TObject);
@@ -63,6 +66,9 @@ type
     procedure actBrowseNextExecute(Sender: TObject);
     procedure actBrowsePreviousUpdate(Sender: TObject);
     procedure actBrowseNextUpdate(Sender: TObject);
+    procedure sbFilterCallersChange(Sender: TObject);
+    procedure sbFilterProcsInvokeSearch(Sender: TObject);
+    procedure sbFilterCalleesInvokeSearch(Sender: TObject);
   private
     callersPerc               : real;
     calleesPerc               : real;
@@ -91,6 +97,7 @@ type
     procedure Restack(fromPop, toPop: TPopupMenu; menuItem: TMenuItem);
     procedure RestackOne(fromPop, toPop: TPopupMenu);
     procedure PushBrowser(popBrowser: TPopupMenu; description: string; procID: integer);
+    procedure InvokeFilter(const aSearchTerm: string; const aTreeTool: TSimpleStatsListTools);
   public
 
     constructor Create(AOwner: TComponent); override;
@@ -120,7 +127,7 @@ type
 implementation
 
 uses
-  gppExport, GpIFF, gpprofH;
+  gppExport, GpIFF, gpprofH, System.StrUtils;
 
 {$R *.dfm}
 
@@ -778,6 +785,42 @@ begin
     PushBrowser(toPop,fvstProcsTools.GetSelectedCaption(),fvstProcsTools.GetSelectedId());
   PopBrowser(fromPop,description,procID);
   SelectProcs(procID);
+end;
+
+procedure TfrmMainProfiling.sbFilterCalleesInvokeSearch(Sender: TObject);
+begin
+  InvokeFilter(sbFilterCallees.Text, fvstProcsCalleesTools);
+end;
+
+procedure TfrmMainProfiling.sbFilterCallersChange(Sender: TObject);
+begin
+  InvokeFilter(sbFilterCallers.Text, fvstProcsCallersTools);
+end;
+
+procedure TfrmMainProfiling.sbFilterProcsInvokeSearch(Sender: TObject);
+begin
+  InvokeFilter(sbFilterProcs.Text, fvstProcsTools);
+end;
+
+procedure TfrmMainProfiling.InvokeFilter(const aSearchTerm: string; const aTreeTool : TSimpleStatsListTools);
+var
+  LEnumor : TVTVirtualNodeEnumerator;
+  lVisible : Boolean;
+begin
+  aTreeTool.Tree.BeginUpdate;
+  try
+    LEnumor := aTreeTool.Tree.Nodes().GetEnumerator();
+    while (LEnumor.MoveNext) do
+    begin
+      if aSearchTerm.IsEmpty then
+        lVisible := true
+      else
+        lVisible := ContainsText(aTreeTool.GetName(LEnumor.current),aSearchTerm);
+      aTreeTool.SetVisible(LEnumor.Current, lVisible);
+    end;
+  finally
+    aTreeTool.Tree.EndUpdate;
+  end;
 end;
 
 procedure TfrmMainProfiling.Restack(fromPop, toPop: TPopupMenu;

@@ -203,6 +203,19 @@ object frmMainProfiling: TfrmMainProfiling
                 Width = 75
               end>
           end
+          object sbFilterCallers: TSearchBox
+            Left = 0
+            Top = 0
+            Width = 889
+            Height = 21
+            Align = alTop
+            TabOrder = 1
+            TextHint = 'Filter the procedure callers...'
+            OnChange = sbFilterCallersChange
+            ExplicitLeft = 760
+            ExplicitTop = 40
+            ExplicitWidth = 121
+          end
         end
         object pnlCurrent: TPanel
           Left = 0
@@ -288,6 +301,19 @@ object frmMainProfiling: TfrmMainProfiling
                 Width = 75
               end>
           end
+          object sbFilterProcs: TSearchBox
+            Left = 0
+            Top = 0
+            Width = 889
+            Height = 21
+            Align = alTop
+            TabOrder = 1
+            TextHint = 'Filter the procedure...'
+            OnInvokeSearch = sbFilterProcsInvokeSearch
+            ExplicitLeft = 744
+            ExplicitTop = 320
+            ExplicitWidth = 121
+          end
         end
       end
       object pnlCallees: TPanel
@@ -369,6 +395,19 @@ object frmMainProfiling: TfrmMainProfiling
               Text = 'Avg/Call'
               Width = 75
             end>
+        end
+        object sbFilterCallees: TSearchBox
+          Left = 0
+          Top = 0
+          Width = 889
+          Height = 21
+          Align = alTop
+          TabOrder = 1
+          TextHint = 'Filter the procedure callees...'
+          OnInvokeSearch = sbFilterCalleesInvokeSearch
+          ExplicitLeft = 792
+          ExplicitTop = 56
+          ExplicitWidth = 121
         end
       end
       object pnlBottom: TPanel
