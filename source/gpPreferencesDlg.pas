@@ -67,6 +67,15 @@ type
     edtPerformanceOutputFilename: TEdit;
     btnPrfPlaceholderSelection: TButton;
     cbMakeBackupOfInstrumentedFile: TCheckBox;
+    GroupBox3: TGroupBox;
+    Panel3: TPanel;
+    Label3: TLabel;
+    pnSpeedSizeLabels: TPanel;
+    pnlMarkerStyle: TPanel;
+    pnlCompilerVersion: TPanel;
+    pnlUnitCommands: TPanel;
+    pnlSymbolCommands: TPanel;
+    pnlSymbolsDefine: TPanel;
     procedure FormKeyPress(Sender: TObject; var Key: Char);
     procedure FormCreate(Sender: TObject);
     procedure btnAddFromFolderClick(Sender: TObject);

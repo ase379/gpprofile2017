@@ -33,7 +33,8 @@ type
     DelphiSeattle,
     DelphiBelin,
     DelphiTokyo,
-    DelphiRio
+    DelphiRio,
+    DelphiSydney
   );
 
 
@@ -66,6 +67,7 @@ const SEATTLE = '10.0 Seattle';
       BERLIN = '10.1 Berlin';
       TOKYO = '10.2 Tokyo';
       RIO = '10.3 Rio';
+      SYDNEY = '10.4 Sydney';
 
 var
   ProductVersionMapping: TDictionary<String, String>;
@@ -140,9 +142,10 @@ begin
     DelphiXE7: result := 'XE7';
     DelphiXE8: result := 'XE8';
     DelphiSeattle: result := '10 Seattle';
-    DelphiBelin: result := '10.1 Berlin';
-    DelphiTokyo: result := '10.2 Tokyo';
-    DelphiRio: result := '10.3 Rio';
+    DelphiBelin: result := BERLIN;
+    DelphiTokyo: result := TOKYO;
+    DelphiRio: result := RIO;
+    DelphiSydney : result := SYDNEY;
   end;
 end;
 
@@ -176,6 +179,7 @@ begin
     DelphiBelin: result := 'VER310';
     DelphiTokyo: result := 'VER320';
     DelphiRio: result := 'VER330';
+    DelphiSydney: result := 'VER340';
   end;
 end;
 
@@ -207,6 +211,7 @@ end;
 Initialization
 
 ProductVersionMapping := TDictionary<String, String>.Create();
+ProductVersionMapping.add('21.0', SYDNEY);
 ProductVersionMapping.add('20.0', RIO);
 ProductVersionMapping.add('19.0', TOKYO);
 ProductVersionMapping.add('18.0', BERLIN);
