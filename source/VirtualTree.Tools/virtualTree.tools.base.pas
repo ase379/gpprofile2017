@@ -41,8 +41,8 @@ type
     function GetNodeByName(const aName: string): PVirtualNode;
     function GetChildByName(const aParent : PVirtualNode;const aName: string): PVirtualNode;
 
-    function GetName(const anIndex: Cardinal): string; overload;
-    function GetName(const aNode : PVirtualNode) : string; overload; virtual;
+    function GetName(const anIndex: Cardinal;const column : integer = 0): string; overload;
+    function GetName(const aNode : PVirtualNode;const column : integer = 0) : string; overload; virtual;
     procedure setSelectedIndex(const anIndex : cardinal);
     procedure SetVisible(const aNode: PVirtualNode;const aVisible : boolean);
 
@@ -108,7 +108,7 @@ begin
 end;
 
 
-function TVirtualTreeBaseTools.GetName(const anIndex: Cardinal): string;
+function TVirtualTreeBaseTools.GetName(const anIndex: Cardinal;const column : integer = 0): string;
 var
   LNode : PVirtualNode;
 begin
@@ -116,11 +116,11 @@ begin
   result := GetName(LNode);
 end;
 
-function TVirtualTreeBaseTools.GetName(const aNode: PVirtualNode): string;
+function TVirtualTreeBaseTools.GetName(const aNode: PVirtualNode; const column : integer = 0): string;
 begin
   result := '';
   if Assigned(aNode) then
-    fList.OnGetText(fList,aNode,0,TVSTTextType.ttNormal,Result);
+    fList.OnGetText(fList,aNode,column,TVSTTextType.ttNormal,Result);
 end;
 
 procedure TVirtualTreeBaseTools.setSelectedIndex(const anIndex: cardinal);

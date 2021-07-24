@@ -54,6 +54,9 @@ type
     sbFilterCallees: TSearchBox;
     sbFilterProcs: TSearchBox;
     sbFilterCallers: TSearchBox;
+    sbFilterClasses: TSearchBox;
+    sbFilterUnits: TSearchBox;
+    sbFilterThreads: TSearchBox;
     procedure splitCallersMoved(Sender: TObject);
     procedure cbxSelectThreadProcChange(Sender: TObject);
     procedure cbxSelectThreadUnitChange(Sender: TObject);
@@ -69,6 +72,9 @@ type
     procedure sbFilterCallersChange(Sender: TObject);
     procedure sbFilterProcsInvokeSearch(Sender: TObject);
     procedure sbFilterCalleesInvokeSearch(Sender: TObject);
+    procedure sbFilterClassesInvokeSearch(Sender: TObject);
+    procedure sbFilterUnitsInvokeSearch(Sender: TObject);
+    procedure sbFilterThreadsInvokeSearch(Sender: TObject);
   private
     callersPerc               : real;
     calleesPerc               : real;
@@ -97,7 +103,7 @@ type
     procedure Restack(fromPop, toPop: TPopupMenu; menuItem: TMenuItem);
     procedure RestackOne(fromPop, toPop: TPopupMenu);
     procedure PushBrowser(popBrowser: TPopupMenu; description: string; procID: integer);
-    procedure InvokeFilter(const aSearchTerm: string; const aTreeTool: TSimpleStatsListTools);
+    procedure InvokeFilter(const aSearchTerm: string; const aTreeTool: TSimpleStatsListTools;const column : integer = 0);
   public
 
     constructor Create(AOwner: TComponent); override;
@@ -797,12 +803,27 @@ begin
   InvokeFilter(sbFilterCallers.Text, fvstProcsCallersTools);
 end;
 
+procedure TfrmMainProfiling.sbFilterClassesInvokeSearch(Sender: TObject);
+begin
+  InvokeFilter(sbFilterClasses.Text, fvstClassesTools)
+end;
+
 procedure TfrmMainProfiling.sbFilterProcsInvokeSearch(Sender: TObject);
 begin
   InvokeFilter(sbFilterProcs.Text, fvstProcsTools);
 end;
 
-procedure TfrmMainProfiling.InvokeFilter(const aSearchTerm: string; const aTreeTool : TSimpleStatsListTools);
+procedure TfrmMainProfiling.sbFilterThreadsInvokeSearch(Sender: TObject);
+begin
+  InvokeFilter(sbFilterThreads.Text, fvstThreadsTools, 1);
+end;
+
+procedure TfrmMainProfiling.sbFilterUnitsInvokeSearch(Sender: TObject);
+begin
+  InvokeFilter(sbFilterUnits.Text, fvstUnitsTools);
+end;
+
+procedure TfrmMainProfiling.InvokeFilter(const aSearchTerm: string; const aTreeTool : TSimpleStatsListTools;const column : integer = 0);
 var
   LEnumor : TVTVirtualNodeEnumerator;
   lVisible : Boolean;
@@ -815,7 +836,7 @@ begin
       if aSearchTerm.IsEmpty then
         lVisible := true
       else
-        lVisible := ContainsText(aTreeTool.GetName(LEnumor.current),aSearchTerm);
+        lVisible := ContainsText(aTreeTool.GetName(LEnumor.current,column),aSearchTerm);
       aTreeTool.SetVisible(LEnumor.Current, lVisible);
     end;
   finally

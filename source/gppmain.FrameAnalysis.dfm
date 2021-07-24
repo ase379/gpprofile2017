@@ -488,6 +488,19 @@ object frmMainProfiling: TfrmMainProfiling
           OnChange = cbxSelectThreadClassChange
         end
       end
+      object sbFilterClasses: TSearchBox
+        Left = 0
+        Top = 33
+        Width = 889
+        Height = 21
+        Align = alTop
+        TabOrder = 2
+        TextHint = 'Filter the classes...'
+        OnInvokeSearch = sbFilterClassesInvokeSearch
+        ExplicitLeft = 352
+        ExplicitTop = 88
+        ExplicitWidth = 121
+      end
     end
     object tabUnits: TTabSheet
       Caption = 'Units'
@@ -557,6 +570,19 @@ object frmMainProfiling: TfrmMainProfiling
             Width = 150
           end>
       end
+      object sbFilterUnits: TSearchBox
+        Left = 0
+        Top = 33
+        Width = 889
+        Height = 21
+        Align = alTop
+        TabOrder = 2
+        TextHint = 'Filter the units...'
+        OnInvokeSearch = sbFilterUnitsInvokeSearch
+        ExplicitLeft = 592
+        ExplicitTop = 240
+        ExplicitWidth = 121
+      end
     end
     object tabThreads: TTabSheet
       Caption = 'Threads'
@@ -605,6 +631,19 @@ object frmMainProfiling: TfrmMainProfiling
             Text = 'Calls'
             Width = 75
           end>
+      end
+      object sbFilterThreads: TSearchBox
+        Left = 0
+        Top = 0
+        Width = 889
+        Height = 21
+        Align = alTop
+        TabOrder = 1
+        TextHint = 'Filter the threads...'
+        OnInvokeSearch = sbFilterThreadsInvokeSearch
+        ExplicitLeft = 600
+        ExplicitTop = 248
+        ExplicitWidth = 121
       end
     end
   end

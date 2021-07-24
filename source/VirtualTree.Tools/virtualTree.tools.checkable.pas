@@ -41,7 +41,7 @@ type
     function AddEntry(const aParent : PVirtualNode;const aName : String): PVirtualNode;overload;
     function AddEntry(const aParent : PVirtualNode;const aName : String; const aSpecialTagSet : TSpecialTagEnumSet):PVirtualNode;overload;
 
-    function GetName(const aNode : PVirtualNode) : string; override;
+    function GetName(const aNode : PVirtualNode;const column : integer = 0) : string; override;
 
     function InsertEntry(const anIndex : integer; const aName : string; const aSpecialTagSet : TSpecialTagEnumSet):PVirtualNode;
 
@@ -174,7 +174,7 @@ begin
   end;
 end;
 
-function TCheckableListTools.GetName(const aNode: PVirtualNode): string;
+function TCheckableListTools.GetName(const aNode: PVirtualNode;const column : integer = 0): string;
 var
   LData : PCheckableItemData;
 begin
@@ -189,7 +189,7 @@ begin
       result := lData.Name;
     end
     else
-      result := inherited GetName(aNode);
+      result := inherited GetName(aNode, column);
   end;
 end;
 
