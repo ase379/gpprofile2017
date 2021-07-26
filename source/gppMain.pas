@@ -582,7 +582,7 @@ begin
     SetSource;
   except
     on e:Exception do
-    if Assigned(MRUGis.FindItem(fileName)) then
+    if Assigned(MRU.FindItem(fileName)) then
     begin
       if ShowErrorYesNo(TUIStrings.ErrorLoadingMRUDeleteIt(fileName)) = mrYes then
       begin
@@ -752,7 +752,7 @@ begin
     ParseProfile(fileName);
   except on e:Exception do
     begin
-      if Assigned(MRUGis.FindItem(fileName)) then
+      if Assigned(MRUPrf.FindItem(fileName)) then
       begin
         if ShowErrorYesNo(TUIStrings.ErrorLoadingMRUDeleteIt(fileName)) = mrYes then
         begin
