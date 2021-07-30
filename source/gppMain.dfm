@@ -413,15 +413,6 @@ object frmMain: TfrmMain
       ShortCut = 16497
       OnExecute = actRemoveInstrumentationExecute
     end
-    object actRun: TAction
-      Category = 'Project'
-      Caption = 'Run'
-      Enabled = False
-      Hint = 'Run'
-      ImageIndex = 4
-      ShortCut = 120
-      OnExecute = actRunExecute
-    end
     object actRescanProject: TAction
       Category = 'Project'
       Caption = '&Rescan'
@@ -438,15 +429,6 @@ object frmMain: TfrmMain
       ImageIndex = 6
       ShortCut = 16506
       OnExecute = actOpenProfileExecute
-    end
-    object actInstrumentRun: TAction
-      Category = 'Project'
-      Caption = 'Instrument and Run'
-      Enabled = False
-      Hint = 'Instrument and run'
-      ImageIndex = 7
-      ShortCut = 16504
-      OnExecute = actInstrumentRunExecute
     end
     object actHideNotExecuted: TAction
       Category = 'Analysis'

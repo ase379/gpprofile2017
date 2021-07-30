@@ -28,7 +28,6 @@ type
     Exit1: TMenuItem;
     Preferences1: TMenuItem;
     actRemoveInstrumentation: TAction;
-    actRun: TAction;
     popRecent: TPopupMenu;
     actRescanProject: TAction;
     MRU: TGPMRUFiles;
@@ -37,7 +36,6 @@ type
     actOpenProfile: TAction;
     popRecentPrf: TPopupMenu;
     MRUPrf: TGPMRUFiles;
-    actInstrumentRun: TAction;
     Help1: TMenuItem;
     About1: TMenuItem;
     actHideNotExecuted: TAction;
@@ -233,7 +231,6 @@ type
     function  ParseProfileCallback(percent: integer): boolean;
     procedure ParseProfileDone;
     procedure FillDelphiVer;
-    procedure FindMyDelphi;
     procedure CloseDelphiHandles;
     procedure LoadSource(const fileName: String; focusOn: integer);
     procedure ClearSource;
@@ -375,24 +372,6 @@ begin
   inherited;
 end; { TfrmMain.CMDialogKey }
 
-procedure TfrmMain.FindMyDelphi;
-var
-  find: PFind;
-begin
-  delphiThreadID := 0;
-  if ParamCount > 0 then begin
-    New(find);
-    try
-      find^.findProcID := 0;
-      find^.findTitle := UTF8Encode(' - '+UpperCase(FirstEl(ExtractFileName(ParamStr(1)),'.',-1)));
-      EnumWindows(@EnumFindMyDelphi,integer(find));
-      if find^.findProcID <> 0 then begin
-        delphiThreadID := find^.findProcID;
-        MapThreadToWindows(delphiThreadID,delphiAppWindow,delphiEditWindow);
-      end;
-    finally Dispose(find); end;
-  end;
-end; { TfrmMain.FindMyDelphi }
 
 
 procedure TfrmMain.NotifyParse(const aUnitName: string);
@@ -450,9 +429,7 @@ begin
   actRescanProject.Enabled         := true;
   actRescanChanged.Enabled         := true;
   actInstrument.Enabled            := true;
-  actInstrumentRun.Enabled         := true;
   actRemoveInstrumentation.Enabled := true;
-  actRun.Enabled                   := true;
   actProjectOptions.Enabled        := true;
 
   actLoadInstrumentationSelection.Enabled := true;
@@ -807,8 +784,6 @@ begin
       frmPreferences.cbxCompilerVersion.Items.Add('Delphi '+LProductName);
       frmPreferences.cbxDelphiDefines.Items.Add('Delphi '+LProductName);
     end;
-    if LRegEntryList.Count = 0 then
-      actRun.OnExecute := nil;
     if LRegEntryList.Count >= 1 then
     begin
       if (TGlobalPreferences.CompilerVersion < 0) or (TGlobalPreferences.CompilerVersion >= LRegEntryList.Count) then
@@ -943,7 +918,6 @@ begin
   LoadLayouts;
   StatusBar.Font.Size := 10;
   ClearSource;
-  FindMyDelphi;
   with delphiProcessInfo do begin
     hProcess := 0;
     hThread  := 0;
@@ -1439,7 +1413,6 @@ end;
 procedure TfrmMain.actInstrumentRunExecute(Sender: TObject);
 begin
   DoInstrument;
-  actRun.Execute;
 end;
 
 procedure TfrmMain.btnCancelLoadClick(Sender: TObject);
@@ -1648,7 +1621,6 @@ begin
     else ParseCommandLine;
     if HasParameter('/REMOVEINST') then begin
       actRemoveInstrumentation.Execute;
-      actRun.Execute;
       Application.Terminate;
     end;
   end;
