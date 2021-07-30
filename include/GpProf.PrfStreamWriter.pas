@@ -46,7 +46,7 @@ uses
   System.SysUtils, Winapi.Windows, GpProfH;
 
 const
-  BUF_SIZE = 64 * 1024; //64*1024;
+  BUF_SIZE = 128 * 1024; //64*1024;
 
 constructor TPrfStreamWriter.Create(const aConfig : TPrfConfig;const prfName : string);
 begin
