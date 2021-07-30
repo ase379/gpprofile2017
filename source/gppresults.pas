@@ -214,6 +214,8 @@ type
     resCalTime2       : int64;
     resCalMax         : int64;
     resCalCounter     : integer;
+    procedure   RaiseFileCorruptedException(const aContext : String);
+
     procedure   CalibrationStep(pkt1, pkt2: TResPacket);
     procedure   ExitProcPkt(pkt: TResPacket);
     procedure   EnterProcPkt(pkt: TResPacket);
@@ -417,12 +419,18 @@ begin
     resFile.BlockWriteUnsafe(str[1],Length(str)+1); // write zero-terminated
 end; { TResults.WriteString }
 
+procedure TResults.RaiseFileCorruptedException(const aContext : String);
+begin
+  raise Exception.Create('File corrupted: '+aContext);
+end;
+
 procedure TResults.CheckTag(tag: byte);
 var
   fileTag: byte;
 begin
   ReadTag(fileTag);
-  if tag <> fileTag then raise Exception.Create('File corrupt!');
+  if tag <> fileTag then
+    RaiseFileCorruptedException('Expected Tag '+tag.ToString+', but found tag '+filetag.ToString+'!');
 end; { TResults.CheckTag }
 
 procedure TResults.LoadTables;
@@ -984,9 +992,11 @@ begin
   while cnt < calCal do begin
     Inc(cnt);
     ReadPacket(start);
-    if start.rpTag = PR_ENDCALIB then raise Exception.Create('File corrupt!');
+    if start.rpTag = PR_ENDCALIB then
+      RaiseFileCorruptedException('Calibration: PR_ENDCALIB found, but expected start.');
     ReadPacket(stop);
-    if stop.rpTag = PR_ENDCALIB then raise Exception.Create('File corrupt!');
+    if stop.rpTag = PR_ENDCALIB then
+      RaiseFileCorruptedException('Calibration: PR_ENDCALIB found, but expected end.');
     dtime := stop.rpMeasure1-start.rpMeasure2;
     if dtime < time then time := dtime;
   end;
@@ -999,7 +1009,8 @@ begin
     dtime := stop.rpMeasure1-start.rpMeasure2;
     if dtime <= calMax then begin
       Inc(cnt);
-      if cnt > calCnt then raise Exception.Create('File corrupt!');
+      if cnt > calCnt then
+        RaiseFileCorruptedException('Calibration count is bigger than max calibration count.');
       time  := time + time2;
       time2 := dtime;
     end;
