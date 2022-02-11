@@ -1,7 +1,7 @@
 object frmMain: TfrmMain
   Left = 312
   Top = 179
-  Caption = 'GpProfile 2017'
+  Caption = 'GpProfile'
   ClientHeight = 640
   ClientWidth = 1484
   Color = clBtnFace
@@ -70,7 +70,7 @@ object frmMain: TfrmMain
         TabOrder = 0
         OnChange = PageControl1Change
         object tabInstrumentation: TTabSheet
-          Caption = 'Instrumentation'
+          Caption = 'Source Code Instrumentation'
           ImageIndex = 16
           object tbrInstrument: TToolBar
             Left = 0
@@ -165,7 +165,7 @@ object frmMain: TfrmMain
           end
         end
         object tabAnalysis: TTabSheet
-          Caption = 'Analysis'
+          Caption = 'Perfomance Analysis'
           ImageIndex = 17
           object tbrAnalysis: TToolBar
             Left = 0
