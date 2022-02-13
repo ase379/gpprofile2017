@@ -22,7 +22,6 @@ object frmPreferences: TfrmPreferences
     Align = alBottom
     BevelOuter = bvNone
     TabOrder = 0
-    ExplicitTop = 366
     object oxButton1: TButton
       AlignWithMargins = True
       Left = 320
@@ -35,7 +34,6 @@ object frmPreferences: TfrmPreferences
       Default = True
       ModalResult = 1
       TabOrder = 0
-      ExplicitHeight = 25
     end
     object oxButton2: TButton
       AlignWithMargins = True
@@ -48,7 +46,6 @@ object frmPreferences: TfrmPreferences
       Constraints.MaxHeight = 25
       ModalResult = 2
       TabOrder = 1
-      ExplicitHeight = 25
     end
   end
   object PagePreferences: TPageControl
@@ -56,11 +53,10 @@ object frmPreferences: TfrmPreferences
     Top = 0
     Width = 483
     Height = 361
-    ActivePage = tabDefines
+    ActivePage = tabInstrumentation
     Align = alClient
     HotTrack = True
     TabOrder = 1
-    ExplicitHeight = 327
     object tabInstrumentation: TTabSheet
       Caption = 'Instrumentation'
       ImageIndex = -1
@@ -82,8 +78,6 @@ object frmPreferences: TfrmPreferences
           AutoSize = True
           BevelOuter = bvNone
           TabOrder = 0
-          ExplicitLeft = 1
-          ExplicitTop = 12
           object Label1: TLabel
             AlignWithMargins = True
             Left = 8
@@ -95,8 +89,6 @@ object frmPreferences: TfrmPreferences
             Align = alLeft
             Caption = 'Template for instrumentation:'
             FocusControl = cbxMarker
-            ExplicitLeft = 3
-            ExplicitTop = 3
             ExplicitHeight = 13
           end
           object cbxMarker: TComboBox
@@ -112,8 +104,6 @@ object frmPreferences: TfrmPreferences
             Items.Strings = (
               '{>>GpProfile}'
               '{$IFDEF GpProfile}')
-            ExplicitLeft = 184
-            ExplicitTop = 0
           end
         end
         object pnlCompilerVersion: TPanel
@@ -136,8 +126,7 @@ object frmPreferences: TfrmPreferences
             Align = alLeft
             Caption = '&Compiler version:'
             FocusControl = cbxCompilerVersion
-            ExplicitLeft = 3
-            ExplicitHeight = 17
+            ExplicitHeight = 13
           end
           object cbxCompilerVersion: TComboBox
             AlignWithMargins = True
@@ -150,8 +139,6 @@ object frmPreferences: TfrmPreferences
             Style = csDropDownList
             TabOrder = 0
             OnChange = cbxCompilerVersionChange
-            ExplicitLeft = 184
-            ExplicitTop = 0
           end
         end
       end
@@ -165,7 +152,6 @@ object frmPreferences: TfrmPreferences
         Align = alTop
         Caption = 'Options '
         TabOrder = 1
-        ExplicitTop = 201
         object cbProfilingAutostart: TCheckBox
           Left = 8
           Top = 44
@@ -213,7 +199,6 @@ object frmPreferences: TfrmPreferences
         Align = alTop
         Caption = 'PRF (Profiling Result File) Settings'
         TabOrder = 2
-        ExplicitTop = 90
         object Label3: TLabel
           AlignWithMargins = True
           Left = 10
@@ -225,7 +210,6 @@ object frmPreferences: TfrmPreferences
           Caption = 
             'Choose the compression level here to get a faster target executi' +
             'on or a smaller prf.'
-          ExplicitLeft = 5
           ExplicitWidth = 402
         end
         object Panel3: TPanel
@@ -236,10 +220,6 @@ object frmPreferences: TfrmPreferences
           Align = alClient
           BevelOuter = bvNone
           TabOrder = 0
-          ExplicitLeft = 5
-          ExplicitTop = 37
-          ExplicitWidth = 459
-          ExplicitHeight = 63
           object Label4: TLabel
             AlignWithMargins = True
             Left = 8
@@ -250,9 +230,7 @@ object frmPreferences: TfrmPreferences
             Align = alLeft
             Caption = '&Speed/Size:'
             FocusControl = tbSpeedSize
-            ExplicitLeft = 5
-            ExplicitTop = 0
-            ExplicitHeight = 57
+            ExplicitHeight = 13
           end
           object tbSpeedSize: TTrackBar
             Left = 68
@@ -267,8 +245,6 @@ object frmPreferences: TfrmPreferences
             Position = 1
             TabOrder = 0
             ThumbLength = 15
-            ExplicitLeft = 57
-            ExplicitHeight = 63
           end
           object pnSpeedSizeLabels: TPanel
             Left = 93
@@ -278,9 +254,6 @@ object frmPreferences: TfrmPreferences
             Align = alClient
             BevelOuter = bvNone
             TabOrder = 1
-            ExplicitLeft = 82
-            ExplicitWidth = 377
-            ExplicitHeight = 63
             object lblFasterTarget: TLabel
               AlignWithMargins = True
               Left = 3
@@ -303,8 +276,17 @@ object frmPreferences: TfrmPreferences
               Caption = 'smaller profiling file'
               OnClick = lblSmallerFileClick
               OnDblClick = lblSmallerFileClick
-              ExplicitTop = 47
               ExplicitWidth = 91
+            end
+            object cbMemWorkingSetEnabled: TCheckBox
+              Left = 176
+              Top = 3
+              Width = 177
+              Height = 17
+              Caption = 'Analyse Memory Working Set'
+              Checked = True
+              State = cbChecked
+              TabOrder = 0
             end
           end
         end
@@ -314,13 +296,12 @@ object frmPreferences: TfrmPreferences
         Left = 397
         Top = 302
         Width = 75
-        Height = 25
+        Height = 28
         Align = alRight
         Caption = 'D&efaults'
-        Constraints.MaxHeight = 25
+        Constraints.MaxHeight = 28
         TabOrder = 3
         OnClick = btnInstrumentationDefaultsClick
-        ExplicitLeft = 362
       end
     end
     object tabAnalysis: TTabSheet
@@ -331,12 +312,12 @@ object frmPreferences: TfrmPreferences
         Left = 3
         Top = 79
         Width = 469
-        Height = 49
+        Height = 50
         Align = alTop
         Caption = ' Options '
         TabOrder = 0
         object cbHideNotExecuted: TCheckBox
-          Left = 8
+          Left = 10
           Top = 20
           Width = 241
           Height = 17
@@ -348,16 +329,16 @@ object frmPreferences: TfrmPreferences
       end
       object btnAnalysisDefaults: TButton
         Left = 400
-        Top = 131
+        Top = 132
         Width = 75
-        Height = 25
+        Height = 201
         Align = alRight
         Caption = 'D&efaults'
-        Constraints.MaxHeight = 25
+        Constraints.MaxHeight = 202
         TabOrder = 1
         OnClick = btnAnalysisDefaultsClick
-        ExplicitLeft = 399
-        ExplicitTop = 134
+        ExplicitTop = 131
+        ExplicitHeight = 202
       end
       object GroupBox7: TGroupBox
         AlignWithMargins = True
@@ -396,7 +377,6 @@ object frmPreferences: TfrmPreferences
           BevelOuter = bvNone
           Caption = 'Panel2'
           TabOrder = 0
-          ExplicitLeft = 8
           object edtPerformanceOutputFilename: TEdit
             AlignWithMargins = True
             Left = 0
@@ -435,9 +415,6 @@ object frmPreferences: TfrmPreferences
         Align = alTop
         Caption = ' Units '
         TabOrder = 0
-        ExplicitLeft = 8
-        ExplicitTop = 8
-        ExplicitWidth = 457
         object memoExclUnits: TMemo
           AlignWithMargins = True
           Left = 10
@@ -465,13 +442,10 @@ object frmPreferences: TfrmPreferences
           Align = alClient
           BevelOuter = bvNone
           TabOrder = 1
-          ExplicitLeft = 230
-          ExplicitWidth = 228
-          ExplicitHeight = 216
           object btnAddFromFolder: TButton
             Left = 0
             Top = 166
-            Width = 125
+            Width = 130
             Height = 17
             Align = alBottom
             Caption = '&Add from folder'
@@ -479,21 +453,18 @@ object frmPreferences: TfrmPreferences
             Constraints.MaxWidth = 125
             TabOrder = 0
             OnClick = btnAddFromFolderClick
-            ExplicitTop = 182
-            ExplicitWidth = 75
           end
           object btnClear: TButton
             Left = 0
             Top = 183
-            Width = 125
+            Width = 130
             Height = 17
             Align = alBottom
             Caption = 'C&lear all'
             Constraints.MaxHeight = 25
-            Constraints.MaxWidth = 125
+            Constraints.MaxWidth = 130
             TabOrder = 1
             OnClick = btnClearClick
-            ExplicitTop = 199
           end
         end
       end
@@ -502,14 +473,12 @@ object frmPreferences: TfrmPreferences
         Left = 397
         Top = 242
         Width = 75
-        Height = 25
+        Height = 88
         Align = alRight
         Caption = 'D&efaults'
-        Constraints.MaxHeight = 25
+        Constraints.MaxHeight = 88
         TabOrder = 1
         OnClick = btnExcludedUnitsDefaultsClick
-        ExplicitLeft = 392
-        ExplicitTop = 259
       end
     end
     object tabDefines: TTabSheet
@@ -533,7 +502,6 @@ object frmPreferences: TfrmPreferences
           Align = alRight
           BevelOuter = bvNone
           TabOrder = 0
-          ExplicitTop = 12
           object btnAddDefine: TButton
             AlignWithMargins = True
             Left = 3
@@ -544,9 +512,6 @@ object frmPreferences: TfrmPreferences
             Action = actAddDefine
             Align = alBottom
             TabOrder = 0
-            ExplicitLeft = 151
-            ExplicitTop = 135
-            ExplicitWidth = 65
           end
           object btnClearAllDefines: TButton
             AlignWithMargins = True
@@ -558,9 +523,6 @@ object frmPreferences: TfrmPreferences
             Action = actClearAllDefines
             Align = alBottom
             TabOrder = 1
-            ExplicitLeft = 151
-            ExplicitTop = 199
-            ExplicitWidth = 65
           end
           object btnClearUserDefines: TButton
             AlignWithMargins = True
@@ -573,9 +535,6 @@ object frmPreferences: TfrmPreferences
             Align = alBottom
             Caption = 'Clear u&ser'
             TabOrder = 2
-            ExplicitLeft = 151
-            ExplicitTop = 186
-            ExplicitWidth = 65
           end
           object btnDeleteDefine: TButton
             AlignWithMargins = True
@@ -587,9 +546,6 @@ object frmPreferences: TfrmPreferences
             Action = actDeleteDefine
             Align = alBottom
             TabOrder = 3
-            ExplicitLeft = 151
-            ExplicitTop = 169
-            ExplicitWidth = 65
           end
           object btnRenameDefine: TButton
             AlignWithMargins = True
@@ -601,9 +557,6 @@ object frmPreferences: TfrmPreferences
             Action = actRenameDefine
             Align = alBottom
             TabOrder = 4
-            ExplicitLeft = 151
-            ExplicitTop = 152
-            ExplicitWidth = 65
           end
           object cbConsoleDefines: TCheckBox
             AlignWithMargins = True
@@ -616,9 +569,6 @@ object frmPreferences: TfrmPreferences
             Caption = 'Add c&onsole application defines'
             TabOrder = 5
             OnClick = cbConsoleDefinesClick
-            ExplicitLeft = 95
-            ExplicitTop = 63
-            ExplicitWidth = 121
           end
           object cbDisableUserDefines: TCheckBox
             AlignWithMargins = True
@@ -631,9 +581,6 @@ object frmPreferences: TfrmPreferences
             Caption = 'Disable &user defines'
             TabOrder = 6
             OnClick = cbDisableUserDefinesClick
-            ExplicitLeft = 95
-            ExplicitTop = 95
-            ExplicitWidth = 121
           end
           object cbProjectDefines: TCheckBox
             AlignWithMargins = True
@@ -646,9 +593,6 @@ object frmPreferences: TfrmPreferences
             Caption = 'Add &project defines'
             TabOrder = 7
             OnClick = cbProjectDefinesClick
-            ExplicitLeft = 95
-            ExplicitTop = 79
-            ExplicitWidth = 121
           end
           object cbStandardDefines: TCheckBox
             AlignWithMargins = True
@@ -661,9 +605,6 @@ object frmPreferences: TfrmPreferences
             Caption = 'Add selected &compiler defines'
             TabOrder = 8
             OnClick = cbStandardDefinesClick
-            ExplicitLeft = 111
-            ExplicitTop = 47
-            ExplicitWidth = 105
           end
           object cbxDelphiDefines: TComboBox
             AlignWithMargins = True
@@ -675,9 +616,6 @@ object frmPreferences: TfrmPreferences
             Style = csDropDownList
             TabOrder = 9
             OnChange = cbxDelphiDefinesChange
-            ExplicitLeft = 90
-            ExplicitTop = 20
-            ExplicitWidth = 146
           end
         end
         object pnlSymbolsDefine: TPanel
@@ -691,10 +629,6 @@ object frmPreferences: TfrmPreferences
           Align = alClient
           BevelOuter = bvNone
           TabOrder = 1
-          ExplicitLeft = -1
-          ExplicitTop = 11
-          ExplicitWidth = 262
-          ExplicitHeight = 216
           object inpDefine: TEdit
             AlignWithMargins = True
             Left = 3
@@ -704,9 +638,6 @@ object frmPreferences: TfrmPreferences
             Margins.Bottom = 8
             Align = alBottom
             TabOrder = 0
-            ExplicitLeft = -24
-            ExplicitTop = 100
-            ExplicitWidth = 209
           end
           object lvDefines: TListView
             AlignWithMargins = True
@@ -729,10 +660,6 @@ object frmPreferences: TfrmPreferences
             TabOrder = 1
             ViewStyle = vsReport
             OnClick = lvDefinesClick
-            ExplicitLeft = 0
-            ExplicitTop = -3
-            ExplicitWidth = 256
-            ExplicitHeight = 183
           end
         end
       end
@@ -741,15 +668,13 @@ object frmPreferences: TfrmPreferences
         Left = 397
         Top = 303
         Width = 75
-        Height = 25
+        Height = 27
         Align = alRight
         Caption = 'D&efaults'
-        Constraints.MaxHeight = 25
+        Constraints.MaxHeight = 27
         Constraints.MaxWidth = 75
         TabOrder = 1
         OnClick = btnDefinesDefaultsClick
-        ExplicitLeft = 399
-        ExplicitTop = 242
       end
     end
   end

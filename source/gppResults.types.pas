@@ -11,7 +11,7 @@ type
     rpMeasure1    : int64;
     rpMeasure2    : int64;
     rpNullOverhead: int64;
-    rpMem         : uint64;
+    rpMemWorkingSize : Cardinal;
   end;
 
 const

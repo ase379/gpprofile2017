@@ -76,6 +76,7 @@ type
     pnlUnitCommands: TPanel;
     pnlSymbolCommands: TPanel;
     pnlSymbolsDefine: TPanel;
+    cbMemWorkingSetEnabled: TCheckBox;
     procedure FormKeyPress(Sender: TObject; var Key: Char);
     procedure FormCreate(Sender: TObject);
     procedure btnAddFromFolderClick(Sender: TObject);
@@ -557,6 +558,7 @@ begin
         cbProfilingAutostart.Checked  := TGlobalPreferences.ProfilingAutostart;
         cbInstrumentAssembler.Checked := TGlobalPreferences.InstrumentAssembler;
         cbMakeBackupOfInstrumentedFile.Checked := TGlobalPreferences.MakeBackupOfInstrumentedFile;
+        cbMemWorkingSetEnabled.Enabled := TGlobalPreferences.ProfilingMemSupport;
       end; // Instrumentation
       TAB_INDEX_ANALYSIS:
       begin
@@ -612,6 +614,7 @@ begin
   cbProjectDefines.Checked     := TGlobalPreferences.ProjectDefines;
   RebuildDefines(TGlobalPreferences.UserDefines);
   cbProfilingAutostart.Checked  := TGlobalPreferences.ProfilingAutostart;
+  cbMemWorkingSetEnabled.Checked := TGlobalPreferences.ProfilingMemSupport;
   cbInstrumentAssembler.Checked := TGlobalPreferences.InstrumentAssembler;
   cbMakeBackupOfInstrumentedFile.Checked := TGlobalPreferences.MakeBackupOfInstrumentedFile;
   tbSpeedSize.Position := TGlobalPreferences.SpeedSize;
@@ -643,6 +646,7 @@ begin
     TGlobalPreferences.ProjectDefines     := cbProjectDefines.Checked;
     TGlobalPreferences.UserDefines        := ExtractUserDefines;
     TGlobalPreferences.ProfilingAutostart := cbProfilingAutostart.Checked;
+    TGlobalPreferences.ProfilingMemSupport := cbMemWorkingSetEnabled.Checked;
     TGlobalPreferences.InstrumentAssembler:= cbInstrumentAssembler.Checked;
     TGlobalPreferences.MakeBackupOfInstrumentedFile := cbMakeBackupOfInstrumentedFile.Checked;
     TGlobalPreferences.SavePreferences;
@@ -674,6 +678,7 @@ begin
     edtPerformanceOutputFilename.text := ResolvePrfProjectPlaceholders(edtPerformanceOutputFilename.text);
   
     cbProfilingAutostart.Checked       := TGlobalPreferences.GetProjectPref('ProfilingAutostart',TGlobalPreferences.ProfilingAutostart);
+    cbMemWorkingSetEnabled.Checked       := TGlobalPreferences.GetProjectPref('ProfilingMemSupport',TGlobalPreferences.ProfilingMemSupport);
     cbInstrumentAssembler.Checked      := TGlobalPreferences.GetProjectPref('InstrumentAssembler',TGlobalPreferences.InstrumentAssembler);
     cbMakeBackupOfInstrumentedFile.Checked := TGlobalPreferences.GetProjectPref('MakeBackupOfInstrumentedFile',TGlobalPreferences.MakeBackupOfInstrumentedFile);
     cbConsoleDefines.Enabled           := true;
@@ -708,6 +713,8 @@ begin
       TGlobalPreferences.SetProjectPref('ProjectDefines',cbProjectDefines.Checked);
       TGlobalPreferences.SetProjectPref('UserDefines',ExtractUserDefines);
       TGlobalPreferences.SetProjectPref('ProfilingAutostart',cbProfilingAutostart.Checked);
+      TGlobalPreferences.SetProjectPref('ProfilingMemSupport',cbMemWorkingSetEnabled.Checked);
+
       TGlobalPreferences.SetProjectPref('InstrumentAssembler',cbInstrumentAssembler.Checked);
       TGlobalPreferences.SetProjectPref('MakeBackupOfInstrumentedFile',cbMakeBackupOfInstrumentedFile.Checked);
       TSessionData.selectedDelphi := RemoveHotkeyAndDelphiPrefix(cbxCompilerVersion.Items[cbxCompilerVersion.ItemIndex]);

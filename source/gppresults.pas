@@ -76,7 +76,7 @@ type
 
   TMemConsumptionEntry = record
     mceProcTime : int64;
-    mceMemValue : uint64;
+    mceMemWorkingSet : Cardinal;
   end;
 
   TMemConsumptionInfoList = TList<TMemConsumptionEntry>;
@@ -125,7 +125,6 @@ type
     procedure   ReadCardinal(var value: Cardinal);
     procedure   ReadAnsiString(var avalue : AnsiString);
     procedure   ReadInt64(var i64: int64);
-    procedure   ReadUInt64(var u64 : UInt64);
     procedure   ReadBool(var bool: boolean);
     procedure   ReadTag(var tag: byte);
     procedure   ReadThread(var thread: integer);
@@ -133,6 +132,7 @@ type
     procedure   ReadID(var id: integer);
     procedure   WriteTag(tag: byte);
     procedure   WriteInt(int: integer);
+    procedure   WriteCardinal  (uint: Cardinal);
     procedure   WriteInt64(i64: int64);
     procedure   WriteString(str: ansistring);
     procedure   CheckTag(tag: byte);
@@ -242,7 +242,6 @@ end; { TResults.Destroy }
 procedure TResults.ReadInt  (var int: integer);  begin resFile.BlockReadUnsafe(int,SizeOf(integer)); end;
 procedure TResults.ReadCardinal(var value: Cardinal);  begin resFile.BlockReadUnsafe(value,SizeOf(Cardinal)); end;
 procedure TResults.ReadInt64(var i64: int64);    begin resFile.BlockReadUnsafe(i64,SizeOf(int64)); end;
-procedure TResults.ReadUInt64(var u64: uint64);    begin resFile.BlockReadUnsafe(u64,SizeOf(uint64)); end;
 procedure TResults.ReadTag  (var tag: byte);     begin resFile.BlockReadUnsafe(tag,SizeOf(byte)); end;
 procedure TResults.ReadID   (var id: integer);   begin id := 0; resFile.BlockReadUnsafe(id,resProcSize); end;
 procedure TResults.ReadAnsiString(var avalue: AnsiString);
@@ -306,6 +305,7 @@ end; { TResults.ReadString }
 
 procedure TResults.WriteTag  (tag: byte);    begin resFile.BlockWriteUnsafe(tag,SizeOf(byte)); end;
 procedure TResults.WriteInt  (int: integer); begin resFile.BlockWriteUnsafe(int,SizeOf(integer)); end;
+procedure TResults.WriteCardinal  (uint: Cardinal); begin resFile.BlockWriteUnsafe(uint,SizeOf(Cardinal)); end;
 procedure TResults.WriteInt64(i64: int64);   begin resFile.BlockWriteUnsafe(i64,SizeOf(int64)); end;
 
 procedure TResults.WriteString(str: ansistring);
@@ -514,24 +514,21 @@ begin
 end; { TResults.AddExitProc }
 
 function TResults.ReadPacket(var pkt: TResPacket): boolean;
-var
-  lMem : uint64;
 begin
   with pkt do begin
     ReadTag(rpTag);
-    if (rpTag = PR_ENDDATA) or (rpTag = PR_ENDCALIB) then Result := false
+    if (rpTag = PR_ENDDATA) or (rpTag = PR_ENDCALIB) then
+      Result := false
     else
     begin
       ReadThread(rpThread);
       ReadID(rpProcID);
       ReadTicks(rpMeasure1);
-      ReadTicks(rpMeasure2);
-{$ifdef ProfileMem}
       if (rpTag = PR_ENTERPROC) then
       begin
-        ReadUInt64(lMem);
+        ReadCardinal(rpMemWorkingSize);
       end;
-{$endif}
+      ReadTicks(rpMeasure2);
       Result := true;
     end;
   end;
@@ -860,6 +857,7 @@ begin
   Inc(resProcedures[proxy.ppProcID].peRecLevel[proxy.ppThreadID]);
   lMem := Default(TMemConsumptionEntry);
   lMem.mceProcTime := proxy.ppStartTime;
+  lMem.mceMemWorkingSet := pkt.rpMemWorkingSize;
   fMemoryGraphInfoList.add(lMem);
 end;
 
@@ -937,6 +935,7 @@ procedure TResults.SaveDigest(fileName: string);
 var
   i,j,k: integer;
   LInfo : TCallGraphInfo;
+  lMemComsumptionEntry : TMemConsumptionEntry;
 begin
   resFile := TGpHugeFile.CreateEx(fileName,FILE_FLAG_SEQUENTIAL_SCAN+FILE_ATTRIBUTE_NORMAL);
   resFile.RewriteBuffered(1);
@@ -1027,6 +1026,15 @@ begin
       end;
     end;
     WriteInt(PR_DIGENDCG);
+    WriteTag(PR_DIG_START_MEMG);
+    WriteCardinal(fMemoryGraphInfoList.Count);
+    for i := 0 to fMemoryGraphInfoList.Count-1 do
+    begin
+      lMemComsumptionEntry := fMemoryGraphInfoList[i];
+      WriteInt64(lMemComsumptionEntry.mceProcTime);
+      WriteCardinal(lMemComsumptionEntry.mceMemWorkingSet);
+    end;
+    WriteTag(PR_DIG_END_MEMG);
     // dump call graph
     WriteTag(PR_ENDDIGEST);
   finally resFile.Free; end;
@@ -1063,6 +1071,8 @@ var
   LInfo : TCallGraphInfo;
   LInt64 : Int64;
   LInt : Integer;
+  lNumberOfMemEntries : Cardinal;
+  lMemComsumptionEntry : TMemConsumptionEntry;
 begin
   fpstart  := resFile.FilePos;
   filesz   := resFile.FileSize;
@@ -1198,6 +1208,17 @@ begin
           end;
         until false;
       end; // PR_DIGCALLG
+      PR_DIG_START_MEMG:
+      begin
+        ReadCardinal(lNumberOfMemEntries);
+        for i := 0 to lNumberOfMemEntries-1 do
+        begin
+          lMemComsumptionEntry := default(TMemConsumptionEntry);
+          ReadInt64(lMemComsumptionEntry.mceProcTime);
+          ReadCardinal(lMemComsumptionEntry.mceMemWorkingSet);
+          fMemoryGraphInfoList.Add(lMemComsumptionEntry);
+        end;
+      end;
     end; // case
   until tag = PR_ENDDIGEST;
 end; { TResults.LoadDigest }

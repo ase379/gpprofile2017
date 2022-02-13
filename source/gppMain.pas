@@ -1189,6 +1189,7 @@ begin
         with TIniFile.Create(fnm) do
           try
             WriteBool('Performance','ProfilingAutostart',TGlobalPreferences.GetProjectPref('ProfilingAutostart',TGlobalPreferences.ProfilingAutostart));
+            WriteBool('Performance','ProfilingMemSupport',TGlobalPreferences.GetProjectPref('ProfilingMemSupport',TGlobalPreferences.ProfilingMemSupport));
             WriteBool('Performance','CompressTicks',TGlobalPreferences.GetProjectPref('SpeedSize',TGlobalPreferences.SpeedSize)>1);
             WriteBool('Performance','CompressThreads',TGlobalPreferences.GetProjectPref('SpeedSize',TGlobalPreferences.SpeedSize)>2);
             WriteString('Output','PrfOutputFilename',ResolvePrfProjectPlaceholders(TGlobalPreferences.GetProjectPref('PrfFilenameMakro',TGlobalPreferences.PrfFilenameMakro)));

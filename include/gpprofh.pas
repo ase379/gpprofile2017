@@ -29,6 +29,8 @@ const
   PR_DIGCALLG    = 23;
   PR_START_THREADINFO = 24;
   PR_END_THREADINFO = 25;
+  PR_DIG_START_MEMG = 26;
+  PR_DIG_END_MEMG = 27;
   PR_DIGENDCG    = -1;
 
 
@@ -47,7 +49,6 @@ const
   PRF_DIGESTVER_2 = 2;
   { data with additional callee and caller time information for a procedure }
   PRF_DIGESTVER_3 = 3;
-
 
   { the currently used digest version }
   PRF_DIGESTVER_CURRENT = PRF_DIGESTVER_3;

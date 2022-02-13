@@ -22,6 +22,7 @@ type
     UserDefines           : string;
     PrfFilenameMakro      : string;
     ProfilingAutostart    : boolean;
+    ProfilingMemSupport   : boolean;
     InstrumentAssembler   : boolean;
     MakeBackupOfInstrumentedFile : boolean;
 
@@ -93,6 +94,7 @@ begin
         DisableUserDefines := ReadBool   ('DisableUserDefines',false);
         UserDefines        := ReadString ('UserDefines','');
         ProfilingAutostart := ReadBool   ('ProfilingAutostart',true);
+        ProfilingMemSupport := ReadBool ('ProfilingMemSupport', true);
         InstrumentAssembler:= ReadBool   ('InstrumentAssembler',false);
         MakeBackupOfInstrumentedFile := ReadBool('MakeBackupOfInstrumentedFile', true);
         PrfFilenameMakro   := ReadString ('PrfFilenameMakro',TPrfPlaceholder.PrfPlaceholderToMacro(TPrfPlaceholderType.ModulePath));
@@ -123,6 +125,7 @@ begin
     WriteBool   ('InstrumentAssembler',InstrumentAssembler);
     WriteBool   ('MakeBackupOfInstrumentedFile', MakeBackupOfInstrumentedFile);
     WriteString ('PrfFilenameMakro',   PrfFilenameMakro);
+    WriteBool('ProfilingMemSupport', ProfilingMemSupport);
     Free;
   end;
 end; { SavePreferences }

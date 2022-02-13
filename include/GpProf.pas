@@ -35,6 +35,7 @@ implementation
 uses
   System.Generics.Collections,
   Windows,
+  psAPI,
   SysUtils,
   IniFiles,
   GpProfH,
@@ -96,7 +97,6 @@ var
   prfModuleName  : string;
   prfName        : string;
   prfRunning     : boolean;
-  prfMemoryEnabled: boolean;
   prfLastTick    : Comp;
   prfOnlyThread  : integer;
   prfThreads     : TThreadList;
@@ -110,6 +110,7 @@ var
   profCompressTicks     : boolean;
   profCompressThreads   : boolean;
   profProfilingAutostart: boolean;
+  profProfilingMemoryEnabled: boolean;
   profPrfOutputFile     : string;
   profTableName         : string;
 
@@ -156,25 +157,23 @@ begin
   end;
 end; { Transmit }
 
-function GetMemoryUsed: UInt64;
+function GetMemWorkingSize() : Cardinal;
 var
-  st: TMemoryManagerState;
-  sb: TSmallBlockTypeState;
+  lMemCounters: TProcessMemoryCounters;
 begin
-  GetMemoryManagerState(st);
-  result :=  st.TotalAllocatedMediumBlockSize
-           + st.TotalAllocatedLargeBlockSize;
-  for sb in st.SmallBlockTypeStates do begin
-    result := result + sb.UseableBlockSize * sb.AllocatedBlockCount;
-  end;
+  lMemCounters := Default(TProcessMemoryCounters);
+  if GetProcessMemoryInfo(GetCurrentProcess,@lMemCounters,SizeOf(lMemCounters)) then
+    Result := lMemCounters.WorkingSetSize
+  else
+    RaiseLastOSError;
 end;
 
-procedure WriteMem();
+procedure WriteMemWorkingSize();
 var
-  lMemUsed : Uint64;
+  lMemUsed : Cardinal;
 begin
-  lMemUsed := GetMemoryUsed();
-  Transmit(lMemUsed, sizeof(Uint64));
+  lMemUsed := GetMemWorkingSize();
+  Transmit(lMemUsed, sizeof(Cardinal));
 end;
 procedure WriteInt   (int: integer);  begin Transmit(int, SizeOf(integer)); end;
 procedure WriteCardinal   (value: Cardinal);  begin Transmit(value, SizeOf(Cardinal)); end;
@@ -252,8 +251,8 @@ begin
       WriteThread(ct);
       WriteID(procID);
       WriteTicks(Cnt.QuadPart);
-      if prfMemoryEnabled then
-        WriteMem();
+      if profProfilingMemoryEnabled then
+        WriteMemWorkingSize();
       QueryPerformanceCounter(TInt64((@prfCounter)^));
     finally LeaveCriticalSection(prfLock); end;
   end;
@@ -442,6 +441,7 @@ begin
           profCompressTicks      := ReadBool('Performance','CompressTicks',false);
           profCompressThreads    := ReadBool('Performance','CompressThreads',false);
           profProfilingAutostart := ReadBool('Performance','ProfilingAutostart',true);
+          profProfilingMemoryEnabled := ReadBool('Performance','ProfilingMemSupport',true);
           profPrfOutputFile := ReadString('Output','PrfOutputFilename','$(ModulePath)');
           profPrfOutputFile := ResolvePrfRuntimePlaceholders(profPrfOutputFile);
           prfDisabled            := false;
