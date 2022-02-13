@@ -133,7 +133,7 @@ type
 implementation
 
 uses
-  gppExport, GpIFF, gpprofH, System.StrUtils;
+  gppExport, GpIFF, gpprofH, System.StrUtils, gppResults.callgraph;
 
 {$R *.dfm}
 

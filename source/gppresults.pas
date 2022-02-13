@@ -7,48 +7,14 @@ interface
 uses
   Windows,
   GpHugeF,
-  System.Generics.Collections;
+  System.Generics.Collections,
+  gppResults.procs,
+  gppResults.callGraph,
+  gppResults.types;
 
 type
   TProgressCallback = function (percent: integer): boolean of object;
 
-  TResPacket = record
-    rpTag         : byte;
-    rpThread      : integer;
-    rpProcID      : integer;
-    rpMeasure1    : int64;
-    rpMeasure2    : int64;
-    rpNullOverhead: int64;
-  end;
-
-  TProcProxy = class
-  private
-    ppThreadID    : integer;
-    ppProcID      : integer;
-    ppDeadTime    : int64;
-    ppStartTime   : int64;
-    ppTotalTime   : int64;
-    ppChildTime   : int64;
-  public
-    constructor Create(threadID, procID: integer);
-    destructor  Destroy; override;
-    procedure   Start(pkt: TResPacket);
-    procedure   Stop(var pkt: TResPacket);
-    procedure   UpdateDeadTime(pkt: TResPacket);
-  end;
-
-  TActiveProcList = class
-  private
-    aplList : array of TProcProxy;
-    aplCount: integer;
-  public
-    constructor Create;
-    destructor  Destroy; override;
-    procedure   UpdateDeadTime(pkt: TResPacket);
-    procedure   Append(proxy: TProcProxy);
-    procedure   Remove(proxy: TProcProxy);
-    procedure   LocateLast(procID: integer; var this,parent: TProcProxy);
-  end;
 
   TThreadEntry = record
   private
@@ -105,90 +71,18 @@ type
     peProcChildTime: array {thread} of int64;   // 0 = sum
     peProcCnt      : array {thread} of integer; // 0 = sum
     peRecLevel     : array {thread} of integer; // 0 = unused
-
     property Name : String read GetName;
   end;
 
-  TCallGraphKey = record
-  public
-    ParentProcId : Integer;
-    ProcId : Integer;
-    constructor Create(aParentId, aChildId : integer);
+  TMemConsumptionEntry = record
+    mceProcTime : int64;
+    mceMemValue : uint64;
   end;
 
+  TMemConsumptionInfoList = TList<TMemConsumptionEntry>;
 
-  /// <summary>
-  /// A list for counting the proc calls.
-  /// The index is the thread number. 0 means "All Threads".
-  /// </summary>
-  tProcTimeList = class(TList<int64>)
-  public
-    /// <summary>
-    /// Adds a time to the given index.
-    /// If the anIndex is not 0, the sum(index 0) is incremented as well.
-    /// </summary>
-    procedure AddTime(const anIndex : integer;const aValueToBeAdded: int64);
-    /// <summary>
-    /// Set a time value for a given index.
-    /// If the anIndex is not 0, the sum(index 0) is adjusted as well.
-    /// </summary>
-  procedure AssignTime(const anIndex : integer; const aValueToBeAssigned: int64);
-  end;
 
-  /// <summary>
-  /// A list for counting the proc calls.
-  /// The index is the thread number. 0 means "All Threads".
-  /// </summary>
-  tProcCountList = class(TList<integer>)
-  public
-    /// <summary>
-    /// Adds a count to the given index.
-    /// If the anIndex is not 0, the sum(index 0) is incremented as well.
-    /// </summary>
-    procedure AddCount(const anIndex : integer;const aValueToBeAdded: integer);
-
-  end;
-  /// <summary>
-  /// The class describes the call graph info (which parent proc calls which child proc).
-  /// The lists are as long as the number of threads.
-  /// </summary>
-  TCallGraphInfo = class
-  public
-    ProcTime     : tProcTimeList;   // 0 = sum
-    ProcTimeMin  : tProcTimeList;   // 0 = unused
-    ProcTimeMax  : tProcTimeList;   // 0 = unused
-    ProcTimeAvg  : tProcTimeList;   // 0 = unused
-    ProcChildTime: tProcTimeList;   // 0 = sum
-    ProcCnt      : tProcCountList; // 0 = sum
-    constructor Create(const aThreadCount: Integer);
-    destructor Destroy; override;
-
-    function ToInfoString(): string;
-  end;
-
-  /// <summary>
-  /// The old implementation used a 2d vector to store the parent and child proc id.
-  /// The cell contained the graph info record or nil. Column 0 was reserved for the total counts.
-  /// This caused an OOM, cause 2d arrays tend to consume a lot of memory.
-  /// This class represents a sparse array: all nils are ommited. Only valid values are stored
-  /// inside.
-  /// </summary>
-  TCallGraphInfoDict = class(TObjectDictionary<TCallGraphKey,TCallGraphInfo>)
-  public
-    /// <summary>
-    /// Returns the info for a given cell, nil if not found.
-    /// </summary>
-    function GetGraphInfo(const i,j: integer) : TCallGraphInfo;
-    /// <summary>
-    /// Returns the info for a given cell and creates a new one if not found.
-    /// </summary>
-    function GetOrCreateGraphInfo(const i,j,threads: integer) : TCallGraphInfo;
-    /// <summary>
-    /// returns all the children for a given parent proc.
-    /// NOTE: The dictionary just holds references and does not own the infos.
-    /// </summary>
-    procedure FillInChildrenForParentId(const aDict : TCallGraphInfoDict;const i : integer);
-  end;
+  
 
   TResults = class
   private
@@ -231,6 +125,7 @@ type
     procedure   ReadCardinal(var value: Cardinal);
     procedure   ReadAnsiString(var avalue : AnsiString);
     procedure   ReadInt64(var i64: int64);
+    procedure   ReadUInt64(var u64 : UInt64);
     procedure   ReadBool(var bool: boolean);
     procedure   ReadTag(var tag: byte);
     procedure   ReadThread(var thread: integer);
@@ -254,6 +149,7 @@ type
     resClasses   : array of TClassEntry;
     resProcedures: array of TProcEntry;
     fCallGraphInfoDict : TCallGraphInfoDict;
+    fMemoryGraphInfoList : TMemConsumptionInfoList;
     fCallGraphInfoMaxElementCount : Integer;
 
     resFrequency : int64;
@@ -274,6 +170,7 @@ type
     property    DigestVer: integer read resPrfDigestVer;
     property    CallGraphInfo: TCallGraphInfoDict read fCallGraphInfoDict;
     property    CallGraphInfoCount: integer read fCallGraphInfoMaxElementCount;
+    property    MemoryGraphInfoList: TMemConsumptionInfoList read fMemoryGraphInfoList;
   end;
 
 implementation
@@ -284,10 +181,6 @@ uses
   GpProfH,
   gppCommon;
 
-const
-  APL_QUANTUM   = 10;
-  NULL_ACCURACY = 1000;
-  REPORT_EVERY  = 100; // samples read
 
 { TResults }
 
@@ -309,6 +202,7 @@ begin
   resNullErrorAcc    := 0;
   // dictionary owning the values; all sub dicts are just refs
   fCallGraphInfoDict := TCallGraphInfoDict.Create([doOwnsValues]);
+  fMemoryGraphInfoList := TMemConsumptionInfoList.Create();
 end; { TResults.Create }
 
 constructor TResults.Create(fileName: String; callback: TProgressCallback);
@@ -339,6 +233,7 @@ var
   i: integer;
 begin
   fCallGraphInfoDict.free;
+  fMemoryGraphInfoList.free;
   for i := Low(resThreads) to High(resThreads) do
     resThreads[i].teActiveProcs.Free;
   inherited Destroy;
@@ -347,6 +242,7 @@ end; { TResults.Destroy }
 procedure TResults.ReadInt  (var int: integer);  begin resFile.BlockReadUnsafe(int,SizeOf(integer)); end;
 procedure TResults.ReadCardinal(var value: Cardinal);  begin resFile.BlockReadUnsafe(value,SizeOf(Cardinal)); end;
 procedure TResults.ReadInt64(var i64: int64);    begin resFile.BlockReadUnsafe(i64,SizeOf(int64)); end;
+procedure TResults.ReadUInt64(var u64: uint64);    begin resFile.BlockReadUnsafe(u64,SizeOf(uint64)); end;
 procedure TResults.ReadTag  (var tag: byte);     begin resFile.BlockReadUnsafe(tag,SizeOf(byte)); end;
 procedure TResults.ReadID   (var id: integer);   begin id := 0; resFile.BlockReadUnsafe(id,resProcSize); end;
 procedure TResults.ReadAnsiString(var avalue: AnsiString);
@@ -491,6 +387,7 @@ begin
     end;
   end;
   fCallGraphInfoDict.Clear;
+  fMemoryGraphInfoList.Clear();
   // max number elements is (elements+1)*(elements+1): 1 child per parent.
   fCallGraphInfoMaxElementCount := elements+1;
   for i := 1 to High(resClasses) do
@@ -617,15 +514,24 @@ begin
 end; { TResults.AddExitProc }
 
 function TResults.ReadPacket(var pkt: TResPacket): boolean;
+var
+  lMem : uint64;
 begin
   with pkt do begin
     ReadTag(rpTag);
     if (rpTag = PR_ENDDATA) or (rpTag = PR_ENDCALIB) then Result := false
-    else begin
+    else
+    begin
       ReadThread(rpThread);
       ReadID(rpProcID);
       ReadTicks(rpMeasure1);
       ReadTicks(rpMeasure2);
+{$ifdef ProfileMem}
+      if (rpTag = PR_ENTERPROC) then
+      begin
+        ReadUInt64(lMem);
+      end;
+{$endif}
       Result := true;
     end;
   end;
@@ -938,17 +844,23 @@ begin
 end; { TResults.RecalcTimes }
 
 procedure TResults.EnterProc(proxy: TProcProxy; pkt: TResPacket);
+var
+  lMem : TMemConsumptionEntry;
 begin
   // update dead time in all active procedures
   // insert proxy object into active procedure queue
   // increment recursion level
   pkt.rpNullOverhead := 0;
+//  proxy.ppMem := pkt.rpMem;
   resThreads[proxy.ppThreadID].teActiveProcs.UpdateDeadTime(pkt);
   proxy.Start(pkt);
   resThreads[proxy.ppThreadID].teActiveProcs.Append(proxy);
   if proxy.ppProcID > Length(resProcedures) then
     raise EInvalidOp.Create('Error: Instrumentation count does not fit to the prf, please reinstrument.');
   Inc(resProcedures[proxy.ppProcID].peRecLevel[proxy.ppThreadID]);
+  lMem := Default(TMemConsumptionEntry);
+  lMem.mceProcTime := proxy.ppStartTime;
+  fMemoryGraphInfoList.add(lMem);
 end;
 
 procedure TResults.ExitProc(proxy,parent: TProcProxy; pkt: TResPacket);
@@ -1345,222 +1257,6 @@ begin
   end;
 end; { TResults.CalibrationStep }
 
-{ TProcProxy }
-
-constructor TProcProxy.Create(threadID, procID: integer);
-begin
-  inherited Create;
-  ppThreadID  := threadID;
-  ppProcID    := procID;
-  ppDeadTime  := 0;
-  ppStartTime := 0;
-  ppTotalTime := 0;
-  ppChildTime := 0;
-end; { TProcProxy.Create }
-
-destructor TProcProxy.Destroy;
-begin
-  inherited Destroy;
-end; { TProcProxy.Destroy }
-
-procedure TProcProxy.Start(pkt: TResPacket);
-begin
-  ppStartTime := pkt.rpMeasure2;
-end; { TProcProxy.Start }
-
-procedure TProcProxy.Stop(var pkt: TResPacket);
-begin
-  ppTotalTime := pkt.rpMeasure1-ppStartTime - ppDeadTime - ppChildTime - pkt.rpNullOverhead;
-  pkt.rpNullOverhead := 2*pkt.rpNullOverhead;
-  if ppTotalTime < 0 then begin // overcorrected
-    ppTotalTime := 0;
-    pkt.rpNullOverhead := pkt.rpNullOverhead + ppTotalTime;
-  end;
-end; { TProcProxy.Stop }
-
-procedure TProcProxy.UpdateDeadTime(pkt: TResPacket);
-begin
-  ppDeadTime := ppDeadTime + (pkt.rpMeasure2-pkt.rpMeasure1) + pkt.rpNullOverhead;
-end; { TProcProxy.UpdateDeadTime }
-
-{ TActiveProcList }
-
-procedure TActiveProcList.Append(proxy: TProcProxy);
-begin
-  if aplCount > High(aplList) then SetLength(aplList,aplCount+APL_QUANTUM);
-  aplList[aplCount] := proxy;
-  Inc(aplCount);
-end; { TActiveProcList.Append }
-
-constructor TActiveProcList.Create;
-begin
-  SetLength(aplList,APL_QUANTUM); 
-  aplCount := 0;
-end; { TActiveProcList.Create }
-
-destructor TActiveProcList.Destroy;
-begin
-  SetLength(aplList,0); 
-  inherited Destroy;
-end; { TActiveProcList.Destroy }
-
-procedure TActiveProcList.LocateLast(procID: integer; var this,parent: TProcProxy);
-var
-  i: integer;
-begin
-  for i := aplCount-1 downto Low(aplList) do begin
-    if aplList[i].ppProcID = procID then begin
-      this := aplList[i];
-      if i > Low(aplList) then parent := aplList[i-1]
-                          else parent := nil;
-      Exit;
-    end;
-  end;
-  this   := nil;
-  parent := nil;
-end; { TActiveProcList.LocateLast }
-
-procedure TActiveProcList.Remove(proxy: TProcProxy);
-var
-  i: integer;
-begin
-  for i := aplCount-1 downto Low(aplList) do begin // should be the last, but ...
-    if aplList[i] = proxy then begin
-      aplCount := i;
-      Exit;
-    end;
-  end;
-  raise Exception.Create('gppResults.TActiveProcList.Remove: Entry not found!');
-end; { TActiveProcList.Remove }
-
-procedure TActiveProcList.UpdateDeadTime(pkt: TResPacket);
-var
-  i: integer;
-begin
-  for i := aplCount-1 downto Low(aplList) do
-    aplList[i].UpdateDeadTime(pkt);
-end; { TActiveProcList.UpdateDeadTime }
-
-{ TCallGraphInfo }
-
-constructor TCallGraphInfo.Create(const aThreadCount: Integer);
-var
-  i : integer;
-begin
-  inherited Create();
-  ProcTime := tProcTimeList.Create();
-  ProcTimeMin := tProcTimeList.Create();
-  ProcTimeMax := tProcTimeList.Create();
-  ProcTimeAvg := tProcTimeList.Create();
-  ProcChildTime:= tProcTimeList.Create();
-  ProcCnt := tProcCountList.Create();
-
-  ProcTime.Count := aThreadCount;
-  ProcTimeMin.Count := aThreadCount;
-  ProcTimeMax.Count := aThreadCount;
-  ProcTimeAvg.Count := aThreadCount;
-  ProcChildTime.Count := aThreadCount;
-  ProcCnt.Count := aThreadCount;
-
-  // procTimeMin starts with the high value and is assigned with
-  // the first lower value.
-  for I := 0 to ProcTimeMin.Count-1 do
-    ProcTimeMin[i] := High(int64);
-end;
-
-destructor TCallGraphInfo.Destroy;
-begin
-  ProcTime.free;
-  ProcTimeMin.free;
-  ProcTimeMax.free;
-  ProcTimeAvg.free;
-  ProcChildTime.free;
-  ProcCnt.free;
-  inherited;
-end;
-
-
-function TCallGraphInfo.ToInfoString: string;
-
-  procedure OutputList(const aBuilder : TStringBuilder;const aListName : string;const aList : TProcTimeList); overload;
-  var
-    i : integer;
-  begin
-    aBuilder.Append(' '+aListName);
-    for i  := 0 to ProcTimeMin.Count-1 do
-      aBuilder.Append(aList[i].ToString()+',');
-    aBuilder.AppendLine();
-  end;
-
-  procedure OutputList(const aBuilder : TStringBuilder;const aListName : string;const aList : TList<Integer>);overload;
-  var
-    i : integer;
-  begin
-    aBuilder.Append(' '+aListName);
-    for i  := 0 to ProcTimeMin.Count-1 do
-      aBuilder.Append(aList[i].ToString()+',');
-    aBuilder.AppendLine();
-  end;
-
-var
-  LBuilder : TStringBuilder;
-begin
-  LBuilder := TStringBuilder.Create(512);
-  LBuilder.AppendLine('CallGraphInfo:');
-
-  OutputList(LBuilder,'ProcTime:', ProcTime);
-  OutputList(LBuilder,'ProcChildTime:', ProcChildTime);
-  OutputList(LBuilder,'ProcTimeMin:', ProcTimeMin);
-  OutputList(LBuilder,'ProcTimeMax:', ProcTimeMax);
-  OutputList(LBuilder,'ProcTimeAvg:', ProcTimeAvg);
-  OutputList(LBuilder,'ProcCnt:', ProcCnt);
-  result := LBuilder.ToString();
-  LBuilder.free;
-end;
-
-{ TCallGraphKey }
-
-constructor TCallGraphKey.Create(aParentId, aChildId: integer);
-begin
-  self.ParentProcId := aParentId;
-  self.ProcId := aChildId;
-end;
-
-{ TCallGraphInfoDict }
-
-function TCallGraphInfoDict.GetGraphInfo(const i,j: integer) : TCallGraphInfo;
-var
-  LKey : TCallGraphKey;
-begin
-  LKey := TCallGraphKey.Create(i,j);
-  if not TryGetValue(LKey, result) then
-    result := nil;
-end;
-
-procedure TCallGraphInfoDict.FillInChildrenForParentId(const aDict : TCallGraphInfoDict;const i: integer);
-var
-  LPair : TPair<TCallGraphKey, TCallGraphInfo>;
-begin
-  aDict.Clear();
-  for LPair in self do
-  begin
-    if LPair.Key.ParentProcId = i then
-      aDict.Add(LPair.Key,LPair.Value);
-  end;
-end;
-
-function TCallGraphInfoDict.GetOrCreateGraphInfo(const i,j,threads: integer) : TCallGraphInfo;
-var
-  LKey : TCallGraphKey;
-begin
-  LKey := TCallGraphKey.Create(i,j);
-  if not TryGetValue(LKey, result) then
-  begin
-    result := TCallGraphInfo.Create(threads+1);
-    Add(LKey, result);
-  end;
-end;
-
 
 { TUnitEntry }
 
@@ -1595,36 +1291,6 @@ begin
   result := String(ceName);
 end;
 
-{ tProcTimeList }
 
-
-procedure tProcTimeList.AddTime(const anIndex : integer;const aValueToBeAdded: int64);
-begin
-  self[anIndex] := self[anIndex] + aValueToBeAdded;
-  if anIndex <> 0 then
-    self[0] := self[0] + aValueToBeAdded;
-end;
-
-procedure tProcTimeList.AssignTime(const anIndex: integer; const aValueToBeAssigned: int64);
-var
-  LOldValue : int64;
-begin
-  LOldValue := self[anIndex];
-  self[anIndex] := aValueToBeAssigned;
-  if anIndex <> 0 then
-  begin
-    // subtract the subtracted value and add the new to have the proper sum.
-    self[0] := self[0] - LOldValue + aValueToBeAssigned;
-  end;
-end;
-
-{ tProcCountList }
-
-procedure tProcCountList.AddCount(const anIndex, aValueToBeAdded: integer);
-begin
-  self[anIndex] := self[anIndex] + aValueToBeAdded;
-  if anIndex <> 0 then
-    self[0] := self[0] + aValueToBeAdded;
-end;
 
 end.

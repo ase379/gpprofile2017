@@ -96,6 +96,7 @@ var
   prfModuleName  : string;
   prfName        : string;
   prfRunning     : boolean;
+  prfMemoryEnabled: boolean;
   prfLastTick    : Comp;
   prfOnlyThread  : integer;
   prfThreads     : TThreadList;
@@ -155,6 +156,26 @@ begin
   end;
 end; { Transmit }
 
+function GetMemoryUsed: UInt64;
+var
+  st: TMemoryManagerState;
+  sb: TSmallBlockTypeState;
+begin
+  GetMemoryManagerState(st);
+  result :=  st.TotalAllocatedMediumBlockSize
+           + st.TotalAllocatedLargeBlockSize;
+  for sb in st.SmallBlockTypeStates do begin
+    result := result + sb.UseableBlockSize * sb.AllocatedBlockCount;
+  end;
+end;
+
+procedure WriteMem();
+var
+  lMemUsed : Uint64;
+begin
+  lMemUsed := GetMemoryUsed();
+  Transmit(lMemUsed, sizeof(Uint64));
+end;
 procedure WriteInt   (int: integer);  begin Transmit(int, SizeOf(integer)); end;
 procedure WriteCardinal   (value: Cardinal);  begin Transmit(value, SizeOf(Cardinal)); end;
 procedure WriteTag   (tag: byte);     begin Transmit(tag, SizeOf(byte)); end;
@@ -231,6 +252,8 @@ begin
       WriteThread(ct);
       WriteID(procID);
       WriteTicks(Cnt.QuadPart);
+      if prfMemoryEnabled then
+        WriteMem();
       QueryPerformanceCounter(TInt64((@prfCounter)^));
     finally LeaveCriticalSection(prfLock); end;
   end;
