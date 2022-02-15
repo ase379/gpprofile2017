@@ -524,10 +524,9 @@ begin
       ReadThread(rpThread);
       ReadID(rpProcID);
       ReadTicks(rpMeasure1);
-      if (rpTag = PR_ENTERPROC) then
-      begin
-        ReadCardinal(rpMemWorkingSize);
-      end;
+      if (resPrfVersion = PRF_VERSION_WITH_MEM) then
+        if (rpTag = PR_ENTERPROC) or (rpTag = PR_EXITPROC) then
+          ReadCardinal(rpMemWorkingSize);
       ReadTicks(rpMeasure2);
       Result := true;
     end;
