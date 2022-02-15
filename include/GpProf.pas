@@ -161,6 +161,7 @@ function GetMemWorkingSize() : Cardinal;
 var
   lMemCounters: TProcessMemoryCounters;
 begin
+  result := 0;
   lMemCounters := Default(TProcessMemoryCounters);
   if GetProcessMemoryInfo(GetCurrentProcess,@lMemCounters,SizeOf(lMemCounters)) then
     Result := lMemCounters.WorkingSetSize
@@ -275,6 +276,8 @@ begin
       WriteThread(ct);
       WriteID(procID);
       WriteTicks(Cnt.QuadPart);
+      if profProfilingMemoryEnabled then
+        WriteMemWorkingSize();
       QueryPerformanceCounter(TInt64((@prfCounter)^));
     finally LeaveCriticalSection(prfLock); end;
   end;
@@ -506,7 +509,10 @@ end; { Initialize }
 procedure WriteHeader;
 begin
   WriteTag(PR_PRFVERSION);
-  WriteInt(PRF_VERSION);
+  if profProfilingMemoryEnabled then
+    WriteInt(PRF_VERSION_WITH_MEM)
+  else
+    WriteInt(PRF_VERSION);
   WriteTag(PR_COMPTICKS);
   WriteBool(profCompressTicks);
   WriteTag(PR_COMPTHREADS);
