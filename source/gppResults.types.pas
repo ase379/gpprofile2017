@@ -15,7 +15,6 @@ type
   end;
 
 const
-  APL_QUANTUM   = 10;
   NULL_ACCURACY = 1000;
   REPORT_EVERY  = 100; // samples read
 
