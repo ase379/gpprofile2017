@@ -9,6 +9,9 @@ uses
   gppresults,virtualTree.tools.statistics, System.Actions, System.ImageList, Vcl.ImgList, Vcl.WinXCtrls;
 
 type
+  {$SCOPEDENUMS ON}
+  TShownInformationTypeEnum = (Performance, Memory);
+
   TReloadSourceEvent = procedure(const aPath : string; aLine : integer) of object;
   TfrmMainProfiling = class(TFrame)
     PageControl2: TPageControl;
@@ -85,6 +88,7 @@ type
     fvstProcsCalleesTools : TSimpleStatsListTools;
     fvstThreadsTools  : TSimpleStatsListTools;
     fOpenProfile: TResults;
+    fShownInformationType : TShownInformationTypeEnum;
     factHideNotExecuted : TAction;
     factShowHideCallers : TAction;
     factShowHideCallees : TAction;
@@ -124,6 +128,7 @@ type
     procedure ExportTo(fileName: string; exportProcs, exportClasses, exportUnits, exportThreads, exportCSV: boolean);
 
     property OpenProfile: TResults read fOpenProfile write fOpenProfile;
+    property ShownInformationType : TShownInformationTypeEnum read fShownInformationType write fShownInformationType;
     property actHideNotExecuted : TAction read fActHideNotExecuted write fActHideNotExecuted;
     property actShowHideCallers : TAction read factShowHideCallers write factShowHideCallers;
     property actShowHideCallees : TAction read factShowHideCallees write factShowHideCallees;
