@@ -29,7 +29,7 @@ type
     /// Set a time value for a given index.
     /// If the anIndex is not 0, the sum(index 0) is adjusted as well.
     /// </summary>
-  procedure AssignTime(const anIndex : integer; const aValueToBeAssigned: int64);
+    procedure AssignTime(const anIndex : integer; const aValueToBeAssigned: int64);
   end;
 
   /// <summary>
