@@ -24,3 +24,4 @@ BIN/*.map
 /source/__recovery/gppMain.pas
 /source/VirtualTree.Tools/__recovery/__recovery.ini
 /source/VirtualTree.Tools/__recovery/virtualTree.tools.statistics.pas
+*.dsk
