@@ -3,6 +3,7 @@ unit gppResults.procs;
 interface
 
 uses
+  System.Generics.Collections,
   gppResults.types;
 
 type
@@ -10,11 +11,16 @@ type
   TProcProxy = class
   public
     ppThreadID    : integer;
+    /// <summary>
+    /// the procedure id
+    /// </summary>
     ppProcID      : integer;
     ppDeadTime    : int64;
     ppStartTime   : int64;
     ppTotalTime   : int64;
     ppChildTime   : int64;
+    ppStartMem    : Cardinal;
+    ppEndMem    : Cardinal;
     constructor Create(threadID, procID: integer);
     destructor  Destroy; override;
     procedure   Start(pkt: TResPacket);
@@ -24,8 +30,7 @@ type
 
   TActiveProcList = class
   private
-    aplList : array of TProcProxy;
-    aplCount: integer;
+    fAplList : TList<TProcProxy>;
   public
     constructor Create;
     destructor  Destroy; override;
@@ -48,24 +53,22 @@ begin
   inherited Create;
   ppThreadID  := threadID;
   ppProcID    := procID;
-  ppDeadTime  := 0;
-  ppStartTime := 0;
-  ppTotalTime := 0;
-  ppChildTime := 0;
-end; { TProcProxy.Create }
+end;
 
 destructor TProcProxy.Destroy;
 begin
   inherited Destroy;
-end; { TProcProxy.Destroy }
+end;
 
 procedure TProcProxy.Start(pkt: TResPacket);
 begin
   ppStartTime := pkt.rpMeasure2;
-end; { TProcProxy.Start }
+  ppStartMem := pkt.rpMemWorkingSize;
+end;
 
 procedure TProcProxy.Stop(var pkt: TResPacket);
 begin
+  ppEndMem := pkt.rpMemWorkingSize;
   ppTotalTime := pkt.rpMeasure1-ppStartTime - ppDeadTime - ppChildTime - pkt.rpNullOverhead;
   pkt.rpNullOverhead := 2*pkt.rpNullOverhead;
   if ppTotalTime < 0 then
@@ -73,69 +76,67 @@ begin
     ppTotalTime := 0;
     pkt.rpNullOverhead := pkt.rpNullOverhead + ppTotalTime;
   end;
-end; { TProcProxy.Stop }
+end;
 
 procedure TProcProxy.UpdateDeadTime(pkt: TResPacket);
 begin
   ppDeadTime := ppDeadTime + (pkt.rpMeasure2-pkt.rpMeasure1) + pkt.rpNullOverhead;
-end; { TProcProxy.UpdateDeadTime }
+end;
 
 { TActiveProcList }
 
 procedure TActiveProcList.Append(proxy: TProcProxy);
 begin
-  if aplCount > High(aplList) then SetLength(aplList,aplCount+APL_QUANTUM);
-  aplList[aplCount] := proxy;
-  Inc(aplCount);
-end; { TActiveProcList.Append }
+  fAplList.Add(proxy);
+end;
 
 constructor TActiveProcList.Create;
 begin
-  SetLength(aplList,APL_QUANTUM);
-  aplCount := 0;
-end; { TActiveProcList.Create }
+  fAplList := TList<TProcProxy>.Create();
+  fAplList.Capacity := 16;
+end;
 
 destructor TActiveProcList.Destroy;
 begin
-  SetLength(aplList,0);
+  fAplList.free;
   inherited Destroy;
-end; { TActiveProcList.Destroy }
+end;
 
 procedure TActiveProcList.LocateLast(procID: integer; var this,parent: TProcProxy);
 var
   i: integer;
 begin
-  for i := aplCount-1 downto Low(aplList) do begin
-    if aplList[i].ppProcID = procID then begin
-      this := aplList[i];
-      if i > Low(aplList) then parent := aplList[i-1]
-                          else parent := nil;
+  for i := fAplList.Count-1 downto 0 do
+  begin
+    if fAplList[i].ppProcID = procID then
+    begin
+      this := fAplList[i];
+      if i > 0 then
+        parent := fAplList[i-1]
+      else
+        parent := nil;
       Exit;
     end;
   end;
   this   := nil;
   parent := nil;
-end; { TActiveProcList.LocateLast }
+end;
 
 procedure TActiveProcList.Remove(proxy: TProcProxy);
 var
-  i: integer;
+  lFoundIndex: integer;
 begin
-  for i := aplCount-1 downto Low(aplList) do begin // should be the last, but ...
-    if aplList[i] = proxy then begin
-      aplCount := i;
-      Exit;
-    end;
-  end;
-  raise Exception.Create('gppResults.TActiveProcList.Remove: Entry not found!');
-end; { TActiveProcList.Remove }
+  lFoundIndex := fAplList.Remove(proxy);
+  if lFoundIndex < 0 then
+    raise Exception.Create('gppResults.TActiveProcList.Remove: Entry not found!');
+end;
 
 procedure TActiveProcList.UpdateDeadTime(pkt: TResPacket);
 var
   i: integer;
 begin
-  for i := aplCount-1 downto Low(aplList) do
-    aplList[i].UpdateDeadTime(pkt);
-end; { TActiveProcList.UpdateDeadTime }
+  for i := fAplList.Count-1 downto 0 do
+    fAplList[i].UpdateDeadTime(pkt);
+end;
 
 end.
