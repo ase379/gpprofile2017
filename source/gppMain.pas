@@ -657,7 +657,16 @@ begin
   ExecuteAsync(
     procedure
     begin
-      openProfile := TResults.Create(profile,ParseProfileCallback);
+      try
+        openProfile := TResults.Create(profile,ParseProfileCallback);
+        if not openProfile.IsDigest then
+          openProfile.SaveDigest(openProfile.FileName);
+      except
+        on e: exception do
+        begin
+          FreeAndNil(openProfile);
+        end;
+      end;
     end,
     procedure(const aNeededSeconds : Double)
     begin
@@ -684,12 +693,6 @@ begin
   else
   begin
     loadCanceled := frmLoadProgress.CancelPressed;
-    if not loadCanceled then begin
-      if not openProfile.IsDigest then begin
-        StatusPanel0('Saving digest',false);
-        openProfile.SaveDigest(openProfile.FileName);
-      end;
-    end;
     StatusPanel0('Loaded',true);
     LOpenResult := true;
   end;
