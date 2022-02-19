@@ -10,6 +10,7 @@ uses
   System.Generics.Collections,
   gppResults.procs,
   gppResults.callGraph,
+  gppResults.memGraph,
   gppResults.types;
 
 type
@@ -73,13 +74,6 @@ type
     peRecLevel     : array {thread} of integer; // 0 = unused
     property Name : String read GetName;
   end;
-
-  TMemConsumptionEntry = record
-    mceProcTime : int64;
-    mceMemWorkingSet : Cardinal;
-  end;
-
-  TMemConsumptionInfoList = TList<TMemConsumptionEntry>;
 
 
   
@@ -149,8 +143,11 @@ type
     resClasses   : array of TClassEntry;
     resProcedures: array of TProcEntry;
     fCallGraphInfoDict : TCallGraphInfoDict;
-    fMemoryGraphInfoList : TMemConsumptionInfoList;
     fCallGraphInfoMaxElementCount : Integer;
+    /// <summary>
+    /// the calls for the mem stack
+    /// </summary>
+    fProcedureMemCallList : TProcedureMemCallList;
 
     resFrequency : int64;
     constructor Create(fileName: string; callback: TProgressCallback); overload;
@@ -170,7 +167,7 @@ type
     property    DigestVer: integer read resPrfDigestVer;
     property    CallGraphInfo: TCallGraphInfoDict read fCallGraphInfoDict;
     property    CallGraphInfoCount: integer read fCallGraphInfoMaxElementCount;
-    property    MemoryGraphInfoList: TMemConsumptionInfoList read fMemoryGraphInfoList;
+    property    ProcedureMemCallList: TProcedureMemCallList read fProcedureMemCallList;
   end;
 
 implementation
@@ -202,7 +199,7 @@ begin
   resNullErrorAcc    := 0;
   // dictionary owning the values; all sub dicts are just refs
   fCallGraphInfoDict := TCallGraphInfoDict.Create([doOwnsValues]);
-  fMemoryGraphInfoList := TMemConsumptionInfoList.Create();
+  fProcedureMemCallList := TProcedureMemCallList.Create();
 end; { TResults.Create }
 
 constructor TResults.Create(fileName: String; callback: TProgressCallback);
@@ -233,7 +230,7 @@ var
   i: integer;
 begin
   fCallGraphInfoDict.free;
-  fMemoryGraphInfoList.free;
+  fProcedureMemCallList.free;
   for i := Low(resThreads) to High(resThreads) do
     resThreads[i].teActiveProcs.Free;
   inherited Destroy;
@@ -387,7 +384,7 @@ begin
     end;
   end;
   fCallGraphInfoDict.Clear;
-  fMemoryGraphInfoList.Clear();
+  fProcedureMemCallList.Clear();
   // max number elements is (elements+1)*(elements+1): 1 child per parent.
   fCallGraphInfoMaxElementCount := elements+1;
   for i := 1 to High(resClasses) do
@@ -847,17 +844,17 @@ begin
   // insert proxy object into active procedure queue
   // increment recursion level
   pkt.rpNullOverhead := 0;
-//  proxy.ppMem := pkt.rpMem;
   resThreads[proxy.ppThreadID].teActiveProcs.UpdateDeadTime(pkt);
   proxy.Start(pkt);
   resThreads[proxy.ppThreadID].teActiveProcs.Append(proxy);
   if proxy.ppProcID > Length(resProcedures) then
     raise EInvalidOp.Create('Error: Instrumentation count does not fit to the prf, please reinstrument.');
   Inc(resProcedures[proxy.ppProcID].peRecLevel[proxy.ppThreadID]);
-  lMem := Default(TMemConsumptionEntry);
-  lMem.mceProcTime := proxy.ppStartTime;
-  lMem.mceMemWorkingSet := pkt.rpMemWorkingSize;
-  fMemoryGraphInfoList.add(lMem);
+  var lMemInvocationList := fProcedureMemCallList.GetOrCreateListForProc(proxy.ppProcID);
+  var lMemPoint := Default(TMemConsumptionEntry);
+  lMemPoint.mceStartingMemWorkingSet := proxy.ppStartMem;
+  lMemPoint.mceEndingMemWorkingSet := proxy.ppEndMem;
+  lMemInvocationList.Add(lMemPoint);
 end;
 
 procedure TResults.ExitProc(proxy,parent: TProcProxy; pkt: TResPacket);
@@ -934,6 +931,7 @@ procedure TResults.SaveDigest(fileName: string);
 var
   i,j,k: integer;
   LInfo : TCallGraphInfo;
+  lMemComsumptionList : TMemConsumptionForProcedureCalls;
   lMemComsumptionEntry : TMemConsumptionEntry;
 begin
   resFile := TGpHugeFile.CreateEx(fileName,FILE_FLAG_SEQUENTIAL_SCAN+FILE_ATTRIBUTE_NORMAL);
@@ -1026,12 +1024,17 @@ begin
     end;
     WriteInt(PR_DIGENDCG);
     WriteTag(PR_DIG_START_MEMG);
-    WriteCardinal(fMemoryGraphInfoList.Count);
-    for i := 0 to fMemoryGraphInfoList.Count-1 do
+    WriteCardinal(fProcedureMemCallList.Count);
+    for i := 0 to fProcedureMemCallList.Count-1 do
     begin
-      lMemComsumptionEntry := fMemoryGraphInfoList[i];
-      WriteInt64(lMemComsumptionEntry.mceProcTime);
-      WriteCardinal(lMemComsumptionEntry.mceMemWorkingSet);
+      lMemComsumptionList := fProcedureMemCallList[i];
+      WriteInt(lMemComsumptionList.ProcId);
+      WriteInt(lMemComsumptionList.Count);
+      for j := 0 to lMemComsumptionList.Count-1 do
+      begin
+        WriteInt64(lMemComsumptionList[i].mceStartingMemWorkingSet);
+        WriteCardinal(lMemComsumptionList[i].mceEndingMemWorkingSet);
+      end;
     end;
     WriteTag(PR_DIG_END_MEMG);
     // dump call graph
@@ -1215,7 +1218,7 @@ begin
           lMemComsumptionEntry := default(TMemConsumptionEntry);
           ReadInt64(lMemComsumptionEntry.mceProcTime);
           ReadCardinal(lMemComsumptionEntry.mceMemWorkingSet);
-          fMemoryGraphInfoList.Add(lMemComsumptionEntry);
+          fProcedureMemCallList.Add(lMemComsumptionEntry);
         end;
       end;
     end; // case
