@@ -61,6 +61,7 @@ begin
   end;
   lEntry := TMemConsumptionForProcedureCalls.Create(aProcId);
   self.Add(lEntry);
+  result := lEntry;
 end;
 
 end.
