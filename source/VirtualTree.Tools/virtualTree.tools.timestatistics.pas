@@ -25,7 +25,7 @@ type
   end;
 
   TColumnInfoType = (undefined,Text,Percent, Time, Count);
-  TSimpleStatsListTools = class(TVirtualTreeBaseTools)
+  TSimpleTimeStatsListTools = class(TVirtualTreeBaseTools)
   private
     fListType : TProfilingInfoTypeEnum;
     fProfileResults : TResults;
@@ -40,8 +40,6 @@ type
     /// Returns the type of the column content.
     /// </summary>
     function GetColInfoType(const aData : PProfilingInfoRec;const aColumnIndex: integer): TColumnInfoType;
-
-    procedure OnFreeNode(Sender: TBaseVirtualTree;Node: PVirtualNode);
     /// <summary>
     /// Gets the column content as a string.
     /// </summary>
@@ -73,12 +71,6 @@ type
     property ThreadIndex : integer read fThreadIndex write fThreadIndex;
     property ProfileResults : TResults read fProfileResults write fProfileResults;
     property ListView : TVirtualStringTree read fList;
-
-    class function FormatTime(const ticks,frequency: int64): string; overload;
-    class function FormatTime(const value: double): string; overload;
-
-    class function FormatCnt(const cnt: integer): string;
-    class function FormatPerc(const per: real): string;
   end;
 
 implementation
@@ -119,19 +111,18 @@ const
   COL_THREAD_TOTAL_CALLS = 4;
 
 
-constructor TSimpleStatsListTools.Create(const aList: TVirtualStringTree; const aListType : TProfilingInfoTypeEnum);
+constructor TSimpleTimeStatsListTools.Create(const aList: TVirtualStringTree; const aListType : TProfilingInfoTypeEnum);
 begin
   inherited Create(AList);
   fListType := aListType;
   fList.NodeDataSize := SizeOf(TProfilingInfoRec);
-  fList.OnFreeNode := self.OnFreeNode;
   fList.OnCompareNodes := self.OnCompareNodes;
   fList.ongettext := OnGetText;
   fList.OnAfterCellPaint := OnAftercellPaint;
   fList.TreeOptions.SelectionOptions := fList.TreeOptions.SelectionOptions + [TVTSelectionOption.toFullRowSelect];
 end;
 
-procedure TSimpleStatsListTools.AddEntry(const anEntryId : Cardinal);
+procedure TSimpleTimeStatsListTools.AddEntry(const anEntryId : Cardinal);
 var
   LData : PProfilingInfoRec;
   LNode : PVirtualNode;
@@ -150,7 +141,7 @@ begin
 end;
 
 
-procedure TSimpleStatsListTools.AddEntry(const anEntryId, anIndex : Cardinal);
+procedure TSimpleTimeStatsListTools.AddEntry(const anEntryId, anIndex : Cardinal);
 var
   LData : PProfilingInfoRec;
   LNode : PVirtualNode;
@@ -177,18 +168,7 @@ begin
 end;
 
 
-class function TSimpleStatsListTools.FormatTime(const ticks, frequency: int64): string;
-begin
-  Result := FormatTime( ticks / frequency);
-end;
-
-
-class function TSimpleStatsListTools.FormatTime(const value: double): string;
-begin
-  Result := Format('%.6n',[value]);
-end;
-
-function TSimpleStatsListTools.GetRowAsCsv(const aNode: PVirtualNode;
+function TSimpleTimeStatsListTools.GetRowAsCsv(const aNode: PVirtualNode;
   const aDelimeter: char): string;
 var i :integer;
     lCellText : string;
@@ -203,7 +183,7 @@ begin
 end;
 
 
-function TSimpleStatsListTools.GetSelectedNode: PVirtualNode;
+function TSimpleTimeStatsListTools.GetSelectedNode: PVirtualNode;
 var
   LEnum : TVTVirtualNodeEnumerator;
 begin
@@ -215,7 +195,7 @@ begin
   end;
 end;
 
-function TSimpleStatsListTools.GetSelectedId: int64;
+function TSimpleTimeStatsListTools.GetSelectedId: int64;
 var
   LNode : PVirtualNode;
 begin
@@ -225,7 +205,7 @@ begin
     Result := PProfilingInfoRec(LNode.GetData).GetId;
 end;
 
-function TSimpleStatsListTools.SetSelectedId(const anId: Int64): boolean;
+function TSimpleTimeStatsListTools.SetSelectedId(const anId: Int64): boolean;
 var
   LEnumor : TVTVirtualNodeEnumerator;
 begin
@@ -243,7 +223,7 @@ begin
   end;
 end;
 
-function TSimpleStatsListTools.GetSelectedCaption(): string;
+function TSimpleTimeStatsListTools.GetSelectedCaption(): string;
 var
   LNode : PVirtualNode;
 begin
@@ -253,7 +233,7 @@ begin
     OnGetText(fList,LNode, 0, TVSTTextType.ttNormal,result);
 end;
 
-function TSimpleStatsListTools.GetThreadName(index: integer): string;
+function TSimpleTimeStatsListTools.GetThreadName(index: integer): string;
 begin
   with fProfileResults.resThreads[index] do
   begin
@@ -264,30 +244,9 @@ begin
   end;
 end; { TfrmMain.GetThreadName }
 
-class function TSimpleStatsListTools.FormatCnt(const cnt: integer): string;
-begin
-  Result := Format('%.0n',[int(cnt)]);
-end;
-
-class function TSimpleStatsListTools.FormatPerc(const per: real): string;
-begin
-  Result := Format('%2.2f %%',[per*100]);
-end;
-
 /// Events
 
-
-procedure TSimpleStatsListTools.OnFreeNode(Sender: TBaseVirtualTree;
-  Node: PVirtualNode);
-//var
-//  Data: Pointer;
-begin
-//  Data := Node.GetData();
-//  if data <> nil then
-//    Finalize(Data^);
-end;
-
-function TSimpleStatsListTools.GetColInfoType(const aData : PProfilingInfoRec;const aColumnIndex: integer): TColumnInfoType;
+function TSimpleTimeStatsListTools.GetColInfoType(const aData : PProfilingInfoRec;const aColumnIndex: integer): TColumnInfoType;
 begin
   result := undefined;
   if aData.ProfilingType = pit_unit then
@@ -347,7 +306,7 @@ begin
   
 end;
 
-function TSimpleStatsListTools.GetValue(const aData : PProfilingInfoRec;const aColumnIndex: integer;out aValue, aMax : double; out aColRenderType:TColumnInfoType): boolean;
+function TSimpleTimeStatsListTools.GetValue(const aData : PProfilingInfoRec;const aColumnIndex: integer;out aValue, aMax : double; out aColRenderType:TColumnInfoType): boolean;
 var
   LTotalTime : int64;
 begin
@@ -569,7 +528,7 @@ begin
   Result := aColRenderType <> TColumnInfoType.undefined;
 end;
 
-procedure TSimpleStatsListTools.OnGetText(Sender: TBaseVirtualTree; Node: PVirtualNode;
+procedure TSimpleTimeStatsListTools.OnGetText(Sender: TBaseVirtualTree; Node: PVirtualNode;
   Column: TColumnIndex; TextType: TVSTTextType; var CellText: string);
 var
   LData : PProfilingInfoRec;
@@ -728,7 +687,7 @@ end;
 
 
 
-procedure TSimpleStatsListTools.OnCompareNodes(Sender: TBaseVirtualTree;
+procedure TSimpleTimeStatsListTools.OnCompareNodes(Sender: TBaseVirtualTree;
   Node1, Node2: PVirtualNode; Column: TColumnIndex; var Result: Integer);
 var
     LData1: PProfilingInfoRec;
@@ -756,7 +715,7 @@ begin
   end;
 end;
 
-procedure TSimpleStatsListTools.OnAftercellPaint(Sender: TBaseVirtualTree; TargetCanvas: TCanvas; Node: PVirtualNode;
+procedure TSimpleTimeStatsListTools.OnAftercellPaint(Sender: TBaseVirtualTree; TargetCanvas: TCanvas; Node: PVirtualNode;
   Column: TColumnIndex; CellRect: TRect);
 var
   PBRect : TRect;

@@ -46,6 +46,12 @@ type
     procedure setSelectedIndex(const anIndex : cardinal);
     procedure SetVisible(const aNode: PVirtualNode;const aVisible : boolean);
 
+    class function FormatTime(const ticks,frequency: int64): string; overload;
+    class function FormatTime(const value: double): string; overload;
+
+    class function FormatCnt(const cnt: integer): string;
+    class function FormatPerc(const per: real): string;
+
     property Tree : TVirtualStringTree read fList;
   end;
 
@@ -208,6 +214,32 @@ procedure TVirtualTreeBaseTools.OnIncrementalSearch(Sender: TBaseVirtualTree; No
 begin
   result := AnsiStrLIComp(pWidechar(GetName(node.Index)),PWideChar(SearchText), Length(SearchText));
 end;
+
+/// static helpers
+///
+
+class function TVirtualTreeBaseTools.FormatTime(const ticks, frequency: int64): string;
+begin
+  Result := FormatTime( ticks / frequency);
+end;
+
+
+class function TVirtualTreeBaseTools.FormatTime(const value: double): string;
+begin
+  Result := Format('%.6n',[value]);
+end;
+
+class function TVirtualTreeBaseTools.FormatCnt(const cnt: integer): string;
+begin
+  Result := Format('%.0n',[int(cnt)]);
+end;
+
+class function TVirtualTreeBaseTools.FormatPerc(const per: real): string;
+begin
+  Result := Format('%2.2f %%',[per*100]);
+end;
+
+
 
 end.
 

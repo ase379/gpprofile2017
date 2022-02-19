@@ -269,7 +269,7 @@
         <DCCReference Include="gpParser\gpParser.Units.ParserStack.pas"/>
         <DCCReference Include="VirtualTree.Tools\virtualTree.tools.base.pas"/>
         <DCCReference Include="VirtualTree.Tools\virtualTree.tools.checkable.pas"/>
-        <DCCReference Include="VirtualTree.Tools\virtualTree.tools.statistics.pas"/>
+        <DCCReference Include="VirtualTree.Tools\virtualTree.tools.timestatistics.pas"/>
         <DCCReference Include="DelphiProjectRelated\gpProf.DofReader.pas"/>
         <DCCReference Include="DelphiProjectRelated\gpProf.ProjectAccessor.pas"/>
         <DCCReference Include="ui\gpDialogs.Tools.pas"/>

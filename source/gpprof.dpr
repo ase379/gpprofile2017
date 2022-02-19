@@ -70,7 +70,7 @@ uses
   gpParser.Units.ParserStack in 'gpParser\gpParser.Units.ParserStack.pas',
   virtualTree.tools.base in 'VirtualTree.Tools\virtualTree.tools.base.pas',
   virtualTree.tools.checkable in 'VirtualTree.Tools\virtualTree.tools.checkable.pas',
-  virtualTree.tools.statistics in 'VirtualTree.Tools\virtualTree.tools.statistics.pas',
+  virtualTree.tools.timestatistics in 'VirtualTree.Tools\virtualTree.tools.timestatistics.pas',
   gpProf.DofReader in 'DelphiProjectRelated\gpProf.DofReader.pas',
   gpProf.ProjectAccessor in 'DelphiProjectRelated\gpProf.ProjectAccessor.pas',
   gpDialogs.Tools in 'ui\gpDialogs.Tools.pas';
