@@ -134,9 +134,9 @@ object frmMainProfiling: TfrmMainProfiling
           Visible = False
           object vstCallers: TVirtualStringTree
             Left = 0
-            Top = 0
+            Top = 21
             Width = 889
-            Height = 82
+            Height = 61
             Align = alClient
             Header.AutoSizeIndex = 0
             Header.Height = 20
@@ -147,6 +147,8 @@ object frmMainProfiling: TfrmMainProfiling
             TreeOptions.PaintOptions = [toShowButtons, toShowDropmark, toThemeAware, toUseBlendedImages]
             OnNodeClick = vstCalleesNodeClick
             OnNodeDblClick = vstCalleesNodeDblClick
+            Touch.InteractiveGestures = [igPan, igPressAndTap]
+            Touch.InteractiveGestureOptions = [igoPanSingleFingerHorizontal, igoPanSingleFingerVertical, igoPanInertia, igoPanGutter, igoParentPassthrough]
             Columns = <
               item
                 MinWidth = 200
@@ -212,9 +214,6 @@ object frmMainProfiling: TfrmMainProfiling
             TabOrder = 1
             TextHint = 'Filter the procedure callers...'
             OnChange = sbFilterCallersChange
-            ExplicitLeft = 760
-            ExplicitTop = 40
-            ExplicitWidth = 121
           end
         end
         object pnlCurrent: TPanel
@@ -227,9 +226,9 @@ object frmMainProfiling: TfrmMainProfiling
           TabOrder = 1
           object vstProcs: TVirtualStringTree
             Left = 0
-            Top = 0
+            Top = 21
             Width = 889
-            Height = 453
+            Height = 432
             Align = alClient
             Header.AutoSizeIndex = 0
             Header.Height = 20
@@ -239,6 +238,8 @@ object frmMainProfiling: TfrmMainProfiling
             TabOrder = 0
             TreeOptions.PaintOptions = [toShowButtons, toShowDropmark, toThemeAware, toUseBlendedImages]
             OnNodeClick = vstProcsNodeClick
+            Touch.InteractiveGestures = [igPan, igPressAndTap]
+            Touch.InteractiveGestureOptions = [igoPanSingleFingerHorizontal, igoPanSingleFingerVertical, igoPanInertia, igoPanGutter, igoParentPassthrough]
             Columns = <
               item
                 MinWidth = 50
@@ -310,9 +311,6 @@ object frmMainProfiling: TfrmMainProfiling
             TabOrder = 1
             TextHint = 'Filter the procedure...'
             OnInvokeSearch = sbFilterProcsInvokeSearch
-            ExplicitLeft = 744
-            ExplicitTop = 320
-            ExplicitWidth = 121
           end
         end
       end
@@ -327,9 +325,9 @@ object frmMainProfiling: TfrmMainProfiling
         Visible = False
         object vstCallees: TVirtualStringTree
           Left = 0
-          Top = 0
+          Top = 21
           Width = 889
-          Height = 91
+          Height = 70
           Align = alClient
           Header.AutoSizeIndex = 0
           Header.Height = 20
@@ -340,6 +338,8 @@ object frmMainProfiling: TfrmMainProfiling
           TreeOptions.PaintOptions = [toShowButtons, toShowDropmark, toThemeAware, toUseBlendedImages]
           OnNodeClick = vstCalleesNodeClick
           OnNodeDblClick = vstCalleesNodeDblClick
+          Touch.InteractiveGestures = [igPan, igPressAndTap]
+          Touch.InteractiveGestureOptions = [igoPanSingleFingerHorizontal, igoPanSingleFingerVertical, igoPanInertia, igoPanGutter, igoParentPassthrough]
           Columns = <
             item
               MinWidth = 200
@@ -405,9 +405,6 @@ object frmMainProfiling: TfrmMainProfiling
           TabOrder = 1
           TextHint = 'Filter the procedure callees...'
           OnInvokeSearch = sbFilterCalleesInvokeSearch
-          ExplicitLeft = 792
-          ExplicitTop = 56
-          ExplicitWidth = 121
         end
       end
       object pnlBottom: TPanel
@@ -436,6 +433,8 @@ object frmMainProfiling: TfrmMainProfiling
         PopupMenu = popAnalysisListview
         TabOrder = 0
         TreeOptions.PaintOptions = [toShowButtons, toShowDropmark, toThemeAware, toUseBlendedImages]
+        Touch.InteractiveGestures = [igPan, igPressAndTap]
+        Touch.InteractiveGestureOptions = [igoPanSingleFingerHorizontal, igoPanSingleFingerVertical, igoPanInertia, igoPanGutter, igoParentPassthrough]
         Columns = <
           item
             MinWidth = 200
@@ -533,9 +532,9 @@ object frmMainProfiling: TfrmMainProfiling
       end
       object vstUnits: TVirtualStringTree
         Left = 0
-        Top = 33
+        Top = 54
         Width = 889
-        Height = 633
+        Height = 612
         Align = alClient
         Header.AutoSizeIndex = 0
         Header.Height = 20
@@ -544,6 +543,10 @@ object frmMainProfiling: TfrmMainProfiling
         PopupMenu = popAnalysisListview
         TabOrder = 1
         TreeOptions.PaintOptions = [toShowButtons, toShowDropmark, toThemeAware, toUseBlendedImages]
+        Touch.InteractiveGestures = [igPan, igPressAndTap]
+        Touch.InteractiveGestureOptions = [igoPanSingleFingerHorizontal, igoPanSingleFingerVertical, igoPanInertia, igoPanGutter, igoParentPassthrough]
+        ExplicitTop = 33
+        ExplicitHeight = 633
         Columns = <
           item
             MinWidth = 200
@@ -600,6 +603,8 @@ object frmMainProfiling: TfrmMainProfiling
         PopupMenu = popAnalysisListview
         TabOrder = 0
         TreeOptions.PaintOptions = [toShowButtons, toShowDropmark, toThemeAware, toUseBlendedImages]
+        Touch.InteractiveGestures = [igPan, igPressAndTap]
+        Touch.InteractiveGestureOptions = [igoPanSingleFingerHorizontal, igoPanSingleFingerVertical, igoPanInertia, igoPanGutter, igoParentPassthrough]
         Columns = <
           item
             MinWidth = 90

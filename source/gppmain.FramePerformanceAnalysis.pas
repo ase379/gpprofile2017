@@ -1,4 +1,4 @@
-unit gppmain.FrameAnalysis;
+unit gppmain.FramePerformanceAnalysis;
 
 interface
 
@@ -6,7 +6,7 @@ uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes,
   Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.Dialogs, VirtualTrees, Vcl.StdCtrls, Vcl.ComCtrls, Vcl.ToolWin,
   Vcl.ExtCtrls, Vcl.Actnlist, vcl.menus,
-  gppresults,virtualTree.tools.statistics, System.Actions, System.ImageList, Vcl.ImgList, Vcl.WinXCtrls;
+  gppresults,virtualTree.tools.timestatistics, System.Actions, System.ImageList, Vcl.ImgList, Vcl.WinXCtrls;
 
 type
   {$SCOPEDENUMS ON}
@@ -81,12 +81,12 @@ type
   private
     callersPerc               : real;
     calleesPerc               : real;
-    fvstUnitsTools : TSimpleStatsListTools;
-    fvstClassesTools : TSimpleStatsListTools;
-    fvstProcsTools : TSimpleStatsListTools;
-    fvstProcsCallersTools : TSimpleStatsListTools;
-    fvstProcsCalleesTools : TSimpleStatsListTools;
-    fvstThreadsTools  : TSimpleStatsListTools;
+    fvstUnitsTools : TSimpleTimeStatsListTools;
+    fvstClassesTools : TSimpleTimeStatsListTools;
+    fvstProcsTools : TSimpleTimeStatsListTools;
+    fvstProcsCallersTools : TSimpleTimeStatsListTools;
+    fvstProcsCalleesTools : TSimpleTimeStatsListTools;
+    fvstThreadsTools  : TSimpleTimeStatsListTools;
     fOpenProfile: TResults;
     fShownInformationType : TShownInformationTypeEnum;
     factHideNotExecuted : TAction;
@@ -107,7 +107,7 @@ type
     procedure Restack(fromPop, toPop: TPopupMenu; menuItem: TMenuItem);
     procedure RestackOne(fromPop, toPop: TPopupMenu);
     procedure PushBrowser(popBrowser: TPopupMenu; description: string; procID: integer);
-    procedure InvokeFilter(const aSearchTerm: string; const aTreeTool: TSimpleStatsListTools;const column : integer = 0);
+    procedure InvokeFilter(const aSearchTerm: string; const aTreeTool: TSimpleTimeStatsListTools;const column : integer = 0);
   public
 
     constructor Create(AOwner: TComponent); override;
@@ -148,12 +148,12 @@ uses
 constructor TfrmMainProfiling.Create(AOwner: TComponent);
 begin
   inherited Create(aOwner);
-  fvstUnitsTools   := TSimpleStatsListTools.Create(vstUnits,TProfilingInfoTypeEnum.pit_unit);
-  fvstClassesTools := TSimpleStatsListTools.Create(vstClasses,TProfilingInfoTypeEnum.pit_class);
-  fvstProcsTools   := TSimpleStatsListTools.Create(vstProcs,TProfilingInfoTypeEnum.pit_proc);
-  fvstProcsCallersTools := TSimpleStatsListTools.Create(vstCallers,TProfilingInfoTypeEnum.pit_proc_callers);
-  fvstProcsCalleesTools := TSimpleStatsListTools.Create(vstCallees,TProfilingInfoTypeEnum.pit_proc_callees);
-  fvstThreadsTools := TSimpleStatsListTools.Create(vstThreads,TProfilingInfoTypeEnum.pit_thread);
+  fvstUnitsTools   := TSimpleTimeStatsListTools.Create(vstUnits,TProfilingInfoTypeEnum.pit_unit);
+  fvstClassesTools := TSimpleTimeStatsListTools.Create(vstClasses,TProfilingInfoTypeEnum.pit_class);
+  fvstProcsTools   := TSimpleTimeStatsListTools.Create(vstProcs,TProfilingInfoTypeEnum.pit_proc);
+  fvstProcsCallersTools := TSimpleTimeStatsListTools.Create(vstCallers,TProfilingInfoTypeEnum.pit_proc_callers);
+  fvstProcsCalleesTools := TSimpleTimeStatsListTools.Create(vstCallees,TProfilingInfoTypeEnum.pit_proc_callees);
+  fvstThreadsTools := TSimpleTimeStatsListTools.Create(vstThreads,TProfilingInfoTypeEnum.pit_thread);
   PageControl2.ActivePage := tabProcedures;
 
 end;
@@ -669,7 +669,7 @@ end; { TfrmMain.ResetCallers }
 procedure TfrmMainProfiling.ExportTo(fileName: string; exportProcs, exportClasses,
   exportUnits, exportThreads, exportCSV: boolean);
 
-  procedure LExport(var f: textfile; aLvTools:TSimpleStatsListTools; delim: char);
+  procedure LExport(var f: textfile; aLvTools:TSimpleTimeStatsListTools; delim: char);
   var
     i   : integer;
     header: string;
@@ -833,7 +833,7 @@ begin
   InvokeFilter(sbFilterUnits.Text, fvstUnitsTools);
 end;
 
-procedure TfrmMainProfiling.InvokeFilter(const aSearchTerm: string; const aTreeTool : TSimpleStatsListTools;const column : integer = 0);
+procedure TfrmMainProfiling.InvokeFilter(const aSearchTerm: string; const aTreeTool : TSimpleTimeStatsListTools;const column : integer = 0);
 var
   LEnumor : TVTVirtualNodeEnumerator;
   lVisible : Boolean;
