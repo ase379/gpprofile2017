@@ -159,7 +159,11 @@ type
     procedure   StartCalibration(calibCnt: integer);
     procedure   StopCalibration;
     procedure   RecalcTimes;
-    procedure   SaveDigest(fileName: string);
+    /// <summary>
+    /// Writes a digest (compressed) version of the given prf file. If the conversion is sucessfull, the prf will
+    /// be replaced. Else the prf will stay as it is.
+    /// </summary>
+    procedure   SaveDigest(const aPrfFileName: string);
     procedure   Rename(fileName: string);
     property    FileName: String read resName;
     property    Version: integer read resPrfVersion;
@@ -174,6 +178,7 @@ implementation
 
 uses
   Forms,
+  System.IOUtils,
   System.SysUtils,
   GpProfH,
   gppCommon;
@@ -927,14 +932,16 @@ begin
   resNullErrorAcc := 0;
 end; { TResults.LoadCalibration }
 
-procedure TResults.SaveDigest(fileName: string);
+procedure TResults.SaveDigest(const aPrfFileName: string);
 var
   i,j,k: integer;
   LInfo : TCallGraphInfo;
   lMemComsumptionList : TMemConsumptionForProcedureCalls;
   lMemComsumptionEntry : TMemConsumptionEntry;
+  lDigestFilename : String;
 begin
-  resFile := TGpHugeFile.CreateEx(fileName,FILE_FLAG_SEQUENTIAL_SCAN+FILE_ATTRIBUTE_NORMAL);
+  lDigestFilename := aPrfFileName + '.dgst';
+  resFile := TGpHugeFile.CreateEx(lDigestFilename,FILE_FLAG_SEQUENTIAL_SCAN+FILE_ATTRIBUTE_NORMAL);
   resFile.RewriteBuffered(1);
   try
     WriteTag(PR_DIGEST);
@@ -1039,7 +1046,12 @@ begin
     WriteTag(PR_DIG_END_MEMG);
     // dump call graph
     WriteTag(PR_ENDDIGEST);
-  finally resFile.Free; end;
+  finally
+    resFile.Free;
+  end;
+  TFile.Delete(aPrfFilename);
+  TFile.Move(lDigestFilename, aPrfFilename);
+
 end; { TResults.SaveDigest }
 
 procedure TResults.LoadDigest(callback: TProgressCallback);
