@@ -243,7 +243,7 @@
         <DCCReference Include="gppLoadProgress.pas">
             <Form>frmLoadProgress</Form>
         </DCCReference>
-        <DCCReference Include="gppmain.FrameAnalysis.pas">
+        <DCCReference Include="gppmain.FramePerformanceAnalysis.pas">
             <Form>frmMainProfiling</Form>
             <FormType>dfm</FormType>
             <DesignClass>TFrame</DesignClass>

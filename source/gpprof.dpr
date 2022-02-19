@@ -50,7 +50,7 @@ uses
   gpPreferencesDlg in 'gpPreferencesDlg.pas' {frmPreferences},
   SimpleReportUnit in 'SimpleReportUnit.pas' {fmSimpleReport},
   gppLoadProgress in 'gppLoadProgress.pas' {frmLoadProgress},
-  gppmain.FrameAnalysis in 'gppmain.FrameAnalysis.pas' {frmMainProfiling: TFrame},
+  gppmain.FramePerformanceAnalysis in 'gppmain.FramePerformanceAnalysis.pas' {frmMainProfiling: TFrame},
   gppMain.FrameInstrumentation.SelectionInfo in 'gppMain.FrameInstrumentation.SelectionInfo.pas',
   gpPrfPlaceholderDlg in 'gpPrfPlaceholderDlg.pas' {frmPreferenceMacros},
   CastaliaPasLex in 'CastaliaDelphiParser\CastaliaPasLex.pas',

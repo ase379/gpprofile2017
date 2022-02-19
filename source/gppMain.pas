@@ -12,7 +12,7 @@ uses
   SynEditHighlighter, SynEditCodeFolding, SynHighlighterPas, System.ImageList,
   System.Actions,gppCurrentPrefs, VirtualTrees,
   virtualTree.tools.checkable,
-  gppmain.FrameInstrumentation, gppmain.FrameAnalysis, gppmain.types, System.Win.TaskbarCore, Vcl.Taskbar, Vcl.JumpList;
+  gppmain.FrameInstrumentation, gppmain.FramePerformanceAnalysis, gppmain.types, System.Win.TaskbarCore, Vcl.Taskbar, Vcl.JumpList;
 
 type
   TAsyncExecuteProc = reference to procedure();
