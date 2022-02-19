@@ -127,6 +127,12 @@ type
     JumpList1: TJumpList;
     popRecentGis: TPopupMenu;
     MRUGis: TGPMRUFiles;
+    ToolButton1: TToolButton;
+    btnShowPerformance: TToolButton;
+    Action1: TAction;
+    Action2: TAction;
+    actShowPerformanceData: TAction;
+    actShowMemoryData: TAction;
     procedure FormCreate(Sender: TObject);
     procedure MRUClick(Sender: TObject; LatestFile: String);
     procedure FormDestroy(Sender: TObject);
@@ -189,6 +195,8 @@ type
     procedure actLoadInstrumentationSelectionExecute(Sender: TObject);
     procedure actSaveInstrumentationSelectionExecute(Sender: TObject);
     procedure MRUGisClick(Sender: TObject; LatestFile: string);
+    procedure actShowMemoryDataExecute(Sender: TObject);
+    procedure actShowPerformanceDataExecute(Sender: TObject);
   private
     openProject               : TProject;
     openProfile               : TResults;
@@ -381,6 +389,8 @@ begin
     begin
      StatusPanel0('Parsing ' + aUnitName, False);
      frmLoadProgress.Text := 'Parsing ' + aUnitName;
+     if not actShowPerformanceData.Checked and not actShowMemoryData.Checked then
+      actShowPerformanceData.Checked := true;
     end);
 end; { TfrmMain.NotifyParse }
 
@@ -394,8 +404,6 @@ begin
     else begin
       StatusPanel0('Instrumenting ' + aUnitName, False);
       frmLoadProgress.Text := 'Instrumenting ' + aUnitName;
-      if AnsiSameText(aFullName, LoadedSource) then
-        LoadedSource := ''; // force preview window reload
     end;
   end);
 
@@ -708,6 +716,8 @@ begin
     actExportProfile.Enabled     := true;
     FProfilingFrame.mnuExportProfile.Enabled     := true;
     actRenameMoveProfile.Enabled := true;
+    actShowPerformanceData.Enabled := true;
+    actShowMemoryData.Enabled    := true;
     actMakeCopyProfile.Enabled   := true;
     actDelUndelProfile.Enabled   := true;
     SwitchDelMode(true);
@@ -1901,6 +1911,8 @@ begin
   actExportProfile.Enabled     := false;
   FProfilingFrame.mnuExportProfile.Enabled     := false;
   actRenameMoveProfile.Enabled := false;
+  actShowPerformanceData.Enabled := false;
+  actShowMemoryData.Enabled := false;
   actMakeCopyProfile.Enabled   := false;
   actProfileOptions.Enabled    := false;
   DisablePC2;
@@ -2176,6 +2188,16 @@ begin
   ResetSourcePreview(true);
   if FProfilingFrame.pnlCallers.Height > FProfilingFrame.pnlTopTwo.Height then
     FProfilingFrame.pnlCallers.Height := FProfilingFrame.pnlTopTwo.Height div 2;
+end;
+
+procedure TfrmMain.actShowMemoryDataExecute(Sender: TObject);
+begin
+  FProfilingFrame.ShownInformationType := TShownInformationTypeEnum.Memory;
+end;
+
+procedure TfrmMain.actShowPerformanceDataExecute(Sender: TObject);
+begin
+  FProfilingFrame.ShownInformationType := TShownInformationTypeEnum.Performance;
 end;
 
 procedure TfrmMain.actShowHideCallersExecute(Sender: TObject);
