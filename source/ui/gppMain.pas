@@ -142,7 +142,6 @@ type
     procedure actOpenExecute(Sender: TObject);
     procedure actRescanProjectExecute(Sender: TObject);
     procedure actRemoveInstrumentationExecute(Sender: TObject);
-    procedure actRunExecute(Sender: TObject);
     procedure actOpenProfileExecute(Sender: TObject);
     procedure PageControl1Change(Sender: TObject);
     procedure MRUPrfClick(Sender: TObject; LatestFile: String);
@@ -202,10 +201,6 @@ type
     cancelLoading             : boolean;
     loadCanceled              : boolean;
     storedPanel1Width         : integer;
-    delphiProcessInfo         : TProcessInformation;
-    delphiAppWindow           : HWND;
-    delphiEditWindow          : HWND;
-    delphiThreadID            : DWORD;
     loadedSource              : string;
     undelProject              : string;
     activeLayout              : string;
@@ -236,7 +231,6 @@ type
     function  ParseProfileCallback(percent: integer): boolean;
     procedure ParseProfileDone;
     procedure FillDelphiVer;
-    procedure CloseDelphiHandles;
     procedure LoadSource(const fileName: String; focusOn: integer);
     procedure ClearSource;
     procedure QueryExport;
@@ -297,64 +291,6 @@ uses
 {$R *.DFM}
 
 {$I HELP.INC}
-
-type
-  PMap = ^TMap;
-  TMap = record
-    mapAppWindow : HWND;
-    mapEditWindow: HWND;
-  end;
-
-function EnumMapThreadToWindows(window: HWND; lParam: PMap): boolean; stdcall;
-var
-  name: array [0..256] of char;
-begin
-  GetClassName(window,name,255);
-  if name = 'TApplication' then lParam^.mapAppWindow := window
-  else if name = 'TEditWindow' then lParam^.mapEditWindow := window;
-  Result := true;
-end; { EnumMapThreadToWindows }
-
-procedure MapThreadToWindows(threadid: DWORD; var appWindow, editWindow: HWND);
-var
-  map: PMap;
-begin
-  New(map);
-  try
-    with map^ do begin
-      mapAppWindow  := 0;
-      mapEditWindow := 0;
-      EnumThreadWindows(threadid,@EnumMapThreadToWindows,integer(map));
-      appWindow  := mapAppWindow;
-      editWindow := mapEditWindow;
-    end;
-  finally Dispose(map); end;
-end; { MapThreadToWindow }
-
-type
-  PFind = ^TFind;
-  TFind = record
-    findTitle : shortstring;
-    findProcID: DWORD;
-  end;
-
-function EnumFindMyDelphi(window: HWND; lParam: PFind): boolean; stdcall;
-var
-  name : array [0..256] of char;
-  title: array [0..256] of char;
-  findTileW : string;
-  titleW : string;
-begin
-  GetClassName(window,name,255);
-  GetWindowText(window,title,255);
-  titleW := title;
-  findTileW := UTF8ToUnicodeString(lParam^.findTitle);
-  if (name = 'TAppBuilder') and (Pos(findTileW,UpperCase(titleW)) > 0) then begin
-    lParam^.findProcID := GetWindowThreadProcessID(window,nil);
-    Result := false;
-  end
-  else Result := true;
-end; { EnumFindMyDelphi }
 
 {========================= TfrmMain =========================}
 
@@ -928,10 +864,6 @@ begin
   LoadLayouts;
   StatusBar.Font.Size := 10;
   ClearSource;
-  with delphiProcessInfo do begin
-    hProcess := 0;
-    hThread  := 0;
-  end;
   TGlobalPreferences.LoadPreferences;
   PageControl1.ActivePage := tabInstrumentation;
   DisablePC2;
@@ -988,8 +920,8 @@ end;
 
 procedure TfrmMain.MRUClick(Sender: TObject; LatestFile: String);
 begin
-  if (openProject = nil) or (openProject.Name <> LatestFile) then begin
-    CloseDelphiHandles;
+  if (openProject = nil) or (openProject.Name <> LatestFile) then
+  begin
     LoadProject(LatestFile);
   end;
 end;
@@ -1085,7 +1017,6 @@ begin
     end;
 
   SwitchDelMode(true); // process pending delete
-  CloseDelphiHandles;
   if activeLayout <> '' then begin
     SaveMetrics(activeLayout);
     TGpRegistryTools.SetPref(cRegistryUIsub,'Layout',activeLayout)
@@ -1252,7 +1183,6 @@ begin
       else
         LSourceFilename := ChangeFileExt(LSourceFilename, TUIStrings.DelphiProjectSourceExt);
     end;
-    CloseDelphiHandles;
     LoadProject(LSourceFilename);
   end;
   LOpenDialog.Free;
@@ -1275,64 +1205,6 @@ end;
 procedure TfrmMain.actRemoveInstrumentationExecute(Sender: TObject);
 begin
   FInstrumentationFrame.RemoveInstrumentation(DoInstrument);
-end;
-
-procedure TfrmMain.actRunExecute(Sender: TObject);
-var
-  run        : string;
-  startupInfo: TStartupInfo;
-  LRegAccessor : TRegistryAccessor;
-  LRegEntry : TDelphiRegistryEntry;
-begin
-  run := '';
-  LRegAccessor := TRegistryAccessor.Create('');
-  try
-    LRegEntry := LRegAccessor.GetByProductName(TSessionData.selectedDelphi);
-    if assigned(LRegEntry) then
-      run := LRegEntry.App;
-  finally
-    LRegAccessor.Free;
-  end;
-  if run = '' then
-    raise Exception.Create('Can''t determine Delphi executable file location from registry.');
-
-  if delphiThreadID <> 0 then // not first run =>
-  begin // => check if Delphi is still alive
-    MapThreadToWindows(delphiThreadID,delphiAppWindow,delphiEditWindow);
-    if delphiAppWindow = 0 then
-      CloseDelphiHandles // restart Delphi
-    else begin
-      if IsIconic(delphiAppWindow) then
-        ShowWindow(delphiAppWindow,SW_RESTORE);
-      SetForegroundWindow(delphiAppWindow); // New versions of Delphi have only app window :)
-      if delphiEditWindow <> 0 then
-        SetForegroundWindow(delphiEditWindow); // Old versions of Delphi (2-7) also have edit window
-      Exit;
-    end;
-  end;
-
-  with startupInfo do
-  begin
-    cb          := SizeOf(startupInfo);
-    lpReserved  := nil;
-    lpDesktop   := nil;
-    lpTitle     := nil;
-    dwFlags     := STARTF_USESHOWWINDOW+STARTF_FORCEONFEEDBACK;
-    wShowWindow := SW_SHOWDEFAULT;
-    cbReserved2 := 0;
-    lpReserved2 := nil;
-  end;
-  run := '"' + run + '" "' + openProject.Name + '"';
-  if not CreateProcess(nil,PChar(run),nil,nil,false,
-           CREATE_DEFAULT_ERROR_MODE+CREATE_NEW_PROCESS_GROUP+NORMAL_PRIORITY_CLASS,
-           nil,PChar(ExtractFilePath(openProject.Name)),startupInfo,
-           delphiProcessInfo) then
-  begin
-    StatusPanel0(Format('Cannot run Delphi (%s): %s',[run,SysErrorMessage(GetLastError)]),true);
-    delphiThreadID := 0;
-  end
-  else
-    delphiThreadID := delphiProcessInfo.dwThreadId;
 end;
 
 procedure TfrmMain.actOpenProfileExecute(Sender: TObject);
@@ -1671,22 +1543,6 @@ procedure TfrmMain.actRescanProfileExecute(Sender: TObject);
 begin
   LoadProfile(openProfile.FileName);
 end;
-
-procedure TfrmMain.CloseDelphiHandles;
-begin
-  with delphiProcessInfo do begin
-    if hProcess <> 0 then begin
-      CloseHandle(hProcess);
-      CloseHandle(hThread);
-      hProcess := 0;
-      hThread  := 0;
-    end;
-    delphiThreadID   := 0;
-    delphiAppWindow  := 0;
-    delphiEditWindow := 0;
-  end;
-end;
-
 
 procedure TfrmMain.LoadSource(const fileName: string; focusOn: integer);
 begin
