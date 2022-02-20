@@ -64,11 +64,12 @@ object frmMain: TfrmMain
         Top = 0
         Width = 1484
         Height = 492
-        ActivePage = tabAnalysis
+        ActivePage = tabPerformanceAnalysis
         Align = alClient
         HotTrack = True
         TabOrder = 0
         OnChange = PageControl1Change
+        ExplicitTop = -3
         object tabInstrumentation: TTabSheet
           Caption = 'Source Code Instrumentation'
           ImageIndex = 16
@@ -164,8 +165,8 @@ object frmMain: TfrmMain
             end
           end
         end
-        object tabAnalysis: TTabSheet
-          Caption = 'Analysis'
+        object tabPerformanceAnalysis: TTabSheet
+          Caption = 'Performance Analysis'
           ImageIndex = 17
           object tbrAnalysis: TToolBar
             Left = 0
