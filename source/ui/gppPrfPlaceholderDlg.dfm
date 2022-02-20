@@ -60,12 +60,11 @@ object frmPreferenceMacros: TfrmPreferenceMacros
       AlignWithMargins = True
       Left = 3
       Top = 5
-      Width = 471
+      Width = 190
       Height = 13
       Margins.Top = 5
       Align = alTop
       Caption = 'Please select the macro to be added....'
-      ExplicitWidth = 190
     end
     object cbAvailableMacros: TComboBox
       AlignWithMargins = True

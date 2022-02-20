@@ -99,7 +99,7 @@ type
 implementation
 
 uses
-  GpString, gpUnitWizard, gpParser.Units, gpParser.Selections,
+  GpString, gppUnitWizard, gpParser.Units, gpParser.Selections,
   gppMain.FrameInstrumentation.SelectionInfo, System.StrUtils, System.Types;
 
 {$R *.dfm}

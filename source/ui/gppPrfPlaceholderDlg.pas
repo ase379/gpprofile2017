@@ -1,6 +1,6 @@
 {$I OPTIONS.INC}
 
-unit gpPrfPlaceholderDlg;
+unit gppPrfPlaceholderDlg;
 
 interface
 

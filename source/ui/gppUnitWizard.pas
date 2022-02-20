@@ -1,6 +1,6 @@
 {$I OPTIONS.INC}
 
-unit gpUnitWizard;
+unit gppUnitWizard;
 
 interface
 

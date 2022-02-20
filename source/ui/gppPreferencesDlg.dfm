@@ -353,7 +353,7 @@ object frmPreferences: TfrmPreferences
           AlignWithMargins = True
           Left = 10
           Top = 23
-          Width = 449
+          Width = 243
           Height = 13
           Margins.Left = 8
           Margins.Top = 8
@@ -361,7 +361,6 @@ object frmPreferences: TfrmPreferences
           Margins.Bottom = 8
           Align = alTop
           Caption = 'Performance output file name: (without extension)'
-          ExplicitWidth = 243
         end
         object Panel2: TPanel
           AlignWithMargins = True

@@ -280,7 +280,7 @@ uses
   GpRegistry,
   gppCommon,
   gpversion,
-  gpPreferencesDlg,
+  gppPreferencesDlg,
   gppLoadProgress,
   SimpleReportUnit,
   gppAbout,

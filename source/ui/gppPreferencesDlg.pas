@@ -1,6 +1,6 @@
 {$I OPTIONS.INC}
 
-unit gpPreferencesDlg;
+unit gppPreferencesDlg;
 
 interface
 
@@ -148,7 +148,7 @@ uses
   gpRegistry,
   gppCurrentPrefs,
   gpPrfPlaceholders,
-  gpPrfPlaceholderDlg,
+  gppPrfPlaceholderDlg,
   gpDialogs.Tools;
 
 {$R *.DFM}

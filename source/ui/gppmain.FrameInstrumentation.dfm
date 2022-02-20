@@ -56,7 +56,7 @@ object frmMainInstrumentation: TfrmMainInstrumentation
       AlignWithMargins = True
       Left = 3
       Top = 3
-      Width = 123
+      Width = 39
       Height = 17
       Align = alTop
       Caption = '&Units:'
@@ -111,7 +111,7 @@ object frmMainInstrumentation: TfrmMainInstrumentation
       AlignWithMargins = True
       Left = 3
       Top = 3
-      Width = 131
+      Width = 51
       Height = 17
       Align = alTop
       Caption = '&Classes:'
@@ -162,7 +162,7 @@ object frmMainInstrumentation: TfrmMainInstrumentation
       AlignWithMargins = True
       Left = 3
       Top = 3
-      Width = 713
+      Width = 69
       Height = 17
       Align = alTop
       Caption = 'P&rocedures:'

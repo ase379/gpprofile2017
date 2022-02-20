@@ -65,7 +65,7 @@
         <VerInfo_AutoIncVersion>false</VerInfo_AutoIncVersion>
         <DCC_DcuOutput>..\DCU</DCC_DcuOutput>
         <DCC_ExeOutput>..\bin</DCC_ExeOutput>
-        <DCC_UnitSearchPath>..\include;..\lib\SynEdit\source;..\GPComponents\GPNative\source;..\lib\VirtualTreeView\Source;ui;model;profilingResultParser;sourceCodeAnalysis;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
+        <DCC_UnitSearchPath>..\include;..\lib\SynEdit\source;..\GPComponents\GPNative\source;..\lib\VirtualTreeView\Source;ui;ui\VirtualTree.Tools;model;model\profilingResultParser;model\sourceCodeAnalysis;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
         <VerInfo_Locale>1033</VerInfo_Locale>
         <DCC_Namespace>Vcl;Vcl.Imaging;Vcl.Touch;Vcl.Samples;Vcl.Shell;System;Xml;Data;Datasnap;Web;Soap;Winapi;System.Win;$(DCC_Namespace)</DCC_Namespace>
         <VerInfo_MinorVer>5</VerInfo_MinorVer>
@@ -133,7 +133,6 @@
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_2_Win32)'!=''">
         <VerInfo_Build>1</VerInfo_Build>
-        <VerInfo_Keys>CompanyName=;FileDescription=Profiler for all versions of Delphi;FileVersion=1.5.7.0;InternalName=GpProfile;LegalCopyright=(c) 1998, 1999 Primoz Gabrijelcic;LegalTrademarks=;OriginalFilename=;ProductName=GpProfile 2017;ProductVersion=1.5.7</VerInfo_Keys>
         <AppEnableRuntimeThemes>true</AppEnableRuntimeThemes>
         <BT_BuildType>Debug</BT_BuildType>
     </PropertyGroup>
@@ -205,79 +204,6 @@
         <DelphiCompile Include="$(MainSource)">
             <MainSource>MainSource</MainSource>
         </DelphiCompile>
-        <DCCReference Include="gppmain.FrameInstrumentation.pas">
-            <Form>frmMainInstrumentation</Form>
-            <FormType>dfm</FormType>
-            <DesignClass>TFrame</DesignClass>
-        </DCCReference>
-        <DCCReference Include="gppTree.pas"/>
-        <DCCReference Include="gppMain.pas">
-            <Form>frmMain</Form>
-        </DCCReference>
-        <DCCReference Include="GpVersion.pas"/>
-        <DCCReference Include="gppIDT.pas"/>
-        <DCCReference Include="gpUnitWizard.pas">
-            <Form>fmUnitWizard</Form>
-        </DCCReference>
-        <DCCReference Include="gppcommon.pas"/>
-        <DCCReference Include="gppresults.pas"/>
-        <DCCReference Include="gppExport.pas">
-            <Form>frmExport</Form>
-        </DCCReference>
-        <DCCReference Include="gppAbout.pas">
-            <Form>frmAbout</Form>
-        </DCCReference>
-        <DCCReference Include="gpiff.pas"/>
-        <DCCReference Include="GpHugeF.pas"/>
-        <DCCReference Include="gppmain.types.pas"/>
-        <DCCReference Include="gpPrfPlaceholders.pas"/>
-        <DCCReference Include="GpRegistry.pas"/>
-        <DCCReference Include="gppCurrentPrefs.pas"/>
-        <DCCReference Include="gppmain.dragNdrop.pas"/>
-        <DCCReference Include="gpPreferencesDlg.pas">
-            <Form>frmPreferences</Form>
-        </DCCReference>
-        <DCCReference Include="SimpleReportUnit.pas">
-            <Form>fmSimpleReport</Form>
-        </DCCReference>
-        <DCCReference Include="gppLoadProgress.pas">
-            <Form>frmLoadProgress</Form>
-        </DCCReference>
-        <DCCReference Include="gppmain.FramePerformanceAnalysis.pas">
-            <Form>frmMainProfiling</Form>
-            <FormType>dfm</FormType>
-            <DesignClass>TFrame</DesignClass>
-        </DCCReference>
-        <DCCReference Include="gppMain.FrameInstrumentation.SelectionInfo.pas"/>
-        <DCCReference Include="gpPrfPlaceholderDlg.pas">
-            <Form>frmPreferenceMacros</Form>
-        </DCCReference>
-        <DCCReference Include="CastaliaDelphiParser\CastaliaPasLex.pas"/>
-        <DCCReference Include="CastaliaDelphiParser\CastaliaPasLexTypes.pas"/>
-        <DCCReference Include="DelphiProjectRelated\gpProf.bdsVersions.pas"/>
-        <DCCReference Include="DelphiProjectRelated\gpProf.BdsProjReader.pas"/>
-        <DCCReference Include="DelphiProjectRelated\gpProf.Delphi.RegistryAccessor.pas"/>
-        <DCCReference Include="DelphiProjectRelated\gpProf.DProjReader.pas"/>
-        <DCCReference Include="gpParser\gpParser.API.pas"/>
-        <DCCReference Include="gpParser\gpParser.BaseProject.pas"/>
-        <DCCReference Include="gpParser\gpParser.Defines.pas"/>
-        <DCCReference Include="gpParser\gpParser.pas"/>
-        <DCCReference Include="gpParser\gpParser.Procs.pas"/>
-        <DCCReference Include="gpParser\gpParser.Selections.pas"/>
-        <DCCReference Include="gpParser\gpParser.Types.pas"/>
-        <DCCReference Include="gpParser\gpParser.Units.pas"/>
-        <DCCReference Include="gpParser\gpParser.Units.ParserStack.pas"/>
-        <DCCReference Include="VirtualTree.Tools\virtualTree.tools.base.pas"/>
-        <DCCReference Include="VirtualTree.Tools\virtualTree.tools.checkable.pas"/>
-        <DCCReference Include="VirtualTree.Tools\virtualTree.tools.timestatistics.pas"/>
-        <DCCReference Include="DelphiProjectRelated\gpProf.DofReader.pas"/>
-        <DCCReference Include="DelphiProjectRelated\gpProf.ProjectAccessor.pas"/>
-        <DCCReference Include="ui\gpDialogs.Tools.pas"/>
-        <DCCReference Include="gppmain.FrameMemoryAnalysis.pas">
-            <Form>frmMemProfiling</Form>
-            <FormType>dfm</FormType>
-            <DesignClass>TFrame</DesignClass>
-        </DCCReference>
         <BuildConfiguration Include="Debug">
             <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>
