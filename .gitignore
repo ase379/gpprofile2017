@@ -25,3 +25,4 @@ BIN/*.map
 /source/VirtualTree.Tools/__recovery/__recovery.ini
 /source/VirtualTree.Tools/__recovery/virtualTree.tools.statistics.pas
 *.dsk
+*.bk2
