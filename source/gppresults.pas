@@ -72,7 +72,7 @@ type
     peProcTimeAvg  : array {thread} of int64;   // 0 = unused
     peProcChildTime: array {thread} of int64;   // 0 = sum
     peProcCnt      : array {thread} of integer; // 0 = sum
-    peRecLevel     : array {thread} of integer; // 0 = unused
+    peCurrentCallDepth : array {thread} of integer; // 0 = unused
     property Name : String read GetName;
   end;
 
@@ -386,7 +386,7 @@ begin
       SetLength(peProcTimeAvg,1);      // placeholder for a unused entry
       SetLength(peProcChildTime,1);    // placeholder for a summary entry
       SetLength(peProcCnt,1);          // placeholder for a summary entry
-      SetLength(peRecLevel,1);         // placeholder for a unused entry
+      SetLength(peCurrentCallDepth,1);         // placeholder for a unused entry
     end;
   end;
   fCallGraphInfoDict.Clear;
@@ -572,7 +572,7 @@ begin
       peProcTimeMin[LThreadID] := proxy.ppTotalTime;
     if proxy.ppTotalTime > peProcTimeMax[LThreadID] then
       peProcTimeMax[LThreadID] := proxy.ppTotalTime;
-    if peRecLevel[LThreadID] = 0 then
+    if peCurrentCallDepth[LThreadID] = 0 then
     begin
       Inc(peProcChildTime[LThreadID],proxy.ppChildTime);
       Inc(peProcChildTime[LThreadID],proxy.ppTotalTime);
@@ -592,12 +592,12 @@ begin
       LInfo.ProcTimeMin.AssignTime(LThreadID,proxy.ppTotalTime);
     if proxy.ppTotalTime > LInfo.ProcTimeMax[LThreadID] then
       LInfo.ProcTimeMax.AssignTime(LThreadID, proxy.ppTotalTime);
-    if resProcedures[proxy.ppProcID].peRecLevel[LThreadID] = 0 then
+    if resProcedures[proxy.ppProcID].peCurrentCallDepth[LThreadID] = 0 then
     begin
       LInfo.ProcChildTime.AddTime(LThreadID,proxy.ppChildTime);
       LInfo.ProcChildTime.AddTime(LThreadID,proxy.ppTotalTime);
     end
-    else if (resProcedures[proxy.ppProcID].peRecLevel[LThreadID] = 1) and
+    else if (resProcedures[proxy.ppProcID].peCurrentCallDepth[LThreadID] = 1) and
             (parent.ppProcID = proxy.ppProcID) then
     begin
       LInfo.ProcChildTime.AddTime(LThreadID,proxy.ppChildTime);
@@ -650,14 +650,14 @@ begin
       SetLength(peProcTimeAvg,numth);
       SetLength(peProcChildTime,numth);
       SetLength(peProcCnt,numth);
-      SetLength(peRecLevel,numth);
+      SetLength(peCurrentCallDepth,numth);
       peProcTime[numth-1]      := 0;
       peProcTimeMin[numth-1]   := High(int64);
       peProcTimeMax[numth-1]   := 0;
       peProcTimeAvg[numth-1]   := 0;
       peProcChildTime[numth-1] := 0;
       peProcCnt[numth-1]       := 0;
-      peRecLevel[numth-1]      := 0;
+      peCurrentCallDepth[numth-1]      := 0;
     end;
   end;
   // resize fCallGraphInfoDict
@@ -854,7 +854,7 @@ begin
   resThreads[proxy.ppThreadID].teActiveProcs.Append(proxy);
   if proxy.ppProcID > Length(resProcedures) then
     raise EInvalidOp.Create('Error: Instrumentation count does not fit to the prf, please reinstrument.');
-  Inc(resProcedures[proxy.ppProcID].peRecLevel[proxy.ppThreadID]);
+  Inc(resProcedures[proxy.ppProcID].peCurrentCallDepth[proxy.ppThreadID]);
 end;
 
 procedure TResults.ExitProc(proxy,parent: TProcProxy; pkt: TResPacket);
@@ -868,7 +868,7 @@ begin
   // update time in procedure, class, unit and thread objects
   // update time in active procedures from the same thread
   // update dead time in all active procedures
-  Dec(resProcedures[proxy.ppProcID].peRecLevel[proxy.ppThreadID]);
+  Dec(resProcedures[proxy.ppProcID].peCurrentCallDepth[proxy.ppThreadID]);
   resThreads[proxy.ppThreadID].teActiveProcs.Remove(proxy);
   pkt.rpNullOverhead := resNullOverhead;
   resNullErrorAcc := resNullErrorAcc + resNullError;

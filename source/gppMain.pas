@@ -12,7 +12,8 @@ uses
   SynEditHighlighter, SynEditCodeFolding, SynHighlighterPas, System.ImageList,
   System.Actions,gppCurrentPrefs, VirtualTrees,
   virtualTree.tools.checkable,
-  gppmain.FrameInstrumentation, gppmain.FramePerformanceAnalysis, gppmain.types, System.Win.TaskbarCore, Vcl.Taskbar, Vcl.JumpList;
+  gppmain.FrameInstrumentation, gppmain.FramePerformanceAnalysis, gppmain.FrameMemoryAnalysis,
+  gppmain.types, System.Win.TaskbarCore, Vcl.Taskbar, Vcl.JumpList;
 
 type
   TAsyncExecuteProc = reference to procedure();
@@ -127,8 +128,6 @@ type
     JumpList1: TJumpList;
     popRecentGis: TPopupMenu;
     MRUGis: TGPMRUFiles;
-    ToolButton1: TToolButton;
-    btnShowPerformance: TToolButton;
     Action1: TAction;
     Action2: TAction;
     actShowPerformanceData: TAction;
@@ -195,8 +194,6 @@ type
     procedure actLoadInstrumentationSelectionExecute(Sender: TObject);
     procedure actSaveInstrumentationSelectionExecute(Sender: TObject);
     procedure MRUGisClick(Sender: TObject; LatestFile: string);
-    procedure actShowMemoryDataExecute(Sender: TObject);
-    procedure actShowPerformanceDataExecute(Sender: TObject);
   private
     openProject               : TProject;
     openProfile               : TResults;
@@ -2191,16 +2188,6 @@ begin
   ResetSourcePreview(true);
   if FProfilingFrame.pnlCallers.Height > FProfilingFrame.pnlTopTwo.Height then
     FProfilingFrame.pnlCallers.Height := FProfilingFrame.pnlTopTwo.Height div 2;
-end;
-
-procedure TfrmMain.actShowMemoryDataExecute(Sender: TObject);
-begin
-  FProfilingFrame.ShownInformationType := TShownInformationTypeEnum.Memory;
-end;
-
-procedure TfrmMain.actShowPerformanceDataExecute(Sender: TObject);
-begin
-  FProfilingFrame.ShownInformationType := TShownInformationTypeEnum.Performance;
 end;
 
 procedure TfrmMain.actShowHideCallersExecute(Sender: TObject);

@@ -73,7 +73,8 @@ uses
   virtualTree.tools.timestatistics in 'VirtualTree.Tools\virtualTree.tools.timestatistics.pas',
   gpProf.DofReader in 'DelphiProjectRelated\gpProf.DofReader.pas',
   gpProf.ProjectAccessor in 'DelphiProjectRelated\gpProf.ProjectAccessor.pas',
-  gpDialogs.Tools in 'ui\gpDialogs.Tools.pas';
+  gpDialogs.Tools in 'ui\gpDialogs.Tools.pas',
+  gppmain.FrameMemoryAnalysis in 'gppmain.FrameMemoryAnalysis.pas' {frmMemProfiling: TFrame};
 
 {$R *.RES}
 
