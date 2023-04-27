@@ -9,7 +9,8 @@ uses
   StdCtrls, ComCtrls, ExtCtrls, Menus, ImgList, ActnList, ShellAPI, ShlObj,
   System.Actions, System.ImageList, System.Generics.Collections,
   VirtualTrees, gpParser, virtualTree.tools.checkable,
-  gpParser.Units;
+  gpParser.Units, VirtualTrees.BaseAncestorVCL, VirtualTrees.BaseTree,
+  VirtualTrees.AncestorVCL;
 
 type
 
@@ -152,7 +153,7 @@ begin
           else
           begin
             if LUnitEnumor.Current.Data.unUnits.Count > 0 then
-              include(LNewNode.States, vsHasChildren)
+              include(LNewNode.States, TVirtualNodeState.vsHasChildren)
           end;
         end;
       end;

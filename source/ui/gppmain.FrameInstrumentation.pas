@@ -6,7 +6,8 @@ uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes,
   Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.Dialogs, VirtualTrees, Vcl.StdCtrls, Vcl.ExtCtrls,
   virtualTree.tools.checkable,System.Generics.Collections,
-  gpParser, Vcl.Menus, Vcl.WinXCtrls;
+  gpParser, Vcl.Menus, Vcl.WinXCtrls, VirtualTrees.BaseAncestorVCL,
+  VirtualTrees.BaseTree, VirtualTrees.AncestorVCL;
 
 type
   TOnShowStatusBarMessage = procedure (const msg: string; const beep: boolean) of object;

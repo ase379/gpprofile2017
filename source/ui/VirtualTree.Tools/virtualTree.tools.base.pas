@@ -60,14 +60,16 @@ implementation
 uses
   System.SysUtils,
   GpIFF,
-  gpString;
+  gpString,
+  VirtualTrees.BaseTree,
+  VirtualTrees.Types;
 
 
 constructor TVirtualTreeBaseTools.Create(const aList: TVirtualStringTree);
 begin
   fList := aList;
   fList.OnHeaderClick := self.OnHeaderClick;
-  fList.IncrementalSearch := isAll;
+  fList.IncrementalSearch := TVTIncrementalSearch.isAll;
   fList.OnIncrementalSearch := self.OnIncrementalSearch;
 end;
 

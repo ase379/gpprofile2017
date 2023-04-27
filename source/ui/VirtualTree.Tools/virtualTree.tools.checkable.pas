@@ -60,7 +60,8 @@ implementation
 uses
   System.SysUtils,
   GpIFF,
-  gpString;
+  gpString,
+  VirtualTrees.Types;
 
 
 

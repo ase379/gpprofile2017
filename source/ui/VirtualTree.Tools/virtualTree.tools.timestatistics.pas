@@ -80,7 +80,8 @@ uses
   winapi.windows,
   System.SysUtils,
   GpIFF,
-  gpString;
+  gpString,
+  VirtualTrees.BaseTree;
 
 const
   // col index for Unit

@@ -6,7 +6,8 @@ uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes,
   Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.Dialogs, VirtualTrees, Vcl.StdCtrls, Vcl.ComCtrls, Vcl.ToolWin,
   Vcl.ExtCtrls, Vcl.Actnlist, vcl.menus,
-  gppresults,virtualTree.tools.timestatistics, System.Actions, System.ImageList, Vcl.ImgList, Vcl.WinXCtrls;
+  gppresults,virtualTree.tools.timestatistics, System.Actions, System.ImageList, Vcl.ImgList, Vcl.WinXCtrls,
+  VirtualTrees.BaseAncestorVCL, VirtualTrees.AncestorVCL, VirtualTrees.BaseTree;
 
 type
   {$SCOPEDENUMS ON}
