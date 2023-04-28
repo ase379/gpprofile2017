@@ -88,7 +88,7 @@ type
     fvstProcsCallersTools : TSimpleTimeStatsListTools;
     fvstProcsCalleesTools : TSimpleTimeStatsListTools;
     fvstThreadsTools  : TSimpleTimeStatsListTools;
-    fOpenProfile: TResults;
+    fCurrentProfile: TResults;
     fShownInformationType : TShownInformationTypeEnum;
     factHideNotExecuted : TAction;
     factShowHideCallers : TAction;
@@ -128,7 +128,7 @@ type
     procedure ClearBreakdown;
     procedure ExportTo(fileName: string; exportProcs, exportClasses, exportUnits, exportThreads, exportCSV: boolean);
 
-    property OpenProfile: TResults read fOpenProfile write fOpenProfile;
+    property CurrentProfile: TResults read fCurrentProfile write fCurrentProfile;
     property ShownInformationType : TShownInformationTypeEnum read fShownInformationType write fShownInformationType;
     property actHideNotExecuted : TAction read fActHideNotExecuted write fActHideNotExecuted;
     property actShowHideCallers : TAction read factShowHideCallers write factShowHideCallers;
@@ -223,9 +223,9 @@ begin
     Items.BeginUpdate;
     try
       Items.Clear;
-      if openProfile <> nil then begin
+      if assigned(fCurrentProfile) then begin
         Items.Add('All threads');
-        with openProfile do begin
+        with fCurrentProfile do begin
           for i := Low(resThreads)+1 to High(resThreads) do
           begin
             // first entries is handle 0 for unknown procs, skip it...
@@ -287,7 +287,7 @@ begin
   LProcId := -1;
   LGraphId := -1;
   LProfilingType := TProfilingInfoTypeEnum.pit_proc; // unused here..
-  if assigned(openProfile) and (Sender is TVirtualStringTree) and ((Sender as TVirtualStringTree).SelectedCount>0) then
+  if assigned(fCurrentProfile) and (Sender is TVirtualStringTree) and ((Sender as TVirtualStringTree).SelectedCount>0) then
   begin
     LEnum := (Sender as TVirtualStringTree).SelectedNodes(false).GetEnumerator();
     while(LEnum.MoveNext) do
@@ -296,7 +296,7 @@ begin
       PProfilingInfoRec(LEnum.Current.GetData).GetCallStackInfo(LProcId,LGraphId);
       Break;
     end;
-    with openProfile do
+    with fCurrentProfile do
     begin
       if LProfilingType in [TProfilingInfoTypeEnum.pit_proc_callers,TProfilingInfoTypeEnum.pit_proc_callees] then
       begin
@@ -336,7 +336,7 @@ begin
     if LCallStackID<>-1 then
       if LProfilingType in [TProfilingInfoTypeEnum.pit_proc_callers,TProfilingInfoTypeEnum.pit_proc_callees] then
       begin
-        LCaption := openProfile.resProcedures[LCallStackID].Name;
+        LCaption := fCurrentProfile.resProcedures[LCallStackID].Name;
         PushBrowser(popBrowsePrevious,LCaption,LCallStackID);
       end;
     SelectProcs(LCallStackID);
@@ -359,10 +359,10 @@ begin
   fvstThreadsTools.Clear();
   fvstThreadsTools.ThreadIndex := 0; // not needed
 
-  fvstThreadsTools.ProfileResults := openProfile;
-  with openProfile do begin
+  fvstThreadsTools.ProfileResults := fCurrentProfile;
+  with fCurrentProfile do begin
     try
-      if openProfile <> nil then begin
+      if assigned(fCurrentProfile) then begin
         for i := Low(resThreads)+1 to High(resThreads) do begin
           with resThreads[i] do begin
             if (not actHideNotExecuted.Checked) or (teTotalCnt > 0) then begin
@@ -386,8 +386,8 @@ begin
   fvstUnitsTools.BeginUpdate;
   fvstUnitsTools.Clear();
   fvstUnitsTools.ThreadIndex := cbxSelectThreadUnit.ItemIndex;
-  fvstUnitsTools.ProfileResults := openProfile;
-  with openProfile do begin
+  fvstUnitsTools.ProfileResults := fCurrentProfile;
+  with fCurrentProfile do begin
     try
       if cbxSelectThreadUnit.ItemIndex >= 0 then
 	  begin
@@ -414,8 +414,8 @@ begin
   fvstClassesTools.BeginUpdate;
   fvstClassesTools.Clear();
   fvstClassesTools.ThreadIndex := cbxSelectThreadClass.ItemIndex;
-  fvstClassesTools.ProfileResults := openProfile;
-  with openProfile do begin
+  fvstClassesTools.ProfileResults := fCurrentProfile;
+  with fCurrentProfile do begin
     try
       if cbxSelectThreadClass.ItemIndex >= 0 then
       begin
@@ -442,8 +442,8 @@ begin
   fvstProcsTools.BeginUpdate;
   fvstProcsTools.Clear();
   fvstProcsTools.ThreadIndex := cbxSelectThreadProc.ItemIndex;
-  fvstProcsTools.ProfileResults := openProfile;
-  with openProfile do begin
+  fvstProcsTools.ProfileResults := fCurrentProfile;
+  with fCurrentProfile do begin
     try
       if cbxSelectThreadProc.ItemIndex >= 0 then
       begin
@@ -471,7 +471,7 @@ var
   LSelectedID : integer;
 begin
   LSelectedID := -1;
-  if openProfile <> nil then
+  if assigned(fCurrentProfile) then
     with PageControl2, ActivePage do
     begin
       if ActivePage <> tabThreads then
@@ -492,7 +492,7 @@ begin
             LSelectedID := LData.GetId;
           end;
         end;
-        with openProfile do begin
+        with fCurrentProfile do begin
         begin
           if LSelectedID >= 0 then
           begin
@@ -547,6 +547,7 @@ end;
 
 procedure TfrmMainProfiling.ResetProfile();
 begin
+  fCurrentProfile := nil;
   fvstUnitsTools.ProfileResults := nil;
   fvstClassesTools.ProfileResults := nil;
   fvstProcsTools.ProfileResults := nil;
@@ -566,9 +567,9 @@ begin
     fvstProcsCalleesTools.BeginUpdate;
     fvstProcsCalleesTools.Clear();
     fvstProcsCalleesTools.ThreadIndex := cbxSelectThreadProc.ItemIndex;
-    fvstProcsCalleesTools.ProfileResults := openProfile;
+    fvstProcsCalleesTools.ProfileResults := fCurrentProfile;
     try
-      with openProfile do
+      with fCurrentProfile do
       begin
         if DigestVer < PRF_DIGESTVER_3 then
           Exit;
@@ -605,9 +606,9 @@ begin
     fvstProcsCallersTools.BeginUpdate;
     fvstProcsCallersTools.Clear();
     fvstProcsCallersTools.ThreadIndex := cbxSelectThreadProc.ItemIndex;
-    fvstProcsCallersTools.ProfileResults := openProfile;
+    fvstProcsCallersTools.ProfileResults := fCurrentProfile;
     try
-      with openProfile do
+      with fCurrentProfile do
       begin
         if DigestVer < PRF_DIGESTVER_3 then
           Exit;

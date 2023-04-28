@@ -17,7 +17,7 @@ uses
 
 type
   TAsyncExecuteProc = reference to procedure();
-  TAsyncFinishedProc = reference to procedure(const aNeededSeconds : Double);
+  TAsyncFinishedProc = reference to procedure();
 
   TfrmMain = class(TForm)
     StatusBar: TStatusBar;
@@ -195,7 +195,7 @@ type
     procedure MRUGisClick(Sender: TObject; LatestFile: string);
   private
     openProject               : TProject;
-    openProfile               : TResults;
+    fCurrentProfile           : TResults;
     currentProject            : string;
     currentProfile            : string;
     cancelLoading             : boolean;
@@ -208,7 +208,8 @@ type
     previewVisibleAnalysis    : boolean;
     inLVResize                : boolean;
     FInstrumentationFrame     : TfrmMainInstrumentation;
-    fPerformanceFrame           : TfrmMainProfiling;
+    fPerformanceFrame         : TfrmMainProfiling;
+    fNeededSeconds            : Double;
     procedure ReloadJumpList();
 
     procedure ExecuteAsync(const aProc: TAsyncExecuteProc;const aOnFinishedProc: TAsyncFinishedProc;const aActionName : string);
@@ -409,7 +410,7 @@ begin
           vErrList);
 
       end,
-      procedure(const aNeededSeconds : Double)
+      procedure()
       begin
         TThread.Synchronize(nil, procedure
         begin
@@ -421,7 +422,7 @@ begin
           HideProgressBar;
           vErrList.Free;
           RestoreUIAfterParseProject();
-          StatusPanel0('Parsing finished, it took '+aNeededSeconds.ToString+' seconds.',false);
+          StatusPanel0('Parsing finished, it took '+fNeededSeconds.ToString+' seconds.',false);
         end);
       end,
       'parsing');
@@ -441,13 +442,13 @@ begin
           TGlobalPreferences.GetProjectPref('MarkerStyle', TGlobalPreferences.MarkerStyle),
           TGlobalPreferences.GetProjectPref('InstrumentAssembler', TGlobalPreferences.InstrumentAssembler));
       end,
-      procedure(const aNeededSeconds : Double)
+      procedure()
       begin
         TThread.Synchronize(nil, procedure
         begin
           HideProgressBar;
           RestoreUIAfterParseProject();
-          StatusPanel0('Rescanning finished, it took '+aNeededSeconds.ToString+' seconds.',false);
+          StatusPanel0('Rescanning finished, it took '+fNeededSeconds.ToString+' seconds.',false);
         end);
       end,'rescanning');
   end;
@@ -591,20 +592,23 @@ begin
     procedure
     begin
       try
-        openProfile := TResults.Create(profile,ParseProfileCallback);
-        if not openProfile.IsDigest then
-          openProfile.SaveDigest(openProfile.FileName);
+        fCurrentProfile := TResults.Create(profile,ParseProfileCallback);
+        if not fCurrentProfile.IsDigest then
+          fCurrentProfile.SaveDigest(fCurrentProfile.FileName);
       except
         on e: exception do
         begin
-          FreeAndNil(openProfile);
+          FreeAndNil(fCurrentProfile);
+          raise;
         end;
       end;
+      fCurrentProfile := TResults.Create(profile,ParseProfileCallback);
+      if not fCurrentProfile.IsDigest then
+        fCurrentProfile.SaveDigest(fCurrentProfile.FileName);
     end,
-    procedure(const aNeededSeconds : Double)
+    procedure()
     begin
       TThread.Synchronize(nil,ParseProfileDone);
-      StatusPanel0('Parsing of results finished, it took '+aNeededSeconds.ToString+' seconds.',false);
     end,
     'loading profile'
   );
@@ -616,8 +620,9 @@ var
   LOpenResult : boolean;
 begin
   LOpenResult := false;
-  if openProfile = nil then
+  if not assigned(fCurrentProfile) then
   begin
+    ResetProfile();
     NoProfile;
     actDelUndelProfile.Enabled := false;
     StatusPanel0('Load error',true);
@@ -626,18 +631,19 @@ begin
   else
   begin
     loadCanceled := frmLoadProgress.CancelPressed;
-    StatusPanel0('Loaded',true);
+    StatusPanel0('Loading of results finished, it took '+fNeededSeconds.ToString+' seconds.',true);
+
     LOpenResult := true;
   end;
   HideProgressBar;
-  if assigned(openProfile) then
+  if assigned(fCurrentProfile) then
   begin
     actProfileOptions.Enabled := true;
-    fPerformanceFrame.OpenProfile := openProfile;
+    fPerformanceFrame.CurrentProfile := fCurrentProfile;
   end;
   Show;
   fPerformanceFrame.FillThreadCombos;
-  if assigned(openProfile) then
+  if assigned(fCurrentProfile) then
     EnablePC2;
   Enabled := true;
   if LOpenResult then
@@ -1095,7 +1101,8 @@ begin
       end;
       if assigned(aOnFinishedProc) then
       begin
-        aOnFinishedProc(LStopwatch.Elapsed.TotalSeconds);
+        fNeededSeconds := LStopwatch.Elapsed.TotalSeconds;
+        aOnFinishedProc();
       end;
     end);
   LTask.Start;
@@ -1138,7 +1145,7 @@ begin
             Free;
           end;
     end,
-    procedure(const aNeededSeconds : Double)
+    procedure()
     begin
       TThread.Synchronize(nil,
       procedure
@@ -1146,7 +1153,7 @@ begin
           Enabled := true;
           HideProgressBar();
           FInstrumentationFrame.ReloadSource;
-          StatusPanel0('Instrumentation finished, it took '+aNeededSeconds.ToString+' seconds.',false);
+          StatusPanel0('Instrumentation finished, it took '+fNeededSeconds.ToString+' seconds.',false);
         end
       );
     end,
@@ -1289,7 +1296,7 @@ end;
 
 procedure TfrmMain.MRUPrfClick(Sender: TObject; LatestFile: String);
 begin
-  if (openProfile = nil) or (openProfile.FileName <> LatestFile) or loadCanceled then
+  if not assigned(fCurrentProfile) or (fCurrentProfile.FileName <> LatestFile) or loadCanceled then
     LoadProfile(LatestFile);
 end;
 
@@ -1541,7 +1548,7 @@ end;
 
 procedure TfrmMain.actRescanProfileExecute(Sender: TObject);
 begin
-  LoadProfile(openProfile.FileName);
+  LoadProfile(fCurrentProfile.FileName);
 end;
 
 procedure TfrmMain.LoadSource(const fileName: string; focusOn: integer);
@@ -1643,22 +1650,22 @@ var LSrc : string;
   LFilename : string;
   LSaveDialog : TSaveDialog;
 begin
-  LFilename := ButLast(openProfile.FileName,Length(ExtractFileExt(openProfile.FileName)))+
+  LFilename := ButLast(fCurrentProfile.FileName,Length(ExtractFileExt(fCurrentProfile.FileName)))+
                 FormatDateTime('_ddmmyy',Now)+'.prf';
   LSaveDialog := TSaveDialog.Create(Self);
   try
     LSaveDialog.InitialDir := ExtractFileDir(LFilename);
     LSaveDialog.FileName := ExtractFilename(LFilename);
-    LSaveDialog.Title := 'Make copy of '+openProfile.FileName+'...';
+    LSaveDialog.Title := 'Make copy of '+fCurrentProfile.FileName+'...';
     LSaveDialog.Filter := 'Profile data|*.prf|Any file|*.*';
     if LSaveDialog.Execute(self.Handle) then
     begin
       if ExtractFileExt(LSaveDialog.FileName) = '' then
         LSaveDialog.FileName := LSaveDialog.FileName + '.prf';
-      LSrc := openProfile.FileName;
+      LSrc := fCurrentProfile.FileName;
       TFile.Copy(LSrc,LSaveDialog.FileName,true);
       MRUPrf.LatestFile := LSaveDialog.FileName;
-      MRUPrf.LatestFile := openProfile.FileName;
+      MRUPrf.LatestFile := fCurrentProfile.FileName;
     end;
   except
     on e: Exception do
@@ -1675,8 +1682,8 @@ var
 begin
   try
     if undelProject = '' then begin // delete
-      undelProject := ChangeFileExt(openProfile.FileName,'.~pr');
-      TFile.Move(openProfile.FileName,undelProject);
+      undelProject := ChangeFileExt(fCurrentProfile.FileName,'.~pr');
+      TFile.Move(fCurrentProfile.FileName,undelProject);
       NoProfile;
       SwitchDelMode(false);
     end
@@ -1722,17 +1729,17 @@ var
 begin
   LSaveDialog := TSaveDialog.Create(Self);
   try
-    LFilename := ButLast(openProfile.FileName,Length(ExtractFileExt(openProfile.FileName)))+
+    LFilename := ButLast(fCurrentProfile.FileName,Length(ExtractFileExt(fCurrentProfile.FileName)))+
                 FormatDateTime('_ddmmyy',Now)+'.prf';
     LSaveDialog.InitialDir := ExtractFileDir(LFilename);
     LSaveDialog.FileName := ExtractFilename(LFilename);
-    LSaveDialog.Title := 'Rename/Move '+openProfile.FileName+'...';
+    LSaveDialog.Title := 'Rename/Move '+fCurrentProfile.FileName+'...';
     LSaveDialog.Filter := 'Profile data|*.prf|Any file|*.*';
     if LSaveDialog.Execute then begin
       if ExtractFileExt(LSaveDialog.FileName) = '' then
         LSaveDialog.FileName := LSaveDialog.FileName + '.prf';
-      TFile.Move(openProfile.FileName,LSaveDialog.FileName);
-      openProfile.Rename(LSaveDialog.FileName);
+      TFile.Move(fCurrentProfile.FileName,LSaveDialog.FileName);
+      fCurrentProfile.Rename(LSaveDialog.FileName);
       currentProfile := ExtractFileName(LSaveDialog.FileName);
       SetCaption;
       MRUPrf.LatestFile := LSaveDialog.FileName;
@@ -1748,7 +1755,7 @@ end;
 procedure TfrmMain.ResetProfile();
 begin
   fPerformanceFrame.resetprofile();
-  FreeAndNil(openProfile);
+  FreeAndNil(fCurrentProfile);
 end;
 
 procedure TfrmMain.NoProfile;
@@ -2118,8 +2125,8 @@ end;
 
 procedure TfrmMain.lvCalleesClick(Sender: TObject);
 begin
-  if assigned(openProfile) and (Sender is TListView) and assigned((Sender as TListView).Selected) then
-    with openProfile do
+  if assigned(fCurrentProfile) and (Sender is TListView) and assigned((Sender as TListView).Selected) then
+    with fCurrentProfile do
       LoadSource(resUnits[resProcedures[integer((Sender as TListView).Selected.Data)].peUID].FilePath,
                  resProcedures[integer((Sender as TListView).Selected.Data)].peFirstLn);
 end;

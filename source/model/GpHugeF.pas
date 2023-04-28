@@ -466,8 +466,10 @@ const
   begin
     BlockRead(buf,count,transferred);
     if count <> transferred then begin
-      if hfBuffered then raise Exception.Create('TGpHugeFile: End of file!')
-                    else Win32Check(false,'BlockReadUnsafe');
+      if hfBuffered then
+        raise Exception.Create('The file is corrupted, aborting.')
+      else
+        Win32Check(false,'BlockReadUnsafe');
     end;
   end; { TGpHugeFile.BlockReadUnsafe }
 
@@ -477,8 +479,10 @@ const
   begin
     BlockWrite(buf,count,transferred);
     if count <> transferred then begin
-      if hfBuffered then raise Exception.Create('TGpHugeFile: Write failed!')
-                    else Win32Check(false,'BlockWriteUnsafe');
+      if hfBuffered then
+        raise Exception.Create('The file is corrupted, aborting.')
+      else
+        Win32Check(false,'BlockWriteUnsafe');
     end;
   end; { TGpHugeFile.BlockWriteUnsafe }
 
