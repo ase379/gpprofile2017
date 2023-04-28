@@ -602,9 +602,6 @@ begin
           raise;
         end;
       end;
-      fCurrentProfile := TResults.Create(profile,ParseProfileCallback);
-      if not fCurrentProfile.IsDigest then
-        fCurrentProfile.SaveDigest(fCurrentProfile.FileName);
     end,
     procedure()
     begin
