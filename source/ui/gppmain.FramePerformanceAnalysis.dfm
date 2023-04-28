@@ -15,21 +15,23 @@ object frmMainProfiling: TfrmMainProfiling
     PopupMenu = popAnalysisListview
     TabOrder = 0
     OnChange = PageControl2Change
+    ExplicitLeft = 3
+    ExplicitTop = 3
     object tabProcedures: TTabSheet
       Caption = 'Procedures'
       ImageIndex = -1
       object splitCallees: TSplitter
         Left = 0
-        Top = 569
+        Top = 511
         Width = 889
         Height = 3
         Cursor = crVSplit
         Align = alBottom
+        AutoSnap = False
         Color = clBtnFace
         ParentColor = False
         Visible = False
-        ExplicitTop = 186
-        ExplicitWidth = 596
+        ExplicitTop = 250
       end
       object pnThreadProcs: TPanel
         Left = 0
@@ -45,8 +47,8 @@ object frmMainProfiling: TfrmMainProfiling
         object lblSelectThreadProc: TLabel
           Left = 0
           Top = 10
-          Width = 68
-          Height = 13
+          Width = 71
+          Height = 15
           Caption = '&Select thread:'
           FocusControl = cbxSelectThreadProc
         end
@@ -59,9 +61,9 @@ object frmMainProfiling: TfrmMainProfiling
           BevelOuter = bvNone
           TabOrder = 0
           object ToolBar3: TToolBar
-            Left = 19
+            Left = -1
             Top = 0
-            Width = 76
+            Width = 96
             Height = 26
             Align = alRight
             AutoSize = True
@@ -82,7 +84,7 @@ object frmMainProfiling: TfrmMainProfiling
               Style = tbsDropDown
             end
             object ToolButton19: TToolButton
-              Left = 38
+              Left = 48
               Top = 0
               Action = actBrowseNext
               DropdownMenu = popBrowseNext
@@ -96,7 +98,7 @@ object frmMainProfiling: TfrmMainProfiling
           Left = 72
           Top = 6
           Width = 191
-          Height = 21
+          Height = 23
           Style = csDropDownList
           TabOrder = 1
           OnChange = cbxSelectThreadProcChange
@@ -106,37 +108,38 @@ object frmMainProfiling: TfrmMainProfiling
         Left = 0
         Top = 31
         Width = 889
-        Height = 538
+        Height = 480
         Align = alClient
         BevelOuter = bvNone
-        TabOrder = 3
+        TabOrder = 2
+        ExplicitHeight = 536
         object splitCallers: TSplitter
           Left = 0
-          Top = 82
+          Top = 150
           Width = 889
           Height = 3
           Cursor = crVSplit
           Align = alTop
+          AutoSnap = False
           Color = clBtnFace
           ParentColor = False
           Visible = False
           OnMoved = splitCallersMoved
-          ExplicitWidth = 596
         end
         object pnlCallers: TPanel
           Left = 0
           Top = 0
           Width = 889
-          Height = 82
+          Height = 150
           Align = alTop
           BevelOuter = bvNone
           TabOrder = 0
           Visible = False
           object vstCallers: TVirtualStringTree
             Left = 0
-            Top = 21
+            Top = 23
             Width = 889
-            Height = 61
+            Height = 127
             Align = alClient
             Header.AutoSizeIndex = 0
             Header.Height = 20
@@ -149,6 +152,7 @@ object frmMainProfiling: TfrmMainProfiling
             OnNodeDblClick = vstCalleesNodeDblClick
             Touch.InteractiveGestures = [igPan, igPressAndTap]
             Touch.InteractiveGestureOptions = [igoPanSingleFingerHorizontal, igoPanSingleFingerVertical, igoPanInertia, igoPanGutter, igoParentPassthrough]
+            ExplicitHeight = 150
             Columns = <
               item
                 MinWidth = 200
@@ -209,7 +213,7 @@ object frmMainProfiling: TfrmMainProfiling
             Left = 0
             Top = 0
             Width = 889
-            Height = 21
+            Height = 23
             Align = alTop
             TabOrder = 1
             TextHint = 'Filter the procedure callers...'
@@ -218,17 +222,19 @@ object frmMainProfiling: TfrmMainProfiling
         end
         object pnlCurrent: TPanel
           Left = 0
-          Top = 85
+          Top = 153
           Width = 889
-          Height = 453
+          Height = 327
           Align = alClient
           BevelOuter = bvNone
           TabOrder = 1
+          ExplicitTop = 85
+          ExplicitHeight = 451
           object vstProcs: TVirtualStringTree
             Left = 0
-            Top = 21
+            Top = 23
             Width = 889
-            Height = 432
+            Height = 304
             Align = alClient
             Header.AutoSizeIndex = 0
             Header.Height = 20
@@ -240,6 +246,8 @@ object frmMainProfiling: TfrmMainProfiling
             OnNodeClick = vstProcsNodeClick
             Touch.InteractiveGestures = [igPan, igPressAndTap]
             Touch.InteractiveGestureOptions = [igoPanSingleFingerHorizontal, igoPanSingleFingerVertical, igoPanInertia, igoPanGutter, igoParentPassthrough]
+            ExplicitTop = 20
+            ExplicitHeight = 428
             Columns = <
               item
                 MinWidth = 50
@@ -306,7 +314,7 @@ object frmMainProfiling: TfrmMainProfiling
             Left = 0
             Top = 0
             Width = 889
-            Height = 21
+            Height = 23
             Align = alTop
             TabOrder = 1
             TextHint = 'Filter the procedure...'
@@ -316,18 +324,18 @@ object frmMainProfiling: TfrmMainProfiling
       end
       object pnlCallees: TPanel
         Left = 0
-        Top = 572
+        Top = 514
         Width = 889
-        Height = 91
+        Height = 150
         Align = alBottom
         BevelOuter = bvNone
-        TabOrder = 2
+        TabOrder = 1
         Visible = False
         object vstCallees: TVirtualStringTree
           Left = 0
-          Top = 21
+          Top = 23
           Width = 889
-          Height = 70
+          Height = 127
           Align = alClient
           Header.AutoSizeIndex = 0
           Header.Height = 20
@@ -340,6 +348,7 @@ object frmMainProfiling: TfrmMainProfiling
           OnNodeDblClick = vstCalleesNodeDblClick
           Touch.InteractiveGestures = [igPan, igPressAndTap]
           Touch.InteractiveGestureOptions = [igoPanSingleFingerHorizontal, igoPanSingleFingerVertical, igoPanInertia, igoPanGutter, igoParentPassthrough]
+          ExplicitHeight = 68
           Columns = <
             item
               MinWidth = 200
@@ -400,21 +409,12 @@ object frmMainProfiling: TfrmMainProfiling
           Left = 0
           Top = 0
           Width = 889
-          Height = 21
+          Height = 23
           Align = alTop
           TabOrder = 1
           TextHint = 'Filter the procedure callees...'
           OnInvokeSearch = sbFilterCalleesInvokeSearch
         end
-      end
-      object pnlBottom: TPanel
-        Left = 0
-        Top = 663
-        Width = 889
-        Height = 3
-        Align = alBottom
-        BevelOuter = bvNone
-        TabOrder = 1
       end
     end
     object tabClasses: TTabSheet
@@ -422,9 +422,9 @@ object frmMainProfiling: TfrmMainProfiling
       ImageIndex = -1
       object vstClasses: TVirtualStringTree
         Left = 0
-        Top = 33
+        Top = 56
         Width = 889
-        Height = 633
+        Height = 608
         Align = alClient
         Header.AutoSizeIndex = 0
         Header.Height = 20
@@ -472,8 +472,8 @@ object frmMainProfiling: TfrmMainProfiling
         object Label1: TLabel
           Left = 0
           Top = 10
-          Width = 68
-          Height = 13
+          Width = 71
+          Height = 15
           Caption = '&Select thread:'
           FocusControl = cbxSelectThreadClass
         end
@@ -481,7 +481,7 @@ object frmMainProfiling: TfrmMainProfiling
           Left = 72
           Top = 6
           Width = 199
-          Height = 21
+          Height = 23
           Style = csDropDownList
           TabOrder = 0
           OnChange = cbxSelectThreadClassChange
@@ -491,14 +491,11 @@ object frmMainProfiling: TfrmMainProfiling
         Left = 0
         Top = 33
         Width = 889
-        Height = 21
+        Height = 23
         Align = alTop
         TabOrder = 2
         TextHint = 'Filter the classes...'
         OnInvokeSearch = sbFilterClassesInvokeSearch
-        ExplicitLeft = 352
-        ExplicitTop = 88
-        ExplicitWidth = 121
       end
     end
     object tabUnits: TTabSheet
@@ -515,8 +512,8 @@ object frmMainProfiling: TfrmMainProfiling
         object Label2: TLabel
           Left = 8
           Top = 10
-          Width = 68
-          Height = 13
+          Width = 71
+          Height = 15
           Caption = '&Select thread:'
           FocusControl = cbxSelectThreadUnit
         end
@@ -524,7 +521,7 @@ object frmMainProfiling: TfrmMainProfiling
           Left = 80
           Top = 6
           Width = 199
-          Height = 21
+          Height = 23
           Style = csDropDownList
           TabOrder = 0
           OnChange = cbxSelectThreadUnitChange
@@ -532,9 +529,9 @@ object frmMainProfiling: TfrmMainProfiling
       end
       object vstUnits: TVirtualStringTree
         Left = 0
-        Top = 54
+        Top = 56
         Width = 889
-        Height = 612
+        Height = 608
         Align = alClient
         Header.AutoSizeIndex = 0
         Header.Height = 20
@@ -545,8 +542,6 @@ object frmMainProfiling: TfrmMainProfiling
         TreeOptions.PaintOptions = [toShowButtons, toShowDropmark, toThemeAware, toUseBlendedImages]
         Touch.InteractiveGestures = [igPan, igPressAndTap]
         Touch.InteractiveGestureOptions = [igoPanSingleFingerHorizontal, igoPanSingleFingerVertical, igoPanInertia, igoPanGutter, igoParentPassthrough]
-        ExplicitTop = 33
-        ExplicitHeight = 633
         Columns = <
           item
             MinWidth = 200
@@ -577,14 +572,11 @@ object frmMainProfiling: TfrmMainProfiling
         Left = 0
         Top = 33
         Width = 889
-        Height = 21
+        Height = 23
         Align = alTop
         TabOrder = 2
         TextHint = 'Filter the units...'
         OnInvokeSearch = sbFilterUnitsInvokeSearch
-        ExplicitLeft = 592
-        ExplicitTop = 240
-        ExplicitWidth = 121
       end
     end
     object tabThreads: TTabSheet
@@ -592,9 +584,9 @@ object frmMainProfiling: TfrmMainProfiling
       ImageIndex = -1
       object vstThreads: TVirtualStringTree
         Left = 0
-        Top = 0
+        Top = 23
         Width = 889
-        Height = 666
+        Height = 641
         Align = alClient
         Header.AutoSizeIndex = 0
         Header.Height = 20
@@ -641,14 +633,11 @@ object frmMainProfiling: TfrmMainProfiling
         Left = 0
         Top = 0
         Width = 889
-        Height = 21
+        Height = 23
         Align = alTop
         TabOrder = 1
         TextHint = 'Filter the threads...'
         OnInvokeSearch = sbFilterThreadsInvokeSearch
-        ExplicitLeft = 600
-        ExplicitTop = 248
-        ExplicitWidth = 121
       end
     end
   end

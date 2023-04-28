@@ -33,7 +33,6 @@ type
     vstProcs: TVirtualStringTree;
     pnlCallees: TPanel;
     vstCallees: TVirtualStringTree;
-    pnlBottom: TPanel;
     tabClasses: TTabSheet;
     vstClasses: TVirtualStringTree;
     pnThreadClass: TPanel;
@@ -123,7 +122,6 @@ type
     procedure ResetProfile;
     procedure ResetCallers;
     procedure ResetCallees;
-    procedure RepositionSliders;
     procedure SlidersMoved;
     procedure ClearBreakdown;
     procedure ExportTo(fileName: string; exportProcs, exportClasses, exportUnits, exportThreads, exportCSV: boolean);
@@ -190,14 +188,6 @@ begin
   cbxSelectThreadUnit.Color          := clBtnFace;
 end;
 
-
-procedure TfrmMainProfiling.RepositionSliders;
-begin
-  pnlCallees.Height := Round(calleesPerc*tabProcedures.Height);
-  pnlBottom.Top := 99999;
-  pnlCallers.Height := Round(callersPerc*tabProcedures.Height);
-end;
-
 procedure TfrmMainProfiling.SlidersMoved;
 begin
   callersPerc := pnlCallers.Height/tabProcedures.Height;
@@ -262,6 +252,7 @@ begin
   FillUnitView(resortOn);
   FillThreadView(resortOn);
   mnuExportProfile.Enabled     := true;
+  SlidersMoved();
 end;
 
 procedure TfrmMainProfiling.UpdateFocus;

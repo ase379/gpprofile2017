@@ -162,7 +162,6 @@ type
     procedure actChangeLayoutExecute(Sender: TObject);
     procedure actLayoutManagerExecute(Sender: TObject);
     procedure SpeedButton1Click(Sender: TObject);
-    procedure FormResize(Sender: TObject);
     procedure lbLayoutsClick(Sender: TObject);
     procedure actAddLayoutUpdate(Sender: TObject);
     procedure actRenameLayoutUpdate(Sender: TObject);
@@ -1239,7 +1238,6 @@ begin
     end;
     ImageIndex := 20+Tag;
   end;
-  if reposition then fPerformanceFrame.RepositionSliders;
 end; { TfrmMain.ResetSourcePreview }
 
 procedure TfrmMain.PageControl1Change(Sender: TObject);
@@ -1370,7 +1368,6 @@ begin
         fPerformanceFrame.splitCallees.Visible    := ReadBool('pnlCallersVisible',false);
         fPerformanceFrame.pnlCallees.Visible      := fPerformanceFrame.splitCallers.Visible;
         fPerformanceFrame.pnlCallers.Visible      := fPerformanceFrame.splitCallees.Visible;
-        fPerformanceFrame.pnlBottom.Top           := 99999;
         if PageControl1.ActivePage = tabInstrumentation
           then pnlSourcePreview.Visible := previewVisibleInstr
           else pnlSourcePreview.Visible := previewVisibleAnalysis;
@@ -1863,12 +1860,6 @@ begin
   pnlLayout.Hide;
 end;
 
-procedure TfrmMain.FormResize(Sender: TObject);
-begin
-  fPerformanceFrame.RepositionSliders;
-end;
-
-
 procedure TfrmMain.lbLayoutsClick(Sender: TObject);
 begin
   if assigned(lvLayouts.Selected)
@@ -2108,8 +2099,6 @@ begin
     fPerformanceFrame.pnlCallees.Show;
     fPerformanceFrame.splitCallees.Show;
   end;
-  fPerformanceFrame.pnlCallees.Top := 99999;
-  fPerformanceFrame.pnlBottom.Top := 99999;
   fPerformanceFrame.ResetCallees;
 end;
 

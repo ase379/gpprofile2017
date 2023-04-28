@@ -176,7 +176,6 @@ end;
 procedure TfrmMemProfiling.RepositionSliders;
 begin
   pnlCallees.Height := Round(calleesPerc*tabProcedures.Height);
-  pnlBottom.Top := 99999;
   pnlCallers.Height := Round(callersPerc*tabProcedures.Height);
 end;
 
@@ -186,7 +185,7 @@ begin
   calleesPerc := pnlCallees.Height/tabProcedures.Height;
   if (calleesPerc > 1) then
     calleesPerc := 0.25;
-    if (callersPerc > 1) then
+  if (callersPerc > 1) then
     callersPerc := 0.25;
 
 end;

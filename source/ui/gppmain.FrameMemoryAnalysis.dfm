@@ -138,7 +138,7 @@ object frmMemProfiling: TfrmMemProfiling
             Left = 0
             Top = 0
             Width = 889
-            Height = 21
+            Height = 23
             Align = alTop
             TabOrder = 1
             TextHint = 'Filter the procedure callers...'
@@ -235,7 +235,7 @@ object frmMemProfiling: TfrmMemProfiling
             Left = 0
             Top = 0
             Width = 889
-            Height = 21
+            Height = 23
             Align = alTop
             TabOrder = 1
             TextHint = 'Filter the procedure...'
@@ -329,7 +329,7 @@ object frmMemProfiling: TfrmMemProfiling
           Left = 0
           Top = 0
           Width = 889
-          Height = 21
+          Height = 23
           Align = alTop
           TabOrder = 1
           TextHint = 'Filter the procedure callees...'
@@ -448,7 +448,7 @@ object frmMemProfiling: TfrmMemProfiling
         Left = 0
         Top = 0
         Width = 889
-        Height = 21
+        Height = 23
         Align = alTop
         TabOrder = 1
         TextHint = 'Filter the classes...'
@@ -503,7 +503,7 @@ object frmMemProfiling: TfrmMemProfiling
         Left = 0
         Top = 0
         Width = 889
-        Height = 21
+        Height = 23
         Align = alTop
         TabOrder = 1
         TextHint = 'Filter the units...'
@@ -564,7 +564,7 @@ object frmMemProfiling: TfrmMemProfiling
         Left = 0
         Top = 0
         Width = 889
-        Height = 21
+        Height = 23
         Align = alTop
         TabOrder = 1
         TextHint = 'Filter the threads...'
