@@ -61,15 +61,14 @@
         <Base>true</Base>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Base)'!=''">
-        <VerInfo_Release>1</VerInfo_Release>
-        <VerInfo_AutoIncVersion>false</VerInfo_AutoIncVersion>
+        <VerInfo_Release>8</VerInfo_Release>
         <DCC_DcuOutput>..\DCU</DCC_DcuOutput>
         <DCC_ExeOutput>..\bin</DCC_ExeOutput>
         <DCC_UnitSearchPath>..\include;..\lib\SynEdit\source;..\GPComponents\GPNative\source;..\lib\VirtualTreeView\Source;ui;ui\VirtualTree.Tools;model;model\profilingResultParser;model\sourceCodeAnalysis;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
         <VerInfo_Locale>1033</VerInfo_Locale>
         <DCC_Namespace>Vcl;Vcl.Imaging;Vcl.Touch;Vcl.Samples;Vcl.Shell;System;Xml;Data;Datasnap;Web;Soap;Winapi;System.Win;$(DCC_Namespace)</DCC_Namespace>
         <VerInfo_MinorVer>5</VerInfo_MinorVer>
-        <VerInfo_Keys>CompanyName=;FileDescription=Profiler for all versions of Delphi;FileVersion=1.5.7.0;InternalName=GpProfile;LegalCopyright=(c) 1998, 1999 Primoz Gabrijelcic;LegalTrademarks=;OriginalFilename=;ProductName=GpProfile 2017;ProductVersion=1.5.7</VerInfo_Keys>
+        <VerInfo_Keys>CompanyName=;FileDescription=Profiler for all versions of Delphi;FileVersion=1.5.8.0;InternalName=GpProfile;LegalCopyright=(c) 1998, 1999 Primoz Gabrijelcic;LegalTrademarks=;OriginalFilename=;ProductName=GpProfile 2017;ProductVersion=1.5.8</VerInfo_Keys>
         <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
         <SanitizedProjectName>gpprof</SanitizedProjectName>
     </PropertyGroup>
@@ -99,13 +98,14 @@
         <DCC_Define>RELEASE;$(DCC_Define)</DCC_Define>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_1_Win32)'!=''">
-        <AppEnableRuntimeThemes>true</AppEnableRuntimeThemes>
         <BT_BuildType>Debug</BT_BuildType>
-        <VerInfo_Release>7</VerInfo_Release>
+        <VerInfo_Release>8</VerInfo_Release>
+        <VerInfo_Keys>CompanyName=;FileDescription=Profiler for all versions of Delphi;FileVersion=1.5.8.0;InternalName=GpProfile;LegalCopyright=(c) 1998, 1999 Primoz Gabrijelcic;LegalTrademarks=;OriginalFilename=;ProductName=GpProfile 2017;ProductVersion=1.5.8</VerInfo_Keys>
+        <AppDPIAwarenessMode>none</AppDPIAwarenessMode>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_1_Win64)'!=''">
         <VerInfo_Build>5</VerInfo_Build>
-        <VerInfo_Keys>CompanyName=;FileDescription=Profiler for all versions of Delphi;FileVersion=1.5.7.0;InternalName=GpProfile;LegalCopyright=(c) 1998, 1999 Primoz Gabrijelcic;LegalTrademarks=;OriginalFilename=;ProductName=GpProfile 2017;ProductVersion=1.5.7;ProgramID=com.embarcadero.$(MSBuildProjectName)</VerInfo_Keys>
+        <VerInfo_Keys>CompanyName=;FileDescription=Profiler for all versions of Delphi;FileVersion=1.5.8.0;InternalName=GpProfile;LegalCopyright=(c) 1998, 1999 Primoz Gabrijelcic;LegalTrademarks=;OriginalFilename=;ProductName=GpProfile 2017;ProductVersion=1.5.8;ProgramID=com.embarcadero.$(MSBuildProjectName)</VerInfo_Keys>
         <DCC_ExeOutput>..\bin64</DCC_ExeOutput>
         <AppEnableRuntimeThemes>true</AppEnableRuntimeThemes>
         <BT_BuildType>Debug</BT_BuildType>
@@ -133,14 +133,14 @@
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_2_Win32)'!=''">
         <VerInfo_Build>1</VerInfo_Build>
-        <AppEnableRuntimeThemes>true</AppEnableRuntimeThemes>
         <BT_BuildType>Debug</BT_BuildType>
+        <VerInfo_Release>8</VerInfo_Release>
+        <AppDPIAwarenessMode>none</AppDPIAwarenessMode>
+        <VerInfo_Keys>CompanyName=;FileDescription=Profiler for all versions of Delphi;FileVersion=1.5.8.0;InternalName=GpProfile;LegalCopyright=(c) 1998, 1999 Primoz Gabrijelcic;LegalTrademarks=;OriginalFilename=;ProductName=GpProfile 2017;ProductVersion=1.5.8</VerInfo_Keys>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_2_Win64)'!=''">
-        <AppEnableRuntimeThemes>true</AppEnableRuntimeThemes>
-        <VerInfo_Build>2</VerInfo_Build>
+        <AppDPIAwarenessMode>none</AppDPIAwarenessMode>
         <BT_BuildType>Debug</BT_BuildType>
-        <VerInfo_Keys>CompanyName=;FileDescription=Profiler for all versions of Delphi;FileVersion=1.5.7.0;InternalName=GpProfile;LegalCopyright=(c) 1998, 1999 Primoz Gabrijelcic;LegalTrademarks=;OriginalFilename=;ProductName=GpProfile 2017;ProductVersion=1.5.7</VerInfo_Keys>
     </PropertyGroup>
     <ProjectExtensions>
         <Borland.Personality>Delphi.Personality.12</Borland.Personality>
@@ -170,13 +170,13 @@
                 <VersionInfoKeys>
                     <VersionInfoKeys Name="CompanyName"/>
                     <VersionInfoKeys Name="FileDescription">Profiler for all versions of Delphi (incl. Delphi XE)</VersionInfoKeys>
-                    <VersionInfoKeys Name="FileVersion">1.5.7.0</VersionInfoKeys>
+                    <VersionInfoKeys Name="FileVersion">1.5.8.0</VersionInfoKeys>
                     <VersionInfoKeys Name="InternalName">GpProfile</VersionInfoKeys>
                     <VersionInfoKeys Name="LegalCopyright">(c) 1998, 1999 Primoz Gabrijelcic; 2011 Anton Alisov (small changes to make it work with Delphi 2009, 2010, XE), 2013 (Johan Bontes, support for Delphi XE2)</VersionInfoKeys>
                     <VersionInfoKeys Name="LegalTrademarks"/>
                     <VersionInfoKeys Name="OriginalFilename"/>
                     <VersionInfoKeys Name="ProductName">GpProfile 2011</VersionInfoKeys>
-                    <VersionInfoKeys Name="ProductVersion">1.5.7.0</VersionInfoKeys>
+                    <VersionInfoKeys Name="ProductVersion">1.5.8.0</VersionInfoKeys>
                     <VersionInfoKeys Name="Comments"/>
                     <VersionInfoKeys Name="Key1"/>
                     <VersionInfoKeys Name="Key2"/>
@@ -188,8 +188,8 @@
                     <Source Name="MainSource">gpprof.dpr</Source>
                 </Source>
                 <Excluded_Packages>
-                    <Excluded_Packages Name="$(BDSBIN)\dcloffice2k270.bpl">Microsoft Office 2000 Beispiele für gekapselte Komponenten für Automatisierungsserver</Excluded_Packages>
-                    <Excluded_Packages Name="$(BDSBIN)\dclofficexp270.bpl">Microsoft Office XP Beispiele für gekapselte Komponenten für Automation Server</Excluded_Packages>
+                    <Excluded_Packages Name="$(BDSBIN)\dcloffice2k280.bpl">Microsoft Office 2000 Beispiele für gekapselte Komponenten für Automatisierungsserver</Excluded_Packages>
+                    <Excluded_Packages Name="$(BDSBIN)\dclofficexp280.bpl">Microsoft Office XP Beispiele für gekapselte Komponenten für Automation Server</Excluded_Packages>
                 </Excluded_Packages>
             </Delphi.Personality>
             <Platforms>
@@ -204,15 +204,15 @@
         <DelphiCompile Include="$(MainSource)">
             <MainSource>MainSource</MainSource>
         </DelphiCompile>
-        <BuildConfiguration Include="Debug">
-            <Key>Cfg_2</Key>
-            <CfgParent>Base</CfgParent>
-        </BuildConfiguration>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>
         <BuildConfiguration Include="Release">
             <Key>Cfg_1</Key>
+            <CfgParent>Base</CfgParent>
+        </BuildConfiguration>
+        <BuildConfiguration Include="Debug">
+            <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>
         </BuildConfiguration>
     </ItemGroup>
