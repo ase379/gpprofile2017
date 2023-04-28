@@ -15,10 +15,7 @@ type
     lblVersion: TLabel;
     Label3: TLabel;
     Bevel3: TBevel;
-    Image2: TImage;
-    Bevel1: TBevel;
     Label11: TLabel;
-    oxGraphicButton1: TBitBtn;
     procedure FormCreate(Sender: TObject);
     procedure FormKeyPress(Sender: TObject; var Key: Char);
     procedure urlHandsOnClick(Sender: TObject);
