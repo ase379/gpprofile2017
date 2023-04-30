@@ -101,7 +101,8 @@ implementation
 
 uses
   GpString, gppUnitWizard, gpParser.Units, gpParser.Selections,
-  gppMain.FrameInstrumentation.SelectionInfo, System.StrUtils, System.Types;
+  gppMain.FrameInstrumentation.SelectionInfo, System.StrUtils, System.Types,
+  VirtualTrees.Types;
 
 {$R *.dfm}
 

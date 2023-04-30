@@ -137,7 +137,8 @@ type
 implementation
 
 uses
-  gppExport, GpIFF, gpprofH, System.StrUtils, gppResults.callgraph;
+  gppExport, GpIFF, gpprofH, System.StrUtils, gppResults.callgraph,
+  VirtualTrees.Types;
 
 {$R *.dfm}
 

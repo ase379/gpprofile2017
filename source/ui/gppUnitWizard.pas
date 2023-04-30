@@ -49,7 +49,7 @@ var
 
 implementation
 
-uses gppTree;
+uses gppTree, VirtualTrees.Types;
 
 {$R *.DFM}
 
