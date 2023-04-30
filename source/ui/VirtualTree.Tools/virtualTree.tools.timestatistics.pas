@@ -81,7 +81,7 @@ uses
   System.SysUtils,
   GpIFF,
   gpString,
-  VirtualTrees.BaseTree;
+  VirtualTrees.BaseTree, VirtualTrees.Types;
 
 const
   // col index for Unit
