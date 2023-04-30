@@ -11,7 +11,6 @@ object frmMain: TfrmMain
   OldCreateOrder = True
   OnCreate = FormCreate
   OnDestroy = FormDestroy
-  OnResize = FormResize
   OnShow = FormShow
   PixelsPerInch = 96
   TextHeight = 13
