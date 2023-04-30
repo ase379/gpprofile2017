@@ -1342,7 +1342,7 @@ end;
 
 function TThreadEntry.GetName: String;
 begin
-  result := String(teName);
+  result := utf8Decode(teName);
 end;
 
 { TProcEntry }
