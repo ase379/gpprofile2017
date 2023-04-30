@@ -941,7 +941,7 @@ var
   i,j,k: integer;
   LInfo : TCallGraphInfo;
   lMemComsumptionList : TMemConsumptionForProcedureCalls;
-  lMemComsumptionEntry : TMemConsumptionEntry;
+  //lMemComsumptionEntry : TMemConsumptionEntry;
   lDigestFilename : String;
 begin
   lDigestFilename := aPrfFileName + '.dgst';
@@ -1101,7 +1101,7 @@ var
   LInfo : TCallGraphInfo;
   LInt64 : Int64;
   LInt : Integer;
-  lNumberOfMemEntries : Cardinal;
+  //lNumberOfMemEntries : Cardinal;
   lMemComsumptionList : TMemConsumptionForProcedureCalls;
   lMemComsumptionEntry : TMemConsumptionEntry;
 begin
