@@ -99,7 +99,7 @@ begin { TFileEdit.Execute }
       for i := 0 to editList.Count-1 do
         with PFECmd(editList.Objects[i])^ do begin
           if fecCmd = cmdInsert
-            then Insert(fecOfs1,fecTxt)
+            then Insert(fecOfs1,utf8Encode(fecTxt))
             else Remove(fecOfs1,fecOfs2+1);
         end;
       BlockWrite(f,MakeCurP^,stream.Size-stream.Position);
