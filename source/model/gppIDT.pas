@@ -215,8 +215,8 @@ begin
   begin
     with LEnumor.Current.data do
     begin
-      WriteString(f,eName);
-      WriteString(f,eQual);
+      WriteString(f,utf8Encode(eName));
+      WriteString(f,utf8Encode(eQual));
     end;
   end;
   LEnumor.Free;
@@ -265,7 +265,7 @@ begin
   begin
     with LEnumor.Current.Data do
     begin
-      WriteString(f,eName);
+      WriteString(f,utf8Encode(eName));
       WriteInt(f,eUID);
     end;
   end;
@@ -315,7 +315,7 @@ begin
   begin
     with LEnumor.Current.data do
     begin
-      WriteString(f,eName);
+      WriteString(f,utf8Encode(eName));
       WriteInt(f,eUID);
       WriteInt(f,eCID);
       WriteInt(f,eFirstLn);
