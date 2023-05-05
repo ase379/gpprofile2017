@@ -14,13 +14,13 @@ type
   PProfilingInfoRec = ^TProfilingInfoRec;
   TProfilingInfoRec = record
     function GetId : Integer;
-    procedure GetCallStackInfo(var aProcId: Int64;var aGraphIndex : Int16);
+    procedure GetCallStackInfo(var aProcId: Int64;var aGraphIndex : integer);
     case ProfilingType: TProfilingInfoTypeEnum of
       pit_unit: (UnitId: integer);
       pit_class: (ClassId: integer);
       pit_proc: (ProcId: integer);
-      pit_proc_callers: (CallerProcId: integer;CallerGraphIndex:Int16);
-      pit_proc_callees: (CalleeProcId: integer;CalleeGraphIndex:Int16);
+      pit_proc_callers: (CallerProcId: integer;CallerGraphIndex:integer);
+      pit_proc_callees: (CalleeProcId: integer;CalleeGraphIndex:integer);
       pit_thread: (ThreadId: Cardinal);
   end;
 
@@ -821,7 +821,7 @@ begin
 end;
 
 
-procedure TProfilingInfoRec.GetCallStackInfo(var aProcId: Int64;var aGraphIndex : Int16);
+procedure TProfilingInfoRec.GetCallStackInfo(var aProcId: Int64;var aGraphIndex : integer);
 begin
   case ProfilingType of
     pit_proc_callers:

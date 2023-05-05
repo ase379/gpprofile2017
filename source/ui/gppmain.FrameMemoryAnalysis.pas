@@ -223,7 +223,7 @@ var
   LProfilingType : TProfilingInfoTypeEnum;
   LEnum : TVTVirtualNodeEnumerator;
   LProcId : Int64;
-  LGraphId : int16;
+  LGraphId : integer;
 begin
   LProcId := -1;
   LGraphId := -1;
@@ -254,7 +254,7 @@ var
   LEnum : TVTVirtualNodeEnumerator;
   LCaption : string;
   LSelectedProcID : Int64;
-  LCallStackID : Int16;
+  LCallStackID : integer;
   LSendingTree : TVirtualStringTree;
 begin
   LSelectedProcID := -1;
