@@ -708,6 +708,7 @@ var
 
 begin
   unParsed := true;
+  LSelfBuffer := '';
   fUnitParserStack := TUnitParserStack.Create;
   try
     if not aRescan then
@@ -996,7 +997,14 @@ begin
                       stateComment := stWaitExitBegin2;
                     end;
                   end
-
+                  else
+                  begin
+                    LDataLowerCase := tokenData.ToLowerInvariant;
+                    if tokenData.ToLower = '{self.}' then
+                      LSelfBuffer := LDataLowerCase
+                    else if tokenData.ToLower = '{tthread.}' then
+                      LSelfBuffer := LDataLowerCase;
+                  end;
                 end
                 else if (tokenID = ptIdentifier) then
                 begin
@@ -1008,7 +1016,14 @@ begin
                     LSelfBuffer := '';
                   end
                   else if LDataLowerCase = 'self' then
-                    LSelfBuffer := tokenData;
+                    LSelfBuffer := tokenData
+                  else if LDataLowerCase = 'tthread' then
+                    LSelfBuffer := tokenData
+                  else
+                  begin
+                    if LDataLowerCase <> 'gpprof' then
+                      LSelfBuffer := '';
+                  end;
                 end;
 
                 if block = 0 then
@@ -1219,9 +1234,7 @@ var
   api: TAPI;
   LApiEnumor: TRootNode<TAPI>.TEnumerator;
   LProcEnumor: TRootNode<TProc>.TEnumerator;
-  LProcSetThreadNameEnumor: TRootNode<TProcSetThreadName>.TEnumerator;
   i: Integer;
-  LPosition: Integer;
   lGpParserTextReplacer : TGpParserTextReplacer;
 begin { TUnit.Instrument }
   if Length(unImplementOffset) = 0 then

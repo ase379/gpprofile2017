@@ -10,8 +10,8 @@ type
   const
   public
     PositionInSource: Integer;
-    NameThreadForDebuggingSourceString: string;
-
+    // may be self or tthred... or empty
+    NameThreadForDebuggingPrefix: string;
   end;
 
 
@@ -26,6 +26,8 @@ type
     function GetLookupKey(const aValue : TProcSetThreadName) : string; override;
   public
     procedure AddPosition(const aPos: Cardinal; const aSelfBuffer: string);
+    procedure AddClone(const aSource : TProcSetThreadName);
+
   end;
 
 
@@ -79,6 +81,7 @@ type
   public
     constructor Create; reintroduce;
     procedure Add(var procName: string; pureAsm: boolean;offset, lineNum, headerLineNum: Integer);
+
     procedure AddEnd(procName: string; offset, lineNum: Integer);
     procedure AddInstrumented(procName: string;cmtEnterBegin, cmtEnterEnd, cmtExitBegin, cmtExitEnd: Integer);
     procedure SetAllInstrumented(const aValue : Boolean);
@@ -97,6 +100,16 @@ begin
   inherited Create();
 end;
 
+procedure TProcSetThreadNameList.AddClone(const aSource : TProcSetThreadName);
+var
+  LThreadName: TProcSetThreadName;
+begin
+  LThreadName := TProcSetThreadName.Create();
+  LThreadName.PositionInSource := aSource.PositionInSource;
+  LThreadName.NameThreadForDebuggingPrefix := aSource.NameThreadForDebuggingPrefix;
+  self.AppendNode(LThreadName);
+end;
+
 procedure TProcSetThreadNameList.AddPosition(const aPos: Cardinal;
   const aSelfBuffer: string);
 var
@@ -104,13 +117,13 @@ var
 begin
   LThreadName := TProcSetThreadName.Create();
   LThreadName.PositionInSource := aPos;
-  LThreadName.NameThreadForDebuggingSourceString := aSelfBuffer;
+  LThreadName.NameThreadForDebuggingPrefix := aSelfBuffer;
   self.AppendNode(LThreadName);
 end;
 
 function TProcSetThreadNameList.GetLookupKey(const aValue: TProcSetThreadName): string;
 begin
-  result := aValue.NameThreadForDebuggingSourceString;
+  result := 'ProcSetThreadName_'+aValue.NameThreadForDebuggingPrefix+'_'+aValue.PositionInSource.ToString;
 end;
 
 { ========================= TProc ========================= }
@@ -142,9 +155,7 @@ begin
   result.fInstrumented := fInstrumented;
   LNamesEnumor := fSetThreadNames.GetEnumerator();
   while LNamesEnumor.MoveNext do
-  begin
-    Result.fSetThreadNames.AddPosition(LNamesEnumor.Current.Data.PositionInSource,LNamesEnumor.Current.Data.NameThreadForDebuggingSourceString);
-  end;
+    Result.fSetThreadNames.AddClone(LNamesEnumor.Current.Data);
   LNamesEnumor.Free;
 end;
 
