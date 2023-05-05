@@ -1552,7 +1552,10 @@ begin
     begin
       if fileName <> loadedSource then
       begin
-        sourceCodeEdit.Lines.LoadFromFile(fileName);
+        if FileExists(fileName) then
+          sourceCodeEdit.Lines.LoadFromFile(fileName)
+        else
+          sourceCodeEdit.Lines.Clear;
         loadedSource := fileName;
       end;
       if focusOn < 0 then focusOn := 0;
