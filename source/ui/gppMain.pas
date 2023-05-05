@@ -1561,7 +1561,7 @@ begin
       if focusOn < 0 then focusOn := 0;
       if focusOn >= sourceCodeEdit.Lines.Count then focusOn := sourceCodeEdit.Lines.Count-1;
       sourceCodeEdit.TopLine := focusOn+1;
-      StatusPanel0(fileName,true);
+      StatusPanel0(fileName,false);
     end;
   except
     sourceCodeEdit.Lines.Clear;
