@@ -17,6 +17,8 @@ type
     procedure   Insert(const atOffset: int64; what: string);
     procedure   Remove(const fromOffset, toOffset: int64);
     procedure   Execute();
+    procedure   Clear();
+
   private
     editFile: string;
     editList: TStringList;
@@ -49,14 +51,22 @@ begin
 end; { TFileEdit.Create }
 
 destructor TFileEdit.Destroy;
+
+begin
+  Clear();
+  editList.Free;
+  inherited;
+end; { TFileEdit.Destroy }
+
+
+procedure TFileEdit.Clear();
 var
   i: integer;
 begin
   for i := 0 to editList.Count-1 do
     Dispose(PFECmd(editList.Objects[i]));
-  editList.Free;
-  inherited;
-end; { TFileEdit.Destroy }
+  editList.Clear();
+end;
 
 procedure TFileEdit.Execute();
 var
@@ -105,6 +115,7 @@ begin { TFileEdit.Execute }
       BlockWrite(f,MakeCurP^,stream.Size-stream.Position);
     finally Close(f); end;
   finally stream.Free; end;
+  Clear();
 end; { TFileEdit.Execute }
 
 procedure TFileEdit.Insert(const atOffset: int64; what: string);
