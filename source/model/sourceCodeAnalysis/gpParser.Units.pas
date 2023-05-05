@@ -106,7 +106,7 @@ implementation
 
 uses
   System.IOUtils, Winapi.Windows,
-  GpString, gppCommon,
+  GpString, gppCommon, gpParser.TextReplacer,
   CastaliaPasLex;
 
 
@@ -1222,6 +1222,7 @@ var
   LProcSetThreadNameEnumor: TRootNode<TProcSetThreadName>.TEnumerator;
   i: Integer;
   LPosition: Integer;
+  lGpParserTextReplacer : TGpParserTextReplacer;
 begin { TUnit.Instrument }
   if Length(unImplementOffset) = 0 then
     raise Exception.Create('No implementation part defined in unit ' +
@@ -1231,6 +1232,7 @@ begin { TUnit.Instrument }
     BackupInstrumentedFile(unFullName);
 
   LFileEdit := TFileEdit.Create(unFullName);
+  lGpParserTextReplacer := TGpParserTextReplacer.Create(LFileEdit);
   try
     // update uses...
     for i := 0 to LAdjustUsesCount - 1 do
@@ -1277,21 +1279,7 @@ begin { TUnit.Instrument }
           LFileEdit.Remove(pr.prCmtExitBegin, pr.prCmtExitEnd +
             Length(fProject.prConditEnd) - 1);
 
-          // remove gpprof in from of NameThreadForDebugging interceptor
-          LProcSetThreadNameEnumor := pr.unSetThreadNames.GetEnumerator;
-          while LProcSetThreadNameEnumor.MoveNext do
-          begin
-            LPosition := LProcSetThreadNameEnumor.Current.Data.tpstnPos - Length(fProject.prGpprofDot);
-            if LProcSetThreadNameEnumor.Current.Data.tpstnWithSelf <> '' then
-              LPosition := LPosition - 1; // remove } as well
-            LFileEdit.Remove(LPosition, LProcSetThreadNameEnumor.Current.Data.tpstnPos - 1);
-            if LProcSetThreadNameEnumor.Current.Data.tpstnWithSelf <> '' then
-            begin
-              LPosition := LPosition - 2 - Length(LProcSetThreadNameEnumor.Current.Data.tpstnWithSelf);
-              LFileEdit.Remove(LPosition, LPosition);
-            end;
-          end;
-          LProcSetThreadNameEnumor.Free;
+          lGpParserTextReplacer.Remove_SetNameThreadForDebugging(pr.unSetThreadNames);
         end;
       end
       else
@@ -1311,29 +1299,9 @@ begin { TUnit.Instrument }
             Format(fProject.prProfileEnterProc, [nameId]));
 
         if haveInst then
-        begin
-          LProcSetThreadNameEnumor := pr.unSetThreadNames.GetEnumerator;
-          while LProcSetThreadNameEnumor.MoveNext do
-          begin
-            LPosition := LProcSetThreadNameEnumor.Current.Data.tpstnPos - Length(fProject.prGpprofDot);
-            LFileEdit.Remove(LPosition, LProcSetThreadNameEnumor.Current.Data.tpstnPos - 1);
-          end;
-          LProcSetThreadNameEnumor.Free;
-        end;
+          lGpParserTextReplacer.Remove_SetNameThreadForDebugging(pr.unSetThreadNames);
         // add gpprof in from of NameThreadForDebugging interceptor
-        LProcSetThreadNameEnumor := pr.unSetThreadNames.GetEnumerator;
-        while LProcSetThreadNameEnumor.MoveNext do
-        begin
-          LPosition := LProcSetThreadNameEnumor.Current.Data.tpstnPos;
-          if LProcSetThreadNameEnumor.Current.Data.tpstnWithSelf <> '' then
-          begin
-            LFileEdit.Insert(LPosition - Length('self') - 1, '{');
-            LFileEdit.Insert(LPosition, '}' + fProject.prGpprofDot);
-          end
-          else
-            LFileEdit.Insert(LPosition, fProject.prGpprofDot);
-        end;
-        LProcSetThreadNameEnumor.Free;
+        lGpParserTextReplacer.Adjust_SetNameThreadForDebugging(pr.unSetThreadNames);
 
         if haveInst then
           LFileEdit.Remove(pr.prCmtExitBegin, pr.prCmtExitEnd +
@@ -1350,6 +1318,7 @@ begin { TUnit.Instrument }
     LFileEdit.Execute();
   finally
     LFileEdit.Free;
+    lGpParserTextReplacer.Free;
   end;
 end; { TUnit.Instrument }
 

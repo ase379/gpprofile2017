@@ -9,10 +9,16 @@ type
   TProcSetThreadName = class
   const
   public
-    tpstnPos: Integer;
-    tpstnWithSelf: string;
+    PositionInSource: Integer;
+    NameThreadForDebuggingSourceString: string;
+
   end;
 
+
+  TProcSetThreadNameListEnumerator = TRootNode<TProcSetThreadName>.TEnumerator;
+  /// <summary>
+  /// A list with the SetThreadName snippets inside a proc.
+  /// </summary>
   TProcSetThreadNameList = class(TRootNode<TProcSetThreadName>)
   private
     constructor Create; reintroduce;
@@ -97,14 +103,14 @@ var
   LThreadName: TProcSetThreadName;
 begin
   LThreadName := TProcSetThreadName.Create();
-  LThreadName.tpstnPos := aPos;
-  LThreadName.tpstnWithSelf := aSelfBuffer;
+  LThreadName.PositionInSource := aPos;
+  LThreadName.NameThreadForDebuggingSourceString := aSelfBuffer;
   self.AppendNode(LThreadName);
 end;
 
 function TProcSetThreadNameList.GetLookupKey(const aValue: TProcSetThreadName): string;
 begin
-  result := aValue.tpstnPos.ToString();
+  result := aValue.NameThreadForDebuggingSourceString;
 end;
 
 { ========================= TProc ========================= }
@@ -137,14 +143,14 @@ begin
   LNamesEnumor := fSetThreadNames.GetEnumerator();
   while LNamesEnumor.MoveNext do
   begin
-    Result.fSetThreadNames.AddPosition(LNamesEnumor.Current.Data.tpstnPos,LNamesEnumor.Current.Data.tpstnWithSelf);
+    Result.fSetThreadNames.AddPosition(LNamesEnumor.Current.Data.PositionInSource,LNamesEnumor.Current.Data.NameThreadForDebuggingSourceString);
   end;
   LNamesEnumor.Free;
 end;
 
 function TProc.GetName: String;
 begin
-  result := String(prName);
+  result := prName;
 end;
 
 

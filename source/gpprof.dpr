@@ -35,7 +35,8 @@ uses
   gppExport,
   gppPrfPlaceholderDlg,
   gppUnitWizard,
-  gppMain;
+  gppMain,
+  gpParser.TextReplacer in 'model\sourceCodeAnalysis\gpParser.TextReplacer.pas';
 
 {$R *.RES}
 

@@ -25,7 +25,6 @@ type
     fProfileEnterAsm: string;
     fProfileExitAsm: string;
     fProfileAPI: string;
-    fGpprofDot: string;
     fProjectName: string;
     fSelectedDelphiVersion : string;
     fIsConsoleProject : Boolean;
@@ -61,7 +60,6 @@ type
     property prProfileEnterAsm: string read fProfileEnterAsm;
     property prProfileExitAsm: string read fProfileExitAsm;
     property prProfileAPI: string read fProfileAPI;
-    property prGpprofDot: string read fGpprofDot;
     property Name: string read fProjectName;
     property IsConsoleProject : boolean read fIsConsoleProject;
     property OutputDir : string read fOutputDir;
@@ -160,7 +158,6 @@ begin
   fProfileAPI := prConditStartAPI + '%s' + prConditEndAPI;
   fAPIIntro := 'GPP:';
   fNameThreadForDebugging := 'namethreadfordebugging';
-  fGpprofDot := 'gpprof.';
 end;
 
 procedure TBaseProject.StoreExcludedUnits(aExclUnits: String);
