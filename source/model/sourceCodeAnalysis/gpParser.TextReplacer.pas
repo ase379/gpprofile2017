@@ -43,9 +43,9 @@ begin
   begin
     LValue := LProcSetThreadNameEnumor.Current.Data;
     LPosition := LValue.PositionInSource;
-    if LValue.NameThreadForDebuggingSourceString <> '' then
+    if LValue.NameThreadForDebuggingPrefix <> '' then
     begin
-      fFileEdit.Insert(LPosition - Length('self') - 1, '{');
+      fFileEdit.Insert(LPosition - Length(LValue.NameThreadForDebuggingPrefix) - 1, '{');
       fFileEdit.Insert(LPosition, '}' + DOT_GPPROF);
     end
     else
