@@ -15,24 +15,23 @@ type
 
 implementation
 
-uses{>>GpProfile U} GpProf, {GpProfile U>>}
+uses
   System.SysUtils;
 
 { TTestThread }
 
 constructor TTestThread.Create;
-begin{>>GpProfile} ProfilerEnterProc(1); try {GpProfile>>}
+begin
   inherited Create();
-{>>GpProfile} finally ProfilerExitProc(1); end; {GpProfile>>}end;
+end;
 
 procedure TTestThread.Execute;
-begin{>>GpProfile} ProfilerEnterProc(2); try {GpProfile>>}
-  gpprof.NameThreadForDebugging('AwesomeThread', self.ThreadID);
-  gpprof.NameThreadForDebugging('AwesomeThread-UnicodeChars-☺☼d156exÈ', self.ThreadID);
-  {self.}gpprof.namethreadfordebugging('AwesomeThread2-SelfNameReplacement', self.ThreadID);
-  {TThread.}gpprof.NameThreadForDebugging('AwesomeThread3-TThreadReplacement');
+begin
+  NameThreadForDebugging('AwesomeThread', self.ThreadID);
+  NameThreadForDebugging('AwesomeThread-UnicodeChars-☺☼d156exÈ', self.ThreadID);
+ gpprofnamethreadfordebugging('AwesomeThread2-SelfNameReplacement', self.ThreadID);d.}gpprofNameThreadForDebugging('AwesomeThread3-TThreadReplacement');
   Sleep(1000);
   inherited;
-{>>GpProfile} finally ProfilerExitProc(2); end; {GpProfile>>}end;
+end;
 
 end.
