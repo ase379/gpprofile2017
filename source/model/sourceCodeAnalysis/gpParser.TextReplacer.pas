@@ -50,13 +50,14 @@ begin
     end
     else
       fFileEdit.Insert(LPosition, DOT_GPPROF);
+
   end;
   LProcSetThreadNameEnumor.Free;
 end;
 
 procedure TGpParserTextReplacer.Remove_SetNameThreadForDebugging(const aSnippetList : TProcSetThreadNameList);
 var
-  LPosition : Integer;
+  LFromPosition : Integer;
   LProcSetThreadNameEnumor : TProcSetThreadNameListEnumerator;
   LValue : TProcSetThreadName;
 begin
@@ -65,15 +66,19 @@ begin
   while LProcSetThreadNameEnumor.MoveNext do
   begin
     LValue := LProcSetThreadNameEnumor.Current.Data;
-    LPosition := LValue.PositionInSource - Length(DOT_GPPROF);
-    if LValue.NameThreadForDebuggingSourceString <> '' then
-      LPosition := LPosition - 1; // remove } as well
-    fFileEdit.Remove(LPosition, LValue.PositionInSource - 1);
-    if LValue.NameThreadForDebuggingSourceString <> '' then
+    LFromPosition := LValue.PositionInSource - Length(DOT_GPPROF);
+    if LValue.NameThreadForDebuggingPrefix <> '' then
     begin
-      LPosition := LPosition - 2 - Length(LValue.NameThreadForDebuggingSourceString);
-      fFileEdit.Remove(LPosition, LPosition);
+      LFromPosition := LValue.PositionInSource - 1;
     end;
+    fFileEdit.Remove(LFromPosition, LValue.PositionInSource - 1);
+    // remove closing tag
+    if LValue.NameThreadForDebuggingPrefix <> '' then
+    begin
+      LFromPosition := LFromPosition - Length(LValue.NameThreadForDebuggingPrefix);
+      fFileEdit.Remove(LFromPosition - Length(LValue.NameThreadForDebuggingPrefix), LFromPosition);
+    end;
+
   end;
   LProcSetThreadNameEnumor.Free;
 end;
