@@ -27,7 +27,7 @@ type
     /// Adds a time to the given index.
     /// If the anIndex is not 0, the sum(index 0) is incremented as well.
     /// </summary>
-    procedure AddTime(const anIndex : integer;const aValueToBeAdded: int64);
+    procedure AddTime(const aThreadId: integer;const aValueToBeAdded: int64);
     /// <summary>
     /// Set a time value for a given index.
     /// If the anIndex is not 0, the sum(index 0) is adjusted as well.
@@ -314,11 +314,11 @@ end;
 
 { tProcTimeList }
 
-procedure tProcTimeList.AddTime(const anIndex : integer;const aValueToBeAdded: int64);
+procedure tProcTimeList.AddTime(const aThreadId : integer;const aValueToBeAdded: int64);
 begin
+  if aThreadId = 0 then
+    raise Exception.Create('FehlermtProcTimeList.AddTime: ThreadId 0 is not allowed.');
   self[anIndex] := self[anIndex] + aValueToBeAdded;
-  if anIndex <> 0 then
-    self[0] := self[0] + aValueToBeAdded;
 end;
 
 procedure tProcTimeList.AssignTime(const aThreadId: integer; const aValueToBeAssigned: int64);
