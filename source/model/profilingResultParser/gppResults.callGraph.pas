@@ -230,22 +230,11 @@ begin
 end;
 
 procedure tProcTimeList.AssignTime(const anIndex: integer; const aValueToBeAssigned: int64);
-var
-  LOldValue : int64;
 begin
-  LOldValue := self[anIndex];
   self[anIndex] := aValueToBeAssigned;
-  if anIndex <> 0 then
-  begin
-    if fUseMaxAsDefault and (LOldValue = high(int64)) then
-    begin
-      self[0] := 0;
-      self[0] := self[0] + aValueToBeAssigned;
-    end
-    else
-      // subtract the subtracted value and add the new to have the proper sum.
-      self[0] := self[0] - LOldValue + aValueToBeAssigned;
-  end;
+  if anIndex = 0 then
+    raise Exception.Create('FehlermtProcTimeList.AssignTimeeldung: index 0 is not allowed.');
+  self[0] := aValueToBeAssigned;
 end;
 
 { tProcCountList }
