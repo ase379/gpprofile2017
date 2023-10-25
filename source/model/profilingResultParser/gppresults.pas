@@ -683,6 +683,7 @@ var
   LInfoChild : TCallGraphInfo;
   LChildrenDict : TCallGraphInfoDict;
   LProcTimeAvgAllThreads : int64;
+  lThreadIndex : integer;
 begin
   numth := High(resThreads);
   // resize resUnits and resClasses
@@ -822,20 +823,16 @@ begin
   begin
     LInfo := fCallGraphInfoDict.GetOrCreateGraphInfo(i,0,High(resThreads));
     LInfo.ProcTime[0] := 0;
-    for j := Low(resThreads) + 1 to High(resThreads) do
+    for lThreadIndex := Low(resThreads) + 1 to High(resThreads) do
     begin
-      LInfo.ProcTime[j] := 0;
-      fCallGraphInfoDict.FillInChildrenForParentId(LChildrenDict,i);
-      for LPair in LChildrenDict do
+      LInfo.ProcTime[lThreadIndex] := 0;
+      var lList := fCallGraphInfoDict.GetCallInfosForParentProcId(i);
+      for LInfoChild in lList do
       begin
-        // LInfo already points at i,0...and the value is zero. So omit this.
-        if LPair.Key.ProcId = 0 then
-          Continue;
-        LInfoChild := LPair.Value;
         if assigned(LInfoChild) then
         begin
-          LInfo.ProcTime[j] := LInfo.ProcTime[j] + LInfoChild.ProcTime[j];
-          LInfo.ProcTime[0] := LInfo.ProcTime[0] + LInfoChild.ProcTime[j];
+          LInfo.ProcTime[lThreadIndex] := LInfo.ProcTime[lThreadIndex] + LInfoChild.ProcTime[lThreadIndex];
+          LInfo.ProcTime[0] := LInfo.ProcTime[0] + LInfoChild.ProcTime[lThreadIndex];
         end; // if
       end; // for
     end; // for
