@@ -89,7 +89,8 @@ type
     /// returns all the children for a given parent proc.
     /// NOTE: The dictionary just holds references and does not own the infos.
     /// </summary>
-    procedure FillInChildrenForParentId(const aDict : TCallGraphInfoDict;const i : integer);
+    function FillInChildrenForParentId(const aDict : TCallGraphInfoDict;const aNeededParentProcId : integer): boolean;
+
   end;
 
 
@@ -196,14 +197,15 @@ begin
     result := nil;
 end;
 
-procedure TCallGraphInfoDict.FillInChildrenForParentId(const aDict : TCallGraphInfoDict;const i: integer);
+function TCallGraphInfoDict.FillInChildrenForParentId(const aDict : TCallGraphInfoDict;const aNeededParentProcId: integer): boolean;
 var
   LPair : TPair<TCallGraphKey, TCallGraphInfo>;
 begin
+  result := false;
   aDict.Clear();
   for LPair in self do
   begin
-    if LPair.Key.ParentProcId = i then
+    if LPair.Key.ParentProcId = aNeededParentProcId then
       aDict.Add(LPair.Key,LPair.Value);
   end;
 end;
