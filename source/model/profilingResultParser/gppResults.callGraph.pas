@@ -19,7 +19,10 @@ type
   /// The index is the thread number. 0 means "All Threads".
   /// </summary>
   tProcTimeList = class(TList<int64>)
+  private
+    fUseMaxAsDefault: boolean;
   public
+
     /// <summary>
     /// Adds a time to the given index.
     /// If the anIndex is not 0, the sum(index 0) is incremented as well.
@@ -30,6 +33,8 @@ type
     /// If the anIndex is not 0, the sum(index 0) is adjusted as well.
     /// </summary>
     procedure AssignTime(const anIndex : integer; const aValueToBeAssigned: int64);
+
+    property UseMaxAsDefault : Boolean read fUseMaxAsDefault write fUseMaxAsDefault;
   end;
 
   /// <summary>
@@ -103,6 +108,7 @@ begin
   inherited Create();
   ProcTime := tProcTimeList.Create();
   ProcTimeMin := tProcTimeList.Create();
+  ProcTimeMin.UseMaxAsDefault := true;
   ProcTimeMax := tProcTimeList.Create();
   ProcTimeAvg := tProcTimeList.Create();
   ProcChildTime:= tProcTimeList.Create();
@@ -231,8 +237,14 @@ begin
   self[anIndex] := aValueToBeAssigned;
   if anIndex <> 0 then
   begin
-    // subtract the subtracted value and add the new to have the proper sum.
-    self[0] := self[0] - LOldValue + aValueToBeAssigned;
+    if fUseMaxAsDefault and (LOldValue = high(int64)) then
+    begin
+      self[0] := 0;
+      self[0] := self[0] + aValueToBeAssigned;
+    end
+    else
+      // subtract the subtracted value and add the new to have the proper sum.
+      self[0] := self[0] - LOldValue + aValueToBeAssigned;
   end;
 end;
 
