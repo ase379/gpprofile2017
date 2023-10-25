@@ -90,6 +90,8 @@ type
     /// NOTE: The dictionary just holds references and does not own the infos.
     /// </summary>
     function FillInChildrenForParentId(const aDict : TCallGraphInfoDict;const aNeededParentProcId : integer): boolean;
+    function GetCallInfosForParentProcId(const aNeededParentProcId: integer): TList<TCallGraphInfo>;
+
 
   end;
 
@@ -206,8 +208,23 @@ begin
   for LPair in self do
   begin
     if LPair.Key.ParentProcId = aNeededParentProcId then
+    begin
       aDict.Add(LPair.Key,LPair.Value);
+    end;
   end;
+end;
+
+function TCallGraphInfoDict.GetCallInfosForParentProcId(const aNeededParentProcId: integer): TList<TCallGraphInfo>;
+var
+  LPair : TPair<TCallGraphKey, TCallGraphInfo>;
+begin
+  result := TList<TCallGraphInfo>.Create();
+  if (aNeededParentProcId = 0) then
+    exit;
+
+  for LPair in self do
+    if LPair.Key.ParentProcId = aNeededParentProcId then
+      result.add(LPair.Value);
 end;
 
 function TCallGraphInfoDict.GetOrCreateGraphInfo(const i,j,threads: integer) : TCallGraphInfo;
