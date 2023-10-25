@@ -77,6 +77,7 @@ type
   /// </summary>
   TCallGraphInfoDict = class
   private
+    fParentProcToInfoDict : TObjectDictionary<integer,TList<TCallGraphInfo>>;
     fDict : TObjectDictionary<TCallGraphKey,TCallGraphInfo>;
   public
     procedure initGraphInfos();
@@ -86,19 +87,20 @@ type
 
     procedure Clear();
     /// <summary>
-    /// Returns the info for a given cell, nil if not found.
+    /// Returns the info for a given parent and its child proc id, nil if not found.
     /// </summary>
-    function GetGraphInfo(const i,j: integer) : TCallGraphInfo;
+    function GetGraphInfo(const aParentProcId,aProcId: integer) : TCallGraphInfo;
+
+    /// <summary>
+    /// returns all the children for a given parent proc.
+    /// NOTE: The list just holds references and is cached internally, so it does not need to be freed.
+    /// </summary>
+    function GetGraphInfoForParentProcId(const aParentProcId: integer) : TList<TCallGraphInfo>;
+
     /// <summary>
     /// Returns the info for a given cell and creates a new one if not found.
     /// </summary>
     function GetOrCreateGraphInfo(const aParentProcId,aProcId,aThreadId: integer) : TCallGraphInfo;
-    /// <summary>
-    /// returns all the children for a given parent proc.
-    /// NOTE: The dictionary just holds references and does not own the infos.
-    /// </summary>
-    function FillInChildrenForParentId(const aDict : TCallGraphInfoDict;const aNeededParentProcId : integer): boolean;
-    function GetCallInfosForParentProcId(const aNeededParentProcId: integer): TList<TCallGraphInfo>;
 
     constructor Create();
     destructor Destroy; override;
@@ -200,33 +202,52 @@ end;
 
 { TCallGraphInfoDict }
 
-function TCallGraphInfoDict.GetGraphInfo(const i,j: integer) : TCallGraphInfo;
+function TCallGraphInfoDict.GetGraphInfo(const aParentProcId,aProcId: integer) : TCallGraphInfo;
 var
   LKey : TCallGraphKey;
 begin
-  LKey := TCallGraphKey.Create(i,j);
+  LKey := TCallGraphKey.Create(aParentProcId,aProcId);
   if not fDict.TryGetValue(LKey, result) then
     result := nil;
 end;
+
+function TCallGraphInfoDict.GetGraphInfoForParentProcId(const aParentProcId: integer) : TList<TCallGraphInfo>;
+begin
+  if not fParentProcToInfoDict.TryGetValue(aParentProcId, result) then
+    result := nil;
+end;
+
+
 procedure TCallGraphInfoDict.Add(const aKey: TCallGraphKey; const aInfo : TCallGraphInfo);
+var
+  LInfoListForParentProcId : TList<TCallGraphInfo>;
 begin
   fDict.Add(aKey, aInfo);
+  if not fParentProcToInfoDict.TryGetValue(aKey.ParentProcId, LInfoListForParentProcId) then
+  begin
+    LInfoListForParentProcId := TList<TCallGraphInfo>.Create();
+    fParentProcToInfoDict.Add(aKey.ParentProcId, LInfoListForParentProcId);
+  end;
+  LInfoListForParentProcId.Add(aInfo);
 end;
 
 constructor TCallGraphInfoDict.Create;
 begin
   fDict := TObjectDictionary<TCallGraphKey,TCallGraphInfo>.Create([doOwnsValues]);
+  fParentProcToInfoDict := TObjectDictionary<integer,TList<TCallGraphInfo>>.Create([doOwnsValues]);
 end;
 
 destructor TCallGraphInfoDict.Destroy;
 begin
   fDict.Free;
+  fParentProcToInfoDict.Free;
   inherited;
 end;
 
 procedure TCallGraphInfoDict.Clear;
 begin
   fDict.Clear();
+  fParentProcToInfoDict.Clear;
 end;
 
 procedure TCallGraphInfoDict.initGraphInfos();
@@ -277,35 +298,6 @@ begin
     end;
 
   end;
-end;
-
-
-function TCallGraphInfoDict.FillInChildrenForParentId(const aDict : TCallGraphInfoDict;const aNeededParentProcId: integer): boolean;
-var
-  LPair : TPair<TCallGraphKey, TCallGraphInfo>;
-begin
-  result := false;
-  aDict.Clear();
-  for LPair in fDict do
-  begin
-    if LPair.Key.ParentProcId = aNeededParentProcId then
-    begin
-      aDict.Add(LPair.Key,LPair.Value);
-    end;
-  end;
-end;
-
-function TCallGraphInfoDict.GetCallInfosForParentProcId(const aNeededParentProcId: integer): TList<TCallGraphInfo>;
-var
-  LPair : TPair<TCallGraphKey, TCallGraphInfo>;
-begin
-  result := TList<TCallGraphInfo>.Create();
-  if (aNeededParentProcId = 0) then
-    exit;
-
-  for LPair in fDict do
-    if LPair.Key.ParentProcId = aNeededParentProcId then
-      result.add(LPair.Value);
 end;
 
 function TCallGraphInfoDict.GetOrCreateGraphInfo(const aParentProcId,aProcId,aThreadId: integer) : TCallGraphInfo;

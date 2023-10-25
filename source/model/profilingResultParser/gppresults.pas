@@ -791,7 +791,7 @@ begin
     for lThreadIndex := Low(resThreads) + 1 to High(resThreads) do
     begin
       LInfo.ProcTime[lThreadIndex] := 0;
-      var lList := fCallGraphInfoDict.GetCallInfosForParentProcId(i);
+      var lList := fCallGraphInfoDict.GetGraphInfoForParentProcId(i);
       for LInfoChild in lList do
       begin
         if assigned(LInfoChild) then
