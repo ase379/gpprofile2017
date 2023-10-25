@@ -318,7 +318,7 @@ procedure tProcTimeList.AddTime(const aThreadId : integer;const aValueToBeAdded:
 begin
   if aThreadId = 0 then
     raise Exception.Create('FehlermtProcTimeList.AddTime: ThreadId 0 is not allowed.');
-  self[anIndex] := self[anIndex] + aValueToBeAdded;
+  self[aThreadId] := self[aThreadId] + aValueToBeAdded;
 end;
 
 procedure tProcTimeList.AssignTime(const aThreadId: integer; const aValueToBeAssigned: int64);
