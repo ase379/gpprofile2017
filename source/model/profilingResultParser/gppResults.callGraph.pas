@@ -75,8 +75,16 @@ type
   /// This class represents a sparse array: all nils are ommited. Only valid values are stored
   /// inside.
   /// </summary>
-  TCallGraphInfoDict = class(TObjectDictionary<TCallGraphKey,TCallGraphInfo>)
+  TCallGraphInfoDict = class
+  private
+    fDict : TObjectDictionary<TCallGraphKey,TCallGraphInfo>;
   public
+    procedure initGraphInfos();
+    procedure CalculateAverage();
+
+    procedure Add(const aKey: TCallGraphKey; const aInfo : TCallGraphInfo);
+
+    procedure Clear();
     /// <summary>
     /// Returns the info for a given cell, nil if not found.
     /// </summary>
@@ -84,7 +92,7 @@ type
     /// <summary>
     /// Returns the info for a given cell and creates a new one if not found.
     /// </summary>
-    function GetOrCreateGraphInfo(const i,j,threads: integer) : TCallGraphInfo;
+    function GetOrCreateGraphInfo(const aParentProcId,aProcId,aThreadId: integer) : TCallGraphInfo;
     /// <summary>
     /// returns all the children for a given parent proc.
     /// NOTE: The dictionary just holds references and does not own the infos.
@@ -92,6 +100,8 @@ type
     function FillInChildrenForParentId(const aDict : TCallGraphInfoDict;const aNeededParentProcId : integer): boolean;
     function GetCallInfosForParentProcId(const aNeededParentProcId: integer): TList<TCallGraphInfo>;
 
+    constructor Create();
+    destructor Destroy; override;
 
   end;
 
@@ -195,9 +205,80 @@ var
   LKey : TCallGraphKey;
 begin
   LKey := TCallGraphKey.Create(i,j);
-  if not TryGetValue(LKey, result) then
+  if not fDict.TryGetValue(LKey, result) then
     result := nil;
 end;
+procedure TCallGraphInfoDict.Add(const aKey: TCallGraphKey; const aInfo : TCallGraphInfo);
+begin
+  fDict.Add(aKey, aInfo);
+end;
+
+constructor TCallGraphInfoDict.Create;
+begin
+  fDict := TObjectDictionary<TCallGraphKey,TCallGraphInfo>.Create([doOwnsValues]);
+end;
+
+destructor TCallGraphInfoDict.Destroy;
+begin
+  fDict.Free;
+  inherited;
+end;
+
+procedure TCallGraphInfoDict.Clear;
+begin
+  fDict.Clear();
+end;
+
+procedure TCallGraphInfoDict.initGraphInfos();
+var
+  LPair : TPair<TCallGraphKey, TCallGraphInfo>;
+  LInfo : TCallGraphInfo;
+begin
+  for LPair in fDict do
+  begin
+    LInfo := LPair.Value;
+    LInfo.ProcTime.Add(0);
+    LInfo.ProcTimeMin.Add(High(int64));
+    LInfo.ProcTimeMax.Add(0);
+    LInfo.ProcTimeAvg.Add(0);
+    LInfo.ProcChildTime.Add(0);
+    LInfo.ProcCnt.Add(0);
+  end;
+end;
+
+procedure TCallGraphInfoDict.CalculateAverage();
+var
+  LPair : TPair<TCallGraphKey, TCallGraphInfo>;
+  LInfo : TCallGraphInfo;
+  LProcTimeAvgAllThreads : int64;
+  j : integer;
+begin
+  for LPair in fDict do
+  begin
+    // omitting i=0, cause its the total time
+    if LPair.Key.ParentProcId = 0 then
+      Continue;
+    LInfo := LPair.Value;
+    if assigned(LInfo) then
+    begin
+      // collect all avg times....
+      LProcTimeAvgAllThreads := 0;
+      for j := 0 + 1 to LInfo.ProcTime.count - 1 do
+      begin
+        if LInfo.ProcTimeMin[j] = High(int64) then
+          LInfo.ProcTimeMin[j] := 0;
+        if LInfo.ProcCnt[j] = 0 then
+          LInfo.ProcTimeAvg[j] := 0
+        else
+          LInfo.ProcTimeAvg[j] := LInfo.ProcTime[j] div LInfo.ProcCnt[j];
+        LProcTimeAvgAllThreads := LProcTimeAvgAllThreads + LInfo.ProcTimeAvg[j];
+      end;
+      LInfo.ProcTimeAvg[0] := LProcTimeAvgAllThreads;
+    end;
+
+  end;
+end;
+
 
 function TCallGraphInfoDict.FillInChildrenForParentId(const aDict : TCallGraphInfoDict;const aNeededParentProcId: integer): boolean;
 var
@@ -205,7 +286,7 @@ var
 begin
   result := false;
   aDict.Clear();
-  for LPair in self do
+  for LPair in fDict do
   begin
     if LPair.Key.ParentProcId = aNeededParentProcId then
     begin
@@ -222,19 +303,19 @@ begin
   if (aNeededParentProcId = 0) then
     exit;
 
-  for LPair in self do
+  for LPair in fDict do
     if LPair.Key.ParentProcId = aNeededParentProcId then
       result.add(LPair.Value);
 end;
 
-function TCallGraphInfoDict.GetOrCreateGraphInfo(const i,j,threads: integer) : TCallGraphInfo;
+function TCallGraphInfoDict.GetOrCreateGraphInfo(const aParentProcId,aProcId,aThreadId: integer) : TCallGraphInfo;
 var
   LKey : TCallGraphKey;
 begin
-  LKey := TCallGraphKey.Create(i,j);
-  if not TryGetValue(LKey, result) then
+  LKey := TCallGraphKey.Create(aParentProcId,aProcId);
+  if not fDict.TryGetValue(LKey, result) then
   begin
-    result := TCallGraphInfo.Create(threads+1);
+    result := TCallGraphInfo.Create(aThreadId+1);
     Add(LKey, result);
   end;
 end;

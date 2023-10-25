@@ -204,7 +204,7 @@ begin
   resNullError       := 0;
   resNullErrorAcc    := 0;
   // dictionary owning the values; all sub dicts are just refs
-  fCallGraphInfoDict := TCallGraphInfoDict.Create([doOwnsValues]);
+  fCallGraphInfoDict := TCallGraphInfoDict.Create();
   fProcedureMemCallList := TProcedureMemCallList.Create();
 end; { TResults.Create }
 
@@ -630,8 +630,6 @@ function TResults.ThCreate(thread: integer): integer;
 var
   i  : integer;
   numth: integer;
-  LPair : TPair<TCallGraphKey, TCallGraphInfo>;
-  LInfo : TCallGraphInfo;
 begin
   numth := High(resThreads)+1;
   SetLength(resThreads,numth+1);
@@ -661,16 +659,7 @@ begin
     end;
   end;
   // resize fCallGraphInfoDict
-  for LPair in fCallGraphInfoDict do
-  begin
-    LInfo := LPair.Value;
-    LInfo.ProcTime.Add(0);
-    LInfo.ProcTimeMin.Add(High(int64));
-    LInfo.ProcTimeMax.Add(0);
-    LInfo.ProcTimeAvg.Add(0);
-    LInfo.ProcChildTime.Add(0);
-    LInfo.ProcCnt.Add(0);
-  end;
+  fCallGraphInfoDict.initGraphInfos();
   Result := numth-1;
 end; { TResults.ThCreate }
 
@@ -682,7 +671,6 @@ var
   LInfo : TCallGraphInfo;
   LInfoChild : TCallGraphInfo;
   LChildrenDict : TCallGraphInfoDict;
-  LProcTimeAvgAllThreads : int64;
   lThreadIndex : integer;
 begin
   numth := High(resThreads);
@@ -792,30 +780,7 @@ begin
   end;
 
   // fCallGraphInfoDict: calculate average and min time
-  for LPair in fCallGraphInfoDict do
-  begin
-    // omitting i=0, cause its the total time
-    if LPair.Key.ParentProcId = 0 then
-      Continue;
-    LInfo := LPair.Value;
-    if assigned(LInfo) then
-    begin
-      // collect all avg times....
-      LProcTimeAvgAllThreads := 0;
-      for j := 0 + 1 to LInfo.ProcTime.count - 1 do
-      begin
-        if LInfo.ProcTimeMin[j] = High(int64) then
-          LInfo.ProcTimeMin[j] := 0;
-        if LInfo.ProcCnt[j] = 0 then
-          LInfo.ProcTimeAvg[j] := 0
-        else
-          LInfo.ProcTimeAvg[j] := LInfo.ProcTime[j] div LInfo.ProcCnt[j];
-        LProcTimeAvgAllThreads := LProcTimeAvgAllThreads + LInfo.ProcTimeAvg[j];
-      end;
-      LInfo.ProcTimeAvg[0] := LProcTimeAvgAllThreads;
-    end;
-
-  end;
+  fCallGraphInfoDict.CalculateAverage();
 
   // fCallGraphInfo: calculate proc time for each thread
   LChildrenDict := TCallGraphInfoDict.Create();
