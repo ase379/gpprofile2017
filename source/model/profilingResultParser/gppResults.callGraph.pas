@@ -32,7 +32,7 @@ type
     /// Set a time value for a given index.
     /// If the anIndex is not 0, the sum(index 0) is adjusted as well.
     /// </summary>
-    procedure AssignTime(const anIndex : integer; const aValueToBeAssigned: int64);
+    procedure AssignTime(const aThreadId : integer; const aValueToBeAssigned: int64);
 
     property UseMaxAsDefault : Boolean read fUseMaxAsDefault write fUseMaxAsDefault;
   end;
@@ -47,7 +47,7 @@ type
     /// Adds a count to the given index.
     /// If the anIndex is not 0, the sum(index 0) is incremented as well.
     /// </summary>
-    procedure AddCount(const anIndex : integer;const aValueToBeAdded: integer);
+    procedure AddCount(const aThreadId : integer;const aValueToBeAdded: integer);
 
   end;
   /// <summary>
@@ -321,21 +321,21 @@ begin
     self[0] := self[0] + aValueToBeAdded;
 end;
 
-procedure tProcTimeList.AssignTime(const anIndex: integer; const aValueToBeAssigned: int64);
+procedure tProcTimeList.AssignTime(const aThreadId: integer; const aValueToBeAssigned: int64);
 begin
-  self[anIndex] := aValueToBeAssigned;
-  if anIndex = 0 then
-    raise Exception.Create('FehlermtProcTimeList.AssignTimeeldung: index 0 is not allowed.');
+  if aThreadId = 0 then
+    raise Exception.Create('FehlermtProcTimeList.AssignTimeeldung: ThreadId 0 is not allowed.');
+  self[aThreadId] := aValueToBeAssigned;
   self[0] := aValueToBeAssigned;
 end;
 
 { tProcCountList }
 
-procedure tProcCountList.AddCount(const anIndex, aValueToBeAdded: integer);
+procedure tProcCountList.AddCount(const aThreadId, aValueToBeAdded: integer);
 begin
-  self[anIndex] := self[anIndex] + aValueToBeAdded;
-  if anIndex <> 0 then
-    self[0] := self[0] + aValueToBeAdded;
+  if aThreadId = 0 then
+    raise Exception.Create('tProcCountList.AssignTimeeldung: ThreadId 0 is not allowed.');
+  self[aThreadId] := self[aThreadId] + aValueToBeAdded;
 end;
 
 
