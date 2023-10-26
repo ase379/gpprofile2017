@@ -1019,6 +1019,8 @@ begin
                       dec(lCurrentLexerRunPos, fProject.prNameThreadForDebugging.Length);
                       fCurrentUnitParserStackEntry.Lexer.RunPos := lCurrentLexerRunPos;
 
+                      // if instrumented: gpprof is the last term.. it is removed in the textReplacer.. skip it
+                      GoBackToStartOfTerm(lCurrentLexerRunPos, 'gpprof.', lCurrentLexerRunPos);
 
                       if (GoBackToStartOfTerm(lCurrentLexerRunPos, '}', lCurrentLexerRunPos)) then
                         LSelfBuffer := '}'+ lSelfBuffer;
