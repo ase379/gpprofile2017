@@ -18,6 +18,8 @@ type
     fConditEndUses: string;
     fConditEndAPI: string;
     fNameThreadForDebugging: string;
+    fCurrentThread : string;
+    fTThread : string;
     fAppendUses: string;
     fCreateUses: string;
     fProfileEnterProc: string;
@@ -53,6 +55,8 @@ type
     property prConditEndUses: string read fConditEndUses;
     property prConditEndAPI: string read fConditEndAPI;
     property prNameThreadForDebugging: string read fNameThreadForDebugging;
+    property prCurrentThread: string read fCurrentThread;
+    property prtTThread: string read fTThread;
     property prAppendUses: string read fAppendUses;
     property prCreateUses: string read fCreateUses;
     property prProfileEnterProc: string read fProfileEnterProc;
@@ -158,6 +162,8 @@ begin
   fProfileAPI := prConditStartAPI + '%s' + prConditEndAPI;
   fAPIIntro := 'GPP:';
   fNameThreadForDebugging := 'namethreadfordebugging';
+  fCurrentThread := 'currentthread';
+  fTThread := 'tthread';
 end;
 
 procedure TBaseProject.StoreExcludedUnits(aExclUnits: String);

@@ -16,6 +16,8 @@ type
     destructor  Destroy; override;
     procedure   Insert(const atOffset: int64; what: string);
     procedure   Remove(const fromOffset, toOffset: int64);
+    procedure   RemoveOneChar(const fromOffset: int64);
+
     procedure   Execute();
     procedure   Clear();
 
@@ -96,10 +98,14 @@ var
     BlockWrite(f,key[1],Length(key));
   end; { Insert }
 
+var
+  lPeCmd : tFECmd;
 begin { TFileEdit.Execute }
 
   stream := TMemoryStream.Create;
   try
+
+
     stream.LoadFromFile(editFile);
     stream.Position := 0;
     Assign(f,editFile);
@@ -107,14 +113,20 @@ begin { TFileEdit.Execute }
     Rewrite(f,1);
     try
       for i := 0 to editList.Count-1 do
-        with PFECmd(editList.Objects[i])^ do begin
-          if fecCmd = cmdInsert
-            then Insert(fecOfs1,utf8Encode(fecTxt))
-            else Remove(fecOfs1,fecOfs2+1);
-        end;
+      begin
+        lPeCmd := PFECmd(editList.Objects[i])^;
+        if lPeCmd.fecCmd = cmdInsert then
+          Insert(lPeCmd.fecOfs1,utf8Encode(lPeCmd.fecTxt))
+        else
+          Remove(lPeCmd.fecOfs1,lPeCmd.fecOfs2+1);
+      end;
       BlockWrite(f,MakeCurP^,stream.Size-stream.Position);
-    finally Close(f); end;
-  finally stream.Free; end;
+    finally
+      Close(f);
+    end;
+  finally
+    stream.Free;
+  end;
   Clear();
 end; { TFileEdit.Execute }
 
@@ -131,10 +143,18 @@ begin
   Schedule(cmd);
 end; { TFileEdit.Insert }
 
+procedure TFileEdit.RemoveOneChar(const fromOffset: int64);
+begin
+  Remove(fromOffset, fromOffset);
+end;
+
 procedure TFileEdit.Remove(const fromOffset, toOffset: int64);
 var
   cmd: PFECmd;
 begin
+  if toOffset<fromOffset then
+    raise Exception.Create('toOffset is before fromOffset.');  
+
   New(cmd);
   with cmd^ do begin
     fecCmd := cmdRemove;

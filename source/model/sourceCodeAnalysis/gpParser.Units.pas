@@ -68,6 +68,8 @@ type
     class function ExtractNumElements(const comment: string): integer;
     class function IsOneOf(const key: string; const compareWith: array of string): boolean; static;
     class function ExtractDirective(const comment: string): string; static;
+    function GoBackToStartOfTerm(const aLexerPos : integer; const aTerm : String; out aNewPosition: integer): boolean;
+
   public
     unName: TFilename;
     unFullName: TFileName;
@@ -705,7 +707,9 @@ var
   LSelfBuffer: string;
   LDataLowerCase: string;
   LDirective : string;
-
+  lLexerRunPos : integer;
+  lCurrentLexerRunPos : integer;
+  lThreadNameTokenPos : integer;
 begin
   unParsed := true;
   LSelfBuffer := '';
@@ -997,33 +1001,77 @@ begin
                       stateComment := stWaitExitBegin2;
                     end;
                   end
-                  else
-                  begin
-                    LDataLowerCase := tokenData.ToLowerInvariant;
-                    if tokenData.ToLower = '{self.}' then
-                      LSelfBuffer := LDataLowerCase
-                    else if tokenData.ToLower = '{tthread.}' then
-                      LSelfBuffer := LDataLowerCase;
-                  end;
                 end
                 else if (tokenID = ptIdentifier) then
                 begin
+
                   LDataLowerCase := tokenData.ToLowerInvariant;
                   if LDataLowerCase = fProject.prNameThreadForDebugging then
                   begin
-                    unProcs.Last.Data.unSetThreadNames.AddPosition(tokenPos,
-                      LSelfBuffer);
                     LSelfBuffer := '';
+                    lThreadNameTokenPos := tokenPos;
+
+                    lLexerRunPos := fCurrentUnitParserStackEntry.Lexer.RunPos;
+                    try
+                      lCurrentLexerRunPos := lLexerRunPos;
+
+                      // subtract the NameThreadForDebugging part
+                      dec(lCurrentLexerRunPos, fProject.prNameThreadForDebugging.Length);
+                      fCurrentUnitParserStackEntry.Lexer.RunPos := lCurrentLexerRunPos;
+
+
+                      if (GoBackToStartOfTerm(lCurrentLexerRunPos, '}', lCurrentLexerRunPos)) then
+                        LSelfBuffer := '}'+ lSelfBuffer;
+
+                      if (GoBackToStartOfTerm(lCurrentLexerRunPos, fProject.prCurrentThread+'.', lCurrentLexerRunPos)) then
+                        LSelfBuffer := fProject.prCurrentThread+'.' + lSelfBuffer;
+
+
+                      if (GoBackToStartOfTerm(lCurrentLexerRunPos, '}', lCurrentLexerRunPos)) then
+                        LSelfBuffer := '}'+ lSelfBuffer;
+
+                      if (GoBackToStartOfTerm(lCurrentLexerRunPos, '{', lCurrentLexerRunPos)) then
+                        LSelfBuffer := '{'+ lSelfBuffer;
+
+
+                      if (GoBackToStartOfTerm(lCurrentLexerRunPos, fProject.prtTThread+'.', lCurrentLexerRunPos)) then
+                        LSelfBuffer := fProject.prtTThread + '.' + lSelfBuffer;
+
+                      if (GoBackToStartOfTerm(lCurrentLexerRunPos, '}', lCurrentLexerRunPos)) then
+                        LSelfBuffer := '}'+ lSelfBuffer;
+
+                      if (GoBackToStartOfTerm(lCurrentLexerRunPos, '{', lCurrentLexerRunPos)) then
+                        LSelfBuffer := '{'+ lSelfBuffer;
+
+                      if (GoBackToStartOfTerm(lCurrentLexerRunPos, 'self.', lCurrentLexerRunPos)) then
+                        LSelfBuffer := 'self.' + lSelfBuffer;
+
+                      if (GoBackToStartOfTerm(lCurrentLexerRunPos, '}', lCurrentLexerRunPos)) then
+                        LSelfBuffer := '}'+ lSelfBuffer;
+
+                      if (GoBackToStartOfTerm(lCurrentLexerRunPos, '{', lCurrentLexerRunPos)) then
+                        LSelfBuffer := '{'+ lSelfBuffer;
+
+                      if (GoBackToStartOfTerm(lCurrentLexerRunPos, 'tthread.', lCurrentLexerRunPos)) then
+                        LSelfBuffer := 'tthread.' + lSelfBuffer;
+
+                      if (GoBackToStartOfTerm(lCurrentLexerRunPos, '}', lCurrentLexerRunPos)) then
+                        LSelfBuffer := '}'+ lSelfBuffer;
+
+                      if (GoBackToStartOfTerm(lCurrentLexerRunPos, '{', lCurrentLexerRunPos)) then
+                        LSelfBuffer := '{'+ lSelfBuffer;
+
+                      if (GoBackToStartOfTerm(lCurrentLexerRunPos, 'gpprof.', lCurrentLexerRunPos)) then
+                        LSelfBuffer := 'gpprof.' + lSelfBuffer;
+
+                      if (GoBackToStartOfTerm(lCurrentLexerRunPos, '{', lCurrentLexerRunPos)) then
+                        LSelfBuffer := '{'+ lSelfBuffer;
+
+                      unProcs.Last.Data.unSetThreadNames.AddPosition(lThreadNameTokenPos, LSelfBuffer);
+                    finally
+                      fCurrentUnitParserStackEntry.Lexer.RunPos := lLexerRunPos;
+                    end
                   end
-                  else if LDataLowerCase = 'self' then
-                    LSelfBuffer := tokenData
-                  else if LDataLowerCase = 'tthread' then
-                    LSelfBuffer := tokenData
-                  else
-                  begin
-                    if LDataLowerCase <> 'gpprof' then
-                      LSelfBuffer := '';
-                  end;
                 end;
 
                 if block = 0 then
@@ -1102,6 +1150,30 @@ begin
     fUnitParserStack.Free;
   end;
 end; { TUnit.Parse }
+
+
+function TUnit.GoBackToStartOfTerm(const aLexerPos : integer; const aTerm : String; out aNewPosition : integer): boolean;
+var
+  x : integer;
+  lCurrentLexerRunPos : integer;
+begin
+  result := true;
+  // go back over the 'CurrentThread.'... and check if we find it for the next replace pos
+  lCurrentLexerRunPos := aLexerPos;
+  for x := Length(aTerm) downto 1 do
+  begin
+    dec(lCurrentLexerRunPos);
+    fCurrentUnitParserStackEntry.Lexer.RunPos := lCurrentLexerRunPos;
+    if not (LowerCase(fCurrentUnitParserStackEntry.Lexer.token[1]) = aTerm[x]) then
+    begin
+      // return given pos if the term was not found
+      aNewPosition := aLexerPos;
+      exit(false);
+    end;
+  end;
+  aNewPosition := lCurrentLexerRunPos;
+end;
+
 
 procedure TUnit.CheckInstrumentedProcs;
 var

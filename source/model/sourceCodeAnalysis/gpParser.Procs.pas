@@ -25,7 +25,7 @@ type
   protected
     function GetLookupKey(const aValue : TProcSetThreadName) : string; override;
   public
-    procedure AddPosition(const aPos: Cardinal; const aSelfBuffer: string);
+    procedure AddPosition(const aPos: Cardinal; const aPrefixForToken: string);
     procedure AddClone(const aSource : TProcSetThreadName);
 
   end;
@@ -111,13 +111,13 @@ begin
 end;
 
 procedure TProcSetThreadNameList.AddPosition(const aPos: Cardinal;
-  const aSelfBuffer: string);
+  const aPrefixForToken: string);
 var
   LThreadName: TProcSetThreadName;
 begin
   LThreadName := TProcSetThreadName.Create();
   LThreadName.PositionInSource := aPos;
-  LThreadName.NameThreadForDebuggingPrefix := aSelfBuffer;
+  LThreadName.NameThreadForDebuggingPrefix := aPrefixForToken;
   self.AppendNode(LThreadName);
 end;
 
