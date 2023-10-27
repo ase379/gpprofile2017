@@ -1193,7 +1193,7 @@ end;
 
 procedure TfrmMain.actRescanProjectExecute(Sender: TObject);
 begin
-  LoadProject(openProject.Name);
+  ParseProject(openProject.Name, true);
 end;
 
 
