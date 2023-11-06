@@ -55,6 +55,7 @@ type
     function GetProjectDefines: string;
     function GetProjectNamespaces(): string;
     function GetPlatformOfCurrentConfig(): string;
+    function GetConfigTypeOfCurrentConfig(): string;
   end;
 
 function IfThen(const aCond: Boolean; const aIfTrue: String; const aIfFalse: string = ''): String;
@@ -103,6 +104,16 @@ begin
   LConfig := fDProjConfigs.FindConfigByCurrentSettings();
   if assigned(LConfig) then
     Exit(LConfig.PlatformName);
+end;
+
+function TDProjReader.GetConfigTypeOfCurrentConfig(): string;
+var
+  LConfig : DProjConfig;
+begin
+  result := '';
+  LConfig := fDProjConfigs.FindConfigByCurrentSettings();
+  if assigned(LConfig) then
+    Exit(LConfig.ConfigType);
 end;
 
 function TDProjReader.GetProjectDefines: string;

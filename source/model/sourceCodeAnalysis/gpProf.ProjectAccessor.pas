@@ -93,8 +93,21 @@ function TProjectAccessor.InnerReplaceMacros(const aMacro: string; const aProduc
 
   function GetDelphiXE2Var(const aVarName: string): string;
   begin
-    if lowercase(aVarName) = 'platform' then Result:= 'Win32';
-    if lowercase(aVarName) = 'config' then Result:= 'Release';
+    if lowercase(aVarName) = 'platform' then
+    begin
+       if assigned(fDProjReader) then
+        Result := fDProjReader.GetPlatformOfCurrentConfig
+      else
+        result := 'Win32';
+
+    end;
+    if lowercase(aVarName) = 'config' then
+    begin
+       if assigned(fDProjReader) then
+        Result := fDProjReader.GetConfigTypeOfCurrentConfig
+      else
+        Result:= 'Release';
+    end;
   end;
 
   function GetEnvVar(const aVarName: String): String;
