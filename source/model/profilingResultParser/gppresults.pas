@@ -495,12 +495,15 @@ var
   proxy : TProcProxy;
   parent: TProcProxy;
 begin
-  resThreads[ThLocate(pkt.rpThread)].teActiveProcs.LocateLast(pkt.rpProcID,proxy,parent);
-  if proxy = nil then
-    raise Exception.Create('gppResults.TResults.ExitProcPkt: Entry not found!');
-  ExitProc(proxy,parent,pkt);
-  proxy.Destroy;
-  inherited;
+  const tid = ThLocate(pkt.rpThread);
+  if (tid >= 0) and (resThreads[tid].teActiveProcs <> nil) then begin
+    resThreads[tid].teActiveProcs.LocateLast(pkt.rpProcID,proxy,parent);
+    if proxy = nil then
+      raise Exception.Create('gppResults.TResults.ExitProcPkt: Entry not found!');
+    ExitProc(proxy,parent,pkt);
+    proxy.Destroy;
+    inherited;
+  end;
 end; { TResults.ExitProcPkt }
 
 procedure TResults.AddEnterProc(pkt: TResPacket);
