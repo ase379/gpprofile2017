@@ -108,16 +108,18 @@ procedure TActiveProcList.LocateLast(procID: integer; var this,parent: TProcProx
 var
   i: integer;
 begin
-  for i := fAplList.Count-1 downto 0 do
-  begin
-    if fAplList[i].ppProcID = procID then
+  if (fAplList <> nil) and (fAplList.Count >= 0) then begin
+    for i := fAplList.Count-1 downto 0 do
     begin
-      this := fAplList[i];
-      if i > 0 then
-        parent := fAplList[i-1]
-      else
-        parent := nil;
-      Exit;
+      if fAplList[i].ppProcID = procID then
+      begin
+        this := fAplList[i];
+        if i > 0 then
+          parent := fAplList[i-1]
+        else
+          parent := nil;
+        Exit;
+      end;
     end;
   end;
   this   := nil;
