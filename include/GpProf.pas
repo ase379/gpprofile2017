@@ -125,7 +125,7 @@ end; { FlushFile }
 
 function OffsetPtr(ptr: pointer; offset: DWORD): pointer;
 begin
-  Result := pointer(DWORD(ptr)+offset);
+  Result := pointer(NativeUInt(ptr)+offset);
 end; { OffsetPtr }
 
 procedure Transmit(const buf; count: DWORD);
