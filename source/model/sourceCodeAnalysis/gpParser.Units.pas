@@ -667,15 +667,15 @@ var
       inRecordDef := true;
   end; { IsBlockStartToken }
 
-  function IsBlockEndToken(token: TptTokenKind): boolean;
+  function IsBlockEndToken(const aPreviousToken, aCurrentToken: TptTokenKind): boolean;
   begin
-    IsBlockEndToken := (token = ptEnd) or (token = ptUntil);
+    IsBlockEndToken := (aPreviousToken <> ptPoint) and ((aCurrentToken = ptEnd) or (aCurrentToken = ptUntil));
     if Result then
     begin
       inAsmBlock := False;
       inRecordDef := False;
     end;
-  end; { IsBlockEndToken }
+  end;
 
 // Get absolute unit path from dpr-file (path to unit in dpr file can be relative or absent)
   function ExpandLocation(const aLocation: string): string;
@@ -937,7 +937,7 @@ begin
                 begin
                   if IsBlockStartToken(tokenID) then
                     Inc(block)
-                  else if IsBlockEndToken(tokenID) then
+                  else if IsBlockEndToken(prevTokenID, tokenID) then
                     Dec(block);
 
                   if block < 0 then
@@ -969,7 +969,7 @@ begin
               begin
                 if IsBlockStartToken(tokenID) then
                   Inc(block)
-                else if IsBlockEndToken(tokenID) then
+                else if IsBlockEndToken(prevTokenID, tokenID) then
                   Dec(block);
 
                 if (tokenID = ptBorComment) or (tokenID = ptCompDirect) then
