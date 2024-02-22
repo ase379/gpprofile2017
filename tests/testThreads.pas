@@ -29,7 +29,8 @@ procedure TTestThread.Execute;
 begin
   NameThreadForDebugging('AwesomeThread', self.ThreadID);
   NameThreadForDebugging('AwesomeThread-UnicodeChars-☺☼d156exÈ', self.ThreadID);
- gpprofnamethreadfordebugging('AwesomeThread2-SelfNameReplacement', self.ThreadID);d.}gpprofNameThreadForDebugging('AwesomeThread3-TThreadReplacement');
+  self.namethreadfordebugging('AwesomeThread2-SelfNameReplacement', self.ThreadID);
+  TThread.NameThreadForDebugging('AwesomeThread3-TThreadReplacement');
   Sleep(1000);
   inherited;
 end;
