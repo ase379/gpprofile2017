@@ -644,8 +644,8 @@ var
   tokenData: string;
   tokenPos: Integer;
   tokenLN: Integer;
-  inAsmBlock: boolean;
-  inRecordDef: boolean;
+  lIsInAsmBlock: TBooleanStack;
+  lIsInRecordDef: TBooleanStack;
   prevTokenID: TptTokenKind;
   apiCmd: string;
   apiStart: Integer;
@@ -655,16 +655,16 @@ var
 
   function IsBlockStartToken(token: TptTokenKind): boolean;
   begin
-    if inRecordDef and (token = ptCase) then
+    if lIsInRecordDef.PeekOrReturnFalseIfEmpy() and (token = ptCase) then
       Result := False
     else
       Result := (token = ptBegin) or (token = ptRepeat) or (token = ptCase) or
         (token = ptTry) or (token = ptAsm) or (token = ptRecord);
 
     if token = ptAsm then
-      inAsmBlock := true;
+      lIsInAsmBlock.Push(true);
     if token = ptRecord then
-      inRecordDef := true;
+      lIsInRecordDef.Push(true);
   end; { IsBlockStartToken }
 
   function IsBlockEndToken(const aPreviousToken, aCurrentToken: TptTokenKind): boolean;
@@ -672,8 +672,8 @@ var
     IsBlockEndToken := (aPreviousToken <> ptPoint) and ((aCurrentToken = ptEnd) or (aCurrentToken = ptUntil));
     if Result then
     begin
-      inAsmBlock := False;
-      inRecordDef := False;
+      lIsInAsmBlock.PopIfNotEmpty();
+      lIsInRecordDef.PopIfNotEmpty();
     end;
   end;
 
@@ -762,11 +762,12 @@ begin
     SetLength(unImplementOffset, 0);
     SetLength(unStartUses, 0);
     SetLength(unEndUses, 0);
-    inAsmBlock := False;
-    inRecordDef := False;
+
     prevTokenID := ptNull;
     apiStart := -1;
     apiStartEnd := -1;
+    lIsInAsmBlock := TBooleanStack.Create;
+    lIsInRecordDef := TBooleanStack.Create;
     fSkippedList := TSkippedCodeRecList.Create();
     fDefines := TDefineList.Create;
     try
@@ -811,7 +812,7 @@ begin
               else if LDirective = 'UNDEF' then // process $UNDEF
                 fDefines.Undefine(ExtractParameter(tokenData, 1));
 
-              if inAsmBlock and ((prevTokenID = ptAddressOp) or
+              if lIsInAsmBlock.PeekOrReturnFalseIfEmpy() and ((prevTokenID = ptAddressOp) or
                 (prevTokenID = ptDoubleAddressOp)) and (tokenID <> ptAddressOp)
                 and (tokenID <> ptDoubleAddressOp) then
                 tokenID := ptIdentifier;
@@ -948,7 +949,7 @@ begin
                     procName := '';
                     proclnum := -1;
                   end
-                  else if (block > 0) and (not inRecordDef) then
+                  else if (block > 0) and (not lIsInRecordDef.PeekOrReturnFalseIfEmpy()) then
                   begin
                     if stk <> '' then
                       procn := ButFirst(stk, 1) + '/' + procName
@@ -1149,6 +1150,8 @@ begin
       FreeAndNil(fSkippedList);
     end;
   finally
+    lIsInAsmBlock.Free;
+    lIsInRecordDef.Free;
     fUnitParserStack.Free;
   end;
 end; { TUnit.Parse }
