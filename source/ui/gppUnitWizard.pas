@@ -124,7 +124,7 @@ begin
     while LUnitEnumor.MoveNext do
     begin
       LNewNode := nil;
-      LName := LUnitEnumor.Current.Data.unName;
+      LName := LUnitEnumor.Current.Data.Name;
       LMissingUnit := fOpenProject.IsMissingUnit(LName);
       if not LMissingUnit then
       begin

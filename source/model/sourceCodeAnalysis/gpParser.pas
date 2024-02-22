@@ -116,15 +116,15 @@ begin
   prUnits.ClearNodes;
   prUnit := self.LocateOrCreateUnit(Name, '', False) as TUnit;
   prUnit.unInProjectDir := true;
-  fFullUnitName := prUnit.unFullName;
+  fFullUnitName := prUnit.FullName;
 
   vOldCurDir := GetCurrentDir;
-  if not SetCurrentDir(ExtractFilePath(prUnit.unFullName)) then
+  if not SetCurrentDir(ExtractFilePath(prUnit.FullName)) then
     Assert(False);
   try
     un := prUnit;
     repeat
-      DoNotify(un.unName);
+      DoNotify(un.Name);
       try
         un.Parse(ExtractFilePath(Name), aConditionals, False, aParseAsm);
       except
@@ -160,7 +160,7 @@ begin
       if (not un.unExcluded) and (un.unProcs.Count > 0) and
         ((not aProjectDirOnly) or un.unInProjectDir) then
       begin
-        s := un.unName;
+        s := un.Name;
 
         if aGetInstrumented then
           // Add 2 char flags to indicate, whether unit is fully instrumented or nothing is instrumented
@@ -288,7 +288,7 @@ begin
     LProcIdTable := TIDTable.Create;
     try
       vOldCurDir := GetCurrentDir;
-      if not SetCurrentDir(ExtractFileDir(prUnit.unFullName)) then
+      if not SetCurrentDir(ExtractFileDir(prUnit.FullName)) then
         Assert(False);
       try
         with prUnits do
@@ -313,7 +313,7 @@ begin
 
             if (not LUnit.unExcluded) and (LUnit.unProcs.Count > 0) then
             begin
-              DoNotify(LUnit.unFullName, LUnit.unName, False);
+              DoNotify(LUnit.FullName, LUnit.Name, False);
 
               LIsAnyProcOfUnitInstrumented := LUnit.AnyInstrumented;
               if LIsAnyProcOfUnitInstrumented then
@@ -360,7 +360,7 @@ begin
   if un = nil then
     raise Exception.Create('Could not get filename for unit "'+unitName+'".')
   else
-    Result := un.unFullName;
+    Result := un.FullName;
 end; { TProject.GetUnitPath }
 
 function TProject.GetFirstLine(unitName, procName: string): Integer;
@@ -403,7 +403,7 @@ begin
   StoreExcludedUnits(aExclUnits);
 
   vOldCurDir := GetCurrentDir;
-  if not SetCurrentDir(ExtractFilePath(prUnit.unFullName)) then
+  if not SetCurrentDir(ExtractFilePath(prUnit.FullName)) then
     Assert(False);
   try
     with prUnits do

@@ -117,7 +117,7 @@ begin
   while LUnitEnumor.MoveNext do
   begin
     un := LUnitEnumor.Current.Data;
-    LUnitSelection := GetSelectionOrNil(un.unName);
+    LUnitSelection := GetSelectionOrNil(un.Name);
     LAllCnt := 0;
     LNone := true;
     LProcEnumor := un.unProcs.GetEnumerator();

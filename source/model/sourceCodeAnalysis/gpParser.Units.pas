@@ -40,6 +40,9 @@ type
     fSkippedList : TSkippedCodeRecList;
     fUnitParserStack : TUnitParserStack;
     fCurrentUnitParserStackEntry : TUnitParserStackEntry;
+    fName: TFilename;
+    fFullName: TFileName;
+
 
     procedure AddToIntArray(var anArray: TArray<Integer>;const aValue: Integer);
     procedure InstrumentUses(const ed: TFileEdit;const anIndex: Integer);
@@ -71,8 +74,6 @@ type
     function GoBackToStartOfTerm(const aLexerPos : integer; const aTerm : String; out aNewPosition: integer): boolean;
 
   public
-    unName: TFilename;
-    unFullName: TFileName;
     unUnits: TUnitList;
     unProcs: TProcList;
     unAPIs: TAPIList;
@@ -102,6 +103,9 @@ type
     function AnyChange: boolean;
     function DidFileTimestampChange(): boolean;
     function NeedsToBeReparsed() : Boolean;
+
+    property Name : TFilename read fName;
+    property FullName : TFilename read fFullName;
   end;
 
 implementation
@@ -116,7 +120,7 @@ uses
 
 function CompareUnit(node1, node2: INode<TUnit>): Integer;
 begin
-  Result := String.Compare(node1.Data.unName,node2.Data.unName,true);
+  Result := String.Compare(node1.Data.fName,node2.Data.fName,true);
 end; { CompareUnit }
 
 function TUnitList.AdjustKey(const aKey: string): string;
@@ -137,7 +141,7 @@ end;
 
 function TUnitList.GetLookupKey(const aValue: TUnit): string;
 begin
-  result := AdjustKey(aValue.unName);
+  result := AdjustKey(aValue.fName);
 end;
 
 { TUnitList.Create }
@@ -279,11 +283,11 @@ constructor TUnit.Create(const aProject: TBaseProject;const aUnitName: String;
 begin
   inherited Create();
   fProject := aProject;
-  unName := ExtractFileName(aUnitName);
+  fName := ExtractFileName(aUnitName);
   if aUnitLocation = '' then
-    unFullName := aUnitName
+    fFullName := aUnitName
   else
-    unFullName := aUnitLocation;
+    fFullName := aUnitLocation;
   unUnits := TUnitList.Create;
   unProcs := TProcList.Create;
   unAPIs := TAPIList.Create;
@@ -310,7 +314,7 @@ function TUnit.DidFileTimestampChange: boolean;
 var
   LOutDateTime : TDateTime;
 begin
-  if not FileAge(unFullName,LOutDateTime) then
+  if not FileAge(FullName,LOutDateTime) then
     LOutDateTime := 0.0;
   result := unFileDate <> LOutDateTime;
 end;
@@ -638,7 +642,7 @@ var
   procn: string;
   uun: string;
   ugpprof: string;
-  unName: string;
+  fName: string;
   unLocation: string;
   tokenID: TptTokenKind;
   tokenData: string;
@@ -717,16 +721,16 @@ begin
   try
     if not aRescan then
     begin
-      // Anton Alisov: not sure, for what reason ResolveFullyQualifiedUnitPath() is called here with unFullName instead of unName
-      if not ResolveFullyQualifiedUnitPath(unFullName, aDefaultDir, vUnitFullName) then
+      // Anton Alisov: not sure, for what reason ResolveFullyQualifiedUnitPath() is called here with unFullName instead of Name
+      if not ResolveFullyQualifiedUnitPath(FullName, aDefaultDir, vUnitFullName) then
       begin
-        fProject.prMissingUnitNames.AddOrSetValue(unFullname,0);
-        raise EUnitInSearchPathNotFoundError.Create('Unit not found in search path: ' + unFullName);
+        fProject.prMissingUnitNames.AddOrSetValue(FullName,0);
+        raise EUnitInSearchPathNotFoundError.Create('Unit not found in search path: ' + FullName);
       end;
-      unFullName := vUnitFullName;
-      Assert(IsAbsolutePath(unFullName));
-      unInProjectDir := (self.unFullName = fProject.GetFullUnitName) or
-        AnsiSameText(ExtractFilePath(self.unFullName),
+      fFullName := vUnitFullName;
+      Assert(IsAbsolutePath(FullName));
+      unInProjectDir := (self.FullName = fProject.GetFullUnitName) or
+        AnsiSameText(ExtractFilePath(self.FullName),
         ExtractFilePath(fProject.GetFullUnitName));
     end
     else
@@ -740,8 +744,8 @@ begin
     unAPIs := TAPIList.Create;
 
     fCurrentUnitParserStackEntry := nil;
-    CreateNewParser(unFullName, aDefaultDir);
-    if not FileAge(unFullName,unFileDate) then
+    CreateNewParser(FullName, aDefaultDir);
+    if not FileAge(FullName,unFileDate) then
       unFileDate := 0.0;
     state := stScan;
     stateComment := stNone;
@@ -756,7 +760,7 @@ begin
     cmtEnterEnd := -1;
     cmtExitBegin := -1;
     cmtExitEnd := -1;
-    unName := '';
+    fName := '';
     unLocation := '';
     SetLength(unUsesOffset, 0);
     SetLength(unImplementOffset, 0);
@@ -799,7 +803,7 @@ begin
                   incName := ExtractParameter(incName, 1);
                 end;
                 if FirstEl(incName, '.', -1) = '*' then
-                  incName := FirstEl(ExtractFileName(unFullName), '.', -1) +
+                  incName := FirstEl(ExtractFileName(FullName), '.', -1) +
                     '.' + ButFirstEl(incName, '.', -1);
                 if incName = '' then
                   raise Exception.Create('Include contains empty unit name : "'+ tokenData + '".' );
@@ -877,19 +881,19 @@ begin
                 begin
                   if tokenID = ptSemicolon then
                     state := stScan;
-                  if unName <> '' then
+                  if fName <> '' then
                   begin
-                    uun := UpperCase(unName);
-                    unUnits.Add(fProject.LocateOrCreateUnit(unName, ExpandLocation(unLocation),
+                    uun := UpperCase(fName);
+                    unUnits.Add(fProject.LocateOrCreateUnit(fName, ExpandLocation(unLocation),
                       (uun = ugpprof) or fProject.IsAnExcludedUnit(uun))as TUnit);
                   end;
-                  unName := '';
+                  fName := '';
                   unLocation := '';
                 end
                 else if tokenID = ptIdentifier then // unit name
-                  unName := unName + tokenData
+                  fName := fName + tokenData
                 else if tokenID = ptPoint then
-                  unName := unName + '.'
+                  fName := fName + '.'
                 else if tokenID = ptStringConst then
                 // unit location from "in 'somepath\someunit.pas'" (dpr-file)
                   unLocation := tokenData
@@ -1231,7 +1235,7 @@ begin
   while LEnumor.MoveNext do
   begin
     if LEnumor.Current.Data.prInstrumented then
-      idt.RegisterProc(unName, unFullName, LEnumor.Current.Data.Name,
+      idt.RegisterProc(fName, FullName, LEnumor.Current.Data.Name,
         LEnumor.Current.Data.prHeaderLineNum);
   end;
   LEnumor.Free;
@@ -1316,12 +1320,12 @@ var
 begin { TUnit.Instrument }
   if Length(unImplementOffset) = 0 then
     raise Exception.Create('No implementation part defined in unit ' +
-      unName + '!');
+      fName + '!');
 
   if aBackupFile then
-    BackupInstrumentedFile(unFullName);
+    BackupInstrumentedFile(FullName);
 
-  LFileEdit := TFileEdit.Create(unFullName);
+  LFileEdit := TFileEdit.Create(FullName);
   lGpParserTextReplacer := TGpParserTextReplacer.Create(LFileEdit);
   try
     // update uses...
@@ -1374,7 +1378,7 @@ begin { TUnit.Instrument }
       end
       else
       begin
-        nameId := aIDT.RegisterProc(unName, unFullName, pr.Name,
+        nameId := aIDT.RegisterProc(fName, FullName, pr.Name,
           pr.prHeaderLineNum);
 
         if haveInst then
