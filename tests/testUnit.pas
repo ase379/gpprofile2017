@@ -10,6 +10,7 @@ procedure TestFunctionNestedType;
 ///  The function simulations
 /// </summary>
 procedure TestFunctionWithEndFunctions;
+procedure TestFunctionWithNestedVariantRecord();
 procedure TestThread();
 
 implementation
@@ -56,5 +57,20 @@ begin
   lThread.free;
 end;
 
+procedure TestFunctionWithNestedVariantRecord();
+type
+  TDataRec = record
+               Name: String;
+               IsValid: Boolean;
+               Data    : record
+                             Byte1,
+                             Byte2 : byte;
+                           end;
+end;
+const
+  cA1 = 1;
+  cA2 = 2;
+begin
+end;
 
 end.
