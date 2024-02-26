@@ -9,7 +9,7 @@ object frmMainInstrumentation: TfrmMainInstrumentation
     Top = 25
     Height = 564
   end
-  object Splitter2: TSplitter
+  object splitter2: TSplitter
     Left = 269
     Top = 25
     Height = 564
@@ -43,6 +43,17 @@ object frmMainInstrumentation: TfrmMainInstrumentation
       Caption = '&Show all folders'
       TabOrder = 1
     end
+    object btnUnitSelectionWizard: TButton
+      Left = 266
+      Top = 0
+      Width = 151
+      Height = 25
+      Align = alLeft
+      Caption = 'Unit Selection Wizard...'
+      Enabled = False
+      TabOrder = 2
+      OnClick = btnUnitSelectionWizardClick
+    end
   end
   object pnlUnits: TPanel
     Left = 0
@@ -56,23 +67,22 @@ object frmMainInstrumentation: TfrmMainInstrumentation
       AlignWithMargins = True
       Left = 3
       Top = 3
-      Width = 39
-      Height = 17
+      Width = 123
+      Height = 19
       Align = alTop
       Caption = '&Units:'
       TabOrder = 0
     end
     object vstSelectUnits: TVirtualStringTree
       Left = 0
-      Top = 44
+      Top = 48
       Width = 129
-      Height = 520
+      Height = 516
       Align = alClient
       Header.AutoSizeIndex = -1
       Header.Height = 20
       Header.MainColumn = -1
       Header.MinHeight = 20
-      PopupMenu = PopupMenu1
       TabOrder = 1
       TreeOptions.AutoOptions = [toAutoDropExpand, toAutoExpand, toAutoScrollOnExpand, toAutoSort, toAutoTristateTracking, toAutoDeleteMovedNodes, toAutoChangeScale]
       TreeOptions.MiscOptions = [toAcceptOLEDrop, toCheckSupport, toFullRepaintOnResize, toInitOnSave, toToggleOnDblClick, toWheelPanning]
@@ -81,21 +91,17 @@ object frmMainInstrumentation: TfrmMainInstrumentation
       OnChecked = vstSelectUnitsChecked
       Touch.InteractiveGestures = [igPan, igPressAndTap]
       Touch.InteractiveGestureOptions = [igoPanSingleFingerHorizontal, igoPanSingleFingerVertical, igoPanInertia, igoPanGutter, igoParentPassthrough]
-      ExplicitWidth = 126
       Columns = <>
     end
     object sbUnits: TSearchBox
       Left = 0
-      Top = 23
+      Top = 25
       Width = 129
-      Height = 21
+      Height = 23
       Align = alTop
       TabOrder = 2
       TextHint = 'Filter units...'
       OnInvokeSearch = sbUnitsInvokeSearch
-      ExplicitLeft = 56
-      ExplicitTop = 16
-      ExplicitWidth = 121
     end
   end
   object pnlClasses: TPanel
@@ -106,22 +112,21 @@ object frmMainInstrumentation: TfrmMainInstrumentation
     Align = alLeft
     BevelOuter = bvNone
     TabOrder = 2
-    ExplicitTop = 28
     object lblClasses: TStaticText
       AlignWithMargins = True
       Left = 3
       Top = 3
-      Width = 51
-      Height = 17
+      Width = 131
+      Height = 19
       Align = alTop
       Caption = '&Classes:'
       TabOrder = 0
     end
     object vstSelectClasses: TVirtualStringTree
       Left = 0
-      Top = 44
+      Top = 48
       Width = 137
-      Height = 520
+      Height = 516
       Align = alClient
       Header.AutoSizeIndex = -1
       Header.Height = 20
@@ -134,20 +139,17 @@ object frmMainInstrumentation: TfrmMainInstrumentation
       OnChecked = vstSelectClassesChecked
       Touch.InteractiveGestures = [igPan, igPressAndTap]
       Touch.InteractiveGestureOptions = [igoPanSingleFingerHorizontal, igoPanSingleFingerVertical, igoPanInertia, igoPanGutter, igoParentPassthrough]
-      ExplicitTop = 23
-      ExplicitHeight = 541
       Columns = <>
     end
     object sbClasses: TSearchBox
       Left = 0
-      Top = 23
+      Top = 25
       Width = 137
-      Height = 21
+      Height = 23
       Align = alTop
       TabOrder = 2
       TextHint = 'Filter classes...'
       OnInvokeSearch = sbClassesInvokeSearch
-      ExplicitTop = 31
     end
   end
   object pnlProcs: TPanel
@@ -162,17 +164,17 @@ object frmMainInstrumentation: TfrmMainInstrumentation
       AlignWithMargins = True
       Left = 3
       Top = 3
-      Width = 69
-      Height = 17
+      Width = 713
+      Height = 19
       Align = alTop
       Caption = 'P&rocedures:'
       TabOrder = 0
     end
     object vstSelectProcs: TVirtualStringTree
       Left = 0
-      Top = 44
+      Top = 48
       Width = 719
-      Height = 520
+      Height = 516
       Align = alClient
       Header.AutoSizeIndex = -1
       Header.Height = 20
@@ -185,28 +187,17 @@ object frmMainInstrumentation: TfrmMainInstrumentation
       OnChecked = vstSelectProcsChecked
       Touch.InteractiveGestures = [igPan, igPressAndTap]
       Touch.InteractiveGestureOptions = [igoPanSingleFingerHorizontal, igoPanSingleFingerVertical, igoPanInertia, igoPanGutter, igoParentPassthrough]
-      ExplicitTop = 23
-      ExplicitHeight = 541
       Columns = <>
     end
     object sbProcedures: TSearchBox
       Left = 0
-      Top = 23
+      Top = 25
       Width = 719
-      Height = 21
+      Height = 23
       Align = alTop
       TabOrder = 2
       TextHint = 'Filter procedures...'
       OnInvokeSearch = sbProceduresInvokeSearch
-      ExplicitTop = 31
-    end
-  end
-  object PopupMenu1: TPopupMenu
-    Left = 392
-    Top = 313
-    object mnuUnitWizard: TMenuItem
-      Caption = 'Unit Selection Wizard...'
-      OnClick = mnuUnitWizardClick
     end
   end
 end

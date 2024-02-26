@@ -47,6 +47,5 @@ begin
   Application.CreateForm(TfrmAbout, frmAbout);
   Application.CreateForm(TfrmExport, frmExport);
   Application.CreateForm(TfrmPreferenceMacros, frmPreferenceMacros);
-  Application.CreateForm(TfmUnitWizard, fmUnitWizard);
   Application.Run;
 end.

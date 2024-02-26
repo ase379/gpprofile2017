@@ -10,17 +10,29 @@ uses
   System.Actions, System.ImageList, System.Generics.Collections,
   VirtualTrees, gpParser, virtualTree.tools.checkable,
   gpParser.Units, VirtualTrees.BaseAncestorVCL, VirtualTrees.BaseTree,
-  VirtualTrees.AncestorVCL;
+  VirtualTrees.AncestorVCL, Vcl.ToolWin, Vcl.ActnMan, Vcl.ActnCtrls, Vcl.NumberBox;
 
 type
+  TOnSetCheckedStateOfNewItem = reference to procedure(const aNode : PVirtualNode);
 
   TfmUnitWizard = class(TForm)
     pnlBottom: TPanel;
     oxButton1: TButton;
     oxButton2: TButton;
     vstUnitDependencies: TVirtualStringTree;
-    lblUnitDependencies: TLabel;
+    pnlTop: TPanel;
+    btnDeselectLevels: TButton;
+    numberLevelsApplied: TNumberBox;
+    lblLevelsApplied: TLabel;
+    btnSelectLevels: TButton;
     procedure vstUnitDependenciesExpanding(Sender: TBaseVirtualTree; Node: PVirtualNode; var Allowed: Boolean);
+    procedure btnSelectLevelsClick(Sender: TObject);
+    procedure vstUnitDependenciesAddToSelection(Sender: TBaseVirtualTree; Node: PVirtualNode);
+    procedure vstUnitDependenciesRemoveFromSelection(Sender: TBaseVirtualTree; Node: PVirtualNode);
+    procedure SelectChildrenUntilLevel(const aParentNode, aFirstChildNode: PVirtualNode; aLevel : integer; const aIsChecked: boolean);
+    procedure btnDeselectLevelsClick(Sender: TObject);
+    function LocateUnit(const aUnitName : String): TUnit;
+
   private
     fInitialUnitName : string;
     fOpenProject : TProject;
@@ -30,12 +42,17 @@ type
     fSelectedUnitNames : TDictionary<string, Cardinal>;
     // lookup to detect unit recursion
     fProcessedUnitNames : TDictionary<string, Cardinal>;
-    procedure addUnit(const aParent : PVirtualNode; const aUnitName : string;const aDoRecursive: boolean);
+    fSelectedNode : pVirtualNode;
+    procedure addChildNodes(const aParent : PVirtualNode; const aUnitName : string;const aDoRecursive: boolean);
     procedure fillInUnits();
     procedure MoveSelectionsToResultList();
+    procedure EnableButtonsUponSelection();
+
+  protected
+
 
   public
-    constructor Create(AOwner: TComponent); override;
+    constructor Create(AOwner: TComponent); overload; override;
     destructor Destroy; override;
 
     function Execute(const aOpenProject : TProject;const aInitialUnitName : string): Boolean;
@@ -56,10 +73,78 @@ uses gppTree, VirtualTrees.Types;
 
 { TfmUnitWizard }
 
+function TfmUnitWizard.LocateUnit(const aUnitName : String): TUnit;
+begin
+  if not fLocateUnitCache.TryGetValue(aUnitName, result) then
+  begin
+    result := fopenProject.LocateUnit(aUnitName);
+    fLocateUnitCache.Add(aUnitName, result);
+  end;
+  if not assigned(result) then
+    raise Exception.Create('Error: Could not locate unit "'+aUnitName+'".');
+end;
+
+procedure TfmUnitWizard.SelectChildrenUntilLevel(const aParentNode, aFirstChildNode: PVirtualNode; aLevel : integer; const aIsChecked: boolean);
+
+  procedure setItemChecked(const aUnitName : String);
+  begin
+    if aIsChecked then
+      fSelectedUnitNames.AddOrSetValue(aUnitName, ord(aIsChecked))
+    else
+      fSelectedUnitNames.Remove(aUnitName);
+  end;
+
+  procedure RegisterAndExpandNode(const aParentNode : PVirtualNode; const aCurrentLevel : integer);
+  var
+    LUnit : TUnit;
+    LUnitEnumor: TRootNode<TUnit>.TEnumerator;
+    lAllowed : boolean;
+  begin
+    if aCurrentLevel >= numberLevelsApplied.ValueInt then
+     exit;
+    LUnit := LocateUnit(fVstSelectUnitTools.GetName(aParentNode));
+    LUnitEnumor := LUnit.unUnits.GetEnumerator();
+    while LUnitEnumor.MoveNext do
+    begin
+      setItemChecked(LUnitEnumor.Current.Data.Name);
+    end;
+    vstUnitDependencies.Expanded[aParentNode] := aIsChecked;
+    vstUnitDependenciesExpanding(vstUnitDependencies, aParentNode, lAllowed);
+  end;
+
+begin
+  if not assigned(aFirstChildNode) then
+    exit;
+  if aLevel > numberLevelsApplied.ValueInt then
+    exit;
+  RegisterAndExpandNode(aParentNode, aLevel);
+  var lNode := aFirstChildNode;
+  while(assigned(lNode)) do
+  begin
+    RegisterAndExpandNode(lNode, aLevel+1);
+    SelectChildrenUntilLevel(lNode, lNode.FirstChild, aLevel+1, aIsChecked);
+    lNode := lNode.NextSibling;
+  end;
+end;
+
+procedure TfmUnitWizard.btnDeselectLevelsClick(Sender: TObject);
+begin
+  vstUnitDependencies.BeginUpdate;
+
+  SelectChildrenUntilLevel(fSelectedNode, fSelectedNode.FirstChild, 0, false);
+  vstUnitDependencies.EndUpdate;
+end;
+
+procedure TfmUnitWizard.btnSelectLevelsClick(Sender: TObject);
+begin
+  vstUnitDependencies.BeginUpdate;
+  SelectChildrenUntilLevel(fSelectedNode, fSelectedNode.FirstChild, 0, true);
+  vstUnitDependencies.EndUpdate;
+end;
 
 constructor TfmUnitWizard.Create(AOwner: TComponent);
 begin
-  inherited;
+  inherited Create(aOwner);
   fVstSelectUnitTools := TCheckableListTools.Create(vstUnitDependencies, cid_Unit);
   vstUnitDependencies.TreeOptions.AutoOptions := vstUnitDependencies.TreeOptions.AutoOptions - [TVTAutoOption.toAutoTristateTracking];
   vstUnitDependencies.TreeOptions.SelectionOptions := vstUnitDependencies.TreeOptions.SelectionOptions - [TVTSelectionOption.toSyncCheckboxesWithSelection];
@@ -77,6 +162,20 @@ begin
   inherited;
 end;
 
+procedure TfmUnitWizard.EnableButtonsUponSelection();
+begin
+  var lIsAnySelected := vstUnitDependencies.SelectedCount > 0;
+  if assigned(numberLevelsApplied) then
+    numberLevelsApplied.Enabled := lIsAnySelected;
+  if assigned(lblLevelsApplied) then
+    lblLevelsApplied.Enabled := lIsAnySelected;
+
+  if assigned(btnDeSelectLevels) then
+    btnSelectLevels.Enabled := lIsAnySelected;
+  if assigned(btnDeSelectLevels) then
+    btnDeSelectLevels.Enabled := lIsAnySelected;
+end;
+
 procedure TfmUnitWizard.fillInUnits();
 var
   LNewNode : PVirtualNode;
@@ -89,24 +188,14 @@ begin
       vstUnitDependencies.CheckState[LNewNode] := TCheckState.csCheckedNormal
     else
       vstUnitDependencies.CheckState[LNewNode] := TCheckState.csUncheckedNormal;
-    addUnit(LNewNode,fInitialUnitName, false);
+    addChildNodes(LNewNode,fInitialUnitName, false);
     vstUnitDependencies.Expanded[LNewNode] := True;
   finally
     fVstSelectUnitTools.EndUpdate;
   end;
 end;
 
-procedure TfmUnitWizard.addUnit(const aParent: PVirtualNode; const aUnitName: string; const aDoRecursive: boolean);
-
-  function LocateUnit(): TUnit;
-  begin
-    if not fLocateUnitCache.TryGetValue(aUnitName, result) then
-    begin
-      result := fopenProject.LocateUnit(aUnitName);
-      fLocateUnitCache.Add(aUnitName, result);
-    end;
-  end;
-
+procedure TfmUnitWizard.addChildNodes(const aParent: PVirtualNode; const aUnitName: string; const aDoRecursive: boolean);
 var
   LUnit : TUnit;
   LUnitEnumor: TRootNode<TUnit>.TEnumerator;
@@ -116,9 +205,7 @@ var
   LMissingUnit : Boolean;
 begin
   fProcessedUnitNames.AddOrSetValue(aUnitName,fProcessedUnitNames.count);
-  LUnit := LocateUnit();
-  if not assigned(LUnit) then
-    raise Exception.Create('Error: Could not locate unit "'+aUnitName+'".');
+  LUnit := LocateUnit(aUnitName);
   begin
     LUnitEnumor := LUnit.unUnits.GetEnumerator();
     while LUnitEnumor.MoveNext do
@@ -145,11 +232,11 @@ begin
         else
         begin
           if fSelectedUnitNames.ContainsKey(LName) then
-            vstUnitDependencies.CheckState[LNewNode] := TCheckState.csCheckedNormal
+            fVstSelectUnitTools.SetCheckedState(LNewNode, TCheckedState.checked)
           else
-            vstUnitDependencies.CheckState[LNewNode] := TCheckState.csUncheckedNormal;
+            fVstSelectUnitTools.SetCheckedState(LNewNode, TCheckedState.unchecked);
           if aDoRecursive then
-             addUnit(LNewNode,LName,aDoRecursive)
+             addChildNodes(LNewNode,LName,aDoRecursive)
           else
           begin
             if LUnitEnumor.Current.Data.unUnits.Count > 0 then
@@ -184,19 +271,32 @@ begin
   end;
 end;
 
+procedure TfmUnitWizard.vstUnitDependenciesAddToSelection(Sender: TBaseVirtualTree; Node: PVirtualNode);
+begin
+  EnableButtonsUponSelection();
+  fSelectedNode := node;
+end;
+
 procedure TfmUnitWizard.vstUnitDependenciesExpanding(Sender: TBaseVirtualTree; Node: PVirtualNode;
   var Allowed: Boolean);
 begin
   if assigned(Node.Parent) then
-    addUnit(Node,fVstSelectUnitTools.GetName(Node), False);
+    addChildNodes(Node,fVstSelectUnitTools.GetName(Node), False);
+end;
+
+procedure TfmUnitWizard.vstUnitDependenciesRemoveFromSelection(Sender: TBaseVirtualTree; Node: PVirtualNode);
+begin
+  EnableButtonsUponSelection();
+  if node = fSelectedNode then
+    fSelectedNode := nil;
 end;
 
 function TfmUnitWizard.Execute(const aOpenProject: TProject; const aInitialUnitName: String): Boolean;
-
 begin
   fOpenProject := aOpenProject;
   fInitialUnitName := aInitialUnitName;
   fillInUnits;
+  EnableButtonsUponSelection();
   result := ShowModal = mrOk;
   if result then
     MoveSelectionsToResultList();

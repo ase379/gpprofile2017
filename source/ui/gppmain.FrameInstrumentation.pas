@@ -17,7 +17,7 @@ type
 
   TfrmMainInstrumentation = class(TFrame)
     Splitter1: TSplitter;
-    Splitter2: TSplitter;
+    splitter2: TSplitter;
     pnlTop: TPanel;
     chkShowDirStructure: TCheckBox;
     pnlUnits: TPanel;
@@ -29,24 +29,23 @@ type
     pnlProcs: TPanel;
     lblProcs: TStaticText;
     vstSelectProcs: TVirtualStringTree;
-    PopupMenu1: TPopupMenu;
-    mnuUnitWizard: TMenuItem;
     chkShowAll: TCheckBox;
     sbUnits: TSearchBox;
     sbProcedures: TSearchBox;
     sbClasses: TSearchBox;
+    btnUnitSelectionWizard: TButton;
     procedure vstSelectProcsAddToSelection(Sender: TBaseVirtualTree; Node: PVirtualNode);
     procedure vstSelectProcsChecked(Sender: TBaseVirtualTree; Node: PVirtualNode);
     procedure vstSelectClassesAddToSelection(Sender: TBaseVirtualTree; Node: PVirtualNode);
     procedure vstSelectClassesChecked(Sender: TBaseVirtualTree; Node: PVirtualNode);
     procedure vstSelectUnitsChecked(Sender: TBaseVirtualTree; Node: PVirtualNode);
-    procedure mnuUnitWizardClick(Sender: TObject);
     procedure chkShowDirStructureClick(Sender: TObject);
     procedure vstSelectUnitsAddToSelection(Sender: TBaseVirtualTree; Node: PVirtualNode);
     procedure btnSelectAllClick(Sender: TObject);
     procedure sbUnitsInvokeSearch(Sender: TObject);
     procedure sbClassesInvokeSearch(Sender: TObject);
     procedure sbProceduresInvokeSearch(Sender: TObject);
+    procedure btnUnitSelectionWizardClick(Sender: TObject);
   private
     fVstSelectUnitTools       : TCheckableListTools;
     fVstSelectClassTools      : TCheckableListTools;
@@ -278,7 +277,7 @@ begin
   finally
     s.free;
   end;
-  mnuUnitWizard.Enabled := false;
+  btnUnitSelectionWizard.Enabled := false;
   if assigned(LFirstNode) then
   begin
     fVstSelectUnitTools.setSelectedIndex(0);
@@ -302,7 +301,7 @@ begin
 end;
 
 
-procedure TfrmMainInstrumentation.mnuUnitWizardClick(Sender: TObject);
+procedure TfrmMainInstrumentation.btnUnitSelectionWizardClick(Sender: TObject);
 var
   LEnum : TVTVirtualNodeEnumerator;
   LWizard : tfmUnitWizard;
@@ -318,7 +317,7 @@ begin
   if not (fVstSelectUnitTools.GetSpecialTagSet(fVstSelectUnitTools.GetSelectedNode()) = []) then
       exit;
 
-  LWizard := tfmUnitWizard.Create(Self);
+  LWizard := tfmUnitWizard.Create(nil);
   try
     LEnum := vstSelectUnits.Nodes().GetEnumerator;
     while(LEnum.MoveNext) do
@@ -674,7 +673,7 @@ begin
       else if openProject <> nil then
         OnShowStatusBarMessage(openProject.Name, false);
       OnReloadSource(LUnitPath,0); // force reset
-      mnuUnitWizard.Enabled := assigned(LSelectedNode) and (fVstSelectUnitTools.GetSpecialTagSet(LSelectedNode) = []);
+      btnUnitSelectionWizard.Enabled := assigned(LSelectedNode) and (fVstSelectUnitTools.GetSpecialTagSet(LSelectedNode) = []);
     finally
       fVstSelectUnitTools.EndUpdate();
       fVstSelectClassTools.EndUpdate;
