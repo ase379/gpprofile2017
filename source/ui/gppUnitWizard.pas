@@ -117,14 +117,25 @@ begin
     exit;
   if aLevel > numberLevelsApplied.ValueInt then
     exit;
-  RegisterAndExpandNode(aParentNode, aLevel);
+  if aIsChecked then
+    RegisterAndExpandNode(aParentNode, aLevel);
   var lNode := aFirstChildNode;
   while(assigned(lNode)) do
   begin
-    RegisterAndExpandNode(lNode, aLevel+1);
-    SelectChildrenUntilLevel(lNode, lNode.FirstChild, aLevel+1, aIsChecked);
+    if aIsChecked then
+    begin
+      RegisterAndExpandNode(lNode, aLevel+1);
+      SelectChildrenUntilLevel(lNode, lNode.FirstChild, aLevel+1, aIsChecked);
+    end
+    else
+    begin
+      SelectChildrenUntilLevel(lNode, lNode.FirstChild, aLevel+1, aIsChecked);
+      RegisterAndExpandNode(lNode, aLevel+1);
+    end;
     lNode := lNode.NextSibling;
   end;
+  if not aIsChecked then
+    RegisterAndExpandNode(aParentNode, aLevel);
 end;
 
 procedure TfmUnitWizard.btnDeselectLevelsClick(Sender: TObject);
