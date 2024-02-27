@@ -30,7 +30,7 @@ type
       aCommentType: TCommentType; aParseAsm: boolean;const anErrorList : TStrings);
     procedure Rescan(aExclUnits: String;const aConditionals: string;
       aCommentType: TCommentType; aParseAsm: boolean);
-    procedure GetUnitList(var aSL: TStringList;const aProjectDirOnly, aGetInstrumented: boolean);
+    procedure GetUnitList(var aInfoList: TUnitInstrumentationInfoList;const aProjectDirOnly, aGetInstrumented: boolean);
     procedure GetProcList(unitName: string; s: TStringList;getInstrumented: boolean);
     function GetUnitPath(unitName: string): string;
     procedure InstrumentAll(Instrument, projectDirOnly: boolean);
@@ -143,14 +143,14 @@ begin
   end;
 end; { TProject.Parse }
 
-procedure TProject.GetUnitList(var aSL: TStringList;
+procedure TProject.GetUnitList(var aInfoList: TUnitInstrumentationInfoList;
   const aProjectDirOnly, aGetInstrumented: boolean);
 var
   un: TUnit;
   LUnitEnumor: TRootNode<TUnit>.TEnumerator;
-  s: String;
+  lEntry : TUnitInstrumentationInfo;
 begin
-  aSL.Clear;
+  aInfoList.Clear;
   with prUnits do
   begin
     LUnitEnumor := GetEnumerator();
@@ -160,18 +160,17 @@ begin
       if (not un.unExcluded) and (un.unProcs.Count > 0) and
         ((not aProjectDirOnly) or un.unInProjectDir) then
       begin
-        s := un.Name;
-
-        if aGetInstrumented then
-          // Add 2 char flags to indicate, whether unit is fully instrumented or nothing is instrumented
-          s := s + IntToStr(Ord(un.unAllInst)) + IntToStr(Ord(un.unNoneInst));
-
-        aSL.Add(s);
+        lEntry := TUnitInstrumentationInfo.create();
+        lEntry.UnitName := un.Name;
+        lEntry.IsFullyInstrumented := un.unAllInst;
+        lEntry.IsNothingInstrumented := un.unNoneInst;
+        aInfoList.Add(lEntry);
       end;
     end;
     LUnitEnumor.Free;
   end;
 end; { TProject.GetUnitList }
+
 
 procedure TProject.GetProcList(unitName: string; s: TStringList;
   getInstrumented: boolean);
@@ -436,29 +435,26 @@ end;
 
 procedure TProject.SaveInstrumentalizationSelection(const aFilename: string);
 var
-  LInstrumentedUnits : TStringList;
+  LInstrumentedUnits : TUnitInstrumentationInfoList;
   LInstrumentedProcs : TStringList;
   LSerializer : TUnitSelectionSerializer;
-  LUnitNameWithInstr : string;
   LUnitName : string;
   LNoUnits : Boolean;
   LProcNameWithInstr : string;
   LProcName : string;
 begin
-  LInstrumentedUnits := TStringList.Create();
+  LInstrumentedUnits := TUnitInstrumentationInfoList.Create();
   LInstrumentedProcs := TStringList.Create();
   LSerializer := TUnitSelectionSerializer.Create(aFilename);
   try
     GetUnitList(LInstrumentedUnits,false, true);
 
-    for LUnitNameWithInstr in LInstrumentedUnits do
+    for var LInfo in LInstrumentedUnits do
     begin
-      LUnitName := Copy(LUnitNameWithInstr,1,Length(LUnitNameWithInstr)-2);
-      LNoUnits := (LUnitNameWithInstr[Length(LUnitNameWithInstr)] = '1');
-      if not LNoUnits then
+      if not LInfo.IsNothingInstrumented then
       begin
-        LSerializer.AddUnit(LUnitName);
-        GetProcList(LUnitName,LInstrumentedProcs,true);
+        LSerializer.AddUnit(LInfo.UnitName);
+        GetProcList(LInfo.UnitName,LInstrumentedProcs,true);
         for LProcNameWithInstr in LInstrumentedProcs do
         begin
           // evaluate instrumented prefix

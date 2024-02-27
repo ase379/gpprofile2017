@@ -101,7 +101,7 @@ implementation
 uses
   GpString, gppUnitWizard, gpParser.Units, gpParser.Selections,
   gppMain.FrameInstrumentation.SelectionInfo, System.StrUtils, System.Types,
-  VirtualTrees.Types;
+  VirtualTrees.Types, gpParser.types;
 
 {$R *.dfm}
 
@@ -186,40 +186,36 @@ end;
 
 procedure TfrmMainInstrumentation.FillUnitTree(const aOnlyUnitsOfDPR: boolean; const aShowDirectories: boolean);
 var
-  s    : TStringList;
-  i    : integer;
-  alli : boolean;
+  lUnitInfoList : TUnitInstrumentationInfoList;
+  lAllInstrumented : boolean;
   nonei: boolean;
-  allu : boolean;
-  noneu: boolean;
   LFirstNode,
   lDirectoryNode,
   lParentDirNode,
   LNode : PVirtualNode;
-  lFullPath,
-  lUnitName : String;
+  lFullPath: String;
   lSplittedPath : TStringDynArray;
   j: Integer;
 begin
   LFirstNode := nil;
-  s := TStringList.Create;
+  lUnitInfoList := TUnitInstrumentationInfoList.Create;
   try
     fVstSelectUnitTools.BeginUpdate;
     fVstSelectUnitTools.Clear();
     try
       if openProject <> nil then
       begin
-        openProject.GetUnitList(s, aOnlyUnitsOfDPR, true);
-        s.Sorted := true;
-        alli := true;
+        openProject.GetUnitList(lUnitInfoList, aOnlyUnitsOfDPR, true);
+        lUnitInfoList.SortByName;
+        lAllInstrumented := true;
         nonei := true;
         LFirstNode := fVstSelectUnitTools.AddEntry(nil,'<all units>', [ste_AllItem]);
-        for i := 0 to s.Count-1 do
+        for var lUnitInfo in lUnitInfoList do
         begin
-          lUnitName := ButLast(s[i], 2);
+
           if aShowDirectories then
           begin
-            lFullPath := openproject.GetUnitPath(lUnitName);
+            lFullPath := openproject.GetUnitPath(lUnitInfo.UnitName);
             lSplittedPath := SplitString(lFullPath, '\');
 
             lDirectoryNode := nil;
@@ -236,37 +232,32 @@ begin
               end;
               lParentDirNode := lDirectoryNode;
             end;
-            LNode := fVstSelectUnitTools.AddEntry(lDirectoryNode, lUnitName);
+            LNode := fVstSelectUnitTools.AddEntry(lDirectoryNode, lUnitInfo.UnitName);
           end
           else
           begin
-            LNode := fVstSelectUnitTools.AddEntry(nil,lUnitName);
+            LNode := fVstSelectUnitTools.AddEntry(nil,lUnitInfo.UnitName);
           end;
-
-          // Two last chars in each element of the list, returned by GetUnitList, are the two flags,
-          // ("0" and "1"): first indicates "All Instrumented", second - "None instrumented" state
-          allu  := (s[i][Length(s[i])-1] = '1');
-          noneu := (s[i][Length(s[i])] = '1');
-          if allu then
+          if lUnitInfo.IsFullyInstrumented then
           begin
             vstSelectUnits.CheckState[LNode] := TCheckState.csCheckedNormal;
             nonei := false;
           end
-          else if noneu then
+          else if lUnitInfo.IsNothingInstrumented then
           begin
             vstSelectUnits.CheckState[LNode] := TCheckState.csUncheckedNormal;
-            alli := false;
+            lAllInstrumented := false;
           end
           else
           begin
             vstSelectUnits.CheckState[LNode] := TCheckState.csMixedNormal;
-            alli := false;
+            lAllInstrumented := false;
             nonei:= false;
           end;
         end;
         if nonei then
           vstSelectUnits.CheckState[LFirstNode] := TCheckState.csUncheckedNormal
-        else if alli  then
+        else if lAllInstrumented  then
           vstSelectUnits.CheckState[LFirstNode] := TCheckState.csCheckedNormal
         else
           vstSelectUnits.CheckState[LFirstNode] := TCheckState.csMixedNormal;
@@ -275,7 +266,7 @@ begin
       fVstSelectUnitTools.EndUpdate;
     end;
   finally
-    s.free;
+    lUnitInfoList.free;
   end;
   btnUnitSelectionWizard.Enabled := false;
   if assigned(LFirstNode) then
