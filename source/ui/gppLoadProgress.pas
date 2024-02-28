@@ -42,6 +42,7 @@ type
 
 
   procedure InitProgressBar(const aOwner : TForm;const aTaskBar : TTaskbar;const aMessage : string;const aMarquee, aCancel: Boolean);
+  procedure SetProgressText(const aText: String);
   procedure SetProgressBarPause();
   procedure SetProgressBarError();
   procedure SetProgressBarOverlayHint(const aHint : string);
@@ -67,11 +68,18 @@ begin
   frmLoadProgress.Marquee := aMarquee;
   frmLoadProgress.Cancel := aCancel;
   frmLoadProgress.Text := aMessage;
+  Application.ProcessMessages;
 end;
 
 procedure ShowProgressBar();
 begin
   frmLoadProgress.Show;
+end;
+
+procedure SetProgressText(const aText: String);
+begin
+  if assigned(frmLoadProgress) then
+    frmLoadProgress.Text := aText;
 end;
 
 procedure SetProgressBarPercent(const aValue : Integer);
