@@ -64,9 +64,8 @@ type
     procedure cbxSelectThreadProcChange(Sender: TObject);
     procedure cbxSelectThreadUnitChange(Sender: TObject);
     procedure cbxSelectThreadClassChange(Sender: TObject);
-    procedure vstProcsNodeClick(Sender: TBaseVirtualTree; const HitInfo: THitInfo);
     procedure PageControl2Change(Sender: TObject);
-    procedure vstCalleesNodeClick(Sender: TBaseVirtualTree; const HitInfo: THitInfo);
+    procedure executeChange(Sender: TBaseVirtualTree);
     procedure vstCalleesNodeDblClick(Sender: TBaseVirtualTree; const HitInfo: THitInfo);
     procedure actBrowsePreviousExecute(Sender: TObject);
     procedure actBrowseNextExecute(Sender: TObject);
@@ -78,6 +77,9 @@ type
     procedure sbFilterClassesInvokeSearch(Sender: TObject);
     procedure sbFilterUnitsInvokeSearch(Sender: TObject);
     procedure sbFilterThreadsInvokeSearch(Sender: TObject);
+    procedure vstProcsChange(Sender: TBaseVirtualTree; Node: PVirtualNode);
+    procedure vstCallersChange(Sender: TBaseVirtualTree; Node: PVirtualNode);
+    procedure vstCalleesChange(Sender: TBaseVirtualTree; Node: PVirtualNode);
   private
     callersPerc               : real;
     calleesPerc               : real;
@@ -269,7 +271,12 @@ begin
       vstThreads.SetFocus;
 end;
 
-procedure TfrmMainProfiling.vstCalleesNodeClick(Sender: TBaseVirtualTree; const HitInfo: THitInfo);
+procedure TfrmMainProfiling.vstCalleesChange(Sender: TBaseVirtualTree; Node: PVirtualNode);
+begin
+  executeChange(vstCallees);
+end;
+
+procedure TfrmMainProfiling.executeChange(Sender: TBaseVirtualTree);
 var
   LProfilingType : TProfilingInfoTypeEnum;
   LEnum : TVTVirtualNodeEnumerator;
@@ -335,7 +342,12 @@ begin
   end;
 end;
 
-procedure TfrmMainProfiling.vstProcsNodeClick(Sender: TBaseVirtualTree; const HitInfo: THitInfo);
+procedure TfrmMainProfiling.vstCallersChange(Sender: TBaseVirtualTree; Node: PVirtualNode);
+begin
+  executeChange(vstCallers);
+end;
+
+procedure TfrmMainProfiling.vstProcsChange(Sender: TBaseVirtualTree; Node: PVirtualNode);
 begin
   lvProcsClick(Sender);
 end;
@@ -452,7 +464,6 @@ begin
     end;
   end;
 end; { TfrmMainProfiling.FillProcView }
-
 
 procedure TfrmMainProfiling.lvProcsClick(Sender: TObject);
 var

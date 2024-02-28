@@ -148,7 +148,7 @@ object frmMainProfiling: TfrmMainProfiling
             PopupMenu = popAnalysisListview
             TabOrder = 0
             TreeOptions.PaintOptions = [toShowButtons, toShowDropmark, toThemeAware, toUseBlendedImages]
-            OnNodeClick = vstCalleesNodeClick
+            OnChange = vstCallersChange
             OnNodeDblClick = vstCalleesNodeDblClick
             Touch.InteractiveGestures = [igPan, igPressAndTap]
             Touch.InteractiveGestureOptions = [igoPanSingleFingerHorizontal, igoPanSingleFingerVertical, igoPanInertia, igoPanGutter, igoParentPassthrough]
@@ -243,7 +243,7 @@ object frmMainProfiling: TfrmMainProfiling
             PopupMenu = popAnalysisListview
             TabOrder = 0
             TreeOptions.PaintOptions = [toShowButtons, toShowDropmark, toThemeAware, toUseBlendedImages]
-            OnNodeClick = vstProcsNodeClick
+            OnChange = vstProcsChange
             Touch.InteractiveGestures = [igPan, igPressAndTap]
             Touch.InteractiveGestureOptions = [igoPanSingleFingerHorizontal, igoPanSingleFingerVertical, igoPanInertia, igoPanGutter, igoParentPassthrough]
             ExplicitTop = 20
@@ -344,7 +344,7 @@ object frmMainProfiling: TfrmMainProfiling
           PopupMenu = popAnalysisListview
           TabOrder = 0
           TreeOptions.PaintOptions = [toShowButtons, toShowDropmark, toThemeAware, toUseBlendedImages]
-          OnNodeClick = vstCalleesNodeClick
+          OnChange = vstCalleesChange
           OnNodeDblClick = vstCalleesNodeDblClick
           Touch.InteractiveGestures = [igPan, igPressAndTap]
           Touch.InteractiveGestureOptions = [igoPanSingleFingerHorizontal, igoPanSingleFingerVertical, igoPanInertia, igoPanGutter, igoParentPassthrough]
