@@ -276,7 +276,8 @@ begin
     LCheckedState := fVstSelectUnitTools.GetCheckedState(LEnum.Current);
     if LCheckedState = TCheckedState.checked then
     begin
-      fSelectedUnitNames.AddOrSetValue(LName, 1);
+      if not fSelectedUnitNames.ContainsKey(LName) then
+        fSelectedUnitNames.Add(LName, 0);
     end;
   end;
 end;
