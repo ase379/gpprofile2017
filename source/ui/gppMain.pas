@@ -593,7 +593,10 @@ begin
       try
         fCurrentProfile := TResults.Create(profile,ParseProfileCallback);
         if not fCurrentProfile.IsDigest then
-          fCurrentProfile.SaveDigest(fCurrentProfile.FileName);
+        begin
+          SetProgressText('Writing optimized output...');
+          fCurrentProfile.SaveDigest(fCurrentProfile.FileName, ParseProfileCallback);
+        end;
       except
         on e: exception do
         begin

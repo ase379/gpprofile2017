@@ -164,7 +164,7 @@ type
     /// Writes a digest (compressed) version of the given prf file. If the conversion is sucessfull, the prf will
     /// be replaced. Else the prf will stay as it is.
     /// </summary>
-    procedure   SaveDigest(const aPrfFileName: string);
+    procedure   SaveDigest(const aPrfFileName: string; callback: TProgressCallback);
     procedure   Rename(fileName: string);
     property    FileName: String read resName;
     property    Version: integer read resPrfVersion;
@@ -901,18 +901,48 @@ begin
   resNullErrorAcc := 0;
 end; { TResults.LoadCalibration }
 
-procedure TResults.SaveDigest(const aPrfFileName: string);
+procedure TResults.SaveDigest(const aPrfFileName: string; callback: TProgressCallback);
+var
+  lCount : uint64;
+  lMaxCount : uint64;
+  lPercentage : integer;
+  llLastPercentage : integer;
+  procedure incrementAndTriggerProgress();
+  begin
+    if @callback <> nil then
+    begin
+      inc(lCount);
+      lPercentage := round((lCount / lMaxCount) * 100);
+      if llLastPercentage <> lPercentage then
+      begin
+        Application.ProcessMessages;
+        callback(round(lPercentage));
+        Application.ProcessMessages;
+      end;
+      llLastPercentage := lPercentage;
+    end;
+  end;
+
 var
   i,j,k: integer;
   LInfo : TCallGraphInfo;
   lMemComsumptionList : TMemConsumptionForProcedureCalls;
   //lMemComsumptionEntry : TMemConsumptionEntry;
   lDigestFilename : String;
+
 begin
   lDigestFilename := aPrfFileName + '.dgst';
   resFile := TGpHugeFile.CreateEx(lDigestFilename,FILE_FLAG_SEQUENTIAL_SCAN+FILE_ATTRIBUTE_NORMAL);
   resFile.RewriteBuffered(1);
   try
+    var lNumberOfUnits := High(resUnits)-Low(resUnits)+1;
+    var lNumberOfClasses := High(resClasses)-Low(resClasses)+1;
+    var lNumberOfProcedures := High(resProcedures)-Low(resProcedures)+1;
+    var graphInfoCount := fCallGraphInfoMaxElementCount*fCallGraphInfoMaxElementCount+1;
+    var memInfoCount := fProcedureMemCallList.Count;
+    lCount := 0;
+    lMaxCount := lNumberOfUnits + lNumberOfClasses + lNumberOfProcedures + graphInfoCount + memInfoCount;
+
     WriteTag(PR_DIGEST);
     WriteTag(PR_DIGESTVER);
     WriteInt(PRF_DIGESTVER_CURRENT);
@@ -924,15 +954,17 @@ begin
     WriteInt(High(resThreads)-Low(resThreads)+1);
     for i := Low(resThreads) to High(resThreads) do
       with resThreads[i] do begin
+        incrementAndTriggerProgress();
         WriteInt(teThread);
         WriteString(teName);
         WriteInt64(teTotalTime);
         WriteInt(teTotalCnt);
       end;
     WriteTag(PR_DIGUNITS);
-    WriteInt(High(resUnits)-Low(resUnits)+1);
+    WriteInt(lNumberOfUnits);
     for i := Low(resUnits) to High(resUnits) do
       with resUnits[i] do begin
+        incrementAndTriggerProgress();
         WriteString(ueName);
         WriteString(ueQual);
         WriteInt(High(ueTotalTime)-Low(ueTotalTime)+1);
@@ -943,9 +975,11 @@ begin
           WriteInt(ueTotalCnt[j]);
       end;
     WriteTag(PR_DIGCLASSES);
-    WriteInt(High(resClasses)-Low(resClasses)+1);
+
+    WriteInt(lNumberOfClasses);
     for i := Low(resClasses) to High(resClasses) do
       with resClasses[i] do begin
+        incrementAndTriggerProgress();
         WriteString(ceName);
         WriteInt(ceUID);
         WriteInt(ceFirstLn);
@@ -957,9 +991,10 @@ begin
           WriteInt(ceTotalCnt[j]);
       end;
     WriteTag(PR_DIGPROCS);
-    WriteInt(High(resProcedures)-Low(resProcedures)+1);
+    WriteInt(lNumberOfProcedures);
     for i := Low(resProcedures) to High(resProcedures) do
       with resProcedures[i] do begin
+        incrementAndTriggerProgress();
         WriteString(peName);
         if resPrfDigestVer >= PRF_DIGESTVER_4 then
           WriteInt(pePID);
@@ -989,6 +1024,7 @@ begin
     for i := 0 to fCallGraphInfoMaxElementCount-1 do
       for k := 0 to fCallGraphInfoMaxElementCount-1 do begin
       begin
+        incrementAndTriggerProgress();
         LInfo := fCallGraphInfoDict.GetGraphInfo(i,k);
         if Assigned(LInfo) then
         begin
@@ -1015,6 +1051,7 @@ begin
     WriteCardinal(fProcedureMemCallList.Count);
     for i := 0 to fProcedureMemCallList.Count-1 do
     begin
+      incrementAndTriggerProgress();
       lMemComsumptionList := fProcedureMemCallList[i];
       WriteInt(lMemComsumptionList.ProcId);
       WriteInt(lMemComsumptionList.Count);
