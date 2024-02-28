@@ -13,18 +13,13 @@ type
   TfrmLoadProgress = class(TForm)
     pnlLoadResults: TPanel;
     ProgressBar1: TProgressBar;
-    btnCancelLoad: TButton;
     Label1: TLabel;
-    procedure FormKeyPress(Sender: TObject; var Key: Char);
     procedure btnCancelLoadClick(Sender: TObject);
     procedure MarqueeTimerTimer(Sender: TObject);
   private
     fMarquee : boolean;
-    fCancel : Boolean;
-    fCancelPressed : boolean;
     fProgressTaskbar : TTaskbar;
     procedure setMarquee(const Value: boolean);
-    procedure setCancel(const Value: boolean);
     function getText: string;
     procedure setText(const Value: string);
     function getPercentage: Integer;
@@ -33,9 +28,7 @@ type
   public
     constructor Create(AOwner: TComponent);override;
     property Marquee : boolean read fMarquee write setMarquee;
-    property Cancel : boolean read fCancel write setCancel;
     property Text : string read getText write setText;
-    property CancelPressed : boolean read fCancelPressed;
     property Percentage : Integer read getPercentage write setPercentage;
     property ProgressTaskbar : TTaskBar read fProgressTaskbar write fProgressTaskbar;
   end;
@@ -66,7 +59,6 @@ begin
     frmLoadProgress := TfrmLoadProgress.Create(aOwner);
   frmLoadProgress.ProgressTaskbar := aTaskBar;
   frmLoadProgress.Marquee := aMarquee;
-  frmLoadProgress.Cancel := aCancel;
   frmLoadProgress.Text := aMessage;
   Application.ProcessMessages;
 end;
@@ -121,12 +113,6 @@ end;
 
 {$R *.DFM}
 
-procedure TfrmLoadProgress.FormKeyPress(Sender: TObject; var Key: Char);
-begin
-  if fCancel and (Key = #27) then
-    btnCancelLoadClick(btnCancelLoad);
-end;
-
 function TfrmLoadProgress.getPercentage: Integer;
 begin
   result := frmLoadProgress.ProgressBar1.Position;
@@ -140,15 +126,6 @@ end;
 procedure TfrmLoadProgress.setText(const Value: string);
 begin
   Label1.Caption := value;
-end;
-
-procedure TfrmLoadProgress.setCancel(const Value: boolean);
-begin
-  fCancel := Value;
-  if fCancel then
-    btnCancelLoad.Show
-  else
-    btnCancelLoad.Hide;
 end;
 
 procedure TfrmLoadProgress.setMarquee(const Value: boolean);
@@ -184,7 +161,6 @@ end;
 
 procedure TfrmLoadProgress.btnCancelLoadClick(Sender: TObject);
 begin
-  fCancelPressed := true;
   Hide;
 end;
 

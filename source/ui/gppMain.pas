@@ -198,7 +198,6 @@ type
     currentProject            : string;
     currentProfile            : string;
     cancelLoading             : boolean;
-    loadCanceled              : boolean;
     storedPanel1Width         : integer;
     loadedSource              : string;
     undelProject              : string;
@@ -575,7 +574,7 @@ end;
 function TfrmMain.ParseProfileCallback(percent: integer): boolean;
 begin
   frmLoadProgress.Percentage := percent;
-  Result := not frmLoadProgress.CancelPressed;
+  Result := true;
 end; { TfrmMain.ParseProfileCallback }
 
 procedure TfrmMain.ParseProfile(profile: string);
@@ -629,7 +628,6 @@ begin
   end
   else
   begin
-    loadCanceled := frmLoadProgress.CancelPressed;
     StatusPanel0('Loading of results finished, it took '+fNeededSeconds.ToString+' seconds.',true);
 
     LOpenResult := true;
@@ -873,7 +871,6 @@ begin
   PageControl1.ActivePage := tabInstrumentation;
   DisablePC2;
   DisablePC;
-  loadCanceled := false;
   TSessionData.CurrentProjectName := '';
 
   MRU.RegistryKey := cRegistryRoot+'\MRU\DPR';
@@ -1270,7 +1267,7 @@ begin
   if PageControl1.ActivePage = tabInstrumentation then
     Caption := Caption+IFF(currentProject <> '',' - '+currentProject,'')
   else
-    Caption := Caption+IFF(currentProfile <> '',' - '+currentProfile,'')+IFF(loadCanceled,' (incomplete)','');
+    Caption := Caption+IFF(currentProfile <> '',' - '+currentProfile,'');
   Application.Title := Caption;
 end;
 
@@ -1294,7 +1291,7 @@ end;
 
 procedure TfrmMain.MRUPrfClick(Sender: TObject; LatestFile: String);
 begin
-  if not assigned(fCurrentProfile) or (fCurrentProfile.FileName <> LatestFile) or loadCanceled then
+  if not assigned(fCurrentProfile) or (fCurrentProfile.FileName <> LatestFile) then
     LoadProfile(LatestFile);
 end;
 

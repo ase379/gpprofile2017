@@ -438,8 +438,6 @@ var
   LInstrumentedUnits : TUnitInstrumentationInfoList;
   LInstrumentedProcs : TStringList;
   LSerializer : TUnitSelectionSerializer;
-  LUnitName : string;
-  LNoUnits : Boolean;
   LProcNameWithInstr : string;
   LProcName : string;
 begin

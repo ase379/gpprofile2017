@@ -9,11 +9,8 @@ object frmLoadProgress: TfrmLoadProgress
   Color = clBtnFace
   ParentFont = True
   KeyPreview = True
-  OldCreateOrder = False
   Position = poDefault
-  OnKeyPress = FormKeyPress
-  PixelsPerInch = 96
-  TextHeight = 13
+  TextHeight = 17
   object pnlLoadResults: TPanel
     Left = 0
     Top = 0
@@ -37,22 +34,12 @@ object frmLoadProgress: TfrmLoadProgress
     object ProgressBar1: TProgressBar
       AlignWithMargins = True
       Left = 7
-      Top = 34
-      Width = 361
-      Height = 18
+      Top = 31
+      Width = 424
+      Height = 21
       Align = alClient
       TabOrder = 0
-    end
-    object btnCancelLoad: TButton
-      AlignWithMargins = True
-      Left = 374
-      Top = 34
-      Width = 57
-      Height = 18
-      Align = alRight
-      Caption = 'Cancel'
-      TabOrder = 1
-      OnClick = btnCancelLoadClick
+      ExplicitWidth = 361
     end
   end
 end
