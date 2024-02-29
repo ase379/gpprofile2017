@@ -94,7 +94,7 @@ begin
         DisableUserDefines := ReadBool   ('DisableUserDefines',false);
         UserDefines        := ReadString ('UserDefines','');
         ProfilingAutostart := ReadBool   ('ProfilingAutostart',true);
-        ProfilingMemSupport := ReadBool ('ProfilingMemSupport', true);
+        ProfilingMemSupport := ReadBool ('ProfilingMemSupport', false);
         InstrumentAssembler:= ReadBool   ('InstrumentAssembler',false);
         MakeBackupOfInstrumentedFile := ReadBool('MakeBackupOfInstrumentedFile', true);
         PrfFilenameMakro   := ReadString ('PrfFilenameMakro',TPrfPlaceholder.PrfPlaceholderToMacro(TPrfPlaceholderType.ModulePath));
