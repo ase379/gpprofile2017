@@ -44,6 +44,9 @@ type
     function GetName(const anIndex: Cardinal;const column : integer = 0): string; overload;
     function GetName(const aNode : PVirtualNode;const column : integer = 0) : string; overload; virtual;
     procedure setSelectedIndex(const anIndex : cardinal);
+    procedure setExpanded(const aNode : PVirtualNode; const aExpandedState : boolean);
+
+
     procedure SetVisible(const aNode: PVirtualNode;const aVisible : boolean);
 
     class function FormatTime(const ticks,frequency: int64): string; overload;
@@ -129,6 +132,11 @@ begin
   result := '';
   if Assigned(aNode) then
     fList.OnGetText(fList,aNode,column,TVSTTextType.ttNormal,Result);
+end;
+
+procedure TVirtualTreeBaseTools.setExpanded(const aNode: PVirtualNode; const aExpandedState : boolean);
+begin
+  fList.Expanded[aNode] := aExpandedState;
 end;
 
 procedure TVirtualTreeBaseTools.setSelectedIndex(const anIndex: cardinal);
