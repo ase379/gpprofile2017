@@ -113,6 +113,12 @@ procedure TfmUnitWizard.SelectChildrenUntilLevel(const aParentNode, aFirstChildN
   end;
 
 begin
+  setItemChecked(fVstSelectUnitTools.GetName(aParentNode));
+  if fSelectedUnitNames.ContainsKey(fVstSelectUnitTools.GetName(aParentNode)) then
+    fVstSelectUnitTools.SetCheckedState(aParentNode, TCheckedState.checked)
+  else
+    fVstSelectUnitTools.SetCheckedState(aParentNode, TCheckedState.unchecked);
+
   if not assigned(aFirstChildNode) then
     exit;
   if aLevel > numberLevelsApplied.ValueInt then
