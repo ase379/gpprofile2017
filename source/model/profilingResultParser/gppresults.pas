@@ -335,12 +335,14 @@ end; { TResults.CheckTag }
 procedure TResults.LoadTables;
 var
   i     : integer;
-  elements: integer;
+  lNumberOfUnits: integer;
+  lNumberOfClasses: integer;
+  lNumberOfProcs: integer;
 begin
   CheckTag(PR_UNITTABLE);
-  ReadInt(elements);
-  SetLength(resUnits,elements+1);      // resUnits[0] = Sum(resUnits[1:])
-  for i := 1 to elements do begin
+  ReadInt(lNumberOfUnits);
+  SetLength(resUnits,lNumberOfUnits+1);      // resUnits[0] = Sum(resUnits[1:])
+  for i := 1 to lNumberOfUnits do begin
     with resUnits[i] do begin
       if Version >= 4 then ReadString(ueName)
                       else ReadShortstring(ueName);
@@ -352,9 +354,9 @@ begin
     end;
   end;
   CheckTag(PR_CLASSTABLE);
-  ReadInt(elements);
-  SetLength(resClasses,elements+1);    // resClasses[0] = Sum(resClasses[1:])
-  for i := 1 to elements do begin
+  ReadInt(lNumberOfClasses);
+  SetLength(resClasses,lNumberOfClasses+1);    // resClasses[0] = Sum(resClasses[1:])
+  for i := 1 to lNumberOfClasses do begin
     with resClasses[i] do begin
       if Version >= 4 then ReadString(ceName)
                       else ReadShortstring(ceName);
@@ -366,9 +368,9 @@ begin
     end;
   end;
   CheckTag(PR_PROCTABLE);
-  ReadInt(elements);
-  SetLength(resProcedures,elements+1); // resProcedures[0] = Sum(resProcedures[1:])
-  for i := 1 to elements do begin
+  ReadInt(lNumberOfProcs);
+  SetLength(resProcedures,lNumberOfProcs+1); // resProcedures[0] = Sum(resProcedures[1:])
+  for i := 1 to lNumberOfProcs do begin
     with resProcedures[i] do begin
       if Version >= 4 then ReadString(peName)
                       else ReadShortstring(peName);
@@ -392,7 +394,7 @@ begin
   fCallGraphInfoDict.Clear;
   fProcedureMemCallList.Clear();
   // max number elements is (elements+1)*(elements+1): 1 child per parent.
-  fCallGraphInfoMaxElementCount := elements+1;
+  fCallGraphInfoMaxElementCount := lNumberOfProcs+1;
   for i := 1 to High(resClasses) do
     with resClasses[i] do
       if ceFirstLn = MaxLongint then ceFirstLn := -1;
