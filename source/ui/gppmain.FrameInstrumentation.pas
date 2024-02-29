@@ -138,6 +138,17 @@ begin
 end;
 
 procedure TfrmMainInstrumentation.DoOnUnitCheck(const aNode: PVirtualNode; instrument: boolean);
+
+  function get_AllItems_Checked(): TCheckedState ;
+  begin
+    result := fVstSelectUnitTools.GetCheckedState(0);
+  end;
+
+  procedure set_AllItems_Checked(const aCheckedState: TCheckedState);
+  begin
+    fVstSelectUnitTools.SetCheckedState(0, aCheckedState);
+  end;
+
 var
   LEnumor : TVTVirtualNodeEnumerator;
   LFirstCheckedState : TCheckedState;
@@ -163,11 +174,11 @@ begin
       if instrument then
         openProject.InstrumentUnit(fVstSelectUnitTools.GetName(aNode), fVstSelectUnitTools.GetCheckedState(aNode)=TCheckedState.checked);
       if openProject.AllInstrumented(not chkShowAll.Checked) then
-        fVstSelectUnitTools.SetCheckedState(0, TCheckedState.checked)
+        set_AllItems_Checked(TCheckedState.checked)
       else if openProject.NoneInstrumented(not chkShowAll.Checked) then
-        fVstSelectUnitTools.SetCheckedState(0, TCheckedState.unchecked)
+        set_AllItems_Checked(TCheckedState.unchecked)
       else
-        fVstSelectUnitTools.SetCheckedState(0, TCheckedState.greyed);
+        set_AllItems_Checked(TCheckedState.greyed);
     end;
   end;
 end; { TfrmMain.DoOnUnitCheck }
