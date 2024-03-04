@@ -157,7 +157,7 @@ begin
     while LUnitEnumor.MoveNext do
     begin
       un := LUnitEnumor.Current.Data;
-      if (not un.unExcluded) and (un.unProcs.Count > 0) and
+      if un.IsValidForInstrumentation() and
         ((not aProjectDirOnly) or un.unInProjectDir) then
       begin
         lEntry := TUnitInstrumentationInfo.create();
@@ -217,7 +217,7 @@ begin
     while LUnitEnumor.MoveNext do
     begin
       un := LUnitEnumor.Current.Data;
-      if (not un.unExcluded) and (un.unProcs.Count > 0) then
+      if un.IsValidForInstrumentation then
         if (not projectDirOnly) or un.unInProjectDir then
           InstrumentTUnit(un, Instrument);
     end;
@@ -310,7 +310,7 @@ begin
               end;
             end;
 
-            if (not LUnit.unExcluded) and (LUnit.unProcs.Count > 0) then
+            if LUnit.IsValidForInstrumentation then
             begin
               DoNotify(LUnit.FullName, LUnit.Name, False);
 

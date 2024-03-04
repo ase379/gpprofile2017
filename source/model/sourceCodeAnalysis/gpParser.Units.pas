@@ -103,6 +103,7 @@ type
     function AnyChange: boolean;
     function DidFileTimestampChange(): boolean;
     function NeedsToBeReparsed() : Boolean;
+    function IsValidForInstrumentation(): boolean;
 
     property Name : TFilename read fName;
     property FullName : TFilename read fFullName;
@@ -164,7 +165,7 @@ begin
     while LUnitEnumor.MoveNext do
     begin
       un := LUnitEnumor.Current.Data;
-      if (not un.unExcluded) and (un.unProcs.Count > 0) and (un.unInProjectDir or (not aCheckProjectDirOnly)) then
+      if un.IsValidForInstrumentation and (un.unInProjectDir or (not aCheckProjectDirOnly)) then
         if not un.unAllInst then
           Exit;
     end;
@@ -185,7 +186,7 @@ begin
     while LUnitEnumor.MoveNext do
     begin
       un := LUnitEnumor.Current.Data;
-      if (not un.unExcluded) and (un.unProcs.Count > 0) and
+      if IsValidForInstrumentation and
         (un.unInProjectDir or (not aCheckProjectDirOnly)) then
         if not un.unNoneInst then
         begin
@@ -216,7 +217,7 @@ begin
     while LUnitEnumor.MoveNext do
     begin
       un := LUnitEnumor.Current.Data;
-      if (not un.unExcluded) and (un.unProcs.Count > 0) and (un.unInProjectDir or (not aCheckProjectDirOnly)) then
+      if un.IsValidForInstrumentation and (un.unInProjectDir or (not aCheckProjectDirOnly)) then
         if un.DidFileTimestampChange() then
           Exit;
     end;
@@ -237,7 +238,7 @@ begin
     while LUnitEnumor.MoveNext do
     begin
       un := LUnitEnumor.Current.Data;
-      if (not un.unExcluded) and (un.unProcs.Count > 0) and
+      if un.IsValidForInstrumentation and
         (un.unInProjectDir or (not aCheckProjectDirOnly)) then
         if un.AnyInstrumented then
         begin
@@ -322,7 +323,7 @@ end;
 function TUnit.NeedsToBeReparsed(): Boolean;
 begin
   Result := false;
-  if (not unExcluded) and (unProcs.Count > 0) then
+  if IsValidForInstrumentation then
   begin
     result := DidFileTimestampChange()
   end;
@@ -568,7 +569,14 @@ begin
   for i := Low(compareWith) to High(compareWith) do
     if key = compareWith[i] then
       exit(true);
-end; { IsOneOf }
+end;
+
+function TUnit.IsValidForInstrumentation: boolean;
+begin
+  result := (not unExcluded) and (unProcs.Count > 0);
+end;
+
+{ IsOneOf }
 
 class function TUnit.ExtractDirective(const comment: string): string;
 begin

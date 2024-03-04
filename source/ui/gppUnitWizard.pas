@@ -215,11 +215,11 @@ end;
 procedure TfmUnitWizard.addChildNodes(const aParent: PVirtualNode; const aUnitName: string; const aDoRecursive: boolean);
 var
   LUnit : TUnit;
+  LDependentUnit: TUnit;
   LUnitEnumor: TRootNode<TUnit>.TEnumerator;
   LNewNode : PVirtualNode;
   LName : string;
   LRecursiveUnit : Boolean;
-  LMissingUnit : Boolean;
 begin
   fProcessedUnitNames.AddOrSetValue(aUnitName,fProcessedUnitNames.count);
   LUnit := LocateUnit(aUnitName);
@@ -227,10 +227,10 @@ begin
     LUnitEnumor := LUnit.unUnits.GetEnumerator();
     while LUnitEnumor.MoveNext do
     begin
+      LDependentUnit := LUnitEnumor.Current.Data;
       LNewNode := nil;
-      LName := LUnitEnumor.Current.Data.Name;
-      LMissingUnit := fOpenProject.IsMissingUnit(LName);
-      if not LMissingUnit then
+      LName := LDependentUnit.Name;
+      if LDependentUnit.unParsed and LDependentUnit.IsValidForInstrumentation() then
       begin
         LNewNode := fVstSelectUnitTools.GetChildByName(aParent, LName);
         if not assigned(LNewNode) then
@@ -256,7 +256,7 @@ begin
              addChildNodes(LNewNode,LName,aDoRecursive)
           else
           begin
-            if LUnitEnumor.Current.Data.unUnits.Count > 0 then
+            if LDependentUnit.unUnits.Count > 0 then
               include(LNewNode.States, TVirtualNodeState.vsHasChildren)
           end;
         end;

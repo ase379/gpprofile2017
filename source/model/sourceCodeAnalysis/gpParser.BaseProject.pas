@@ -38,8 +38,6 @@ type
     fExcludedUnitDict : TDictionary<string, Byte>;
   protected
     procedure PrepareComments(const aCommentType: TCommentType);
-
-
   public
     constructor Create(const aProjectName,aSelectedDelphiVersion : string);
     destructor Destroy; override;

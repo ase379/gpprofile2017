@@ -328,7 +328,7 @@ begin
       LName := fVstSelectUnitTools.GetName(LEnum.Current);
       LCheckedState := fVstSelectUnitTools.GetCheckedState(LEnum.Current);
       if LCheckedState = TCheckedState.checked then
-        LWizard.SelectedUnitNames.AddOrSetValue(Lname, 0);
+        LWizard.SelectedUnitNames.AddOrSetValue(Lname, 1);
     end;
 
     if LWizard.Execute(fopenProject, GetSelectedUnitName()) then
