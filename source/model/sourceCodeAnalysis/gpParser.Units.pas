@@ -186,7 +186,7 @@ begin
     while LUnitEnumor.MoveNext do
     begin
       un := LUnitEnumor.Current.Data;
-      if IsValidForInstrumentation and
+      if un.IsValidForInstrumentation and
         (un.unInProjectDir or (not aCheckProjectDirOnly)) then
         if not un.unNoneInst then
         begin
