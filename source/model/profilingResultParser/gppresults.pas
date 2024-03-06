@@ -672,7 +672,6 @@ procedure TResults.RecalcTimes;
 var
   i,j: integer;
   numth: integer;
-  LPair : TPair<TCallGraphKey, TCallGraphInfo>;
   LInfo : TCallGraphInfo;
   LInfoChild : TCallGraphInfo;
   LChildrenDict : TCallGraphInfoDict;
