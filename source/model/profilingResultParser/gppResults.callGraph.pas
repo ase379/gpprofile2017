@@ -335,6 +335,7 @@ procedure tProcCountList.AddCount(const aThreadId, aValueToBeAdded: integer);
 begin
   if aThreadId = 0 then
     raise Exception.Create('tProcCountList.AssignTimeeldung: ThreadId 0 is not allowed.');
+  self[0] := self[0] + aValueToBeAdded;
   self[aThreadId] := self[aThreadId] + aValueToBeAdded;
 end;
 
