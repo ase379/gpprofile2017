@@ -915,9 +915,15 @@ procedure TfrmMain.ReloadJumpList();
 begin
   JumpList1.ApplicationID := 'GpProf2017';
   JumpList1.CustomCategories.Clear();
-  AddMenu(MRU, 'Instrument');
-  AddMenu(MRUPrf, 'Analyse');
-  // GIS is excluded, as we need to load an instrument project for GIS
+  try
+    AddMenu(MRU, 'Instrument');
+    AddMenu(MRUPrf, 'Analyse');
+  Except
+    on e: exception do
+    begin
+      // disable task bar is remote session, rdp or ui server triggers error.
+    end;
+  end;
 end;
 
 procedure TfrmMain.MRUClick(Sender: TObject; LatestFile: String);
