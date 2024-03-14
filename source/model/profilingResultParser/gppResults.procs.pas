@@ -9,11 +9,8 @@ uses
 type
 
   TProcProxy = class
-  public
+  private
     ppThreadID    : integer;
-    /// <summary>
-    /// the procedure id
-    /// </summary>
     ppProcID      : integer;
     ppDeadTime    : int64;
     ppStartTime   : int64;
@@ -23,11 +20,23 @@ type
     ppEndMem    : Cardinal;
     ppDiffMem   : Cardinal;
     ppDiffMemChildren : Cardinal;
-    constructor Create(threadID, procID: integer);
+  public
+    constructor Create(const aThreadID, aProcID: integer);
     destructor  Destroy; override;
-    procedure   Start(pkt: TResPacket);
-    procedure   Stop(var pkt: TResPacket);
+    procedure   Start(pkt: TResPacket);  virtual;
+    procedure   Stop(var pkt: TResPacket); virtual;
     procedure   UpdateDeadTime(pkt: TResPacket);
+
+    property ThreadID : Integer read ppThreadID;
+    property ProcId : integer read ppProcID;
+    property DeadTime : int64 read ppDeadTime;
+    property StartTime : int64 read ppStartTime;
+    property TotalTime : int64 read ppTotalTime;
+    property ChildTime : int64 read ppChildTime write ppChildTime;
+    property StartMem : Cardinal read ppStartMem write ppStartMem;
+    property EndMem : Cardinal read ppEndMem write ppEndMem;
+    property DiffMem : Cardinal read ppDiffMem write ppDiffMem;
+    property DiffMemChildren : Cardinal read ppDiffMemChildren write ppDiffMemChildren;
   end;
 
   TActiveProcList = class
@@ -39,7 +48,7 @@ type
     procedure   UpdateDeadTime(pkt: TResPacket);
     procedure   Append(proxy: TProcProxy);
     procedure   Remove(proxy: TProcProxy);
-    procedure   LocateLast(procID: integer; var this,parent: TProcProxy);
+    procedure   LocateLast(const procID: integer; var this,parent: TProcProxy);
   end;
 
 implementation
@@ -50,7 +59,7 @@ uses
 
 { TProcProxy }
 
-constructor TProcProxy.Create(threadID, procID: integer);
+constructor TProcProxy.Create(const aThreadID, aProcID: integer);
 begin
   inherited Create;
   ppThreadID  := threadID;
@@ -104,11 +113,12 @@ begin
   inherited Destroy;
 end;
 
-procedure TActiveProcList.LocateLast(procID: integer; var this,parent: TProcProxy);
+
+procedure TActiveProcList.LocateLast(const procID: integer; var this,parent: TProcProxy);
 var
   i: integer;
 begin
-  if (fAplList <> nil) and (fAplList.Count >= 0) then begin
+   if (fAplList <> nil) and (fAplList.Count >= 0) then begin
     for i := fAplList.Count-1 downto 0 do
     begin
       if fAplList[i].ppProcID = procID then
@@ -124,7 +134,7 @@ begin
   end;
   this   := nil;
   parent := nil;
-end;
+end; { TActiveProcList.LocateLast }
 
 procedure TActiveProcList.Remove(proxy: TProcProxy);
 var
