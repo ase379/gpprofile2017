@@ -24,8 +24,8 @@ uses System.Classes;
 procedure ProfilerStart;
 procedure ProfilerStop;
 procedure ProfilerStartThread;
-procedure ProfilerEnterProc(procID: integer);
-procedure ProfilerExitProc(procID: integer);
+procedure ProfilerEnterProc(const aProcID: integer);
+procedure ProfilerExitProc(const aProcID: integer);
 procedure ProfilerTerminate;
 procedure NameThreadForDebugging(AThreadName: AnsiString; AThreadID: TThreadID = TThreadID(-1)); overload;
 procedure NameThreadForDebugging(AThreadName: string; AThreadID: TThreadID = TThreadID(-1)); overload;
@@ -235,7 +235,7 @@ begin
   end;
 end; { FlushCounter }
 
-procedure profilerEnterProc(procID : integer);
+procedure profilerEnterProc(const aProcID : integer);
 var
   ct : integer;
   cnt: TLargeinteger;
@@ -250,7 +250,7 @@ begin
       FlushCounter;
       WriteTag(PR_ENTERPROC);
       WriteThread(ct);
-      WriteID(procID);
+      WriteID(aProcID);
       WriteTicks(Cnt.QuadPart);
       if profProfilingMemoryEnabled then
         WriteMemWorkingSize();
@@ -259,7 +259,7 @@ begin
   end;
 end; { ProfilerEnterProc }
 
-procedure ProfilerExitProc(procID : integer);
+procedure ProfilerExitProc(const aProcID : integer);
 var
   ct : integer;
   cnt: TLargeinteger;
@@ -274,7 +274,7 @@ begin
       FlushCounter;
       WriteTag(PR_EXITPROC);
       WriteThread(ct);
-      WriteID(procID);
+      WriteID(aProcID);
       WriteTicks(Cnt.QuadPart);
       if profProfilingMemoryEnabled then
         WriteMemWorkingSize();
