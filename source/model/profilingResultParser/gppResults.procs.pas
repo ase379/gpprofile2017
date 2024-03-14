@@ -23,8 +23,8 @@ type
   public
     constructor Create(const aThreadID, aProcID: integer);
     destructor  Destroy; override;
-    procedure   Start(pkt: TResPacket);  virtual;
-    procedure   Stop(var pkt: TResPacket); virtual;
+    procedure   Start(pkt: TResPacket);
+    procedure   Stop(var pkt: TResPacket);
     procedure   UpdateDeadTime(pkt: TResPacket);
 
     property ThreadID : Integer read ppThreadID;
