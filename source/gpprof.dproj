@@ -6,10 +6,10 @@
         <DCC_DCCCompiler>DCC32</DCC_DCCCompiler>
         <DCC_DependencyCheckOutputName>..\BIN\gpprof.exe</DCC_DependencyCheckOutputName>
         <FrameworkType>VCL</FrameworkType>
-        <ProjectVersion>18.7</ProjectVersion>
+        <ProjectVersion>19.5</ProjectVersion>
         <Base>True</Base>
-        <Config Condition="'$(Config)'==''">Debug</Config>
-        <Platform Condition="'$(Platform)'==''">Win32</Platform>
+        <Config Condition="'$(Config)'==''">Release</Config>
+        <Platform Condition="'$(Platform)'==''">Win64</Platform>
         <TargetedPlatforms>3</TargetedPlatforms>
         <AppType>Application</AppType>
     </PropertyGroup>
@@ -61,17 +61,17 @@
         <Base>true</Base>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Base)'!=''">
-        <VerInfo_Release>1</VerInfo_Release>
-        <VerInfo_AutoIncVersion>false</VerInfo_AutoIncVersion>
+        <VerInfo_Release>9</VerInfo_Release>
         <DCC_DcuOutput>..\DCU</DCC_DcuOutput>
         <DCC_ExeOutput>..\bin</DCC_ExeOutput>
-        <DCC_UnitSearchPath>..\include;..\lib\SynEdit\source;..\GPComponents\GPNative\source;..\lib\VirtualTreeView\Source;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
+        <DCC_UnitSearchPath>..\include;..\lib\SynEdit\source;..\GPComponents\GPNative\source;..\lib\VirtualTreeView\Source;ui;ui\VirtualTree.Tools;model;model\profilingResultParser;model\sourceCodeAnalysis;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
         <VerInfo_Locale>1033</VerInfo_Locale>
         <DCC_Namespace>Vcl;Vcl.Imaging;Vcl.Touch;Vcl.Samples;Vcl.Shell;System;Xml;Data;Datasnap;Web;Soap;Winapi;System.Win;$(DCC_Namespace)</DCC_Namespace>
         <VerInfo_MinorVer>5</VerInfo_MinorVer>
-        <VerInfo_Keys>CompanyName=;FileDescription=Profiler for all versions of Delphi;FileVersion=1.5.6.0;InternalName=GpProfile;LegalCopyright=(c) 1998, 1999 Primoz Gabrijelcic;LegalTrademarks=;OriginalFilename=;ProductName=GpProfile 2017;ProductVersion=1.5.6</VerInfo_Keys>
+        <VerInfo_Keys>CompanyName=;FileDescription=Profiler for all versions of Delphi;FileVersion=1.5.9.8;InternalName=GpProfile;LegalCopyright=(c) 1998, 1999 Primoz Gabrijelcic;LegalTrademarks=;OriginalFilename=;ProductName=GpProfile 2017;ProductVersion=1.5.9</VerInfo_Keys>
         <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
         <SanitizedProjectName>gpprof</SanitizedProjectName>
+        <VerInfo_Build>8</VerInfo_Build>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Base_Win32)'!=''">
         <Icon_MainIcon>gpprof_Icon.ico</Icon_MainIcon>
@@ -92,23 +92,19 @@
         <DCC_RangeChecking>True</DCC_RangeChecking>
         <DCC_GenerateStackFrames>True</DCC_GenerateStackFrames>
         <DCC_SymbolReferenceInfo>0</DCC_SymbolReferenceInfo>
-        <DCC_MapFile>3</DCC_MapFile>
-        <DCC_DebugInfoInExe>True</DCC_DebugInfoInExe>
         <DCC_DebugVN>True</DCC_DebugVN>
         <DCC_ResourcePath>x:\mstpl\ezdsl;$(DELPHI)\components;x:\mstpl\ddp\source;x:\mstpl\pkg\mwedit;$(DCC_ResourcePath)</DCC_ResourcePath>
+        <DCC_LargeAddressAware>true</DCC_LargeAddressAware>
         <DCC_Define>RELEASE;$(DCC_Define)</DCC_Define>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_1_Win32)'!=''">
-        <AppEnableRuntimeThemes>true</AppEnableRuntimeThemes>
         <BT_BuildType>Debug</BT_BuildType>
+        <AppDPIAwarenessMode>none</AppDPIAwarenessMode>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_1_Win64)'!=''">
-        <VerInfo_Build>5</VerInfo_Build>
-        <VerInfo_Keys>CompanyName=;FileDescription=Profiler for all versions of Delphi;FileVersion=1.5.6.0;InternalName=GpProfile;LegalCopyright=(c) 1998, 1999 Primoz Gabrijelcic;LegalTrademarks=;OriginalFilename=;ProductName=GpProfile 2017;ProductVersion=1.5.6;ProgramID=com.embarcadero.$(MSBuildProjectName)</VerInfo_Keys>
         <DCC_ExeOutput>..\bin64</DCC_ExeOutput>
-        <AppEnableRuntimeThemes>true</AppEnableRuntimeThemes>
         <BT_BuildType>Debug</BT_BuildType>
-        <VerInfo_Release>0</VerInfo_Release>
+        <AppDPIAwarenessMode>none</AppDPIAwarenessMode>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_2)'!=''">
         <Version>7.0</Version>
@@ -132,15 +128,14 @@
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_2_Win32)'!=''">
         <VerInfo_Build>1</VerInfo_Build>
-        <VerInfo_Keys>CompanyName=;FileDescription=Profiler for all versions of Delphi;FileVersion=1.5.6.0;InternalName=GpProfile;LegalCopyright=(c) 1998, 1999 Primoz Gabrijelcic;LegalTrademarks=;OriginalFilename=;ProductName=GpProfile 2017;ProductVersion=1.5.6</VerInfo_Keys>
-        <AppEnableRuntimeThemes>true</AppEnableRuntimeThemes>
         <BT_BuildType>Debug</BT_BuildType>
+        <VerInfo_Release>8</VerInfo_Release>
+        <AppDPIAwarenessMode>none</AppDPIAwarenessMode>
+        <VerInfo_Keys>CompanyName=;FileDescription=Profiler for all versions of Delphi;FileVersion=1.5.9.0;InternalName=GpProfile;LegalCopyright=(c) 1998, 1999 Primoz Gabrijelcic;LegalTrademarks=;OriginalFilename=;ProductName=GpProfile 2017;ProductVersion=1.5.9</VerInfo_Keys>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_2_Win64)'!=''">
-        <AppEnableRuntimeThemes>true</AppEnableRuntimeThemes>
-        <VerInfo_Build>2</VerInfo_Build>
+        <AppDPIAwarenessMode>none</AppDPIAwarenessMode>
         <BT_BuildType>Debug</BT_BuildType>
-        <VerInfo_Keys>CompanyName=;FileDescription=Profiler for all versions of Delphi;FileVersion=1.5.6.0;InternalName=GpProfile;LegalCopyright=(c) 1998, 1999 Primoz Gabrijelcic;LegalTrademarks=;OriginalFilename=;ProductName=GpProfile 2017;ProductVersion=1.5.6</VerInfo_Keys>
     </PropertyGroup>
     <ProjectExtensions>
         <Borland.Personality>Delphi.Personality.12</Borland.Personality>
@@ -170,13 +165,13 @@
                 <VersionInfoKeys>
                     <VersionInfoKeys Name="CompanyName"/>
                     <VersionInfoKeys Name="FileDescription">Profiler for all versions of Delphi (incl. Delphi XE)</VersionInfoKeys>
-                    <VersionInfoKeys Name="FileVersion">1.5.6.0</VersionInfoKeys>
+                    <VersionInfoKeys Name="FileVersion">1.5.9.0</VersionInfoKeys>
                     <VersionInfoKeys Name="InternalName">GpProfile</VersionInfoKeys>
                     <VersionInfoKeys Name="LegalCopyright">(c) 1998, 1999 Primoz Gabrijelcic; 2011 Anton Alisov (small changes to make it work with Delphi 2009, 2010, XE), 2013 (Johan Bontes, support for Delphi XE2)</VersionInfoKeys>
                     <VersionInfoKeys Name="LegalTrademarks"/>
                     <VersionInfoKeys Name="OriginalFilename"/>
                     <VersionInfoKeys Name="ProductName">GpProfile 2011</VersionInfoKeys>
-                    <VersionInfoKeys Name="ProductVersion">1.5.6.0</VersionInfoKeys>
+                    <VersionInfoKeys Name="ProductVersion">1.5.9.0</VersionInfoKeys>
                     <VersionInfoKeys Name="Comments"/>
                     <VersionInfoKeys Name="Key1"/>
                     <VersionInfoKeys Name="Key2"/>
@@ -188,8 +183,8 @@
                     <Source Name="MainSource">gpprof.dpr</Source>
                 </Source>
                 <Excluded_Packages>
-                    <Excluded_Packages Name="$(BDSBIN)\dcloffice2k250.bpl">Microsoft Office 2000 Beispiele für gekapselte Komponenten für Automatisierungsserver</Excluded_Packages>
-                    <Excluded_Packages Name="$(BDSBIN)\dclofficexp250.bpl">Microsoft Office XP Beispiele für gekapselte Komponenten für Automation Server</Excluded_Packages>
+                    <Excluded_Packages Name="$(BDSBIN)\dcloffice2k280.bpl">Microsoft Office 2000 Beispiele für gekapselte Komponenten für Automatisierungsserver</Excluded_Packages>
+                    <Excluded_Packages Name="$(BDSBIN)\dclofficexp280.bpl">Microsoft Office XP Beispiele für gekapselte Komponenten für Automation Server</Excluded_Packages>
                 </Excluded_Packages>
             </Delphi.Personality>
             <Platforms>
@@ -204,84 +199,16 @@
         <DelphiCompile Include="$(MainSource)">
             <MainSource>MainSource</MainSource>
         </DelphiCompile>
-        <DCCReference Include="gppmain.FrameInstrumentation.pas">
-            <Form>frmMainInstrumentation</Form>
-            <FormType>dfm</FormType>
-            <DesignClass>TFrame</DesignClass>
-        </DCCReference>
-        <DCCReference Include="gppTree.pas"/>
-        <DCCReference Include="gppMain.pas">
-            <Form>frmMain</Form>
-        </DCCReference>
-        <DCCReference Include="gpFileEdit.pas"/>
-        <DCCReference Include="GpVersion.pas"/>
-        <DCCReference Include="gppIDT.pas"/>
-        <DCCReference Include="gpUnitWizard.pas">
-            <Form>fmUnitWizard</Form>
-        </DCCReference>
-        <DCCReference Include="gppcommon.pas"/>
-        <DCCReference Include="gppresults.pas"/>
-        <DCCReference Include="gppExport.pas">
-            <Form>frmExport</Form>
-        </DCCReference>
-        <DCCReference Include="gppAbout.pas">
-            <Form>frmAbout</Form>
-        </DCCReference>
-        <DCCReference Include="gpiff.pas"/>
-        <DCCReference Include="GpHugeF.pas"/>
-        <DCCReference Include="gppmain.types.pas"/>
-        <DCCReference Include="gpPrfPlaceholders.pas"/>
-        <DCCReference Include="GpRegistry.pas"/>
-        <DCCReference Include="gppCurrentPrefs.pas"/>
-        <DCCReference Include="gppmain.dragNdrop.pas"/>
-        <DCCReference Include="gpPreferencesDlg.pas">
-            <Form>frmPreferences</Form>
-        </DCCReference>
-        <DCCReference Include="SimpleReportUnit.pas">
-            <Form>fmSimpleReport</Form>
-        </DCCReference>
-        <DCCReference Include="gppLoadProgress.pas">
-            <Form>frmLoadProgress</Form>
-        </DCCReference>
-        <DCCReference Include="gppmain.FrameAnalysis.pas">
-            <Form>frmMainProfiling</Form>
-            <FormType>dfm</FormType>
-            <DesignClass>TFrame</DesignClass>
-        </DCCReference>
-        <DCCReference Include="gppMain.FrameInstrumentation.SelectionInfo.pas"/>
-        <DCCReference Include="gpPrfPlaceholderDlg.pas">
-            <Form>frmPreferenceMacros</Form>
-        </DCCReference>
-        <DCCReference Include="CastaliaDelphiParser\CastaliaPasLex.pas"/>
-        <DCCReference Include="CastaliaDelphiParser\CastaliaPasLexTypes.pas"/>
-        <DCCReference Include="DelphiProjectRelated\gpProf.bdsVersions.pas"/>
-        <DCCReference Include="DelphiProjectRelated\gpProf.BdsProjReader.pas"/>
-        <DCCReference Include="DelphiProjectRelated\gpProf.Delphi.RegistryAccessor.pas"/>
-        <DCCReference Include="DelphiProjectRelated\gpProf.DProjReader.pas"/>
-        <DCCReference Include="gpParser\gpParser.API.pas"/>
-        <DCCReference Include="gpParser\gpParser.BaseProject.pas"/>
-        <DCCReference Include="gpParser\gpParser.Defines.pas"/>
-        <DCCReference Include="gpParser\gpParser.pas"/>
-        <DCCReference Include="gpParser\gpParser.Procs.pas"/>
-        <DCCReference Include="gpParser\gpParser.Selections.pas"/>
-        <DCCReference Include="gpParser\gpParser.Types.pas"/>
-        <DCCReference Include="gpParser\gpParser.Units.pas"/>
-        <DCCReference Include="gpParser\gpParser.Units.ParserStack.pas"/>
-        <DCCReference Include="VirtualTree.Tools\virtualTree.tools.base.pas"/>
-        <DCCReference Include="VirtualTree.Tools\virtualTree.tools.checkable.pas"/>
-        <DCCReference Include="VirtualTree.Tools\virtualTree.tools.statistics.pas"/>
-        <DCCReference Include="DelphiProjectRelated\gpProf.DofReader.pas"/>
-        <DCCReference Include="DelphiProjectRelated\gpProf.ProjectAccessor.pas"/>
-        <DCCReference Include="ui\gpDialogs.Tools.pas"/>
-        <BuildConfiguration Include="Debug">
-            <Key>Cfg_2</Key>
-            <CfgParent>Base</CfgParent>
-        </BuildConfiguration>
+        <DCCReference Include="model\sourceCodeAnalysis\gpParser.TextReplacer.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>
         <BuildConfiguration Include="Release">
             <Key>Cfg_1</Key>
+            <CfgParent>Base</CfgParent>
+        </BuildConfiguration>
+        <BuildConfiguration Include="Debug">
+            <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>
         </BuildConfiguration>
     </ItemGroup>

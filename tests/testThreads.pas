@@ -11,12 +11,12 @@ type
     constructor Create();
   protected
     procedure Execute; override;
-
   end;
 
 implementation
 
-uses GpProf;
+uses
+  System.SysUtils;
 
 { TTestThread }
 
@@ -28,8 +28,10 @@ end;
 procedure TTestThread.Execute;
 begin
   NameThreadForDebugging('AwesomeThread', self.ThreadID);
-  self.namethreadfordebugging('AwesomeThread2☺☼d156exÈ', self.ThreadID);
-  {>>GpProfile MP Enter} ProfilerEnterMP('TEST'); try {GpProfile MP Enter>>}
+   {>>GpProfile MP Enter} ProfilerEnterMP('TEST'); try {GpProfile MP Enter>>}
+  NameThreadForDebugging('AwesomeThread-UnicodeChars-☺☼d156exÈ', self.ThreadID);
+  self.namethreadfordebugging('AwesomeThread2-SelfNameReplacement', self.ThreadID);
+  TThread.NameThreadForDebugging('AwesomeThread3-TThreadReplacement');
   Sleep(1000);
   {>>GpProfile MP Leave} finally ProfilerExitMP('TEST'); end; {GpProfile MP Leave>>}
   inherited;

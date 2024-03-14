@@ -29,8 +29,11 @@ const
   PR_DIGCALLG    = 23;
   PR_START_THREADINFO = 24;
   PR_END_THREADINFO = 25;
-  PR_ENTER_MP   =  26;
-  PR_EXIT_MP    =  27;
+  
+  PR_DIG_START_MEMG = 26;
+  PR_DIG_END_MEMG = 27;
+  PR_ENTER_MP   =  28;
+  PR_EXIT_MP    =  29;
   PR_DIGENDCG    = -1;
 
 
@@ -40,6 +43,7 @@ const
   CMD_DONE    = 0;
 
   PRF_VERSION   = 4;
+  PRF_VERSION_WITH_MEM   = 5;
 
   { compressed format with the reduced raw data of the plain format }
   PRF_DIGESTVER_0 = 0;
@@ -49,10 +53,11 @@ const
   PRF_DIGESTVER_2 = 2;
   { data with additional callee and caller time information for a procedure }
   PRF_DIGESTVER_3 = 3;
-
+  { data with additional memory tracing information }
+  PRF_DIGESTVER_4 = 4;
 
   { the currently used digest version }
-  PRF_DIGESTVER_CURRENT = PRF_DIGESTVER_3;
+  PRF_DIGESTVER_CURRENT = PRF_DIGESTVER_4;
 
 implementation
 

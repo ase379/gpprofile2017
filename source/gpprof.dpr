@@ -30,50 +30,13 @@ uses
   Windows,
   Vcl.HtmlHelpViewer,
   GpString,
-  gppmain.FrameInstrumentation in 'gppmain.FrameInstrumentation.pas' {frmMainInstrumentation: TFrame},
-  gppTree in 'gppTree.pas',
-  gppMain in 'gppMain.pas' {frmMain},
-  GpVersion in 'GpVersion.pas',
-  gppIDT in 'gppIDT.pas',
-  gpUnitWizard in 'gpUnitWizard.pas' {fmUnitWizard},
-  gppcommon in 'gppcommon.pas',
-  gppresults in 'gppresults.pas',
-  gppExport in 'gppExport.pas' {frmExport},
-  gppAbout in 'gppAbout.pas' {frmAbout},
-  gpiff in 'gpiff.pas',
-  GpHugeF in 'GpHugeF.pas',
-  gppmain.types in 'gppmain.types.pas',
-  gpPrfPlaceholders in 'gpPrfPlaceholders.pas',
-  GpRegistry in 'GpRegistry.pas',
-  gppCurrentPrefs in 'gppCurrentPrefs.pas',
-  gppmain.dragNdrop in 'gppmain.dragNdrop.pas',
-  gpPreferencesDlg in 'gpPreferencesDlg.pas' {frmPreferences},
-  SimpleReportUnit in 'SimpleReportUnit.pas' {fmSimpleReport},
-  gppLoadProgress in 'gppLoadProgress.pas' {frmLoadProgress},
-  gppmain.FrameAnalysis in 'gppmain.FrameAnalysis.pas' {frmMainProfiling: TFrame},
-  gppMain.FrameInstrumentation.SelectionInfo in 'gppMain.FrameInstrumentation.SelectionInfo.pas',
-  gpPrfPlaceholderDlg in 'gpPrfPlaceholderDlg.pas' {frmPreferenceMacros},
-  CastaliaPasLex in 'CastaliaDelphiParser\CastaliaPasLex.pas',
-  CastaliaPasLexTypes in 'CastaliaDelphiParser\CastaliaPasLexTypes.pas',
-  gpProf.bdsVersions in 'DelphiProjectRelated\gpProf.bdsVersions.pas',
-  gpProf.BdsProjReader in 'DelphiProjectRelated\gpProf.BdsProjReader.pas',
-  gpProf.Delphi.RegistryAccessor in 'DelphiProjectRelated\gpProf.Delphi.RegistryAccessor.pas',
-  gpProf.DProjReader in 'DelphiProjectRelated\gpProf.DProjReader.pas',
-  gpParser.API in 'gpParser\gpParser.API.pas',
-  gpParser.BaseProject in 'gpParser\gpParser.BaseProject.pas',
-  gpParser.Defines in 'gpParser\gpParser.Defines.pas',
-  gpParser in 'gpParser\gpParser.pas',
-  gpParser.Procs in 'gpParser\gpParser.Procs.pas',
-  gpParser.Selections in 'gpParser\gpParser.Selections.pas',
-  gpParser.Types in 'gpParser\gpParser.Types.pas',
-  gpParser.Units in 'gpParser\gpParser.Units.pas',
-  gpParser.Units.ParserStack in 'gpParser\gpParser.Units.ParserStack.pas',
-  virtualTree.tools.base in 'VirtualTree.Tools\virtualTree.tools.base.pas',
-  virtualTree.tools.checkable in 'VirtualTree.Tools\virtualTree.tools.checkable.pas',
-  virtualTree.tools.statistics in 'VirtualTree.Tools\virtualTree.tools.statistics.pas',
-  gpProf.DofReader in 'DelphiProjectRelated\gpProf.DofReader.pas',
-  gpProf.ProjectAccessor in 'DelphiProjectRelated\gpProf.ProjectAccessor.pas',
-  gpDialogs.Tools in 'ui\gpDialogs.Tools.pas';
+  gppPreferencesDlg,
+  gppAbout,
+  gppExport,
+  gppPrfPlaceholderDlg,
+  gppUnitWizard,
+  gppMain,
+  gpParser.TextReplacer in 'model\sourceCodeAnalysis\gpParser.TextReplacer.pas';
 
 {$R *.RES}
 
@@ -84,6 +47,5 @@ begin
   Application.CreateForm(TfrmAbout, frmAbout);
   Application.CreateForm(TfrmExport, frmExport);
   Application.CreateForm(TfrmPreferenceMacros, frmPreferenceMacros);
-  Application.CreateForm(TfmUnitWizard, fmUnitWizard);
   Application.Run;
 end.
