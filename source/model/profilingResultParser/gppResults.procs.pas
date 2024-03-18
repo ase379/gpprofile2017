@@ -62,8 +62,8 @@ uses
 constructor TProcProxy.Create(const aThreadID, aProcID: integer);
 begin
   inherited Create;
-  ppThreadID  := threadID;
-  ppProcID    := procID;
+  ppThreadID  := aThreadID;
+  ppProcID    := aProcID;
 end;
 
 destructor TProcProxy.Destroy;
