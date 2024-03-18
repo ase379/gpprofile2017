@@ -77,7 +77,7 @@ type
   end;
 
 
-  
+
 
   TResults = class
   private
@@ -216,7 +216,7 @@ begin
   Create();
   resName := fileName;
   resFile := TGpHugeFile.CreateEx(resName,FILE_FLAG_SEQUENTIAL_SCAN+FILE_ATTRIBUTE_NORMAL);
-  resFile.ResetBuffered(1);
+  resFile.ResetBuffered(1, 4*1024*1024);
   try
     LoadHeader;
     if IsDigest then
@@ -402,7 +402,7 @@ begin
   for i := 1 to High(resClasses) do
     with resClasses[i] do
       if ceFirstLn = MaxLongint then ceFirstLn := -1;
-end; 
+end;
 
 { TResult.LoadTables }
 
@@ -420,10 +420,10 @@ begin
   filesz   := resFile.FileSize;
   lastPerc := -1;
   CheckTag(PR_STARTDATA);
-  while ReadPacket(pkt) do 
+  while ReadPacket(pkt) do
   begin
     Inc(cnt);
-    if (cnt mod REPORT_EVERY) = 0 then 
+    if (cnt mod REPORT_EVERY) = 0 then
     begin
       Application.ProcessMessages;
       if @callback <> nil then begin
@@ -983,7 +983,7 @@ var
 begin
   lDigestFilename := aPrfFileName + '.dgst';
   resFile := TGpHugeFile.CreateEx(lDigestFilename,FILE_FLAG_SEQUENTIAL_SCAN+FILE_ATTRIBUTE_NORMAL);
-  resFile.RewriteBuffered(1);
+  resFile.RewriteBuffered(1, 4*1024*1024);
   try
     var lNumberOfUnits := High(resUnits)-Low(resUnits)+1;
     var lNumberOfClasses := High(resClasses)-Low(resClasses)+1;
@@ -1331,7 +1331,7 @@ procedure TResults.AssignTables(tableFile: string);
 begin
   resPrfVersion := 4;
   resFile := TGpHugeFile.CreateEx(tableFile,FILE_FLAG_SEQUENTIAL_SCAN+FILE_ATTRIBUTE_NORMAL);
-  resFile.ResetBuffered(1);
+  resFile.ResetBuffered(1, 4*1024*1024);
   try
     LoadTables;
   finally resFile.Free; resFile := nil; end;
