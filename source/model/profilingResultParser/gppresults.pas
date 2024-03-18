@@ -213,7 +213,7 @@ begin
   Create();
   resName := fileName;
   resFile := TGpHugeFile.CreateEx(resName,FILE_FLAG_SEQUENTIAL_SCAN+FILE_ATTRIBUTE_NORMAL);
-  resFile.ResetBuffered(1);
+  resFile.ResetBuffered(1, 4*1024*1024);
   try
     LoadHeader;
     if IsDigest then
@@ -937,7 +937,7 @@ var
 begin
   lDigestFilename := aPrfFileName + '.dgst';
   resFile := TGpHugeFile.CreateEx(lDigestFilename,FILE_FLAG_SEQUENTIAL_SCAN+FILE_ATTRIBUTE_NORMAL);
-  resFile.RewriteBuffered(1);
+  resFile.RewriteBuffered(1, 4*1024*1024);
   try
     var lNumberOfUnits := High(resUnits)-Low(resUnits)+1;
     var lNumberOfClasses := High(resClasses)-Low(resClasses)+1;
@@ -1285,7 +1285,7 @@ procedure TResults.AssignTables(tableFile: string);
 begin
   resPrfVersion := 4;
   resFile := TGpHugeFile.CreateEx(tableFile,FILE_FLAG_SEQUENTIAL_SCAN+FILE_ATTRIBUTE_NORMAL);
-  resFile.ResetBuffered(1);
+  resFile.ResetBuffered(1, 4*1024*1024);
   try
     LoadTables;
   finally resFile.Free; resFile := nil; end;
