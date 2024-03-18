@@ -172,7 +172,7 @@ begin
   fnm := ChangeFileExt(fileName,'.gpd');
   f := TGpHugeFile.CreateEx(fnm,FILE_FLAG_SEQUENTIAL_SCAN+FILE_ATTRIBUTE_NORMAL);
   try
-    f.RewriteBuffered(1);
+    f.RewriteBuffered(1, 4*1024*1024);
     idUnits.Dump(f);
     idClass.Dump(f);
     idProcs.Dump(f);
