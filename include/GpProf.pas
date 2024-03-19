@@ -24,8 +24,8 @@ uses System.Classes;
 procedure ProfilerStart;
 procedure ProfilerStop;
 procedure ProfilerStartThread;
-procedure ProfilerEnterProc(const aProcID: integer);
-procedure ProfilerExitProc(const aProcID: integer);
+procedure ProfilerEnterProc(const aProcID: Cardinal);
+procedure ProfilerExitProc(const aProcID: Cardinal);
 procedure ProfilerTerminate;
 procedure NameThreadForDebugging(AThreadName: AnsiString; AThreadID: TThreadID = TThreadID(-1)); overload;
 procedure NameThreadForDebugging(AThreadName: string; AThreadID: TThreadID = TThreadID(-1)); overload;
@@ -68,16 +68,16 @@ type
   TThreadList = class
   private
     tlItems: PTLElements;
-    tlCount: integer;
-    tlRemap: integer;
-    tlLast : integer;
-    tlLastR: integer;
-    function Search(thread: integer; var remap, insertIdx: integer): boolean;
+    tlCount: Cardinal;
+    tlRemap: Cardinal;
+    tlLast : Cardinal;
+    tlLastR: Cardinal;
+    function Search(const aThreadId: Cardinal; var remap, insertIdx: Cardinal): boolean;
   public
     constructor Create;
     destructor  Destroy; override;
-    function    Remap(thread: integer): integer;
-    property    Count: integer read tlCount;
+    function    Remap(const aThreadId: Cardinal): integer;
+    property    Count: Cardinal read tlCount;
   end;
 
   TThreadInformation = class
@@ -98,11 +98,11 @@ var
   prfName        : string;
   prfRunning     : boolean;
   prfLastTick    : Comp;
-  prfOnlyThread  : integer;
+  prfOnlyThread  : Cardinal;
   prfThreads     : TThreadList;
   prfThreadsInfo : TThreadInformationList;
   prfThreadBytes : integer;
-  prfMaxThreadNum: integer;
+  prfMaxThreadNum: Cardinal;
   prfInitialized : boolean;
   prfDisabled    : boolean;
 
@@ -209,15 +209,15 @@ begin
   end;
 end; { WriteTicks }
 
-procedure WriteThread(thread: integer);
+procedure WriteThread(const aThreadId: Cardinal);
 const
   marker: integer = 0;
 var
   remap: integer;
 begin
-  if not profCompressThreads then Transmit(thread, Sizeof(integer))
+  if not profCompressThreads then Transmit(aThreadId, Sizeof(integer))
   else begin
-    remap := prfThreads.Remap(thread);
+    remap := prfThreads.Remap(aThreadId);
     if prfThreads.Count >= prfMaxThreadNum then begin
       Transmit(marker, prfThreadBytes);
       prfMaxThreadNum := 2 * prfMaxThreadNum;
@@ -235,9 +235,9 @@ begin
   end;
 end; { FlushCounter }
 
-procedure profilerEnterProc(const aProcID : integer);
+procedure profilerEnterProc(const aProcID : Cardinal);
 var
-  ct : integer;
+  ct : Cardinal;
   cnt: TLargeinteger;
 begin
   QueryPerformanceCounter(TInt64((@cnt)^));
@@ -259,9 +259,9 @@ begin
   end;
 end; { ProfilerEnterProc }
 
-procedure ProfilerExitProc(const aProcID : integer);
+procedure ProfilerExitProc(const aProcID : Cardinal);
 var
-  ct : integer;
+  ct : Cardinal;
   cnt: TLargeinteger;
 begin
   QueryPerformanceCounter(TInt64((@Cnt)^));
@@ -353,14 +353,15 @@ begin
   inherited Destroy;
 end; { TThreadList.Destroy }
 
-function TThreadList.Remap(thread: integer): integer;
+function TThreadList.Remap(const aThreadId: Cardinal): integer;
 var
-  remap   : integer;
-  insert  : integer;
+  remap   : Cardinal;
+  insert  : Cardinal;
   tmpItems: PTLElements;
 begin
-  if thread = tlLast then Result := tlLastR
-  else if not Search(thread, remap, insert) then begin
+  if aThreadId = tlLast then
+    Result := tlLastR
+  else if not Search(aThreadId, remap, insert) then begin
     // reallocate tlItems
     GetMem(tmpItems, SizeOf(TTLEl)*(tlCount+1));
     if tlItems <> nil then begin
@@ -375,25 +376,25 @@ begin
     if insert < tlCount then
       Move(tlItems^[insert], tlItems^[insert + 1], (tlCount-insert)*SizeOf(TTLEl));
     with tlItems^[Insert] do begin
-      tleThread := thread;
+      tleThread := aThreadId;
       tleRemap  := tlRemap;
     end;
     Inc(tlCount);
-    tlLast  := thread;
+    tlLast  := aThreadId;
     tlLastR := tlRemap;
     Result  := tlRemap;
   end
   else begin
-    tlLast  := thread;
+    tlLast  := aThreadId;
     tlLastR := remap;
     Result  := remap;
   end;
 end; { TThreadList.Remap }
 
-function TThreadList.Search(thread: integer; var remap, insertIdx: integer): boolean;
+function TThreadList.Search(const aThreadId: Cardinal; var remap, insertIdx: Cardinal): boolean;
 var
-  l, m, h: integer;
-  mid    : integer;
+  l, m, h: Cardinal;
+  mid    : Cardinal;
 begin
   if tlCount = 0 then begin
     insertIdx := 0;
@@ -405,15 +406,15 @@ begin
     repeat
       m := L + (H - L) div 2;
       mid := tlItems^[m].tleThread;
-      if thread = mid then begin
+      if aThreadId = mid then begin
         remap := tlItems^[m].tleRemap;
         Result := True;
         Exit;
-      end else if thread < mid then H := m - 1
+      end else if aThreadId < mid then H := m - 1
       else L := m + 1;
     until L > H;
     Result := False;
-    if thread > mid then insertIdx := m + 1
+    if aThreadId > mid then insertIdx := m + 1
                     else insertIdx := m;
   end;
 end; { TThreadList.Search }
