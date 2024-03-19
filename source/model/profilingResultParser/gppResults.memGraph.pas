@@ -23,13 +23,27 @@ type
     property ProcId : integer read fProcId;
   end;
 
-  TProcedureMemCallList = class(TObjectList<TMemConsumptionForProcedureCalls>)
-
-    function GetOrCreateListForProc(const aProcId : integer): TMemConsumptionForProcedureCalls;
+  TProcedureMemCallList = class
+  private
+    fList : TObjectList<TMemConsumptionForProcedureCalls>;
+    fLookupTable : TDictionary<integer, TMemConsumptionForProcedureCalls>;
+    function GetCount(): integer;
+    procedure SetCount(const aCount : integer);
+  public
+    constructor Create();
+    destructor Destroy; override;
+    procedure Clear();
+    procedure Write(const aIndex : Integer; const anEntry : TMemConsumptionForProcedureCalls);
+    function Read(const aIndex : Integer): TMemConsumptionForProcedureCalls;
+    procedure AddEntryToProcList(const aProcId: integer; const aEntry: TMemConsumptionEntry);
+    property Count: integer read GetCount write SetCount;
   end;
 
 
 implementation
+
+uses
+  System.Sysutils;
 
 
 { TMemConsumptionEntry }
@@ -50,18 +64,61 @@ end;
 
 { TProcedureMemCallList }
 
-function TProcedureMemCallList.GetOrCreateListForProc(const aProcId: integer): TMemConsumptionForProcedureCalls;
-var
-  lEntry : TMemConsumptionForProcedureCalls;
+
+constructor TProcedureMemCallList.Create;
 begin
-  for lEntry in self do
-  begin
-    if lEntry.fProcId = aProcId then
-      exit(lEntry);
-  end;
-  lEntry := TMemConsumptionForProcedureCalls.Create(aProcId);
-  self.Add(lEntry);
-  result := lEntry;
+  fList := TObjectList<TMemConsumptionForProcedureCalls>.Create();
+  fLookupTable := TDictionary<integer, TMemConsumptionForProcedureCalls>.Create;
 end;
+
+destructor TProcedureMemCallList.Destroy;
+begin
+  fLookupTable.Free;
+  fList.Free;
+  inherited;
+end;
+
+
+procedure TProcedureMemCallList.Clear;
+begin
+  fLookupTable.Clear;
+  fList.Clear();
+end;
+
+function TProcedureMemCallList.GetCount: integer;
+begin
+  result := fList.Count;
+end;
+
+procedure TProcedureMemCallList.SetCount(const aCount: integer);
+begin
+  fList.Count := aCount;
+end;
+
+
+function TProcedureMemCallList.Read(const aIndex: Integer): TMemConsumptionForProcedureCalls;
+begin
+  result := flist[aIndex];
+end;
+
+procedure TProcedureMemCallList.Write(const aIndex: Integer; const anEntry: TMemConsumptionForProcedureCalls);
+begin
+  fList[aIndex] := anEntry;
+  fLookupTable.AddOrSetValue(aIndex, anEntry);
+end;
+
+procedure TProcedureMemCallList.AddEntryToProcList(const aProcId: integer; const aEntry: TMemConsumptionEntry);
+var
+  lMemList : TMemConsumptionForProcedureCalls;
+begin
+  if not fLookupTable.TryGetValue(aProcId, lMemList) then
+  begin
+    lMemList := TMemConsumptionForProcedureCalls.Create(aProcId);
+    fList.Add(lMemList);
+    fLookupTable.Add(aProcId, lMemList);
+  end;
+  lMemList.Add(aEntry);
+end;
+
 
 end.
