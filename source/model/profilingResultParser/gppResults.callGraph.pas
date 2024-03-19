@@ -18,7 +18,7 @@ type
   /// A list for counting the proc calls.
   /// The index is the thread number. 0 means "All Threads".
   /// </summary>
-  tProcTimeList = class(TList<int64>)
+  tProcTimeList = class(TList<uint64>)
   private
     fUseMaxAsDefault: boolean;
   public
@@ -27,12 +27,12 @@ type
     /// Adds a time to the given index.
     /// If the anIndex is not 0, the sum(index 0) is incremented as well.
     /// </summary>
-    procedure AddTime(const aThreadId: integer;const aValueToBeAdded: int64);
+    procedure AddTime(const aThreadId: Cardinal;const aValueToBeAdded: uint64);
     /// <summary>
     /// Set a time value for a given index.
     /// If the anIndex is not 0, the sum(index 0) is adjusted as well.
     /// </summary>
-    procedure AssignTime(const aThreadId : integer; const aValueToBeAssigned: int64);
+    procedure AssignTime(const aThreadId : Cardinal; const aValueToBeAssigned: uint64);
 
     property UseMaxAsDefault : Boolean read fUseMaxAsDefault write fUseMaxAsDefault;
   end;
@@ -41,13 +41,13 @@ type
   /// A list for counting the proc calls.
   /// The index is the thread number. 0 means "All Threads".
   /// </summary>
-  tProcCountList = class(TList<integer>)
+  tProcCountList = class(TList<Cardinal>)
   public
     /// <summary>
     /// Adds a count to the given index.
     /// If the anIndex is not 0, the sum(index 0) is incremented as well.
     /// </summary>
-    procedure AddCount(const aThreadId : integer;const aValueToBeAdded: integer);
+    procedure AddCount(const aThreadId : Cardinal;const aValueToBeAdded: Cardinal);
 
   end;
   /// <summary>
@@ -62,7 +62,7 @@ type
     ProcTimeAvg  : tProcTimeList;   // 0 = unused
     ProcChildTime: tProcTimeList;   // 0 = sum
     ProcCnt      : tProcCountList; // 0 = sum
-    constructor Create(const aThreadCount: Integer);
+    constructor Create(const aThreadCount: Cardinal);
     destructor Destroy; override;
 
     function ToInfoString(): string;
@@ -116,7 +116,7 @@ uses
 
 { TCallGraphInfo }
 
-constructor TCallGraphInfo.Create(const aThreadCount: Integer);
+constructor TCallGraphInfo.Create(const aThreadCount: Cardinal);
 var
   i : integer;
 begin
@@ -139,7 +139,7 @@ begin
   // procTimeMin starts with the high value and is assigned with
   // the first lower value.
   for I := 0 to ProcTimeMin.Count-1 do
-    ProcTimeMin[i] := High(int64);
+    ProcTimeMin[i] := High(uint64);
 end;
 
 destructor TCallGraphInfo.Destroy;
@@ -166,7 +166,7 @@ function TCallGraphInfo.ToInfoString: string;
     aBuilder.AppendLine();
   end;
 
-  procedure OutputList(const aBuilder : TStringBuilder;const aListName : string;const aList : TList<Integer>);overload;
+  procedure OutputList(const aBuilder : TStringBuilder;const aListName : string;const aList : TList<Cardinal>);overload;
   var
     i : integer;
   begin
@@ -259,7 +259,7 @@ begin
   begin
     LInfo := LPair.Value;
     LInfo.ProcTime.Add(0);
-    LInfo.ProcTimeMin.Add(High(int64));
+    LInfo.ProcTimeMin.Add(High(uint64));
     LInfo.ProcTimeMax.Add(0);
     LInfo.ProcTimeAvg.Add(0);
     LInfo.ProcChildTime.Add(0);
@@ -271,7 +271,7 @@ procedure TCallGraphInfoDict.CalculateAverage();
 var
   LPair : TPair<TCallGraphKey, TCallGraphInfo>;
   LInfo : TCallGraphInfo;
-  LProcTimeAvgAllThreads : int64;
+  LProcTimeAvgAllThreads : uint64;
   j : integer;
 begin
   for LPair in fDict do
@@ -286,7 +286,7 @@ begin
       LProcTimeAvgAllThreads := 0;
       for j := 0 + 1 to LInfo.ProcTime.count - 1 do
       begin
-        if LInfo.ProcTimeMin[j] = High(int64) then
+        if LInfo.ProcTimeMin[j] = High(uint64) then
           LInfo.ProcTimeMin[j] := 0;
         if LInfo.ProcCnt[j] = 0 then
           LInfo.ProcTimeAvg[j] := 0
@@ -314,7 +314,7 @@ end;
 
 { tProcTimeList }
 
-procedure tProcTimeList.AddTime(const aThreadId : integer;const aValueToBeAdded: int64);
+procedure tProcTimeList.AddTime(const aThreadId : Cardinal;const aValueToBeAdded: uint64);
 begin
   if aThreadId = 0 then
     raise Exception.Create('FehlermtProcTimeList.AddTime: ThreadId 0 is not allowed.');
@@ -322,7 +322,7 @@ begin
   self[aThreadId] := self[aThreadId] + aValueToBeAdded;
 end;
 
-procedure tProcTimeList.AssignTime(const aThreadId: integer; const aValueToBeAssigned: int64);
+procedure tProcTimeList.AssignTime(const aThreadId: Cardinal; const aValueToBeAssigned: uint64);
 begin
   if aThreadId = 0 then
     raise Exception.Create('FehlermtProcTimeList.AssignTime: ThreadId 0 is not allowed.');
@@ -332,7 +332,7 @@ end;
 
 { tProcCountList }
 
-procedure tProcCountList.AddCount(const aThreadId, aValueToBeAdded: integer);
+procedure tProcCountList.AddCount(const aThreadId, aValueToBeAdded: Cardinal);
 begin
   if aThreadId = 0 then
     raise Exception.Create('tProcCountList.AssignTimeeldung: ThreadId 0 is not allowed.');
