@@ -93,7 +93,6 @@ type
     resNullError      : integer;
     resNullErrorAcc   : integer;
     resPrfDigest      : boolean;
-    resPrfDigestVer   : integer;
     resCalibrCnt      : integer;
     resCurCalibr      : integer;
     resCalibration    : boolean;
@@ -170,7 +169,6 @@ type
     property    FileName: String read resName;
     property    Version: integer read resPrfVersion;
     property    IsDigest: boolean read resPrfDigest;
-    property    DigestVer: integer read resPrfDigestVer;
     property    CallGraphInfo: TCallGraphInfoDict read fCallGraphInfoDict;
     property    CallGraphInfoCount: integer read fCallGraphInfoMaxElementCount;
     property    ProcedureMemCallList: TProcedureMemCallList read fProcedureMemCallList;
@@ -200,7 +198,6 @@ begin
   resCompressThreads := false;
   resPrfVersion      := 0;
   resPrfDigest       := false;
-  resPrfDigestVer    := 0;
   resNullOverhead    := 0;
   resNullError       := 0;
   resNullErrorAcc    := 0;
@@ -550,6 +547,7 @@ end; { TResults.ReadPacket }
 procedure TResults.LoadHeader;
 var
   tag: byte;
+  lDigestVersion : integer;
 begin
   repeat
     ReadTag(tag);
@@ -560,7 +558,7 @@ begin
       PR_COMPTICKS  : ReadBool(resCompressTicks);
       PR_COMPTHREADS: ReadBool(resCompressThreads);
       PR_DIGEST     : resPrfDigest := true;
-      PR_DIGESTVER  : ReadInt(resPrfDigestVer);
+      PR_DIGESTVER  : ReadInt(lDigestVersion);
     end;
   until tag = PR_ENDHEADER;
 end; { TResults.LoadHeader }
@@ -701,7 +699,8 @@ begin
     with resProcedures[i] do begin
       peProcTime[Low(peProcTime)] := 0;
       peProcChildTime[Low(peProcChildTime)] := 0;
-      if (not IsDigest) or (DigestVer < PRF_DIGESTVER_2) then begin
+      if (not IsDigest) then
+      begin
         peProcTimeMin[Low(peProcTIme)] := High(uint64);
         peProcTimeMax[Low(peProcTIme)] := 0;
       end;
@@ -934,11 +933,13 @@ var
   lMemComsumptionList : TMemConsumptionForProcedureCalls;
   //lMemComsumptionEntry : TMemConsumptionEntry;
   lDigestFilename : String;
-
+const
+  LAST_VALID_DIGESTVERSION = 4;
 begin
   lDigestFilename := aPrfFileName + '.dgst';
   resFile := TGpHugeFile.CreateEx(lDigestFilename,FILE_FLAG_SEQUENTIAL_SCAN+FILE_ATTRIBUTE_NORMAL);
   resFile.RewriteBuffered(1, 4*1024*1024);
+
   try
     var lNumberOfUnits := High(resUnits)-Low(resUnits)+1;
     var lNumberOfClasses := High(resClasses)-Low(resClasses)+1;
@@ -950,8 +951,7 @@ begin
 
     WriteTag(PR_DIGEST);
     WriteTag(PR_DIGESTVER);
-    WriteInt(PRF_DIGESTVER_CURRENT);
-    resPrfDigestVer := PRF_DIGESTVER_CURRENT;
+    WriteInt(LAST_VALID_DIGESTVERSION);
     WriteTag(PR_ENDHEADER);
     WriteTag(PR_DIGFREQ);
     WriteInt64(resFrequency);
@@ -1001,8 +1001,7 @@ begin
       with resProcedures[i] do begin
         incrementAndTriggerProgress();
         WriteString(peName);
-        if resPrfDigestVer >= PRF_DIGESTVER_4 then
-          WriteInt(pePID);
+        WriteInt(pePID);
         WriteInt(peUID);
         WriteInt(peCID);
         WriteInt(peFirstLn);
@@ -1175,8 +1174,7 @@ begin
           with resProcedures[i] do begin
             UpdateStatus;
             ReadString(peName);
-            if resPrfDigestVer >= PRF_DIGESTVER_4 then
-              ReadInt(pePID);
+            ReadInt(pePID);
             ReadInt(peUID);
             ReadInt(peCID);
             ReadInt(peFirstLn);
@@ -1189,18 +1187,15 @@ begin
             ReadInt(num);
             SetLength(peProcTimeMax,num);
             for j := Low(peProcTimeMax) to High(peProcTimeMax) do ReadUInt64(peProcTimeMax[j]);
-            if DigestVer < PRF_DIGESTVER_1 then SetLength(peProcTimeAvg,num);
             ReadInt(num);
             SetLength(peProcChildTime,num);
             for j := Low(peProcChildTime) to High(peProcChildTime) do ReadUInt64(peProcChildTime[j]);
             ReadInt(num);
             SetLength(peProcCnt,num);
             for j := Low(peProcCnt) to High(peProcCnt) do ReadCardinal(peProcCnt[j]);
-            if DigestVer >= PRF_DIGESTVER_1 then begin
-              ReadInt(num);
-              SetLength(peProcTimeAvg,num);
-              for j := Low(peProcTimeAvg) to High(peProcTimeAvg) do ReadUInt64(peProcTimeAvg[j]);
-            end;
+            ReadInt(num);
+            SetLength(peProcTimeAvg,num);
+            for j := Low(peProcTimeAvg) to High(peProcTimeAvg) do ReadUInt64(peProcTimeAvg[j]);
           end;
       end; // PR_DIGPROCS
       PR_DIGCALLG: begin
@@ -1250,8 +1245,6 @@ begin
       end; // PR_DIGCALLG
       PR_DIG_START_MEMG:
       begin
-        if resPrfDigestVer < PRF_DIGESTVER_4 then
-          raise Exception.create('Digist Version is below 4, but found mem artefacts.');
         fProcedureMemCallList.Clear();
         ReadInt(LInt); // Count
         fProcedureMemCallList.Count := lInt;

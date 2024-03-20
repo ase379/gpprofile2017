@@ -42,20 +42,6 @@ const
   PRF_VERSION   = 4;
   PRF_VERSION_WITH_MEM   = 5;
 
-  { compressed format with the reduced raw data of the plain format }
-  PRF_DIGESTVER_0 = 0;
-  { data with additional average call time information for a procedure }
-  PRF_DIGESTVER_1 = 1;
-  { data with additional min/max call time information for a procedure }
-  PRF_DIGESTVER_2 = 2;
-  { data with additional callee and caller time information for a procedure }
-  PRF_DIGESTVER_3 = 3;
-  { data with additional memory tracing information }
-  PRF_DIGESTVER_4 = 4;
-
-  { the currently used digest version }
-  PRF_DIGESTVER_CURRENT = PRF_DIGESTVER_4;
-
 implementation
 
 end.

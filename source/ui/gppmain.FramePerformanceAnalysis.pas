@@ -574,8 +574,6 @@ begin
     try
       with fCurrentProfile do
       begin
-        if DigestVer < PRF_DIGESTVER_3 then
-          Exit;
         if cbxSelectThreadProc.ItemIndex >= 0 then
         begin
           callingPID := fvstProcsTools.GetSelectedId;
@@ -613,8 +611,6 @@ begin
     try
       with fCurrentProfile do
       begin
-        if DigestVer < PRF_DIGESTVER_3 then
-          Exit;
         if cbxSelectThreadProc.ItemIndex >= 0 then
         begin
           calledPID := fvstProcsTools.GetSelectedId();
