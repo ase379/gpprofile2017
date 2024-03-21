@@ -502,8 +502,6 @@ begin
     try
       with openProfile do
       begin
-        if DigestVer < PRF_DIGESTVER_3 then
-          Exit;
         callingPID := fvstProcsTools.GetSelectedId;
         for i := 1 to CallGraphInfoCount-1 do
         begin
@@ -538,8 +536,6 @@ begin
     try
       with openProfile do
       begin
-        if DigestVer < PRF_DIGESTVER_3 then
-          Exit;
         calledPID := fvstProcsTools.GetSelectedId();
         for i := 1 to CallGraphInfoCount-1 do
         begin
