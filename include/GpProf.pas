@@ -21,13 +21,20 @@ interface
 
 uses System.Classes;
 
+type
+  /// <summary>
+  /// Marker interface for a measure point scope. upon destruction, the scope will be stored.
+  /// </summary>
+  IMeasurePointScope = interface
+  end;
+
 procedure ProfilerStart;
 procedure ProfilerStop;
 procedure ProfilerStartThread;
 procedure ProfilerEnterProc(const aProcID: Cardinal);
 procedure ProfilerExitProc(const aProcID: Cardinal);
-procedure ProfilerEnterMP(const aMeasurePointId : String);
-procedure ProfilerExitMP(const aMeasurePointId : String);
+function CreateMeasurePointScope(const aMeasurePointId : String): IMeasurePointScope;
+
 procedure ProfilerTerminate;
 procedure NameThreadForDebugging(AThreadName: AnsiString; AThreadID: TThreadID = TThreadID(-1)); overload;
 procedure NameThreadForDebugging(AThreadName: string; AThreadID: TThreadID = TThreadID(-1)); overload;
@@ -41,12 +48,23 @@ uses
   SysUtils,
   IniFiles,
   GpProfH,
+
   gpprofCommon;
 
 const
   BUF_SIZE = 64 * 1024; //64*1024;
 
 type
+  TMeasurePointScope = class(TInterfacedObject, IMeasurePointScope)
+  private
+    fMeasurePointId : String;
+  public
+    constructor Create(const aMeasurePointId : String);
+    destructor Destroy; override;
+  end;
+
+
+
 {$IFNDEF VER100}{$IFNDEF VER110}{$DEFINE NeedTLI}{$ENDIF}{$ENDIF}
 {$IFDEF NeedTLI}
   TInt64 = int64;
@@ -286,50 +304,10 @@ begin
   end;
 end; { ProfilerExitProc }
 
-procedure ProfilerEnterMP(const aMeasurePointId : String);
-var
-  ct : Cardinal;
-  cnt: TLargeinteger;
+function CreateMeasurePointScope(const aMeasurePointId : String): IMeasurePointScope;
 begin
-  QueryPerformanceCounter(TInt64((@cnt)^));
-  ct := GetCurrentThreadID;
-{$B+}
-  if prfRunning and ((prfOnlyThread = 0) or (prfOnlyThread = ct)) then begin
-{$B-}
-    EnterCriticalSection(prfLock);
-    try
-      FlushCounter;
-      WriteTag(PR_ENTER_MP);
-      WriteThread(ct);
-      WriteAnsiString(utf8Encode(aMeasurePointId));
-      WriteTicks(Cnt.QuadPart);
-      QueryPerformanceCounter(TInt64((@prfCounter)^));
-    finally LeaveCriticalSection(prfLock); end;
-  end;
-
+  result := TMeasurePointScope.Create(aMeasurePointId);
 end;
-procedure ProfilerExitMP(const aMeasurePointId : String);
-var
-  ct : Cardinal;
-  cnt: TLargeinteger;
-begin
-  QueryPerformanceCounter(TInt64((@Cnt)^));
-  ct := GetCurrentThreadID;
-{$B+}
-  if prfRunning and ((prfOnlyThread = 0) or (prfOnlyThread = ct)) then begin
-{$B-}
-    EnterCriticalSection(prfLock);
-    try
-      FlushCounter;
-      WriteTag(PR_EXIT_MP);
-      WriteThread(ct);
-      WriteAnsiString(utf8Encode(aMeasurePointId));
-      WriteTicks(Cnt.QuadPart);
-      QueryPerformanceCounter(TInt64((@prfCounter)^));
-    finally LeaveCriticalSection(prfLock); end;
-  end;
-end;
-
 
 procedure ProfilerStart;
 begin
@@ -643,6 +621,65 @@ begin
 
 end; { ProfilerTerminate }
 
+
+{ TMeasurePointScope }
+
+constructor TMeasurePointScope.Create(const aMeasurePointId: String);
+
+  procedure ProfilerEnterMP(const aMeasurePointId : String);
+  var
+    ct : Cardinal;
+    cnt: TLargeinteger;
+  begin
+    QueryPerformanceCounter(TInt64((@cnt)^));
+    ct := GetCurrentThreadID;
+  {$B+}
+    if prfRunning and ((prfOnlyThread = 0) or (prfOnlyThread = ct)) then begin
+  {$B-}
+      EnterCriticalSection(prfLock);
+      try
+        FlushCounter;
+        WriteTag(PR_ENTER_MP);
+        WriteThread(ct);
+        WriteAnsiString(utf8Encode(aMeasurePointId));
+        WriteTicks(Cnt.QuadPart);
+        QueryPerformanceCounter(TInt64((@prfCounter)^));
+      finally LeaveCriticalSection(prfLock); end;
+    end;
+  end;
+
+begin
+  fMeasurePointId := aMeasurePointId;
+  ProfilerEnterMP(fMeasurePointId);
+end;
+
+destructor TMeasurePointScope.Destroy;
+  procedure ProfilerExitMP(const aMeasurePointId : String);
+  var
+    ct : Cardinal;
+    cnt: TLargeinteger;
+  begin
+    QueryPerformanceCounter(TInt64((@Cnt)^));
+    ct := GetCurrentThreadID;
+  {$B+}
+    if prfRunning and ((prfOnlyThread = 0) or (prfOnlyThread = ct)) then begin
+  {$B-}
+      EnterCriticalSection(prfLock);
+      try
+        FlushCounter;
+        WriteTag(PR_EXIT_MP);
+        WriteThread(ct);
+        WriteAnsiString(utf8Encode(aMeasurePointId));
+        WriteTicks(Cnt.QuadPart);
+        QueryPerformanceCounter(TInt64((@prfCounter)^));
+      finally LeaveCriticalSection(prfLock); end;
+    end;
+  end;
+
+begin
+  ProfilerExitMP(fMeasurePointId);
+  inherited;
+end;
 
 initialization
   prfInitialized := false;

@@ -28,12 +28,15 @@ end;
 procedure TTestThread.Execute;
 begin
   NameThreadForDebugging('AwesomeThread', self.ThreadID);
-   {>>GpProfile MP Enter} ProfilerEnterMP('MP_TestThreadExecute'); try {GpProfile MP Enter>>}
+  var lOuterScope := gpprof.CreateMeasurePointScope('MP_TestThreadExecuteOuter');
   NameThreadForDebugging('AwesomeThread-UnicodeChars-☺☼d156exÈ', self.ThreadID);
+  var lInnerScope := gpprof.CreateMeasurePointScope('MP_TestThreadExecuteInner');
   self.namethreadfordebugging('AwesomeThread2-SelfNameReplacement', self.ThreadID);
   TThread.NameThreadForDebugging('AwesomeThread3-TThreadReplacement');
   Sleep(1000);
-  {>>GpProfile MP Leave} finally ProfilerExitMP('MP_TestThreadExecute'); end; {GpProfile MP Leave>>}
+  lInnerScope := nil;
+  Sleep(1000);
+  lOuterScope := nil;
   inherited;
 end;
 
