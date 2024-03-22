@@ -10,8 +10,8 @@ type
 
   TProcProxy = class
   private
-    ppThreadID    : integer;
-    ppProcID      : integer;
+    ppThreadID    : Cardinal;
+    ppProcID      : Cardinal;
     ppDeadTime    : int64;
     ppStartTime   : int64;
     ppTotalTime   : int64;
@@ -22,14 +22,14 @@ type
     ppDiffMemChildren : Cardinal;
   public
 
-    constructor Create(const aThreadID, aProcID: integer);
+    constructor Create(const aThreadID, aProcID: Cardinal);
     destructor  Destroy; override;
     procedure   Start(pkt: TResPacket);  virtual;
     procedure   Stop(var pkt: TResPacket); virtual;
     procedure   UpdateDeadTime(pkt: TResPacket);
 
-    property ThreadID : Integer read ppThreadID;
-    property ProcId : integer read ppProcID;
+    property ThreadID : Cardinal read ppThreadID;
+    property ProcId : Cardinal read ppProcID;
     property DeadTime : int64 read ppDeadTime;
     property StartTime : int64 read ppStartTime;
     property TotalTime : int64 read ppTotalTime;
@@ -49,8 +49,7 @@ type
     procedure   UpdateDeadTime(pkt: TResPacket);
     procedure   Append(proxy: TProcProxy);
     procedure   Remove(proxy: TProcProxy);
-    procedure   LocateLast(const procID: integer; var this,parent: TProcProxy); overload;
-    procedure   LocateLast(const aMeasurePointGuid: TGUID; var this,parent: TProcProxy); overload;
+    procedure   LocateLast(const aProcID: Cardinal; var this,parent: TProcProxy); overload;
   end;
 
   TMeasurePointEntry = record
@@ -61,12 +60,12 @@ type
 
   TMeasurePointProxy = class(TProcProxy)
   private
-    fMeasurePointGuid : TGUID;
+    fMeasurePointID : String;
   public
-    constructor Create(const aThreadID: integer; const aMeasurePointGuid : TGUID);
+    constructor Create(const aThreadID, aProcID: Cardinal;const aMeasurePointID : String);
     destructor  Destroy; override;
 
-    property MeasurePointGuid : TGUID read fMeasurePointGuid;
+    property MeasurePointID : String read fMeasurePointID;
   end;
 
 implementation
@@ -77,7 +76,7 @@ uses
 
 { TProcProxy }
 
-constructor TProcProxy.Create(const aThreadID, aProcID: integer);
+constructor TProcProxy.Create(const aThreadID, aProcID: Cardinal);
 begin
   inherited Create;
   ppThreadID  := aThreadID;
@@ -132,14 +131,14 @@ begin
 end;
 
 
-procedure TActiveProcList.LocateLast(const procID: integer; var this,parent: TProcProxy);
+procedure TActiveProcList.LocateLast(const aProcId: Cardinal; var this,parent: TProcProxy);
 var
   i: integer;
 begin
    if (fAplList <> nil) and (fAplList.Count >= 0) then begin
     for i := fAplList.Count-1 downto 0 do
     begin
-      if fAplList[i].ppProcID = procID then
+      if fAplList[i].ppProcID = aProcId then
       begin
         this := fAplList[i];
         if i > 0 then
@@ -154,34 +153,6 @@ begin
   parent := nil;
 end; { TActiveProcList.LocateLast }
 
-procedure TActiveProcList.LocateLast(const aMeasurePointGuid: TGUID; var this,parent: TProcProxy);
-var
-  i: integer;
-  lProxy : TProcProxy;
-  lMpProxy : TMeasurePointProxy;
-begin
-  if (fAplList <> nil) and (fAplList.Count >= 0) then begin
-    for i := fAplList.Count-1 downto 0 do
-    begin
-      lProxy := fAplList[i];
-      if lProxy is TMeasurePointProxy then
-      begin
-        lMpProxy := lProxy as TMeasurePointProxy;
-        if lMpProxy.MeasurePointGuid = aMeasurePointGuid then begin
-          this := lMpProxy;
-          if i > 0 then
-            parent := fAplList[i-1]
-          else
-            parent := nil;
-          Exit;
-        end;
-
-      end
-    end;
-  end;
-  this   := nil;
-  parent := nil;
-end; { TActiveProcList.LocateLast }
 
 
 procedure TActiveProcList.Remove(proxy: TProcProxy);
@@ -204,11 +175,11 @@ end;
 
 { TMeasurePointProxy }
 
-constructor TMeasurePointProxy.Create(const aThreadID: integer; const aMeasurePointGuid : TGUID);
+constructor TMeasurePointProxy.Create(const aThreadID, aProcID: Cardinal;const aMeasurePointID : String);
 begin
-  inherited Create(aThreadID, 0);
+  inherited Create(aThreadID, aProcID);
   ppThreadID  := aThreadID;
-  fMeasurePointGuid := aMeasurePointGuid;
+  fMeasurePointID := aMeasurePointID;
   ppDeadTime  := 0;
   ppStartTime := 0;
   ppTotalTime := 0;

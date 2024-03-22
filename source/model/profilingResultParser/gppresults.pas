@@ -11,7 +11,8 @@ uses
   gppResults.procs,
   gppResults.callGraph,
   gppResults.memGraph,
-  gppResults.types;
+  gppResults.types,
+  gppResult.measurePointRegistry;
 
 type
   TProgressCallback = function (percent: integer): boolean of object;
@@ -61,6 +62,7 @@ type
   private
     function GetName: String;
   public
+    // utf8 encoded procedure name
     peName         : AnsiString;
     pePID          : integer;
     peUID          : integer;
@@ -102,6 +104,7 @@ type
     resCalTime2       : int64;
     resCalMax         : int64;
     resCalCounter     : integer;
+    fMeasurePointRegistry : TMeasurePointRegistry;
     procedure   RaiseFileCorruptedException(const aContext : String);
 
     procedure   CalibrationStep(pkt1, pkt2: TResPacket);
@@ -127,7 +130,6 @@ type
     procedure   ReadThread(var thread: integer);
     procedure   ReadTicks(var ticks: int64);
     procedure   ReadID(var id: integer);
-    procedure   ReadGuid   (var guid: TGUID);
     procedure   WriteTag(tag: byte);
     procedure   WriteInt(int: integer);
     procedure   WriteCardinal  (uint: Cardinal);
@@ -207,6 +209,7 @@ begin
   // dictionary owning the values; all sub dicts are just refs
   fCallGraphInfoDict := TCallGraphInfoDict.Create();
   fProcedureMemCallList := TProcedureMemCallList.Create();
+  fMeasurePointRegistry := TMeasurePointRegistry.Create();
 end; { TResults.Create }
 
 constructor TResults.Create(fileName: String; callback: TProgressCallback);
@@ -236,6 +239,7 @@ destructor TResults.Destroy;
 var
   i: integer;
 begin
+  fMeasurePointRegistry.free;
   fCallGraphInfoDict.free;
   fProcedureMemCallList.free;
   for i := Low(resThreads) to High(resThreads) do
@@ -249,7 +253,6 @@ procedure TResults.ReadInt64(var i64: int64);    begin resFile.BlockReadUnsafe(i
 procedure TResults.ReadUInt64(var ui64: uint64);    begin resFile.BlockReadUnsafe(ui64,SizeOf(uint64)); end;
 procedure TResults.ReadTag  (var tag: byte);     begin resFile.BlockReadUnsafe(tag,SizeOf(byte)); end;
 procedure TResults.ReadID   (var id: integer);   begin id := 0; resFile.BlockReadUnsafe(id,resProcSize); end;
-procedure TResults.ReadGuid   (var guid: TGUID);   begin guid := TGUID.Empty; resFile.BlockReadUnsafe(guid,SizeOf(TGUID)); end;
 procedure TResults.ReadAnsiString(var avalue: AnsiString);
 var LLength : Cardinal;
 begin
@@ -521,29 +524,45 @@ begin
     if proxy = nil then
       raise Exception.Create('gppResults.TResults.ExitProcPkt: Entry not found!');
     ExitProc(proxy,parent,pkt);
-    proxy.Destroy;
+    proxy.free;
     inherited;
   end;
 end; { TResults.ExitProcPkt }
 
 procedure TResults.EnterMeasurePointPkt(pkt: TResPacket);
 var
-  proxy: TProcProxy;
+  proxy: TMeasurePointProxy;
+  lThreadId : Cardinal;
 begin
-  proxy := TMeasurePointProxy.Create(ThCreateLocate(pkt.rpThread),pkt.rpMeasurePointID);
+  lThreadId := ThCreateLocate(pkt.rpThread);
+  pkt.rpProcID := Length(resProcedures);
+  proxy := TMeasurePointProxy.Create(lThreadId,pkt.rpProcID,pkt.rpMeasurePointID);
+  fMeasurePointRegistry.LastMeasurePointProcId := pkt.rpProcID;
+  fMeasurePointRegistry.LastMeasurePointId := pkt.rpMeasurePointID;
+
+  // the measure point needs to be inserted into the known procedures
+  SetLength(resProcedures,Length(resProcedures)+1);
+  var lNumberOfThreads := Length(resThreads);
+
+  resProcedures[pkt.rpProcID].peName := utf8Encode(proxy.MeasurePointID);
+  setLength(resProcedures[pkt.rpProcID].peProcTime, lNumberOfThreads);
+  setLength(resProcedures[pkt.rpProcID].peProcTimeMin, lNumberOfThreads);
+  setLength(resProcedures[pkt.rpProcID].peProcTimeMax, lNumberOfThreads);
+  setLength(resProcedures[pkt.rpProcID].peProcTimeAvg, lNumberOfThreads);
+  setLength(resProcedures[pkt.rpProcID].peProcChildTime, lNumberOfThreads);
+  setLength(resProcedures[pkt.rpProcID].peProcCnt, lNumberOfThreads);
+  setLength(resProcedures[pkt.rpProcID].peCurrentCallDepth, lNumberOfThreads);
+
   EnterProc(proxy,pkt);
 end; { TResults.EnterMeasurePointPkt }
 
 
 procedure TResults.ExitMeasurePointPkt(pkt: TResPacket);
-var
-  proxy : TProcProxy;
-  parent: TProcProxy;
 begin
-  resThreads[ThLocate(pkt.rpThread)].teActiveProcs.LocateLast(pkt.rpMeasurePointID,proxy,parent);
-  if proxy = nil then raise Exception.Create('gppResults.TResults.EnterMeasurePointPkt: Entry not found!');
-  ExitProc(proxy,parent,pkt);
-  proxy.Destroy;
+  if not SameText(pkt.rpMeasurePointID, fMeasurePointRegistry.LastMeasurePointId) then
+    raise Exception.Create('The End of MeasurePoint "'+pkt.rpMeasurePointID+'" has no proper begin tag.');
+  pkt.rpProcID := fMeasurePointRegistry.LastMeasurePointProcId;
+  ExitProcPkt(pkt);
   inherited;
 end; { TResults.ExitMeasurePointPkt }
 
@@ -563,6 +582,8 @@ begin
 end; { TResults.AddExitProc }
 
 function TResults.ReadPacket(var pkt: TResPacket): boolean;
+var
+  lAnsiMeasurePointId : ansistring;
 begin
   with pkt do begin
     ReadTag(rpTag);
@@ -570,8 +591,10 @@ begin
       Result := false
     else if (rpTag = PR_ENTER_MP) or (rpTag = PR_EXIT_MP) then
     begin
+      rpProcID := -1;
       ReadThread(rpThread);
-      ReadGuid(rpMeasurePointID);
+      ReadAnsiString(lAnsiMeasurePointId);
+      rpMeasurePointID := utf8ToString(lAnsiMeasurePointId);
       ReadTicks(rpMeasure1);
       ReadTicks(rpMeasure2);
       Result := true;
@@ -869,7 +892,7 @@ begin
   resThreads[proxy.ThreadID].teActiveProcs.UpdateDeadTime(pkt);
   proxy.Start(pkt);
   resThreads[proxy.ThreadID].teActiveProcs.Append(proxy);
-  if proxy.ProcID > Length(resProcedures) then
+  if proxy.ProcID > Cardinal(Length(resProcedures)) then
     raise EInvalidOp.Create('Error: Instrumentation count does not fit to the prf, please reinstrument.');
   Inc(resProcedures[proxy.ProcID].peCurrentCallDepth[proxy.ThreadID]);
 end;
@@ -1395,14 +1418,14 @@ end;
 
 function TProcEntry.GetName: String;
 begin
-  result := string(peName);
+  result := Utf8ToString(peName);
 end;
 
 { TClassEntry }
 
 function TClassEntry.GetName: String;
 begin
-  result := String(ceName);
+  result := Utf8ToString(ceName);
 end;
 
 

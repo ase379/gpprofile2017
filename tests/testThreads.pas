@@ -16,7 +16,7 @@ type
 implementation
 
 uses
-  System.SysUtils;
+  System.SysUtils, gpprof;
 
 { TTestThread }
 
@@ -28,12 +28,12 @@ end;
 procedure TTestThread.Execute;
 begin
   NameThreadForDebugging('AwesomeThread', self.ThreadID);
-   {>>GpProfile MP Enter} ProfilerEnterMP('TEST'); try {GpProfile MP Enter>>}
+   {>>GpProfile MP Enter} ProfilerEnterMP('MP_TestThreadExecute'); try {GpProfile MP Enter>>}
   NameThreadForDebugging('AwesomeThread-UnicodeChars-☺☼d156exÈ', self.ThreadID);
   self.namethreadfordebugging('AwesomeThread2-SelfNameReplacement', self.ThreadID);
   TThread.NameThreadForDebugging('AwesomeThread3-TThreadReplacement');
   Sleep(1000);
-  {>>GpProfile MP Leave} finally ProfilerExitMP('TEST'); end; {GpProfile MP Leave>>}
+  {>>GpProfile MP Leave} finally ProfilerExitMP('MP_TestThreadExecute'); end; {GpProfile MP Leave>>}
   inherited;
 end;
 

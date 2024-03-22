@@ -13,15 +13,13 @@ type
     rpMeasure2    : int64;
     rpNullOverhead: int64;
     rpMemWorkingSize : Cardinal;
-    rpMeasurePointID : TGUID;
+    rpMeasurePointID : String;
   end;
 
 
 const
   NULL_ACCURACY = 1000;
   REPORT_EVERY  = 100; // samples read
-
-
 
 implementation
 
