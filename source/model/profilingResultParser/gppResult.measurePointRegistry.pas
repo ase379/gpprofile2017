@@ -6,17 +6,24 @@ uses
    System.Generics.Collections;
 
 type
+  TMeasurePointRegistryEntry = class
+    ProcId : Cardinal;
+    MeasurePointId : String;
+  end;
+
   TMeasurePointRegistry = class
   private
-    fLastMeasurePointId : String;
-    fLastMeasurePointProcId : Cardinal;
-    function GetLastMeasurePointId: String;
-    procedure SetLastMeasurePointId(const Value: String);
-    function GetLastMeasurePointProcId: Cardinal;
-    procedure SetLastMeasurePointProcId(const Value: Cardinal);
+    fNameToEntryDict : TObjectDictionary<String, TMeasurePointRegistryEntry>;
+
   public
-    property LastMeasurePointId: String read GetLastMeasurePointId write SetLastMeasurePointId;
-    property LastMeasurePointProcID: Cardinal read GetLastMeasurePointProcId write SetLastMeasurePointProcId;
+    constructor Create();
+    destructor Destroy; override;
+
+    procedure RegisterMeasurePoint(const aProcId : Cardinal; const aMeasurePointId : String);
+    procedure UnRegisterMeasurePoint(const aMeasurePointId : String);
+
+    function GetMeasurePointEntry(const aMeasurePointId : String) : TMeasurePointRegistryEntry;
+
   end;
 
 implementation
@@ -25,24 +32,37 @@ uses Sysutils;
 
 { TMeasurePointRegistry }
 
-function TMeasurePointRegistry.GetLastMeasurePointId: String;
+constructor TMeasurePointRegistry.Create;
 begin
-  result := fLastMeasurePointId;
+  inherited Create();
+  fNameToEntryDict := TObjectDictionary<String, TMeasurePointRegistryEntry>.Create([doOwnsValues]);
 end;
 
-function TMeasurePointRegistry.GetLastMeasurePointProcId: Cardinal;
+destructor TMeasurePointRegistry.Destroy;
 begin
-  result := fLastMeasurePointProcId;
+  fNameToEntryDict.Free;
+  inherited;
 end;
 
-procedure TMeasurePointRegistry.SetLastMeasurePointId(const Value: String);
+procedure TMeasurePointRegistry.RegisterMeasurePoint(const aProcId : Cardinal; const aMeasurePointId : String);
+var
+  lEntry : TMeasurePointRegistryEntry;
 begin
-  fLastMeasurePointId := Value;
+  lEntry := TMeasurePointRegistryEntry.Create;
+  lEntry.ProcId := aProcId;
+  lEntry.MeasurePointId := aMeasurePointId;
+  fNameToEntryDict.AddOrSetValue(aMeasurePointId, lEntry);
 end;
 
-procedure TMeasurePointRegistry.SetLastMeasurePointProcId(const Value: Cardinal);
+function TMeasurePointRegistry.GetMeasurePointEntry(const aMeasurePointId : String) : TMeasurePointRegistryEntry;
 begin
-  fLastMeasurePointProcId := Value;
+  if not fNameToEntryDict.tryGetValue(aMeasurePointId, result) then
+    result := nil;
+end;
+
+procedure TMeasurePointRegistry.UnRegisterMeasurePoint(const aMeasurePointId : String);
+begin
+  fNameToEntryDict.Remove(aMeasurePointId);
 end;
 
 end.

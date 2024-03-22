@@ -537,8 +537,7 @@ begin
   lThreadId := ThCreateLocate(pkt.rpThread);
   pkt.rpProcID := Length(resProcedures);
   proxy := TMeasurePointProxy.Create(lThreadId,pkt.rpProcID,pkt.rpMeasurePointID);
-  fMeasurePointRegistry.LastMeasurePointProcId := pkt.rpProcID;
-  fMeasurePointRegistry.LastMeasurePointId := pkt.rpMeasurePointID;
+  fMeasurePointRegistry.RegisterMeasurePoint(pkt.rpProcId, pkt.rpMeasurePointID);
 
   // the measure point needs to be inserted into the known procedures
   SetLength(resProcedures,Length(resProcedures)+1);
@@ -558,12 +557,16 @@ end; { TResults.EnterMeasurePointPkt }
 
 
 procedure TResults.ExitMeasurePointPkt(pkt: TResPacket);
+var
+  lLastMeasurePointEntry : TMeasurePointRegistryEntry;
 begin
-  if not SameText(pkt.rpMeasurePointID, fMeasurePointRegistry.LastMeasurePointId) then
-    raise Exception.Create('The End of MeasurePoint "'+pkt.rpMeasurePointID+'" has no proper begin tag.');
-  pkt.rpProcID := fMeasurePointRegistry.LastMeasurePointProcId;
+  lLastMeasurePointEntry := fMeasurePointRegistry.GetMeasurePointEntry(pkt.rpMeasurePointID);
+
+  pkt.rpProcID := lLastMeasurePointEntry.ProcId;
   ExitProcPkt(pkt);
   inherited;
+  fMeasurePointRegistry.UnRegisterMeasurePoint(pkt.rpMeasurePointID);
+
 end; { TResults.ExitMeasurePointPkt }
 
 
