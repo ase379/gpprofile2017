@@ -58,29 +58,6 @@ type
     property Name : String read GetName;
   end;
 
-  TProcEntry = record
-  private
-    function GetName: String;
-  public
-    // utf8 encoded procedure name
-    peName         : AnsiString;
-    pePID          : integer;
-    peUID          : integer;
-    peCID          : integer;
-    peFirstLn      : integer;
-    peProcTime     : array {thread} of uint64;   // 0 = sum
-    peProcTimeMin  : array {thread} of uint64;   // 0 = unused
-    peProcTimeMax  : array {thread} of uint64;   // 0 = unused
-    peProcTimeAvg  : array {thread} of uint64;   // 0 = unused
-    peProcChildTime: array {thread} of uint64;   // 0 = sum
-    peProcCnt      : array {thread} of Cardinal; // 0 = sum
-    peCurrentCallDepth : array {thread} of integer; // 0 = unused
-    property Name : String read GetName;
-  end;
-
-
-
-
   TResults = class
   private
     resFile           : TGpHugeFile;
@@ -147,7 +124,7 @@ type
     resThreads   : array of TThreadEntry;
     resUnits     : array of TUnitEntry;
     resClasses   : array of TClassEntry;
-    resProcedures: array of TProcEntry;
+    resProcedures: TArray<TProcEntry>;
     fCallGraphInfoDict : TCallGraphInfoDict;
     fCallGraphInfoMaxElementCount : Integer;
     /// <summary>
@@ -186,6 +163,7 @@ uses
   System.IOUtils,
   System.SysUtils,
   GpProfH,
+  gppResults.procArrayTools,
   gppCommon;
 
 
@@ -540,18 +518,7 @@ begin
   fMeasurePointRegistry.RegisterMeasurePoint(pkt.rpProcId, pkt.rpMeasurePointID);
 
   // the measure point needs to be inserted into the known procedures
-  SetLength(resProcedures,Length(resProcedures)+1);
-  var lNumberOfThreads := Length(resThreads);
-
-  resProcedures[pkt.rpProcID].peName := utf8Encode(proxy.MeasurePointID);
-  setLength(resProcedures[pkt.rpProcID].peProcTime, lNumberOfThreads);
-  setLength(resProcedures[pkt.rpProcID].peProcTimeMin, lNumberOfThreads);
-  setLength(resProcedures[pkt.rpProcID].peProcTimeMax, lNumberOfThreads);
-  setLength(resProcedures[pkt.rpProcID].peProcTimeAvg, lNumberOfThreads);
-  setLength(resProcedures[pkt.rpProcID].peProcChildTime, lNumberOfThreads);
-  setLength(resProcedures[pkt.rpProcID].peProcCnt, lNumberOfThreads);
-  setLength(resProcedures[pkt.rpProcID].peCurrentCallDepth, lNumberOfThreads);
-
+  TProcArrayTools.AddProcRow(resProcedures, proxy.MeasurePointID, pkt.rpProcID, Length(resThreads));
   EnterProc(proxy,pkt);
 end; { TResults.EnterMeasurePointPkt }
 
@@ -708,7 +675,6 @@ end; { TResults.ThLocate }
 
 function TResults.ThCreate(thread: integer): integer;
 var
-  i  : integer;
   numth: integer;
 begin
   numth := High(resThreads)+1;
@@ -720,24 +686,7 @@ begin
     teActiveProcs := TActiveProcList.Create;
   end;
   // resize resProcedures
-  for i := Low(resProcedures) to High(resProcedures) do begin
-    with resProcedures[i] do begin
-      SetLength(peProcTime,numth);
-      SetLength(peProcTimeMin,numth);
-      SetLength(peProcTimeMax,numth);
-      SetLength(peProcTimeAvg,numth);
-      SetLength(peProcChildTime,numth);
-      SetLength(peProcCnt,numth);
-      SetLength(peCurrentCallDepth,numth);
-      peProcTime[numth-1]      := 0;
-      peProcTimeMin[numth-1]   := High(uint64);
-      peProcTimeMax[numth-1]   := 0;
-      peProcTimeAvg[numth-1]   := 0;
-      peProcChildTime[numth-1] := 0;
-      peProcCnt[numth-1]       := 0;
-      peCurrentCallDepth[numth-1]      := 0;
-    end;
-  end;
+  TProcArrayTools.AddThreadToExistsingProcRows(resProcedures, numth);
   // resize fCallGraphInfoDict
   fCallGraphInfoDict.initGraphInfos();
   Result := numth-1;
@@ -1415,13 +1364,6 @@ end;
 function TThreadEntry.GetName: String;
 begin
   result := UTF8ToString(teName);
-end;
-
-{ TProcEntry }
-
-function TProcEntry.GetName: String;
-begin
-  result := Utf8ToString(peName);
 end;
 
 { TClassEntry }
