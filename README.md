@@ -17,7 +17,7 @@ Features are:
 The generated instrumentation code works with Delphi 2 to the latest version.
 
 # How-To #
-
+## Instrumentation approach ##
 Easy as 1-2-3:
 
 1) Start gpprof.exe and open your Delphi project file (.dpr)
@@ -27,6 +27,11 @@ Easy as 1-2-3:
 3) Copy the content of the include dir into your application sources folder or add the include dir to the search path. Build your application in Delphi, run it, do some tasks and close.
 
 After that return to GpProfile window and enjoy the results! :)
+## Measure Points ##
+Since Version 1.6.0, you can add measurePoints:
+Use gpprof.CreateMeasurePointScope() to obtain a measure point. Upon disposal, the measure point will write out the timings.
+
+A sample can be found in the GProfTester project (in TTestThread.Execute())  
 
 # Credits #
 
