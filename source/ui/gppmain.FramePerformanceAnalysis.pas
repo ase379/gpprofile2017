@@ -577,7 +577,7 @@ begin
         if cbxSelectThreadProc.ItemIndex >= 0 then
         begin
           callingPID := fvstProcsTools.GetSelectedId;
-          for i := 1 to CallGraphInfoCount-1 do
+          for i := 1 to CallGraphInfoCount do
           begin
             LInfo := CallGraphInfo.GetGraphInfo(callingPID,i);
             if assigned(LInfo) then
@@ -609,20 +609,17 @@ begin
     fvstProcsCallersTools.ThreadIndex := cbxSelectThreadProc.ItemIndex;
     fvstProcsCallersTools.ProfileResults := fCurrentProfile;
     try
-      with fCurrentProfile do
+      if cbxSelectThreadProc.ItemIndex >= 0 then
       begin
-        if cbxSelectThreadProc.ItemIndex >= 0 then
+        calledPID := fvstProcsTools.GetSelectedId();
+        for i := 1 to fCurrentProfile.CallGraphInfoCount do
         begin
-          calledPID := fvstProcsTools.GetSelectedId();
-          for i := 1 to CallGraphInfoCount-1 do
-          begin
-            LInfo := CallGraphInfo.GetGraphInfo(i,calledPID);
-            if assigned(LInfo) then
-              if (not actHideNotExecuted.Checked) or (LInfo.ProcCnt[cbxSelectThreadProc.ItemIndex] > 0) then
-                fvstProcsCallersTools.AddEntry(calledPID, i);
-          end; // if
-          end; // for
-        end;
+          LInfo := fCurrentProfile.CallGraphInfo.GetGraphInfo(i,calledPID);
+          if assigned(LInfo) then
+            if (not actHideNotExecuted.Checked) or (LInfo.ProcCnt[cbxSelectThreadProc.ItemIndex] > 0) then
+              fvstProcsCallersTools.AddEntry(calledPID, i);
+        end; // if
+      end; // for
     finally
       fvstProcsCallersTools.EndUpdate;
     end;

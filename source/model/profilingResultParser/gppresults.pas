@@ -378,7 +378,7 @@ begin
   fCallGraphInfoDict.Clear;
   fProcedureMemCallList.Clear();
   // max number elements is (elements+1)*(elements+1): 1 child per parent.
-  fCallGraphInfoMaxElementCount := lNumberOfProcs+1;
+  fCallGraphInfoMaxElementCount := lNumberOfProcs;
   for i := 1 to High(resClasses) do
     with resClasses[i] do
       if ceFirstLn = MaxLongint then ceFirstLn := -1;
@@ -497,7 +497,8 @@ var
   parent: TProcProxy;
 begin
   const tid = ThLocate(pkt.rpThread);
-  if (tid >= 0) and (resThreads[tid].teActiveProcs <> nil) then begin
+  if (tid >= 0) and (resThreads[tid].teActiveProcs <> nil) then
+  begin
     resThreads[tid].teActiveProcs.LocateLast(pkt.rpProcID,proxy,parent);
     if proxy = nil then
       raise Exception.Create('gppResults.TResults.ExitProcPkt: Entry not found!');
@@ -516,6 +517,7 @@ begin
   pkt.rpProcID := Length(resProcedures);
   proxy := TMeasurePointProxy.Create(lThreadId,pkt.rpProcID,pkt.rpMeasurePointID);
   fMeasurePointRegistry.RegisterMeasurePoint(pkt.rpProcId, pkt.rpMeasurePointID);
+  inc(fCallGraphInfoMaxElementCount);
 
   // the measure point needs to be inserted into the known procedures
   TProcArrayTools.AddProcRow(resProcedures, proxy.MeasurePointID, pkt.rpProcID, Length(resThreads));
@@ -610,25 +612,21 @@ begin
   LThreadID := proxy.ThreadID;
   // update resProcedures, resActiveProcs, and CallGraph
   // other structures will be recalculated at the end
-  with resProcedures[proxy.ProcID] do
+  if assigned(parent) then
+    parent.ChildTime := parent.ChildTime + proxy.TotalTime + proxy.ChildTime;
+  Inc(resProcedures[proxy.ProcID].peProcTime[LThreadID],proxy.TotalTime);
+  if proxy.TotalTime < resProcedures[proxy.ProcID].peProcTimeMin[LThreadID] then
+    resProcedures[proxy.ProcID].peProcTimeMin[LThreadID] := proxy.TotalTime;
+  if proxy.TotalTime > resProcedures[proxy.ProcID].peProcTimeMax[LThreadID] then
+    resProcedures[proxy.ProcID].peProcTimeMax[LThreadID] := proxy.TotalTime;
+  if resProcedures[proxy.ProcID].peCurrentCallDepth[LThreadID] = 0 then
   begin
-    if assigned(parent) then
-      parent.ChildTime := parent.ChildTime + proxy.TotalTime + proxy.ChildTime;
-    Inc(peProcTime[LThreadID],proxy.TotalTime);
-    if proxy.TotalTime < peProcTimeMin[LThreadID] then
-      peProcTimeMin[LThreadID] := proxy.TotalTime;
-    if proxy.TotalTime > peProcTimeMax[LThreadID] then
-      peProcTimeMax[LThreadID] := proxy.TotalTime;
-    if peCurrentCallDepth[LThreadID] = 0 then
-    begin
-      Inc(peProcChildTime[LThreadID],proxy.ChildTime);
-      Inc(peProcChildTime[LThreadID],proxy.TotalTime);
-    end;
-    Inc(peProcCnt[LThreadID],1);
+    Inc(resProcedures[proxy.ProcID].peProcChildTime[LThreadID],proxy.ChildTime);
+    Inc(resProcedures[proxy.ProcID].peProcChildTime[LThreadID],proxy.TotalTime);
   end;
+  Inc(resProcedures[proxy.ProcID].peProcCnt[LThreadID],1);
 
   // update all callstack related data.
-
   if assigned(parent) then
   begin
     // assemble callstack information
@@ -814,7 +812,7 @@ begin
 
   // fCallGraphInfo: calculate proc time for each thread
   LChildrenDict := TCallGraphInfoDict.Create();
-  for i := 0+1 to fCallGraphInfoMaxElementCount-1 do
+  for i := 1 to fCallGraphInfoMaxElementCount do
   begin
     LInfo := fCallGraphInfoDict.GetOrCreateGraphInfo(i,0,High(resThreads));
     LInfo.ProcTime[0] := 0;
@@ -1046,8 +1044,8 @@ begin
           WriteInt64(peProcTimeAvg[j]);
       end;
     WriteTag(PR_DIGCALLG);
-    for i := 0 to fCallGraphInfoMaxElementCount-1 do
-      for k := 0 to fCallGraphInfoMaxElementCount-1 do begin
+    for i := 0 to fCallGraphInfoMaxElementCount do
+      for k := 0 to fCallGraphInfoMaxElementCount do begin
       begin
         incrementAndTriggerProgress();
         LInfo := fCallGraphInfoDict.GetGraphInfo(i,k);
