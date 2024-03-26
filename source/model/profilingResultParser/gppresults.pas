@@ -11,7 +11,8 @@ uses
   gppResults.procs,
   gppResults.callGraph,
   gppResults.memGraph,
-  gppResults.types;
+  gppResults.types,
+  gppResult.measurePointRegistry;
 
 type
   TProgressCallback = function (percent: integer): boolean of object;
@@ -57,28 +58,6 @@ type
     property Name : String read GetName;
   end;
 
-  TProcEntry = record
-  private
-    function GetName: String;
-  public
-    peName         : AnsiString;
-    pePID          : integer;
-    peUID          : integer;
-    peCID          : integer;
-    peFirstLn      : integer;
-    peProcTime     : array {thread} of uint64;   // 0 = sum
-    peProcTimeMin  : array {thread} of uint64;   // 0 = unused
-    peProcTimeMax  : array {thread} of uint64;   // 0 = unused
-    peProcTimeAvg  : array {thread} of uint64;   // 0 = unused
-    peProcChildTime: array {thread} of uint64;   // 0 = sum
-    peProcCnt      : array {thread} of Cardinal; // 0 = sum
-    peCurrentCallDepth : array {thread} of integer; // 0 = unused
-    property Name : String read GetName;
-  end;
-
-
-
-
   TResults = class
   private
     resFile           : TGpHugeFile;
@@ -102,11 +81,14 @@ type
     resCalTime2       : int64;
     resCalMax         : int64;
     resCalCounter     : integer;
+    fMeasurePointRegistry : TMeasurePointRegistry;
     procedure   RaiseFileCorruptedException(const aContext : String);
 
     procedure   CalibrationStep(pkt1, pkt2: TResPacket);
     procedure   ExitProcPkt(pkt: TResPacket);
     procedure   EnterProcPkt(pkt: TResPacket);
+    procedure   ExitMeasurePointPkt(pkt: TResPacket);
+    procedure   EnterMeasurePointPkt(pkt: TResPacket);
     procedure   LoadHeader;
     procedure   LoadTables;
     procedure   LoadCalibration;
@@ -142,7 +124,7 @@ type
     resThreads   : array of TThreadEntry;
     resUnits     : array of TUnitEntry;
     resClasses   : array of TClassEntry;
-    resProcedures: array of TProcEntry;
+    resProcedures: TArray<TProcEntry>;
     fCallGraphInfoDict : TCallGraphInfoDict;
     fCallGraphInfoMaxElementCount : Integer;
     /// <summary>
@@ -181,6 +163,7 @@ uses
   System.IOUtils,
   System.SysUtils,
   GpProfH,
+  gppResults.procArrayTools,
   gppCommon;
 
 
@@ -204,6 +187,7 @@ begin
   // dictionary owning the values; all sub dicts are just refs
   fCallGraphInfoDict := TCallGraphInfoDict.Create();
   fProcedureMemCallList := TProcedureMemCallList.Create();
+  fMeasurePointRegistry := TMeasurePointRegistry.Create();
 end; { TResults.Create }
 
 constructor TResults.Create(fileName: String; callback: TProgressCallback);
@@ -233,6 +217,7 @@ destructor TResults.Destroy;
 var
   i: integer;
 begin
+  fMeasurePointRegistry.free;
   fCallGraphInfoDict.free;
   fProcedureMemCallList.free;
   for i := Low(resThreads) to High(resThreads) do
@@ -393,7 +378,7 @@ begin
   fCallGraphInfoDict.Clear;
   fProcedureMemCallList.Clear();
   // max number elements is (elements+1)*(elements+1): 1 child per parent.
-  fCallGraphInfoMaxElementCount := lNumberOfProcs+1;
+  fCallGraphInfoMaxElementCount := lNumberOfProcs;
   for i := 1 to High(resClasses) do
     with resClasses[i] do
       if ceFirstLn = MaxLongint then ceFirstLn := -1;
@@ -441,7 +426,19 @@ begin
       // destroy proxy object
       ExitProcPkt(pkt)
     end
-    else
+    else if pkt.rpTag = PR_ENTER_MP then
+    begin
+        // create new measure point proxy object
+      EnterMeasurePointPkt(pkt);
+    end
+    else if pkt.rpTag = PR_EXIT_MP then
+    begin
+      // find last proxy object with matching prProcID in active procedure queue
+      // update relevant objects
+      // destroy proxy object
+      ExitMeasurePointPkt(pkt);
+    end
+    else 
       raise Exception.Create('gppResults.TResults.LoadData: Invalid tag ('+pkt.rpTag.ToString()+').');
   end;
 end; { TResults.LoadData }
@@ -500,15 +497,47 @@ var
   parent: TProcProxy;
 begin
   const tid = ThLocate(pkt.rpThread);
-  if (tid >= 0) and (resThreads[tid].teActiveProcs <> nil) then begin
+  if (tid >= 0) and (resThreads[tid].teActiveProcs <> nil) then
+  begin
     resThreads[tid].teActiveProcs.LocateLast(pkt.rpProcID,proxy,parent);
     if proxy = nil then
       raise Exception.Create('gppResults.TResults.ExitProcPkt: Entry not found!');
     ExitProc(proxy,parent,pkt);
-    proxy.Destroy;
+    proxy.free;
     inherited;
   end;
 end; { TResults.ExitProcPkt }
+
+procedure TResults.EnterMeasurePointPkt(pkt: TResPacket);
+var
+  proxy: TMeasurePointProxy;
+  lThreadId : Cardinal;
+begin
+  lThreadId := ThCreateLocate(pkt.rpThread);
+  pkt.rpProcID := Length(resProcedures);
+  proxy := TMeasurePointProxy.Create(lThreadId,pkt.rpProcID,pkt.rpMeasurePointID);
+  fMeasurePointRegistry.RegisterMeasurePoint(pkt.rpProcId, pkt.rpMeasurePointID);
+  inc(fCallGraphInfoMaxElementCount);
+
+  // the measure point needs to be inserted into the known procedures
+  TProcArrayTools.AddProcRow(resProcedures, proxy.MeasurePointID, pkt.rpProcID, Length(resThreads));
+  EnterProc(proxy,pkt);
+end; { TResults.EnterMeasurePointPkt }
+
+
+procedure TResults.ExitMeasurePointPkt(pkt: TResPacket);
+var
+  lLastMeasurePointEntry : TMeasurePointRegistryEntry;
+begin
+  lLastMeasurePointEntry := fMeasurePointRegistry.GetMeasurePointEntry(pkt.rpMeasurePointID);
+
+  pkt.rpProcID := lLastMeasurePointEntry.ProcId;
+  ExitProcPkt(pkt);
+  inherited;
+  fMeasurePointRegistry.UnRegisterMeasurePoint(pkt.rpMeasurePointID);
+
+end; { TResults.ExitMeasurePointPkt }
+
 
 procedure TResults.AddEnterProc(pkt: TResPacket);
 begin
@@ -525,11 +554,23 @@ begin
 end; { TResults.AddExitProc }
 
 function TResults.ReadPacket(var pkt: TResPacket): boolean;
+var
+  lAnsiMeasurePointId : ansistring;
 begin
   with pkt do begin
     ReadTag(rpTag);
     if (rpTag = PR_ENDDATA) or (rpTag = PR_ENDCALIB) then
       Result := false
+    else if (rpTag = PR_ENTER_MP) or (rpTag = PR_EXIT_MP) then
+    begin
+      rpProcID := -1;
+      ReadThread(rpThread);
+      ReadAnsiString(lAnsiMeasurePointId);
+      rpMeasurePointID := utf8ToString(lAnsiMeasurePointId);
+      ReadTicks(rpMeasure1);
+      ReadTicks(rpMeasure2);
+      Result := true;
+    end
     else
     begin
       ReadThread(rpThread);
@@ -571,25 +612,21 @@ begin
   LThreadID := proxy.ThreadID;
   // update resProcedures, resActiveProcs, and CallGraph
   // other structures will be recalculated at the end
-  with resProcedures[proxy.ProcID] do
+  if assigned(parent) then
+    parent.ChildTime := parent.ChildTime + proxy.TotalTime + proxy.ChildTime;
+  Inc(resProcedures[proxy.ProcID].peProcTime[LThreadID],proxy.TotalTime);
+  if proxy.TotalTime < resProcedures[proxy.ProcID].peProcTimeMin[LThreadID] then
+    resProcedures[proxy.ProcID].peProcTimeMin[LThreadID] := proxy.TotalTime;
+  if proxy.TotalTime > resProcedures[proxy.ProcID].peProcTimeMax[LThreadID] then
+    resProcedures[proxy.ProcID].peProcTimeMax[LThreadID] := proxy.TotalTime;
+  if resProcedures[proxy.ProcID].peCurrentCallDepth[LThreadID] = 0 then
   begin
-    if assigned(parent) then
-      parent.ChildTime := parent.ChildTime + proxy.TotalTime + proxy.ChildTime;
-    Inc(peProcTime[LThreadID],proxy.TotalTime);
-    if proxy.TotalTime < peProcTimeMin[LThreadID] then
-      peProcTimeMin[LThreadID] := proxy.TotalTime;
-    if proxy.TotalTime > peProcTimeMax[LThreadID] then
-      peProcTimeMax[LThreadID] := proxy.TotalTime;
-    if peCurrentCallDepth[LThreadID] = 0 then
-    begin
-      Inc(peProcChildTime[LThreadID],proxy.ChildTime);
-      Inc(peProcChildTime[LThreadID],proxy.TotalTime);
-    end;
-    Inc(peProcCnt[LThreadID],1);
+    Inc(resProcedures[proxy.ProcID].peProcChildTime[LThreadID],proxy.ChildTime);
+    Inc(resProcedures[proxy.ProcID].peProcChildTime[LThreadID],proxy.TotalTime);
   end;
+  Inc(resProcedures[proxy.ProcID].peProcCnt[LThreadID],1);
 
   // update all callstack related data.
-
   if assigned(parent) then
   begin
     // assemble callstack information
@@ -636,7 +673,6 @@ end; { TResults.ThLocate }
 
 function TResults.ThCreate(thread: integer): integer;
 var
-  i  : integer;
   numth: integer;
 begin
   numth := High(resThreads)+1;
@@ -648,24 +684,7 @@ begin
     teActiveProcs := TActiveProcList.Create;
   end;
   // resize resProcedures
-  for i := Low(resProcedures) to High(resProcedures) do begin
-    with resProcedures[i] do begin
-      SetLength(peProcTime,numth);
-      SetLength(peProcTimeMin,numth);
-      SetLength(peProcTimeMax,numth);
-      SetLength(peProcTimeAvg,numth);
-      SetLength(peProcChildTime,numth);
-      SetLength(peProcCnt,numth);
-      SetLength(peCurrentCallDepth,numth);
-      peProcTime[numth-1]      := 0;
-      peProcTimeMin[numth-1]   := High(uint64);
-      peProcTimeMax[numth-1]   := 0;
-      peProcTimeAvg[numth-1]   := 0;
-      peProcChildTime[numth-1] := 0;
-      peProcCnt[numth-1]       := 0;
-      peCurrentCallDepth[numth-1]      := 0;
-    end;
-  end;
+  TProcArrayTools.AddThreadToExistsingProcRows(resProcedures, numth);
   // resize fCallGraphInfoDict
   fCallGraphInfoDict.initGraphInfos();
   Result := numth-1;
@@ -793,7 +812,7 @@ begin
 
   // fCallGraphInfo: calculate proc time for each thread
   LChildrenDict := TCallGraphInfoDict.Create();
-  for i := 0+1 to fCallGraphInfoMaxElementCount-1 do
+  for i := 1 to fCallGraphInfoMaxElementCount do
   begin
     LInfo := fCallGraphInfoDict.GetOrCreateGraphInfo(i,0,High(resThreads));
     LInfo.ProcTime[0] := 0;
@@ -823,7 +842,7 @@ begin
   resThreads[proxy.ThreadID].teActiveProcs.UpdateDeadTime(pkt);
   proxy.Start(pkt);
   resThreads[proxy.ThreadID].teActiveProcs.Append(proxy);
-  if proxy.ProcID > Length(resProcedures) then
+  if proxy.ProcID > Cardinal(Length(resProcedures)) then
     raise EInvalidOp.Create('Error: Instrumentation count does not fit to the prf, please reinstrument.');
   Inc(resProcedures[proxy.ProcID].peCurrentCallDepth[proxy.ThreadID]);
 end;
@@ -1025,8 +1044,8 @@ begin
           WriteInt64(peProcTimeAvg[j]);
       end;
     WriteTag(PR_DIGCALLG);
-    for i := 0 to fCallGraphInfoMaxElementCount-1 do
-      for k := 0 to fCallGraphInfoMaxElementCount-1 do begin
+    for i := 0 to fCallGraphInfoMaxElementCount do
+      for k := 0 to fCallGraphInfoMaxElementCount do begin
       begin
         incrementAndTriggerProgress();
         LInfo := fCallGraphInfoDict.GetGraphInfo(i,k);
@@ -1345,18 +1364,11 @@ begin
   result := UTF8ToString(teName);
 end;
 
-{ TProcEntry }
-
-function TProcEntry.GetName: String;
-begin
-  result := string(peName);
-end;
-
 { TClassEntry }
 
 function TClassEntry.GetName: String;
 begin
-  result := String(ceName);
+  result := Utf8ToString(ceName);
 end;
 
 

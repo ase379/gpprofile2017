@@ -10,8 +10,8 @@ type
 
   TProcProxy = class
   private
-    ppThreadID    : integer;
-    ppProcID      : integer;
+    ppThreadID    : Cardinal;
+    ppProcID      : Cardinal;
     ppDeadTime    : int64;
     ppStartTime   : int64;
     ppTotalTime   : int64;
@@ -21,14 +21,15 @@ type
     ppDiffMem   : Cardinal;
     ppDiffMemChildren : Cardinal;
   public
-    constructor Create(const aThreadID, aProcID: integer);
+
+    constructor Create(const aThreadID, aProcID: Cardinal);
     destructor  Destroy; override;
-    procedure   Start(pkt: TResPacket);
-    procedure   Stop(var pkt: TResPacket);
+    procedure   Start(pkt: TResPacket);  virtual;
+    procedure   Stop(var pkt: TResPacket); virtual;
     procedure   UpdateDeadTime(pkt: TResPacket);
 
-    property ThreadID : Integer read ppThreadID;
-    property ProcId : integer read ppProcID;
+    property ThreadID : Cardinal read ppThreadID;
+    property ProcId : Cardinal read ppProcID;
     property DeadTime : int64 read ppDeadTime;
     property StartTime : int64 read ppStartTime;
     property TotalTime : int64 read ppTotalTime;
@@ -48,7 +49,23 @@ type
     procedure   UpdateDeadTime(pkt: TResPacket);
     procedure   Append(proxy: TProcProxy);
     procedure   Remove(proxy: TProcProxy);
-    procedure   LocateLast(const procID: integer; var this,parent: TProcProxy);
+    procedure   LocateLast(const aProcID: Cardinal; var this,parent: TProcProxy); overload;
+  end;
+
+  TMeasurePointEntry = record
+  public
+    mpePkt : TResPacket;
+    mpeName : AnsiString;
+  end;
+
+  TMeasurePointProxy = class(TProcProxy)
+  private
+    fMeasurePointID : String;
+  public
+    constructor Create(const aThreadID, aProcID: Cardinal;const aMeasurePointID : String);
+    destructor  Destroy; override;
+
+    property MeasurePointID : String read fMeasurePointID;
   end;
 
 implementation
@@ -59,7 +76,7 @@ uses
 
 { TProcProxy }
 
-constructor TProcProxy.Create(const aThreadID, aProcID: integer);
+constructor TProcProxy.Create(const aThreadID, aProcID: Cardinal);
 begin
   inherited Create;
   ppThreadID  := aThreadID;
@@ -114,14 +131,14 @@ begin
 end;
 
 
-procedure TActiveProcList.LocateLast(const procID: integer; var this,parent: TProcProxy);
+procedure TActiveProcList.LocateLast(const aProcId: Cardinal; var this,parent: TProcProxy);
 var
   i: integer;
 begin
    if (fAplList <> nil) and (fAplList.Count >= 0) then begin
     for i := fAplList.Count-1 downto 0 do
     begin
-      if fAplList[i].ppProcID = procID then
+      if fAplList[i].ppProcID = aProcId then
       begin
         this := fAplList[i];
         if i > 0 then
@@ -135,6 +152,8 @@ begin
   this   := nil;
   parent := nil;
 end; { TActiveProcList.LocateLast }
+
+
 
 procedure TActiveProcList.Remove(proxy: TProcProxy);
 var
@@ -152,5 +171,26 @@ begin
   for i := fAplList.Count-1 downto 0 do
     fAplList[i].UpdateDeadTime(pkt);
 end;
+
+
+{ TMeasurePointProxy }
+
+constructor TMeasurePointProxy.Create(const aThreadID, aProcID: Cardinal;const aMeasurePointID : String);
+begin
+  inherited Create(aThreadID, aProcID);
+  ppThreadID  := aThreadID;
+  fMeasurePointID := aMeasurePointID;
+  ppDeadTime  := 0;
+  ppStartTime := 0;
+  ppTotalTime := 0;
+  ppChildTime := 0;
+end; { TMeasurePointProxy.Create }
+
+destructor TMeasurePointProxy.Destroy;
+begin
+  inherited Destroy;
+end; { TMeasurePointProxy.Destroy }
+
+
 
 end.

@@ -21,11 +21,20 @@ interface
 
 uses System.Classes;
 
+type
+  /// <summary>
+  /// Marker interface for a measure point scope. upon destruction, the scope will be stored.
+  /// </summary>
+  IMeasurePointScope = interface
+  end;
+
 procedure ProfilerStart;
 procedure ProfilerStop;
 procedure ProfilerStartThread;
 procedure ProfilerEnterProc(const aProcID: Cardinal);
 procedure ProfilerExitProc(const aProcID: Cardinal);
+function CreateMeasurePointScope(const aMeasurePointId : String): IMeasurePointScope;
+
 procedure ProfilerTerminate;
 procedure NameThreadForDebugging(AThreadName: AnsiString; AThreadID: TThreadID = TThreadID(-1)); overload;
 procedure NameThreadForDebugging(AThreadName: string; AThreadID: TThreadID = TThreadID(-1)); overload;
@@ -39,12 +48,23 @@ uses
   SysUtils,
   IniFiles,
   GpProfH,
+
   gpprofCommon;
 
 const
   BUF_SIZE = 64 * 1024; //64*1024;
 
 type
+  TMeasurePointScope = class(TInterfacedObject, IMeasurePointScope)
+  private
+    fMeasurePointId : String;
+  public
+    constructor Create(const aMeasurePointId : String);
+    destructor Destroy; override;
+  end;
+
+
+
 {$IFNDEF VER100}{$IFNDEF VER110}{$DEFINE NeedTLI}{$ENDIF}{$ENDIF}
 {$IFDEF NeedTLI}
   TInt64 = int64;
@@ -180,8 +200,9 @@ procedure WriteInt   (int: integer);  begin Transmit(int, SizeOf(integer)); end;
 procedure WriteCardinal   (value: Cardinal);  begin Transmit(value, SizeOf(Cardinal)); end;
 procedure WriteTag   (tag: byte);     begin Transmit(tag, SizeOf(byte)); end;
 procedure WriteID    (id: integer);   begin Transmit(id, profProcSize); end;
+procedure WriteGuid    (guid: TGUID);   begin Transmit(guid, SizeOf(TGUID)); end;
 procedure WriteBool  (bool: boolean); begin Transmit(bool, 1); end;
-procedure WriteAnsiString  (value: ansistring);
+procedure WriteAnsiString  (const value: ansistring);
 begin
   WriteCardinal(Length(value));
   if Length(Value)>0 then
@@ -282,6 +303,11 @@ begin
     finally LeaveCriticalSection(prfLock); end;
   end;
 end; { ProfilerExitProc }
+
+function CreateMeasurePointScope(const aMeasurePointId : String): IMeasurePointScope;
+begin
+  result := TMeasurePointScope.Create(aMeasurePointId);
+end;
 
 procedure ProfilerStart;
 begin
@@ -590,10 +616,70 @@ begin
     WriteAnsiString(prfThreadsInfo[i].Name);
   end;
   WriteInt(PR_END_THREADINFO);
+
   Finalize;
 
 end; { ProfilerTerminate }
 
+
+{ TMeasurePointScope }
+
+constructor TMeasurePointScope.Create(const aMeasurePointId: String);
+
+  procedure ProfilerEnterMP(const aMeasurePointId : String);
+  var
+    ct : Cardinal;
+    cnt: TLargeinteger;
+  begin
+    QueryPerformanceCounter(TInt64((@cnt)^));
+    ct := GetCurrentThreadID;
+  {$B+}
+    if prfRunning and ((prfOnlyThread = 0) or (prfOnlyThread = ct)) then begin
+  {$B-}
+      EnterCriticalSection(prfLock);
+      try
+        FlushCounter;
+        WriteTag(PR_ENTER_MP);
+        WriteThread(ct);
+        WriteAnsiString(utf8Encode(aMeasurePointId));
+        WriteTicks(Cnt.QuadPart);
+        QueryPerformanceCounter(TInt64((@prfCounter)^));
+      finally LeaveCriticalSection(prfLock); end;
+    end;
+  end;
+
+begin
+  fMeasurePointId := aMeasurePointId;
+  ProfilerEnterMP(fMeasurePointId);
+end;
+
+destructor TMeasurePointScope.Destroy;
+  procedure ProfilerExitMP(const aMeasurePointId : String);
+  var
+    ct : Cardinal;
+    cnt: TLargeinteger;
+  begin
+    QueryPerformanceCounter(TInt64((@Cnt)^));
+    ct := GetCurrentThreadID;
+  {$B+}
+    if prfRunning and ((prfOnlyThread = 0) or (prfOnlyThread = ct)) then begin
+  {$B-}
+      EnterCriticalSection(prfLock);
+      try
+        FlushCounter;
+        WriteTag(PR_EXIT_MP);
+        WriteThread(ct);
+        WriteAnsiString(utf8Encode(aMeasurePointId));
+        WriteTicks(Cnt.QuadPart);
+        QueryPerformanceCounter(TInt64((@prfCounter)^));
+      finally LeaveCriticalSection(prfLock); end;
+    end;
+  end;
+
+begin
+  ProfilerExitMP(fMeasurePointId);
+  inherited;
+end;
 
 initialization
   prfInitialized := false;
