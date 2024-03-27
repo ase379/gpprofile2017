@@ -31,8 +31,11 @@ type
     rpMeasure1    : int64;
     rpMeasure2    : int64;
     rpNullOverhead: int64;
-    rpMemWorkingSize : Cardinal;
     rpMeasurePointID : String;
+  end;
+
+  TResMemPacket = record
+    rpMemWorkingSize : Cardinal;
   end;
 
 const

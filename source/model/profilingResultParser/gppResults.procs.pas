@@ -19,8 +19,8 @@ type
   public
     constructor Create(const aThreadID, aProcID: Cardinal);
     destructor  Destroy; override;
-    procedure   Start(pkt: TResPacket);  virtual;
-    procedure   Stop(var pkt: TResPacket); virtual;
+    procedure   Start(const pkt: TResPacket; const memPkt: TResMemPacket);  virtual;
+    procedure   Stop(var pkt: TResPacket; const memPkt: TResMemPacket); virtual;
     procedure   UpdateDeadTime(pkt: TResPacket);
 
     property ThreadID : Cardinal read ppThreadID;
@@ -39,8 +39,8 @@ type
     ppEndMem    : Cardinal;
   protected
   public
-    procedure Start(pkt: TResPacket);  override;
-    procedure Stop(var pkt: TResPacket); override;
+    procedure Start(const pkt: TResPacket; const memPkt: TResMemPacket);  override;
+    procedure Stop(var pkt: TResPacket; const memPkt: TResMemPacket); override;
     property StartMem : Cardinal read ppStartMem write ppStartMem;
     property EndMem : Cardinal read ppEndMem write ppEndMem;
   end;
@@ -94,12 +94,12 @@ begin
   inherited Destroy;
 end;
 
-procedure TProcProxy.Start(pkt: TResPacket);
+procedure TProcProxy.Start(const pkt: TResPacket; const memPkt: TResMemPacket);
 begin
   ppStartTime := pkt.rpMeasure2;
 end;
 
-procedure TProcProxy.Stop(var pkt: TResPacket);
+procedure TProcProxy.Stop(var pkt: TResPacket; const memPkt: TResMemPacket);
 begin
   ppTotalTime := pkt.rpMeasure1-ppStartTime - ppDeadTime - ppChildTime - pkt.rpNullOverhead;
   pkt.rpNullOverhead := 2*pkt.rpNullOverhead;
@@ -199,16 +199,16 @@ end;
 
 { TProcWithMemProxy }
 
-procedure TProcWithMemProxy.Start(pkt: TResPacket);
+procedure TProcWithMemProxy.Start(const pkt: TResPacket; const memPkt: TResMemPacket);
 begin
   inherited;
-  ppStartMem := pkt.rpMemWorkingSize;
+  ppStartMem := memPkt.rpMemWorkingSize;
 end;
 
-procedure TProcWithMemProxy.Stop(var pkt: TResPacket);
+procedure TProcWithMemProxy.Stop(var pkt: TResPacket; const memPkt: TResMemPacket);
 begin
   inherited;
-  ppEndMem := pkt.rpMemWorkingSize;
+  ppEndMem := memPkt.rpMemWorkingSize;
 end;
 
 end.
