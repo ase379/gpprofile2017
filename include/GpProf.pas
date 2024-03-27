@@ -63,20 +63,6 @@ type
     destructor Destroy; override;
   end;
 
-
-
-{$IFNDEF VER100}{$IFNDEF VER110}{$DEFINE NeedTLI}{$ENDIF}{$ENDIF}
-{$IFDEF NeedTLI}
-  TInt64 = int64;
-  TLargeInteger = record
-    case integer of
-      0: (LowPart: DWord; HighPart: LongInt);
-      1: (QuadPart: Comp);
-  end;
-{$ELSE}
-  TInt64 = TLargeInteger;
-{$ENDIF}
-
   TTLEl = record
     tleThread: integer;
     tleRemap : integer;
@@ -112,12 +98,12 @@ var
   prfBuf         : pointer;
   prfBufOffs     : integer;
   prfLock        : TRTLCriticalSection;
-  prfFreq        : TLargeInteger;
-  prfCounter     : TLargeInteger;
+  prfFreq        : int64;
+  prfCounter     : int64;
   prfModuleName  : string;
   prfName        : string;
   prfRunning     : boolean;
-  prfLastTick    : Comp;
+  prfLastTick    : int64;
   prfOnlyThread  : Cardinal;
   prfThreads     : TThreadList;
   prfThreadsInfo : TThreadInformationList;
@@ -209,13 +195,13 @@ begin
     Transmit(value[1], Length(value));
 end;
 
-procedure WriteTicks(ticks: Comp);
+procedure WriteTicks(ticks: int64);
 type
   TTick = array [1..8] of Byte;
 var
   diff: integer;
 begin
-  if not profCompressTicks then Transmit(ticks, Sizeof(Comp))
+  if not profCompressTicks then Transmit(ticks, Sizeof(ticks))
   else begin
     if prfLastTick = -1 then diff := 8
     else begin
@@ -250,18 +236,18 @@ end; { WriteThread }
 
 procedure FlushCounter;
 begin
-  if prfCounter.QuadPart <> 0 then begin
-    WriteTicks(prfCounter.QuadPart);
-    prfCounter.QuadPart := 0;
+  if prfCounter <> 0 then begin
+    WriteTicks(prfCounter);
+    prfCounter := 0;
   end;
 end; { FlushCounter }
 
 procedure profilerEnterProc(const aProcID : Cardinal);
 var
   ct : Cardinal;
-  cnt: TLargeinteger;
+  cnt: int64;
 begin
-  QueryPerformanceCounter(TInt64((@cnt)^));
+  QueryPerformanceCounter(cnt);
   ct := GetCurrentThreadID;
 {$B+}
   if prfRunning and ((prfOnlyThread = 0) or (prfOnlyThread = ct)) then begin
@@ -272,10 +258,10 @@ begin
       WriteTag(PR_ENTERPROC);
       WriteThread(ct);
       WriteID(aProcID);
-      WriteTicks(Cnt.QuadPart);
+      WriteTicks(cnt);
       if profProfilingMemoryEnabled then
         WriteMemWorkingSize();
-      QueryPerformanceCounter(TInt64((@prfCounter)^));
+      QueryPerformanceCounter(prfCounter);
     finally LeaveCriticalSection(prfLock); end;
   end;
 end; { ProfilerEnterProc }
@@ -285,7 +271,7 @@ var
   ct : Cardinal;
   cnt: TLargeinteger;
 begin
-  QueryPerformanceCounter(TInt64((@Cnt)^));
+  QueryPerformanceCounter(Cnt);
   ct := GetCurrentThreadID;
 {$B+}
   if prfRunning and ((prfOnlyThread = 0) or (prfOnlyThread = ct)) then begin
@@ -296,10 +282,10 @@ begin
       WriteTag(PR_EXITPROC);
       WriteThread(ct);
       WriteID(aProcID);
-      WriteTicks(Cnt.QuadPart);
+      WriteTicks(Cnt);
       if profProfilingMemoryEnabled then
         WriteMemWorkingSize();
-      QueryPerformanceCounter(TInt64((@prfCounter)^));
+      QueryPerformanceCounter(prfCounter);
     finally LeaveCriticalSection(prfLock); end;
   end;
 end; { ProfilerExitProc }
@@ -471,7 +457,7 @@ begin
           profCompressTicks      := ReadBool('Performance','CompressTicks',false);
           profCompressThreads    := ReadBool('Performance','CompressThreads',false);
           profProfilingAutostart := ReadBool('Performance','ProfilingAutostart',true);
-          profProfilingMemoryEnabled := ReadBool('Performance','ProfilingMemSupport',true);
+          profProfilingMemoryEnabled := ReadBool('Performance','ProfilingMemSupport',false);
           profPrfOutputFile := ReadString('Output','PrfOutputFilename','$(ModulePath)');
           profPrfOutputFile := ResolvePrfRuntimePlaceholders(profPrfOutputFile);
           prfDisabled            := false;
@@ -501,7 +487,7 @@ begin
     ReadIncSettings;
     if not prfDisabled then begin
       prfRunning          := profProfilingAutostart;
-      prfCounter.QuadPart := 0;
+      prfCounter          := 0;
       prfOnlyThread       := 0;
       prfThreads          := TThreadList.Create;
       prfThreadsInfo      := TThreadInformationList.Create();
@@ -521,7 +507,7 @@ begin
                             FILE_ATTRIBUTE_NORMAL + FILE_FLAG_WRITE_THROUGH +
                             FILE_FLAG_NO_BUFFERING, 0);
       Win32Check(prfFile <> INVALID_HANDLE_VALUE);
-      QueryPerformanceFrequency(TInt64((@prfFreq)^));
+      QueryPerformanceFrequency(prfFreq);
     end;
   except
     on e: exception do
@@ -545,7 +531,7 @@ begin
   WriteTag(PR_COMPTHREADS);
   WriteBool(profCompressThreads);
   WriteTag(PR_FREQUENCY);
-  WriteTicks(prfFreq.QuadPart);
+  WriteTicks(prfFreq);
   WriteTag(PR_PROCSIZE);
   WriteInt(profProcSize);
   WriteTag(PR_ENDHEADER);
@@ -629,9 +615,9 @@ constructor TMeasurePointScope.Create(const aMeasurePointId: String);
   procedure ProfilerEnterMP(const aMeasurePointId : String);
   var
     ct : Cardinal;
-    cnt: TLargeinteger;
+    cnt: int64;
   begin
-    QueryPerformanceCounter(TInt64((@cnt)^));
+    QueryPerformanceCounter(cnt);
     ct := GetCurrentThreadID;
   {$B+}
     if prfRunning and ((prfOnlyThread = 0) or (prfOnlyThread = ct)) then begin
@@ -642,8 +628,10 @@ constructor TMeasurePointScope.Create(const aMeasurePointId: String);
         WriteTag(PR_ENTER_MP);
         WriteThread(ct);
         WriteAnsiString(utf8Encode(aMeasurePointId));
-        WriteTicks(Cnt.QuadPart);
-        QueryPerformanceCounter(TInt64((@prfCounter)^));
+        WriteTicks(Cnt);
+        if profProfilingMemoryEnabled then
+          WriteMemWorkingSize();
+        QueryPerformanceCounter(prfCounter);
       finally LeaveCriticalSection(prfLock); end;
     end;
   end;
@@ -659,7 +647,7 @@ destructor TMeasurePointScope.Destroy;
     ct : Cardinal;
     cnt: TLargeinteger;
   begin
-    QueryPerformanceCounter(TInt64((@Cnt)^));
+    QueryPerformanceCounter(Cnt);
     ct := GetCurrentThreadID;
   {$B+}
     if prfRunning and ((prfOnlyThread = 0) or (prfOnlyThread = ct)) then begin
@@ -670,8 +658,10 @@ destructor TMeasurePointScope.Destroy;
         WriteTag(PR_EXIT_MP);
         WriteThread(ct);
         WriteAnsiString(utf8Encode(aMeasurePointId));
-        WriteTicks(Cnt.QuadPart);
-        QueryPerformanceCounter(TInt64((@prfCounter)^));
+        WriteTicks(Cnt);
+        if profProfilingMemoryEnabled then
+          WriteMemWorkingSize();
+        QueryPerformanceCounter(prfCounter);
       finally LeaveCriticalSection(prfLock); end;
     end;
   end;
