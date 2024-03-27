@@ -8,12 +8,10 @@ object frmMain: TfrmMain
   ParentFont = True
   KeyPreview = True
   Menu = MainMenu1
-  OldCreateOrder = True
   OnCreate = FormCreate
   OnDestroy = FormDestroy
   OnShow = FormShow
-  PixelsPerInch = 96
-  TextHeight = 13
+  TextHeight = 15
   object StatusBar: TStatusBar
     Left = 0
     Top = 616
@@ -29,6 +27,8 @@ object frmMain: TfrmMain
     ParentFont = True
     UseSystemFont = False
     OnResize = StatusBarResize
+    ExplicitTop = 615
+    ExplicitWidth = 1480
   end
   object Panel0: TPanel
     Left = 0
@@ -39,6 +39,8 @@ object frmMain: TfrmMain
     BevelEdges = []
     BevelOuter = bvNone
     TabOrder = 1
+    ExplicitWidth = 1480
+    ExplicitHeight = 615
     object splitSourcePreview: TSplitter
       Left = 0
       Top = 492
@@ -58,17 +60,18 @@ object frmMain: TfrmMain
       Align = alClient
       BevelOuter = bvNone
       TabOrder = 0
+      ExplicitWidth = 1480
+      ExplicitHeight = 491
       object PageControl1: TPageControl
         Left = 0
         Top = 0
         Width = 1484
         Height = 492
-        ActivePage = tabPerformanceAnalysis
+        ActivePage = tabMemoryAnalysis
         Align = alClient
         HotTrack = True
         TabOrder = 0
         OnChange = PageControl1Change
-        ExplicitTop = -3
         object tabInstrumentation: TTabSheet
           Caption = 'Source Code Instrumentation'
           ImageIndex = 16
@@ -171,10 +174,10 @@ object frmMain: TfrmMain
             Left = 0
             Top = 0
             Width = 1476
-            Height = 52
+            Height = 54
             AutoSize = True
-            ButtonHeight = 52
-            ButtonWidth = 94
+            ButtonHeight = 54
+            ButtonWidth = 100
             Caption = 'ToolBar1'
             EdgeInner = esNone
             EdgeOuter = esNone
@@ -183,6 +186,7 @@ object frmMain: TfrmMain
             ShowCaptions = True
             ShowHint = True
             TabOrder = 0
+            ExplicitWidth = 1472
             object btnOpenProfile: TToolButton
               Left = 0
               Top = 0
@@ -192,13 +196,13 @@ object frmMain: TfrmMain
               Style = tbsDropDown
             end
             object btnRescanProfile: TToolButton
-              Left = 109
+              Left = 115
               Top = 0
               Action = actRescanProfile
               ImageIndex = 1
             end
             object btnAnalysisDelimiter1: TToolButton
-              Left = 203
+              Left = 215
               Top = 0
               Width = 5
               Caption = 'btnAnalysisDelimiter1'
@@ -206,30 +210,34 @@ object frmMain: TfrmMain
               Style = tbsSeparator
             end
             object btnRenameMoveProfile: TToolButton
-              Left = 208
+              Left = 220
               Top = 0
               Action = actRenameMoveProfile
               ImageIndex = 2
             end
             object btnMakeCopyProfile: TToolButton
-              Left = 302
+              Left = 320
               Top = 0
               Action = actMakeCopyProfile
               ImageIndex = 3
             end
             object btnDelUndelProfile: TToolButton
-              Left = 396
+              Left = 420
               Top = 0
               Action = actDelUndelProfile
               ImageIndex = 4
             end
             object btnExportProfile: TToolButton
-              Left = 490
+              Left = 520
               Top = 0
               Action = actExportProfile
               ImageIndex = 5
             end
           end
+        end
+        object tabMemoryAnalysis: TTabSheet
+          Caption = 'Memory Consumption Analysis'
+          ImageIndex = 2
         end
       end
     end
@@ -241,6 +249,8 @@ object frmMain: TfrmMain
       Align = alBottom
       BevelOuter = bvNone
       TabOrder = 1
+      ExplicitTop = 494
+      ExplicitWidth = 1480
       object sourceCodeEdit: TSynEdit
         Left = 0
         Top = 0
@@ -271,6 +281,7 @@ object frmMain: TfrmMain
         Lines.Strings = (
           'sourceCodeEdit')
         FontSmoothing = fsmNone
+        ExplicitWidth = 1480
       end
     end
   end
@@ -308,7 +319,7 @@ object frmMain: TfrmMain
       Left = 3
       Top = 3
       Width = 89
-      Height = 21
+      Height = 23
       Hint = 'Layout Name'
       TabOrder = 0
       OnKeyPress = inpLayoutNameKeyPress

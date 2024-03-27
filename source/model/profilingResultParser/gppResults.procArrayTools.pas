@@ -23,6 +23,7 @@ begin
   aProcArray[aProcedureId].peName := utf8Encode(aProcedureName);
   setLength(aProcArray[aProcedureId].peProcTime, aTotalNumberOfThreads);
   setLength(aProcArray[aProcedureId].peProcTimeMin, aTotalNumberOfThreads);
+  setLength(aProcArray[aProcedureId].peProcMem, aTotalNumberOfThreads);
   for var lNonTotalThreadId := Low(aProcArray[aProcedureId].peProcTimeMin)+1 to High(aProcArray[aProcedureId].peProcTimeMin) do
     aProcArray[aProcedureId].peProcTimeMin[lNonTotalThreadId] := High(uint64);
 
@@ -47,6 +48,7 @@ begin
     SetLength(aProcArray[i].peProcChildTime,aTotalNumberOfThreads);
     SetLength(aProcArray[i].peProcCnt,aTotalNumberOfThreads);
     SetLength(aProcArray[i].peCurrentCallDepth,aTotalNumberOfThreads);
+    SetLength(aProcArray[i].peProcMem,aTotalNumberOfThreads);
     aProcArray[i].peProcTime[aTotalNumberOfThreads-1]      := 0;
     aProcArray[i].peProcTimeMin[aTotalNumberOfThreads-1]   := High(uint64);
     aProcArray[i].peProcTimeMax[aTotalNumberOfThreads-1]   := 0;
@@ -54,6 +56,7 @@ begin
     aProcArray[i].peProcChildTime[aTotalNumberOfThreads-1] := 0;
     aProcArray[i].peProcCnt[aTotalNumberOfThreads-1]       := 0;
     aProcArray[i].peCurrentCallDepth[aTotalNumberOfThreads-1] := 0;
+    aProcArray[i].peProcMem[aTotalNumberOfThreads-1] := 0;
   end;
 end;
 

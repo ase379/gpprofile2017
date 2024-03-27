@@ -50,6 +50,21 @@ type
     procedure AddCount(const aThreadId : Cardinal;const aValueToBeAdded: Cardinal);
 
   end;
+
+  tProcMemList = class(TList<Cardinal>)
+  public
+    /// <summary>
+    /// Adds a memory state to the given index.
+    /// If the anIndex is not 0, the sum(index 0) is incremented as well.
+    /// </summary>
+    procedure AddMem(const aThreadId: Cardinal;const aValueToBeAdded: Cardinal);
+    /// <summary>
+    /// Set a memory state value for a given index.
+    /// If the anIndex is not 0, the sum(index 0) is adjusted as well.
+    /// </summary>
+    procedure AssignMem(const aThreadId : Cardinal; const aValueToBeAssigned: Cardinal);
+  end;
+
   /// <summary>
   /// The class describes the call graph info (which parent proc calls which child proc).
   /// The lists are as long as the number of threads.
@@ -62,11 +77,13 @@ type
     ProcTimeAvg  : tProcTimeList;   // 0 = unused
     ProcChildTime: tProcTimeList;   // 0 = sum
     ProcCnt      : tProcCountList; // 0 = sum
+    ProcMem      : tProcMemList; // 0 = sum
     constructor Create(const aThreadCount: Cardinal);
     destructor Destroy; override;
 
     function ToInfoString(): string;
   end;
+
 
   /// <summary>
   /// The old implementation used a 2d vector to store the parent and child proc id.
@@ -128,6 +145,7 @@ begin
   ProcTimeAvg := tProcTimeList.Create();
   ProcChildTime:= tProcTimeList.Create();
   ProcCnt := tProcCountList.Create();
+  ProcMem := tProcMemList.Create();
 
   ProcTime.Count := aThreadCount;
   ProcTimeMin.Count := aThreadCount;
@@ -135,6 +153,7 @@ begin
   ProcTimeAvg.Count := aThreadCount;
   ProcChildTime.Count := aThreadCount;
   ProcCnt.Count := aThreadCount;
+  ProcMem.Count := aThreadCount;
 
   // procTimeMin starts with the high value and is assigned with
   // the first lower value.
@@ -150,6 +169,7 @@ begin
   ProcTimeAvg.free;
   ProcChildTime.free;
   ProcCnt.free;
+  ProcMem.Free;
   inherited;
 end;
 
@@ -188,6 +208,7 @@ begin
   OutputList(LBuilder,'ProcTimeMax:', ProcTimeMax);
   OutputList(LBuilder,'ProcTimeAvg:', ProcTimeAvg);
   OutputList(LBuilder,'ProcCnt:', ProcCnt);
+
   result := LBuilder.ToString();
   LBuilder.free;
 end;
@@ -264,6 +285,7 @@ begin
     LInfo.ProcTimeAvg.Add(0);
     LInfo.ProcChildTime.Add(0);
     LInfo.ProcCnt.Add(0);
+    LInfo.ProcMem.Add(0);
   end;
 end;
 
@@ -335,11 +357,29 @@ end;
 procedure tProcCountList.AddCount(const aThreadId, aValueToBeAdded: Cardinal);
 begin
   if aThreadId = 0 then
-    raise Exception.Create('tProcCountList.AssignTimeeldung: ThreadId 0 is not allowed.');
+    raise Exception.Create('tProcCountList.AddCount: ThreadId 0 is not allowed.');
   self[0] := self[0] + aValueToBeAdded;
   self[aThreadId] := self[aThreadId] + aValueToBeAdded;
 end;
 
 
+
+{ tProcMemList }
+
+procedure tProcMemList.AddMem(const aThreadId, aValueToBeAdded: Cardinal);
+begin
+   if aThreadId = 0 then
+    raise Exception.Create('tProcMemList.AddMem: ThreadId 0 is not allowed.');
+  self[0] := self[0] + aValueToBeAdded;
+  self[aThreadId] := self[aThreadId] + aValueToBeAdded;
+end;
+
+procedure tProcMemList.AssignMem(const aThreadId, aValueToBeAssigned: Cardinal);
+begin
+  if aThreadId = 0 then
+    raise Exception.Create('tProcMemList.AssignMem: ThreadId 0 is not allowed.');
+  self[0] := aValueToBeAssigned;
+  self[aThreadId] := aValueToBeAssigned;
+end;
 
 end.

@@ -9,7 +9,7 @@ object frmMemProfiling: TfrmMemProfiling
     Top = 0
     Width = 897
     Height = 694
-    ActivePage = tabProcedures
+    ActivePage = tabUnits
     Align = alClient
     HotTrack = True
     PopupMenu = popAnalysisListview
@@ -20,330 +20,16 @@ object frmMemProfiling: TfrmMemProfiling
       ImageIndex = -1
       object splitCallees: TSplitter
         Left = 0
-        Top = 569
+        Top = 511
         Width = 889
         Height = 3
         Cursor = crVSplit
         Align = alBottom
+        AutoSnap = False
         Color = clBtnFace
         ParentColor = False
         Visible = False
-        ExplicitTop = 186
-        ExplicitWidth = 596
-      end
-      object pnlTopTwo: TPanel
-        Left = 0
-        Top = 31
-        Width = 889
-        Height = 538
-        Align = alClient
-        BevelOuter = bvNone
-        TabOrder = 2
-        object splitCallers: TSplitter
-          Left = 0
-          Top = 82
-          Width = 889
-          Height = 3
-          Cursor = crVSplit
-          Align = alTop
-          Color = clBtnFace
-          ParentColor = False
-          Visible = False
-          OnMoved = splitCallersMoved
-          ExplicitWidth = 596
-        end
-        object pnlCallers: TPanel
-          Left = 0
-          Top = 0
-          Width = 889
-          Height = 82
-          Align = alTop
-          BevelOuter = bvNone
-          TabOrder = 0
-          Visible = False
-          object vstCallers: TVirtualStringTree
-            Left = 0
-            Top = 21
-            Width = 889
-            Height = 61
-            Align = alClient
-            Header.AutoSizeIndex = 0
-            Header.Height = 20
-            Header.MinHeight = 20
-            Header.Options = [hoColumnResize, hoDrag, hoShowSortGlyphs, hoVisible]
-            PopupMenu = popAnalysisListview
-            TabOrder = 0
-            TreeOptions.PaintOptions = [toShowButtons, toShowDropmark, toThemeAware, toUseBlendedImages]
-            OnNodeClick = vstCalleesNodeClick
-            OnNodeDblClick = vstCalleesNodeDblClick
-            Touch.InteractiveGestures = [igPan, igPressAndTap]
-            Touch.InteractiveGestureOptions = [igoPanSingleFingerHorizontal, igoPanSingleFingerVertical, igoPanInertia, igoPanGutter, igoParentPassthrough]
-            Columns = <
-              item
-                MinWidth = 200
-                Position = 0
-                Text = 'Procedure (Callers)'
-                Width = 200
-              end
-              item
-                MinWidth = 75
-                Position = 1
-                Text = '% Memory'
-                Width = 75
-              end
-              item
-                MinWidth = 100
-                Position = 2
-                Text = '% Memory w/Child'
-                Width = 100
-              end
-              item
-                MinWidth = 75
-                Position = 3
-                Text = 'Memory'
-                Width = 75
-              end
-              item
-                MinWidth = 75
-                Position = 4
-                Text = 'Memory w/Child'
-                Width = 75
-              end
-              item
-                MinWidth = 75
-                Position = 5
-                Text = 'Calls'
-                Width = 75
-              end
-              item
-                MinWidth = 75
-                Position = 6
-                Text = 'Min/Call'
-                Width = 75
-              end
-              item
-                MinWidth = 75
-                Position = 7
-                Text = 'Max/Call'
-                Width = 75
-              end
-              item
-                MinWidth = 75
-                Position = 8
-                Text = 'Avg/Call'
-                Width = 75
-              end>
-          end
-          object sbFilterCallers: TSearchBox
-            Left = 0
-            Top = 0
-            Width = 889
-            Height = 23
-            Align = alTop
-            TabOrder = 1
-            TextHint = 'Filter the procedure callers...'
-            OnChange = sbFilterCallersChange
-          end
-        end
-        object pnlCurrent: TPanel
-          Left = 0
-          Top = 85
-          Width = 889
-          Height = 453
-          Align = alClient
-          BevelOuter = bvNone
-          TabOrder = 1
-          object vstProcs: TVirtualStringTree
-            Left = 0
-            Top = 21
-            Width = 889
-            Height = 432
-            Align = alClient
-            Header.AutoSizeIndex = 0
-            Header.Height = 20
-            Header.MinHeight = 20
-            Header.Options = [hoColumnResize, hoDrag, hoShowSortGlyphs, hoVisible]
-            PopupMenu = popAnalysisListview
-            TabOrder = 0
-            TreeOptions.PaintOptions = [toShowButtons, toShowDropmark, toThemeAware, toUseBlendedImages]
-            OnNodeClick = vstProcsNodeClick
-            Touch.InteractiveGestures = [igPan, igPressAndTap]
-            Touch.InteractiveGestureOptions = [igoPanSingleFingerHorizontal, igoPanSingleFingerVertical, igoPanInertia, igoPanGutter, igoParentPassthrough]
-            Columns = <
-              item
-                MinWidth = 50
-                Position = 0
-                Text = 'Procedure'
-              end
-              item
-                MinWidth = 75
-                Options = [coAllowClick, coDraggable, coEnabled, coParentBidiMode, coParentColor, coResizable, coShowDropMark, coVisible, coSmartResize, coAllowFocus, coEditable]
-                Position = 1
-                Text = '% Memory'
-                Width = 75
-              end
-              item
-                MinWidth = 100
-                Position = 2
-                Text = '% Memory w/Child'
-                Width = 100
-              end
-              item
-                MinWidth = 75
-                Options = [coAllowClick, coDraggable, coEnabled, coParentBidiMode, coParentColor, coResizable, coShowDropMark, coVisible, coSmartResize, coAllowFocus, coEditable]
-                Position = 3
-                Text = 'Memory'
-                Width = 75
-              end
-              item
-                MinWidth = 75
-                Options = [coAllowClick, coDraggable, coEnabled, coParentBidiMode, coParentColor, coResizable, coShowDropMark, coVisible, coSmartResize, coAllowFocus, coEditable]
-                Position = 4
-                Text = 'Memory w/Child'
-                Width = 75
-              end
-              item
-                MinWidth = 75
-                Options = [coAllowClick, coDraggable, coEnabled, coParentBidiMode, coParentColor, coResizable, coShowDropMark, coVisible, coSmartResize, coAllowFocus, coEditable]
-                Position = 5
-                Text = 'Calls'
-                Width = 75
-              end
-              item
-                MinWidth = 75
-                Options = [coAllowClick, coDraggable, coEnabled, coParentBidiMode, coParentColor, coResizable, coShowDropMark, coVisible, coSmartResize, coAllowFocus, coEditable]
-                Position = 6
-                Text = 'Min/Call'
-                Width = 75
-              end
-              item
-                MinWidth = 75
-                Options = [coAllowClick, coDraggable, coEnabled, coParentBidiMode, coParentColor, coResizable, coShowDropMark, coVisible, coSmartResize, coAllowFocus, coEditable]
-                Position = 7
-                Text = 'Max/Call'
-                Width = 75
-              end
-              item
-                MinWidth = 75
-                Options = [coAllowClick, coDraggable, coEnabled, coParentBidiMode, coParentColor, coResizable, coShowDropMark, coVisible, coSmartResize, coAllowFocus, coEditable]
-                Position = 8
-                Text = 'Avg/Call'
-                Width = 75
-              end>
-          end
-          object sbFilterProcs: TSearchBox
-            Left = 0
-            Top = 0
-            Width = 889
-            Height = 23
-            Align = alTop
-            TabOrder = 1
-            TextHint = 'Filter the procedure...'
-            OnInvokeSearch = sbFilterProcsInvokeSearch
-          end
-        end
-      end
-      object pnlCallees: TPanel
-        Left = 0
-        Top = 572
-        Width = 889
-        Height = 91
-        Align = alBottom
-        BevelOuter = bvNone
-        TabOrder = 1
-        Visible = False
-        object vstCallees: TVirtualStringTree
-          Left = 0
-          Top = 21
-          Width = 889
-          Height = 70
-          Align = alClient
-          Header.AutoSizeIndex = 0
-          Header.Height = 20
-          Header.MinHeight = 20
-          Header.Options = [hoColumnResize, hoDrag, hoShowSortGlyphs, hoVisible]
-          PopupMenu = popAnalysisListview
-          TabOrder = 0
-          TreeOptions.PaintOptions = [toShowButtons, toShowDropmark, toThemeAware, toUseBlendedImages]
-          OnNodeClick = vstCalleesNodeClick
-          OnNodeDblClick = vstCalleesNodeDblClick
-          Touch.InteractiveGestures = [igPan, igPressAndTap]
-          Touch.InteractiveGestureOptions = [igoPanSingleFingerHorizontal, igoPanSingleFingerVertical, igoPanInertia, igoPanGutter, igoParentPassthrough]
-          Columns = <
-            item
-              MinWidth = 200
-              Position = 0
-              Text = 'Procedure (Callees)'
-              Width = 200
-            end
-            item
-              MinWidth = 75
-              Position = 1
-              Text = '% Memory'
-              Width = 75
-            end
-            item
-              MinWidth = 100
-              Position = 2
-              Text = '% Memory w/Child'
-              Width = 100
-            end
-            item
-              MinWidth = 75
-              Position = 3
-              Text = 'Memory'
-              Width = 75
-            end
-            item
-              MinWidth = 75
-              Position = 4
-              Text = 'Memory w/Child'
-              Width = 75
-            end
-            item
-              MinWidth = 75
-              Position = 5
-              Text = 'Calls'
-              Width = 75
-            end
-            item
-              MinWidth = 75
-              Position = 6
-              Text = 'Min/Call'
-              Width = 75
-            end
-            item
-              MinWidth = 75
-              Position = 7
-              Text = 'Max/Call'
-              Width = 75
-            end
-            item
-              MinWidth = 75
-              Position = 8
-              Text = 'Avg/Call'
-              Width = 75
-            end>
-        end
-        object sbFilterCallees: TSearchBox
-          Left = 0
-          Top = 0
-          Width = 889
-          Height = 23
-          Align = alTop
-          TabOrder = 1
-          TextHint = 'Filter the procedure callees...'
-          OnInvokeSearch = sbFilterCalleesInvokeSearch
-        end
-      end
-      object pnlBottom: TPanel
-        Left = 0
-        Top = 663
-        Width = 889
-        Height = 3
-        Align = alBottom
-        BevelOuter = bvNone
-        TabOrder = 0
+        ExplicitTop = 250
       end
       object pnThreadProcs: TPanel
         Left = 0
@@ -352,10 +38,18 @@ object frmMemProfiling: TfrmMemProfiling
         Height = 31
         Align = alTop
         BevelOuter = bvNone
-        TabOrder = 3
+        TabOrder = 0
         DesignSize = (
           889
           31)
+        object lblSelectThreadProc: TLabel
+          Left = 0
+          Top = 10
+          Width = 71
+          Height = 15
+          Caption = '&Select thread:'
+          FocusControl = cbxSelectThreadProc
+        end
         object pnlBrowser: TPanel
           Left = 789
           Top = 4
@@ -398,6 +92,227 @@ object frmMemProfiling: TfrmMemProfiling
             end
           end
         end
+        object cbxSelectThreadProc: TComboBox
+          Left = 72
+          Top = 6
+          Width = 191
+          Height = 23
+          Style = csDropDownList
+          TabOrder = 1
+          OnChange = cbxSelectThreadProcChange
+        end
+      end
+      object pnlTopTwo: TPanel
+        Left = 0
+        Top = 31
+        Width = 889
+        Height = 480
+        Align = alClient
+        BevelOuter = bvNone
+        TabOrder = 2
+        object splitCallers: TSplitter
+          Left = 0
+          Top = 150
+          Width = 889
+          Height = 3
+          Cursor = crVSplit
+          Align = alTop
+          AutoSnap = False
+          Color = clBtnFace
+          ParentColor = False
+          Visible = False
+          OnMoved = splitCallersMoved
+        end
+        object pnlCallers: TPanel
+          Left = 0
+          Top = 0
+          Width = 889
+          Height = 150
+          Align = alTop
+          BevelOuter = bvNone
+          TabOrder = 0
+          Visible = False
+          object vstCallers: TVirtualStringTree
+            Left = 0
+            Top = 23
+            Width = 889
+            Height = 127
+            Align = alClient
+            Header.AutoSizeIndex = 0
+            Header.Height = 20
+            Header.MinHeight = 20
+            Header.Options = [hoColumnResize, hoDrag, hoShowSortGlyphs, hoVisible]
+            PopupMenu = popAnalysisListview
+            TabOrder = 0
+            TreeOptions.PaintOptions = [toShowButtons, toShowDropmark, toThemeAware, toUseBlendedImages]
+            OnChange = vstCallersChange
+            OnNodeDblClick = vstCalleesNodeDblClick
+            Touch.InteractiveGestures = [igPan, igPressAndTap]
+            Touch.InteractiveGestureOptions = [igoPanSingleFingerHorizontal, igoPanSingleFingerVertical, igoPanInertia, igoPanGutter, igoParentPassthrough]
+            Columns = <
+              item
+                MinWidth = 200
+                Position = 0
+                Text = 'Procedure (Callers)'
+                Width = 200
+              end
+              item
+                MinWidth = 75
+                Position = 1
+                Text = '% Memory'
+                Width = 75
+              end
+              item
+                MinWidth = 75
+                Position = 2
+                Text = 'Memory'
+                Width = 75
+              end
+              item
+                MinWidth = 75
+                Position = 3
+                Text = 'Calls'
+                Width = 75
+              end>
+          end
+          object sbFilterCallers: TSearchBox
+            Left = 0
+            Top = 0
+            Width = 889
+            Height = 23
+            Align = alTop
+            TabOrder = 1
+            TextHint = 'Filter the procedure callers...'
+            OnChange = sbFilterCallersChange
+          end
+        end
+        object pnlCurrent: TPanel
+          Left = 0
+          Top = 153
+          Width = 889
+          Height = 327
+          Align = alClient
+          BevelOuter = bvNone
+          TabOrder = 1
+          object vstProcs: TVirtualStringTree
+            Left = 0
+            Top = 23
+            Width = 889
+            Height = 304
+            Align = alClient
+            Header.AutoSizeIndex = 0
+            Header.Height = 20
+            Header.MinHeight = 20
+            Header.Options = [hoColumnResize, hoDrag, hoShowSortGlyphs, hoVisible]
+            PopupMenu = popAnalysisListview
+            TabOrder = 0
+            TreeOptions.PaintOptions = [toShowButtons, toShowDropmark, toThemeAware, toUseBlendedImages]
+            OnChange = vstProcsChange
+            Touch.InteractiveGestures = [igPan, igPressAndTap]
+            Touch.InteractiveGestureOptions = [igoPanSingleFingerHorizontal, igoPanSingleFingerVertical, igoPanInertia, igoPanGutter, igoParentPassthrough]
+            ExplicitTop = 20
+            Columns = <
+              item
+                MinWidth = 50
+                Position = 0
+                Text = 'Procedure'
+              end
+              item
+                MinWidth = 75
+                Options = [coAllowClick, coDraggable, coEnabled, coParentBidiMode, coParentColor, coResizable, coShowDropMark, coVisible, coSmartResize, coAllowFocus, coEditable]
+                Position = 1
+                Text = '% Memory'
+                Width = 75
+              end
+              item
+                MinWidth = 75
+                Options = [coAllowClick, coDraggable, coEnabled, coParentBidiMode, coParentColor, coResizable, coShowDropMark, coVisible, coSmartResize, coAllowFocus, coEditable]
+                Position = 2
+                Text = 'Memory'
+                Width = 75
+              end
+              item
+                MinWidth = 75
+                Options = [coAllowClick, coDraggable, coEnabled, coParentBidiMode, coParentColor, coResizable, coShowDropMark, coVisible, coSmartResize, coAllowFocus, coEditable]
+                Position = 3
+                Text = 'Calls'
+                Width = 75
+              end>
+          end
+          object sbFilterProcs: TSearchBox
+            Left = 0
+            Top = 0
+            Width = 889
+            Height = 23
+            Align = alTop
+            TabOrder = 1
+            TextHint = 'Filter the procedure...'
+            OnInvokeSearch = sbFilterProcsInvokeSearch
+          end
+        end
+      end
+      object pnlCallees: TPanel
+        Left = 0
+        Top = 514
+        Width = 889
+        Height = 150
+        Align = alBottom
+        BevelOuter = bvNone
+        TabOrder = 1
+        Visible = False
+        object vstCallees: TVirtualStringTree
+          Left = 0
+          Top = 23
+          Width = 889
+          Height = 127
+          Align = alClient
+          Header.AutoSizeIndex = 0
+          Header.Height = 20
+          Header.MinHeight = 20
+          Header.Options = [hoColumnResize, hoDrag, hoShowSortGlyphs, hoVisible]
+          PopupMenu = popAnalysisListview
+          TabOrder = 0
+          TreeOptions.PaintOptions = [toShowButtons, toShowDropmark, toThemeAware, toUseBlendedImages]
+          OnChange = vstCalleesChange
+          OnNodeDblClick = vstCalleesNodeDblClick
+          Touch.InteractiveGestures = [igPan, igPressAndTap]
+          Touch.InteractiveGestureOptions = [igoPanSingleFingerHorizontal, igoPanSingleFingerVertical, igoPanInertia, igoPanGutter, igoParentPassthrough]
+          Columns = <
+            item
+              MinWidth = 200
+              Position = 0
+              Text = 'Procedure (Callees)'
+              Width = 200
+            end
+            item
+              MinWidth = 75
+              Position = 1
+              Text = '% Memory'
+              Width = 75
+            end
+            item
+              MinWidth = 75
+              Position = 2
+              Text = 'Memory'
+              Width = 75
+            end
+            item
+              MinWidth = 75
+              Position = 3
+              Text = 'Calls'
+              Width = 75
+            end>
+        end
+        object sbFilterCallees: TSearchBox
+          Left = 0
+          Top = 0
+          Width = 889
+          Height = 23
+          Align = alTop
+          TabOrder = 1
+          TextHint = 'Filter the procedure callees...'
+          OnInvokeSearch = sbFilterCalleesInvokeSearch
+        end
       end
     end
     object tabClasses: TTabSheet
@@ -405,9 +320,9 @@ object frmMemProfiling: TfrmMemProfiling
       ImageIndex = -1
       object vstClasses: TVirtualStringTree
         Left = 0
-        Top = 21
+        Top = 56
         Width = 889
-        Height = 645
+        Height = 608
         Align = alClient
         Header.AutoSizeIndex = 0
         Header.Height = 20
@@ -418,6 +333,7 @@ object frmMemProfiling: TfrmMemProfiling
         TreeOptions.PaintOptions = [toShowButtons, toShowDropmark, toThemeAware, toUseBlendedImages]
         Touch.InteractiveGestures = [igPan, igPressAndTap]
         Touch.InteractiveGestureOptions = [igoPanSingleFingerHorizontal, igoPanSingleFingerVertical, igoPanInertia, igoPanGutter, igoParentPassthrough]
+        ExplicitTop = 62
         Columns = <
           item
             MinWidth = 200
@@ -444,13 +360,39 @@ object frmMemProfiling: TfrmMemProfiling
             Width = 150
           end>
       end
-      object sbFilterClasses: TSearchBox
+      object pnThreadClass: TPanel
         Left = 0
         Top = 0
         Width = 889
+        Height = 33
+        Align = alTop
+        BevelOuter = bvNone
+        TabOrder = 1
+        object Label1: TLabel
+          Left = 0
+          Top = 10
+          Width = 71
+          Height = 15
+          Caption = '&Select thread:'
+          FocusControl = cbxSelectThreadClass
+        end
+        object cbxSelectThreadClass: TComboBox
+          Left = 72
+          Top = 6
+          Width = 199
+          Height = 23
+          Style = csDropDownList
+          TabOrder = 0
+          OnChange = cbxSelectThreadClassChange
+        end
+      end
+      object sbFilterClasses: TSearchBox
+        Left = 0
+        Top = 33
+        Width = 889
         Height = 23
         Align = alTop
-        TabOrder = 1
+        TabOrder = 2
         TextHint = 'Filter the classes...'
         OnInvokeSearch = sbFilterClassesInvokeSearch
       end
@@ -458,21 +400,48 @@ object frmMemProfiling: TfrmMemProfiling
     object tabUnits: TTabSheet
       Caption = 'Units'
       ImageIndex = -1
+      object pnThreadUnits: TPanel
+        Left = 0
+        Top = 0
+        Width = 889
+        Height = 33
+        Align = alTop
+        BevelOuter = bvNone
+        TabOrder = 0
+        object Label2: TLabel
+          Left = 8
+          Top = 10
+          Width = 71
+          Height = 15
+          Caption = '&Select thread:'
+          FocusControl = cbxSelectThreadUnit
+        end
+        object cbxSelectThreadUnit: TComboBox
+          Left = 80
+          Top = 6
+          Width = 199
+          Height = 23
+          Style = csDropDownList
+          TabOrder = 0
+          OnChange = cbxSelectThreadUnitChange
+        end
+      end
       object vstUnits: TVirtualStringTree
         Left = 0
-        Top = 21
+        Top = 56
         Width = 889
-        Height = 645
+        Height = 608
         Align = alClient
         Header.AutoSizeIndex = 0
         Header.Height = 20
         Header.MinHeight = 20
         Header.Options = [hoColumnResize, hoDrag, hoShowSortGlyphs, hoVisible]
         PopupMenu = popAnalysisListview
-        TabOrder = 0
+        TabOrder = 1
         TreeOptions.PaintOptions = [toShowButtons, toShowDropmark, toThemeAware, toUseBlendedImages]
         Touch.InteractiveGestures = [igPan, igPressAndTap]
         Touch.InteractiveGestureOptions = [igoPanSingleFingerHorizontal, igoPanSingleFingerVertical, igoPanInertia, igoPanGutter, igoParentPassthrough]
+        ExplicitTop = 62
         Columns = <
           item
             MinWidth = 200
@@ -501,11 +470,11 @@ object frmMemProfiling: TfrmMemProfiling
       end
       object sbFilterUnits: TSearchBox
         Left = 0
-        Top = 0
+        Top = 33
         Width = 889
         Height = 23
         Align = alTop
-        TabOrder = 1
+        TabOrder = 2
         TextHint = 'Filter the units...'
         OnInvokeSearch = sbFilterUnitsInvokeSearch
       end
@@ -515,9 +484,9 @@ object frmMemProfiling: TfrmMemProfiling
       ImageIndex = -1
       object vstThreads: TVirtualStringTree
         Left = 0
-        Top = 21
+        Top = 23
         Width = 889
-        Height = 645
+        Height = 641
         Align = alClient
         Header.AutoSizeIndex = 0
         Header.Height = 20
@@ -544,13 +513,13 @@ object frmMemProfiling: TfrmMemProfiling
           item
             MinWidth = 75
             Position = 2
-            Text = '% Memory'
+            Text = '% Time'
             Width = 75
           end
           item
             MinWidth = 75
             Position = 3
-            Text = 'Memory'
+            Text = 'Time'
             Width = 75
           end
           item

@@ -15,8 +15,6 @@ object frmMainProfiling: TfrmMainProfiling
     PopupMenu = popAnalysisListview
     TabOrder = 0
     OnChange = PageControl2Change
-    ExplicitLeft = 3
-    ExplicitTop = 3
     object tabProcedures: TTabSheet
       Caption = 'Procedures'
       ImageIndex = -1
@@ -61,9 +59,9 @@ object frmMainProfiling: TfrmMainProfiling
           BevelOuter = bvNone
           TabOrder = 0
           object ToolBar3: TToolBar
-            Left = -1
+            Left = 19
             Top = 0
-            Width = 96
+            Width = 76
             Height = 26
             Align = alRight
             AutoSize = True
@@ -84,7 +82,7 @@ object frmMainProfiling: TfrmMainProfiling
               Style = tbsDropDown
             end
             object ToolButton19: TToolButton
-              Left = 48
+              Left = 38
               Top = 0
               Action = actBrowseNext
               DropdownMenu = popBrowseNext
@@ -112,7 +110,6 @@ object frmMainProfiling: TfrmMainProfiling
         Align = alClient
         BevelOuter = bvNone
         TabOrder = 2
-        ExplicitHeight = 536
         object splitCallers: TSplitter
           Left = 0
           Top = 150
@@ -152,7 +149,6 @@ object frmMainProfiling: TfrmMainProfiling
             OnNodeDblClick = vstCalleesNodeDblClick
             Touch.InteractiveGestures = [igPan, igPressAndTap]
             Touch.InteractiveGestureOptions = [igoPanSingleFingerHorizontal, igoPanSingleFingerVertical, igoPanInertia, igoPanGutter, igoParentPassthrough]
-            ExplicitHeight = 150
             Columns = <
               item
                 MinWidth = 200
@@ -228,8 +224,6 @@ object frmMainProfiling: TfrmMainProfiling
           Align = alClient
           BevelOuter = bvNone
           TabOrder = 1
-          ExplicitTop = 85
-          ExplicitHeight = 451
           object vstProcs: TVirtualStringTree
             Left = 0
             Top = 23
@@ -246,8 +240,6 @@ object frmMainProfiling: TfrmMainProfiling
             OnChange = vstProcsChange
             Touch.InteractiveGestures = [igPan, igPressAndTap]
             Touch.InteractiveGestureOptions = [igoPanSingleFingerHorizontal, igoPanSingleFingerVertical, igoPanInertia, igoPanGutter, igoParentPassthrough]
-            ExplicitTop = 20
-            ExplicitHeight = 428
             Columns = <
               item
                 MinWidth = 50
@@ -348,7 +340,6 @@ object frmMainProfiling: TfrmMainProfiling
           OnNodeDblClick = vstCalleesNodeDblClick
           Touch.InteractiveGestures = [igPan, igPressAndTap]
           Touch.InteractiveGestureOptions = [igoPanSingleFingerHorizontal, igoPanSingleFingerVertical, igoPanInertia, igoPanGutter, igoParentPassthrough]
-          ExplicitHeight = 68
           Columns = <
             item
               MinWidth = 200
