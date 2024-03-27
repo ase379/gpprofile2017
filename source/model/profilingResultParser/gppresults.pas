@@ -919,6 +919,10 @@ var
   calMax: integer;
   dtime : int64;
 begin
+  start := default(TResPacket);
+  startMem := default(TResMemPacket);
+  stop := default(TResPacket);
+  stopMem := default(TResMemPacket);
   CheckTag(PR_STARTCALIB);
   ReadInt(calCnt);
   cnt    := 0;
