@@ -85,10 +85,10 @@ type
     procedure   RaiseFileCorruptedException(const aContext : String);
 
     procedure   CalibrationStep(pkt1, pkt2: TResPacket);
-    procedure   ExitProcPkt(pkt: TResPacket);
-    procedure   EnterProcPkt(pkt: TResPacket);
-    procedure   ExitMeasurePointPkt(pkt: TResPacket);
-    procedure   EnterMeasurePointPkt(pkt: TResPacket);
+    procedure   ExitProcPkt(const pkt: TResPacket; const mempkt: TResMemPacket);
+    procedure   EnterProcPkt(const pkt: TResPacket; const mempkt: TResMemPacket);
+    procedure   ExitMeasurePointPkt(pkt: TResPacket; const mempkt: TResMemPacket);
+    procedure   EnterMeasurePointPkt(pkt: TResPacket; const mempkt: TResMemPacket);
     procedure   LoadHeader;
     procedure   LoadTables;
     procedure   LoadCalibration;
@@ -113,13 +113,13 @@ type
     procedure   WriteInt64(i64: int64);
     procedure   WriteString(str: ansistring);
     procedure   CheckTag(tag: byte);
-    function    ReadPacket(var pkt: TResPacket): boolean;
+    function    ReadPacket(var pkt: TResPacket; var pktMem: TResMemPacket): boolean;
     procedure   UpdateRunningTime(proxy,parent: TProcProxy);
     function    ThCreateLocate(thread: integer): integer;
     function    ThCreate(thread: integer): integer;
     function    ThLocate(thread: integer): integer;
-    procedure   EnterProc(proxy: TProcProxy; pkt: TResPacket);
-    procedure   ExitProc(proxy,parent: TProcProxy; pkt: TResPacket);
+    procedure   EnterProc(const proxy: TProcProxy; pkt: TResPacket; const mempkt: TResMemPacket);
+    procedure   ExitProc(const proxy,parent: TProcProxy; pkt: TResPacket; const mempkt: TResMemPacket);
   public
     resThreads   : array of TThreadEntry;
     resUnits     : array of TUnitEntry;
@@ -138,8 +138,8 @@ type
     destructor  Destroy; override;
     procedure   AssignTables(tableFile: string);
     function    IsMemProfilingEnabled: boolean;
-    procedure   AddEnterProc(pkt: TResPacket);
-    procedure   AddExitProc(pkt: TResPacket);
+    procedure   AddEnterProc(pkt: TResPacket; const mempkt: TResMemPacket);
+    procedure   AddExitProc(pkt: TResPacket; const mempkt: TResMemPacket);
     procedure   StartCalibration(calibCnt: integer);
     procedure   StopCalibration;
     procedure   RecalcTimes;
@@ -390,18 +390,21 @@ end;
 procedure TResults.LoadData(callback: TProgressCallback);
 var
   pkt     : TResPacket;
+  mempkt  : TResMemPacket;
   curPerc : integer;
   lastPerc: integer;
   filesz  : int64;
   fpstart : int64;
   cnt     : integer;
 begin
+  pkt := default(TResPacket);
+  mempkt := default(TResMemPacket);
   cnt      := 0;
   fpstart  := resFile.FilePos;
   filesz   := resFile.FileSize;
   lastPerc := -1;
   CheckTag(PR_STARTDATA);
-  while ReadPacket(pkt) do
+  while ReadPacket(pkt, mempkt) do
   begin
     Inc(cnt);
     if (cnt mod REPORT_EVERY) = 0 then
@@ -418,26 +421,26 @@ begin
     if pkt.rpTag = PR_ENTERPROC then
     begin
         // create new procedure proxy object
-      EnterProcPkt(pkt);
+      EnterProcPkt(pkt, mempkt);
     end
     else if pkt.rpTag = PR_EXITPROC then
     begin
       // find last proxy object with matching prProcID in active procedure queue
       // update relevant objects
       // destroy proxy object
-      ExitProcPkt(pkt)
+      ExitProcPkt(pkt, mempkt)
     end
     else if pkt.rpTag = PR_ENTER_MP then
     begin
         // create new measure point proxy object
-      EnterMeasurePointPkt(pkt);
+      EnterMeasurePointPkt(pkt, mempkt);
     end
     else if pkt.rpTag = PR_EXIT_MP then
     begin
       // find last proxy object with matching prProcID in active procedure queue
       // update relevant objects
       // destroy proxy object
-      ExitMeasurePointPkt(pkt);
+      ExitMeasurePointPkt(pkt, mempkt);
     end
     else 
       raise Exception.Create('gppResults.TResults.LoadData: Invalid tag ('+pkt.rpTag.ToString()+').');
@@ -484,7 +487,7 @@ begin
 end; { TResults.LoadThreadInformation }
 
 
-procedure TResults.EnterProcPkt(pkt: TResPacket);
+procedure TResults.EnterProcPkt(const pkt: TResPacket; const mempkt: TResMemPacket);
 var
   proxy: TProcProxy;
 begin
@@ -492,10 +495,10 @@ begin
     proxy := TProcWithMemProxy.Create(ThCreateLocate(pkt.rpThread),pkt.rpProcID)
   else
     proxy := TProcProxy.Create(ThCreateLocate(pkt.rpThread),pkt.rpProcID);
-  EnterProc(proxy,pkt);
+  EnterProc(proxy,pkt, mempkt);
 end; { TResults.EnterProcPkt }
 
-procedure TResults.ExitProcPkt(pkt: TResPacket);
+procedure TResults.ExitProcPkt(const pkt: TResPacket; const mempkt: TResMemPacket);
 var
   proxy : TProcProxy;
   parent: TProcProxy;
@@ -506,13 +509,13 @@ begin
     resThreads[tid].teActiveProcs.LocateLast(pkt.rpProcID,proxy,parent);
     if proxy = nil then
       raise Exception.Create('gppResults.TResults.ExitProcPkt: Entry not found!');
-    ExitProc(proxy,parent,pkt);
+    ExitProc(proxy,parent,pkt,mempkt);
     proxy.free;
     inherited;
   end;
 end; { TResults.ExitProcPkt }
 
-procedure TResults.EnterMeasurePointPkt(pkt: TResPacket);
+procedure TResults.EnterMeasurePointPkt(pkt: TResPacket; const mempkt: TResMemPacket);
 var
   proxy: TProcProxy;
   lThreadId : Cardinal;
@@ -527,38 +530,37 @@ begin
   inc(fCallGraphInfoMaxElementCount);
 
   // the measure point needs to be inserted into the known procedures
-
   TProcArrayTools.AddProcRow(resProcedures, pkt.rpMeasurePointID, pkt.rpProcID, Length(resThreads));
-  EnterProc(proxy,pkt);
+  EnterProc(proxy,pkt, mempkt);
 end; { TResults.EnterMeasurePointPkt }
 
 
-procedure TResults.ExitMeasurePointPkt(pkt: TResPacket);
+procedure TResults.ExitMeasurePointPkt(pkt: TResPacket; const mempkt: TResMemPacket);
 var
   lLastMeasurePointEntry : TMeasurePointRegistryEntry;
 begin
   lLastMeasurePointEntry := fMeasurePointRegistry.GetMeasurePointEntry(pkt.rpMeasurePointID);
 
   pkt.rpProcID := lLastMeasurePointEntry.ProcId;
-  ExitProcPkt(pkt);
+  ExitProcPkt(pkt, mempkt);
   inherited;
   fMeasurePointRegistry.UnRegisterMeasurePoint(pkt.rpMeasurePointID);
 
 end; { TResults.ExitMeasurePointPkt }
 
 
-procedure TResults.AddEnterProc(pkt: TResPacket);
+procedure TResults.AddEnterProc(pkt: TResPacket; const mempkt: TResMemPacket);
 begin
   if resCalibration
     then Move(pkt,resCalPkt,SizeOf(TResPacket))
-    else EnterProcPkt(pkt);
+    else EnterProcPkt(pkt, mempkt);
 end; { TResults.AddEnterProc }
 
-procedure TResults.AddExitProc(pkt: TResPacket);
+procedure TResults.AddExitProc(pkt: TResPacket; const mempkt: TResMemPacket);
 begin
   if resCalibration
     then CalibrationStep(resCalPkt,pkt)
-    else ExitProcPkt(pkt);
+    else ExitProcPkt(pkt, mempkt);
 end; { TResults.AddExitProc }
 
 function TResults.IsMemProfilingEnabled: boolean;
@@ -566,7 +568,7 @@ begin
   result := resPrfVersion = PRF_VERSION_WITH_MEM;
 end;
 
-function TResults.ReadPacket(var pkt: TResPacket): boolean;
+function TResults.ReadPacket(var pkt: TResPacket; var pktMem: TResMemPacket): boolean;
 var
   lAnsiMeasurePointId : ansistring;
 begin
@@ -582,6 +584,8 @@ begin
       rpMeasurePointID := utf8ToString(lAnsiMeasurePointId);
       ReadTicks(rpMeasure1);
       ReadTicks(rpMeasure2);
+      if IsMemProfilingEnabled then
+        ReadCardinal(pktMem.rpMemWorkingSize);
       Result := true;
     end
     else
@@ -589,10 +593,10 @@ begin
       ReadThread(rpThread);
       ReadID(rpProcID);
       ReadTicks(rpMeasure1);
-      if (resPrfVersion = PRF_VERSION_WITH_MEM) then
-        if (rpTag = PR_ENTERPROC) or (rpTag = PR_EXITPROC) then
-          ReadCardinal(rpMemWorkingSize);
       ReadTicks(rpMeasure2);
+      if IsMemProfilingEnabled then
+        if (rpTag = PR_ENTERPROC) or (rpTag = PR_EXITPROC) then
+          ReadCardinal(pktMem.rpMemWorkingSize);
       Result := true;
     end;
   end;
@@ -846,21 +850,21 @@ begin
   LChildrenDict.free;
 end; { TResults.RecalcTimes }
 
-procedure TResults.EnterProc(proxy: TProcProxy; pkt: TResPacket);
+procedure TResults.EnterProc(const proxy: TProcProxy; pkt: TResPacket; const mempkt: TResMemPacket);
 begin
   // update dead time in all active procedures
   // insert proxy object into active procedure queue
   // increment recursion level
   pkt.rpNullOverhead := 0;
   resThreads[proxy.ThreadID].teActiveProcs.UpdateDeadTime(pkt);
-  proxy.Start(pkt);
+  proxy.Start(pkt, mempkt);
   resThreads[proxy.ThreadID].teActiveProcs.Append(proxy);
   if proxy.ProcID > Cardinal(Length(resProcedures)) then
     raise EInvalidOp.Create('Error: Instrumentation count does not fit to the prf, please reinstrument.');
   Inc(resProcedures[proxy.ProcID].peCurrentCallDepth[proxy.ThreadID]);
 end;
 
-procedure TResults.ExitProc(proxy,parent: TProcProxy; pkt: TResPacket);
+procedure TResults.ExitProc(const proxy,parent: TProcProxy; pkt: TResPacket; const mempkt: TResMemPacket);
 var
   lMemConsumptionEntry : TMemConsumptionEntry;
 begin
@@ -878,7 +882,7 @@ begin
     Inc(pkt.rpNullOverhead,1);
     Dec(resNullErrorAcc,NULL_ACCURACY);
   end;
-  proxy.Stop(pkt);
+  proxy.Stop(pkt, mempkt);
   UpdateRunningTime(proxy,parent);
   resThreads[proxy.ThreadID].teActiveProcs.UpdateDeadTime(pkt);
   if IsMemProfilingEnabled() then
@@ -905,7 +909,9 @@ procedure TResults.LoadCalibration;
 var
   cnt   : integer;
   start : TResPacket;
+  startMem : TResMemPacket;
   stop  : TResPacket;
+  stopMem  : TResMemPacket;
   time  : int64;
   time2 : int64;
   calCnt: integer;
@@ -920,10 +926,10 @@ begin
   calCal := calCnt div 50;
   while cnt < calCal do begin
     Inc(cnt);
-    ReadPacket(start);
+    ReadPacket(start, startMem);
     if start.rpTag = PR_ENDCALIB then
       RaiseFileCorruptedException('Calibration: PR_ENDCALIB found, but expected start.');
-    ReadPacket(stop);
+    ReadPacket(stop, stopmem);
     if stop.rpTag = PR_ENDCALIB then
       RaiseFileCorruptedException('Calibration: PR_ENDCALIB found, but expected end.');
     dtime := stop.rpMeasure1-start.rpMeasure2;
@@ -933,8 +939,8 @@ begin
   cnt  := 0;
   time := 0;
   time2:= 0;
-  while ReadPacket(start) do begin
-    ReadPacket(stop);
+  while ReadPacket(start, startmem) do begin
+    ReadPacket(stop, stopmem);
     dtime := stop.rpMeasure1-start.rpMeasure2;
     if dtime <= calMax then begin
       Inc(cnt);
