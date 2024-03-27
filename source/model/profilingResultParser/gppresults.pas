@@ -583,9 +583,9 @@ begin
       ReadAnsiString(lAnsiMeasurePointId);
       rpMeasurePointID := utf8ToString(lAnsiMeasurePointId);
       ReadTicks(rpMeasure1);
-      ReadTicks(rpMeasure2);
       if IsMemProfilingEnabled then
         ReadCardinal(pktMem.rpMemWorkingSize);
+      ReadTicks(rpMeasure2);
       Result := true;
     end
     else
@@ -593,10 +593,10 @@ begin
       ReadThread(rpThread);
       ReadID(rpProcID);
       ReadTicks(rpMeasure1);
-      ReadTicks(rpMeasure2);
       if IsMemProfilingEnabled then
         if (rpTag = PR_ENTERPROC) or (rpTag = PR_EXITPROC) then
           ReadCardinal(pktMem.rpMemWorkingSize);
+      ReadTicks(rpMeasure2);
       Result := true;
     end;
   end;
