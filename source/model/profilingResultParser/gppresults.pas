@@ -137,6 +137,7 @@ type
     constructor Create; overload;
     destructor  Destroy; override;
     procedure   AssignTables(tableFile: string);
+    function    IsMemProfilingEnabled: boolean;
     procedure   AddEnterProc(pkt: TResPacket);
     procedure   AddExitProc(pkt: TResPacket);
     procedure   StartCalibration(calibCnt: integer);
@@ -487,7 +488,10 @@ procedure TResults.EnterProcPkt(pkt: TResPacket);
 var
   proxy: TProcProxy;
 begin
-  proxy := TProcProxy.Create(ThCreateLocate(pkt.rpThread),pkt.rpProcID);
+  if IsMemProfilingEnabled then
+    proxy := TProcWithMemProxy.Create(ThCreateLocate(pkt.rpThread),pkt.rpProcID)
+  else
+    proxy := TProcProxy.Create(ThCreateLocate(pkt.rpThread),pkt.rpProcID);
   EnterProc(proxy,pkt);
 end; { TResults.EnterProcPkt }
 
@@ -510,17 +514,21 @@ end; { TResults.ExitProcPkt }
 
 procedure TResults.EnterMeasurePointPkt(pkt: TResPacket);
 var
-  proxy: TMeasurePointProxy;
+  proxy: TProcProxy;
   lThreadId : Cardinal;
 begin
   lThreadId := ThCreateLocate(pkt.rpThread);
   pkt.rpProcID := Length(resProcedures);
-  proxy := TMeasurePointProxy.Create(lThreadId,pkt.rpProcID,pkt.rpMeasurePointID);
+  if IsMemProfilingEnabled then
+    proxy := TMeasurePointWithMemProxy.Create(lThreadId,pkt.rpProcID,pkt.rpMeasurePointID)
+  else
+    proxy := TMeasurePointProxy.Create(lThreadId,pkt.rpProcID,pkt.rpMeasurePointID);
   fMeasurePointRegistry.RegisterMeasurePoint(pkt.rpProcId, pkt.rpMeasurePointID);
   inc(fCallGraphInfoMaxElementCount);
 
   // the measure point needs to be inserted into the known procedures
-  TProcArrayTools.AddProcRow(resProcedures, proxy.MeasurePointID, pkt.rpProcID, Length(resThreads));
+
+  TProcArrayTools.AddProcRow(resProcedures, pkt.rpMeasurePointID, pkt.rpProcID, Length(resThreads));
   EnterProc(proxy,pkt);
 end; { TResults.EnterMeasurePointPkt }
 
@@ -552,6 +560,11 @@ begin
     then CalibrationStep(resCalPkt,pkt)
     else ExitProcPkt(pkt);
 end; { TResults.AddExitProc }
+
+function TResults.IsMemProfilingEnabled: boolean;
+begin
+  result := resPrfVersion = PRF_VERSION_WITH_MEM;
+end;
 
 function TResults.ReadPacket(var pkt: TResPacket): boolean;
 var
@@ -868,11 +881,24 @@ begin
   proxy.Stop(pkt);
   UpdateRunningTime(proxy,parent);
   resThreads[proxy.ThreadID].teActiveProcs.UpdateDeadTime(pkt);
-  // update resource information after Stop();
-  lMemConsumptionEntry := Default(TMemConsumptionEntry);
-  lMemConsumptionEntry.mceStartingMemWorkingSet := proxy.StartMem;
-  lMemConsumptionEntry.mceEndingMemWorkingSet := proxy.EndMem;
-  fProcedureMemCallList.AddEntryToProcList(proxy.ProcID, lMemConsumptionEntry);
+  if IsMemProfilingEnabled() then
+  begin
+    lMemConsumptionEntry := Default(TMemConsumptionEntry);
+    if proxy is TMeasurePointWithMemProxy then
+    begin
+      lMemConsumptionEntry.mceStartingMemWorkingSet := TMeasurePointWithMemProxy(proxy).StartMem;
+      lMemConsumptionEntry.mceEndingMemWorkingSet := TMeasurePointWithMemProxy(proxy).EndMem;
+    end
+    else if proxy is TProcWithMemProxy then
+    begin
+      lMemConsumptionEntry.mceStartingMemWorkingSet := TProcWithMemProxy(proxy).StartMem;
+      lMemConsumptionEntry.mceEndingMemWorkingSet := TProcWithMemProxy(proxy).EndMem;
+    end
+    else
+      raise Exception.Create('The given proxy does not have memory information.');
+    // update resource information after Stop();
+    fProcedureMemCallList.AddEntryToProcList(proxy.ProcID, lMemConsumptionEntry);
+  end;
 end; { TResults.ExitProc }
 
 procedure TResults.LoadCalibration;

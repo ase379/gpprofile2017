@@ -16,12 +16,7 @@ type
     ppStartTime   : int64;
     ppTotalTime   : int64;
     ppChildTime   : int64;
-    ppStartMem    : Cardinal;
-    ppEndMem    : Cardinal;
-    ppDiffMem   : Cardinal;
-    ppDiffMemChildren : Cardinal;
   public
-
     constructor Create(const aThreadID, aProcID: Cardinal);
     destructor  Destroy; override;
     procedure   Start(pkt: TResPacket);  virtual;
@@ -34,10 +29,20 @@ type
     property StartTime : int64 read ppStartTime;
     property TotalTime : int64 read ppTotalTime;
     property ChildTime : int64 read ppChildTime write ppChildTime;
+
+  end;
+
+
+  TProcWithMemProxy = class(TProcProxy)
+  private
+    ppStartMem    : Cardinal;
+    ppEndMem    : Cardinal;
+  protected
+  public
+    procedure Start(pkt: TResPacket);  override;
+    procedure Stop(var pkt: TResPacket); override;
     property StartMem : Cardinal read ppStartMem write ppStartMem;
     property EndMem : Cardinal read ppEndMem write ppEndMem;
-    property DiffMem : Cardinal read ppDiffMem write ppDiffMem;
-    property DiffMemChildren : Cardinal read ppDiffMemChildren write ppDiffMemChildren;
   end;
 
   TActiveProcList = class
@@ -52,19 +57,20 @@ type
     procedure   LocateLast(const aProcID: Cardinal; var this,parent: TProcProxy); overload;
   end;
 
-  TMeasurePointEntry = record
-  public
-    mpePkt : TResPacket;
-    mpeName : AnsiString;
-  end;
-
   TMeasurePointProxy = class(TProcProxy)
   private
     fMeasurePointID : String;
   public
-    constructor Create(const aThreadID, aProcID: Cardinal;const aMeasurePointID : String);
-    destructor  Destroy; override;
+    constructor Create(const aThreadID, aProcID: Cardinal; const aMeasurePointID : String);
+    property MeasurePointID : String read fMeasurePointID;
+  end;
 
+
+  TMeasurePointWithMemProxy = class(TProcWithMemProxy)
+  private
+    fMeasurePointID : String;
+  public
+    constructor Create(const aThreadID, aProcID: Cardinal; const aMeasurePointID : String);
     property MeasurePointID : String read fMeasurePointID;
   end;
 
@@ -91,12 +97,10 @@ end;
 procedure TProcProxy.Start(pkt: TResPacket);
 begin
   ppStartTime := pkt.rpMeasure2;
-  ppStartMem := pkt.rpMemWorkingSize;
 end;
 
 procedure TProcProxy.Stop(var pkt: TResPacket);
 begin
-  ppEndMem := pkt.rpMemWorkingSize;
   ppTotalTime := pkt.rpMeasure1-ppStartTime - ppDeadTime - ppChildTime - pkt.rpNullOverhead;
   pkt.rpNullOverhead := 2*pkt.rpNullOverhead;
   if ppTotalTime < 0 then
@@ -180,17 +184,31 @@ begin
   inherited Create(aThreadID, aProcID);
   ppThreadID  := aThreadID;
   fMeasurePointID := aMeasurePointID;
-  ppDeadTime  := 0;
-  ppStartTime := 0;
-  ppTotalTime := 0;
-  ppChildTime := 0;
 end; { TMeasurePointProxy.Create }
 
-destructor TMeasurePointProxy.Destroy;
+
+
+{ TMeasurePointWithMemProxy }
+
+constructor TMeasurePointWithMemProxy.Create(const aThreadID, aProcID: Cardinal; const aMeasurePointID: String);
 begin
-  inherited Destroy;
-end; { TMeasurePointProxy.Destroy }
+  inherited Create(aThreadID, aProcID);
+  ppThreadID  := aThreadID;
+  fMeasurePointID := aMeasurePointID;
+end;
 
+{ TProcWithMemProxy }
 
+procedure TProcWithMemProxy.Start(pkt: TResPacket);
+begin
+  inherited;
+  ppStartMem := pkt.rpMemWorkingSize;
+end;
+
+procedure TProcWithMemProxy.Stop(var pkt: TResPacket);
+begin
+  inherited;
+  ppEndMem := pkt.rpMemWorkingSize;
+end;
 
 end.
