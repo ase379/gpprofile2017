@@ -1294,10 +1294,6 @@ begin
           end;
         until false;
       end; // PR_DIGCALLG
-      PR_DIG_START_MEMG:
-      begin
-      end;
-
     end; // case
   until tag = PR_ENDDIGEST;
 end; { TResults.LoadDigest }
