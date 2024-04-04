@@ -5,6 +5,8 @@ object frmMain: TfrmMain
   ClientHeight = 639
   ClientWidth = 1480
   Color = clBtnFace
+  Constraints.MinHeight = 640
+  Constraints.MinWidth = 480
   ParentFont = True
   KeyPreview = True
   Menu = MainMenu1

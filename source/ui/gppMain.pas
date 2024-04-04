@@ -2007,7 +2007,8 @@ end;
 
 procedure TfrmMain.lbLayoutsDblClick(Sender: TObject);
 begin
-  if lvLayouts.Selected.ImageIndex <> 1 then begin
+  if assigned(lvLayouts.Selected) and (lvLayouts.Selected.ImageIndex <> 1) then
+  begin
     inpLayoutName.Text := lvLayouts.Selected.Caption;
     actChangeLayout.Execute;
     pnlLayout.Hide;
