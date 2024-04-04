@@ -162,7 +162,7 @@ object frmMain: TfrmMain
           end
         end
         object tabPerformanceResults: TTabSheet
-          Caption = 'Performace Result Analysis'
+          Caption = 'Performance Result Analysis'
           ImageIndex = 1
           object PageControl2: TPageControl
             Left = 0
