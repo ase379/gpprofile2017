@@ -9,6 +9,9 @@ uses
   gpParser, Vcl.Menus, Vcl.WinXCtrls, VirtualTrees.BaseAncestorVCL,
   VirtualTrees.BaseTree, VirtualTrees.AncestorVCL;
 
+const
+  ALL_UNITS = '<all units>';
+
 type
   TOnShowStatusBarMessage = procedure (const msg: string; const beep: boolean) of object;
   TReloadSourceEvent = procedure(const aPath : string; aLine : integer) of object;
@@ -152,16 +155,20 @@ procedure TfrmMainInstrumentation.DoOnUnitCheck(const aNode: PVirtualNode; instr
 var
   LEnumor : TVTVirtualNodeEnumerator;
   LFirstCheckedState : TCheckedState;
+  lUnitName : String;
 begin
-  if aNode = nil then
+  lUnitName := '';
+  if assigned(aNode) then
+    lUnitName := fVstSelectUnitTools.GetName(aNode);
+  if lUnitName = ALL_UNITS then
   begin
     vstSelectUnits.BeginUpdate;
     try
       LFirstCheckedState := fVstSelectUnitTools.getCheckedState(0);
       LEnumor := vstSelectUnits.Nodes().GetEnumerator();
       while (LEnumor.MoveNext) do
-        if LEnumor.current.index <> 0 then
-          fVstSelectUnitTools.SetCheckedState(LEnumor.Current.index, LFirstCheckedState);
+        if LEnumor.current <> aNode then
+          fVstSelectUnitTools.SetCheckedState(LEnumor.Current, LFirstCheckedState);
     finally
       vstSelectUnits.EndUpdate;
     end;
@@ -220,7 +227,7 @@ begin
         lUnitInfoList.SortByName;
         lAllInstrumented := true;
         nonei := true;
-        LFirstNode := fVstSelectUnitTools.AddEntry(nil,'<all units>', [ste_AllItem]);
+        LFirstNode := fVstSelectUnitTools.AddEntry(nil,ALL_UNITS, [ste_AllItem]);
         for var lUnitInfo in lUnitInfoList do
         begin
 
@@ -282,7 +289,6 @@ begin
   btnUnitSelectionWizard.Enabled := false;
   if assigned(LFirstNode) then
   begin
-    fVstSelectUnitTools.setSelectedIndex(0);
     clbUnitsClick();
   end;
 end; { TfrmMain.FillUnitTree }
@@ -783,7 +789,7 @@ begin
     chk := chkShowAll.Checked;
     chkShowAll.Checked := true;
     fVstSelectUnitTools.SetCheckedState(0,TCheckedState.unchecked);
-    clbUnitsClickCheck(nil);
+    clbUnitsClickCheck(fVstSelectUnitTools.GetNode(0));
     clbUnitsClick();
     aOnDoInstrument;
     chkShowAll.Checked := chk;
