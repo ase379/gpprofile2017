@@ -133,6 +133,8 @@ type
     actShowPerformanceData: TAction;
     actShowMemoryData: TAction;
     tabMemoryAnalysis: TTabSheet;
+    PageControl2: TPageControl;
+    tabPerformanceResults: TTabSheet;
     procedure FormCreate(Sender: TObject);
     procedure MRUClick(Sender: TObject; LatestFile: String);
     procedure FormDestroy(Sender: TObject);
@@ -1410,9 +1412,16 @@ begin
         fPerformanceFrame.splitCallees.Visible    := ReadBool('pnlCallersVisible',false);
         fPerformanceFrame.pnlCallees.Visible      := fPerformanceFrame.splitCallers.Visible;
         fPerformanceFrame.pnlCallers.Visible      := fPerformanceFrame.splitCallees.Visible;
-        if PageControl1.ActivePage = tabInstrumentation
-          then pnlSourcePreview.Visible := previewVisibleInstr
-          else pnlSourcePreview.Visible := previewVisibleAnalysis;
+        fMemoryFrame.pnlCallers.Height       := fPerformanceFrame.pnlCallers.Height;
+        fMemoryFrame.pnlCallees.Height       := fPerformanceFrame.pnlCallees.Height;
+        fMemoryFrame.splitCallers.Visible    := fPerformanceFrame.splitCallers.Visible;
+        fMemoryFrame.splitCallees.Visible    := fPerformanceFrame.splitCallees.Visible;
+        fMemoryFrame.pnlCallees.Visible      := fPerformanceFrame.pnlCallees.Visible;
+        fMemoryFrame.pnlCallers.Visible      := fPerformanceFrame.pnlCallers.Visible;
+        if PageControl1.ActivePage = tabInstrumentation then
+          pnlSourcePreview.Visible := previewVisibleInstr
+        else
+          pnlSourcePreview.Visible := previewVisibleAnalysis;
         splitSourcePreview.Visible := pnlSourcePreview.Visible;
         GetHeaders(reg,fPerformanceFrame.vstProcs,'lvProcs');
         GetHeaders(reg,fPerformanceFrame.vstClasses,'lvClasses');
@@ -1423,6 +1432,8 @@ begin
         ResetSourcePreview(false);
         fPerformanceFrame.ResetCallers;
         fPerformanceFrame.ResetCallees;
+        fMemoryFrame.ResetCallers;
+        fMemoryFrame.ResetCallees;
       end;
     finally reg.Free; end;
   finally EnableAlign; end;
@@ -2118,9 +2129,8 @@ end;
 
 procedure TfrmMain.actShowHideCallersUpdate(Sender: TObject);
 begin
-  var isPerformanceActive := (PageControl1.ActivePage = tabPerformanceAnalysis) and (fPerformanceFrame.PageControl2.ActivePage = fPerformanceFrame.tabProcedures);
-  var isMemoryActive := (PageControl1.ActivePage = tabMemoryAnalysis) and (fMemoryFrame.PageControl2.ActivePage = fMemoryFrame.tabProcedures);
-  actShowHideCallers.Enabled := isPerformanceActive or isMemoryActive;
+  actShowHideCallers.Enabled := (PageControl1.ActivePage = tabPerformanceAnalysis) and
+    ((fPerformanceFrame.PageControl2.ActivePage = fPerformanceFrame.tabProcedures) or (fMemoryFrame.PageControl2.ActivePage = fMemoryFrame.tabProcedures));
 end;
 
 procedure TfrmMain.actSaveInstrumentationSelectionExecute(Sender: TObject);
@@ -2178,9 +2188,8 @@ end;
 
 procedure TfrmMain.actShowHideCalleesUpdate(Sender: TObject);
 begin
-  var isPerformanceActive := (PageControl1.ActivePage = tabPerformanceAnalysis) and (fPerformanceFrame.PageControl2.ActivePage = fPerformanceFrame.tabProcedures);
-  var isMemoryActive := (PageControl1.ActivePage = tabMemoryAnalysis) and (fMemoryFrame.PageControl2.ActivePage = fMemoryFrame.tabProcedures);
-  actShowHideCallers.Enabled := isPerformanceActive or isMemoryActive;
+  actShowHideCallees.Enabled := (PageControl1.ActivePage = tabPerformanceAnalysis) and
+    ((fPerformanceFrame.PageControl2.ActivePage = fPerformanceFrame.tabProcedures) or (fMemoryFrame.PageControl2.ActivePage = fMemoryFrame.tabProcedures));
 end;
 
 
