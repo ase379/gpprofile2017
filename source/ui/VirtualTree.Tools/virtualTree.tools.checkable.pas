@@ -11,7 +11,7 @@ uses
 
 type
 
-  TSpecialTagEnum = (ste_Directory, ste_AllItem);
+  TSpecialTagEnum = (ste_AllItem, ste_Directory, ste_UnitClassOrProc);
   TSpecialTagEnumSet = set of TSpecialTagEnum;
 
 
@@ -67,7 +67,7 @@ uses
 
 function TCheckableListTools.AddEntry(const aParent : PVirtualNode;const aName : String): PVirtualNode;
 begin
-  result := AddEntry(aParent, aName, []);
+  result := AddEntry(aParent, aName, [ste_UnitClassOrProc]);
 end;
 
 function TCheckableListTools.AddEntry(const aParent: PVirtualNode; const aName: String; const aSpecialTagSet : TSpecialTagEnumSet): PVirtualNode;
