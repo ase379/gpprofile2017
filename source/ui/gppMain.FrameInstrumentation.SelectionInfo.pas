@@ -54,7 +54,7 @@ type
 
   { takes the procedures defined in a unit a gets the instrumentalization state.
     @returns list with instumentatization info.}
-  function GetProcsFromUnit(const aProcInfoList : TProcedureInstrumentationInfoList; const aSelectedClassIndex :integer; const aSelectedClassName : string): TProcInfoList;
+  function GetProcsForClassFromUnit(const aProcInfoList : TProcedureInstrumentationInfoList; const aSelectedClassIndex :integer; const aSelectedClassName : string): TProcInfoList;
 
 implementation
 
@@ -106,40 +106,47 @@ begin
   end;
 end;
 
-function GetProcsFromUnit(const aProcInfoList : TProcedureInstrumentationInfoList; const aSelectedClassIndex :integer; const aSelectedClassName : string): TProcInfoList;
+function GetProcsForClassFromUnit(const aProcInfoList : TProcedureInstrumentationInfoList; const aSelectedClassIndex :integer; const aSelectedClassName : string): TProcInfoList;
 var
   lProcInstrumentationInfo : TProcedureInstrumentationInfo;
-  LUnitName : string;
+  LProcedureName : string;
+  LClassName : string;
   LUppercasedClassName : string;
-  LDotPosition : integer;
   LProcInfo : TProcInfo;
 begin
   result := TProcInfoList.Create();
   LUppercasedClassName := Uppercase(aSelectedClassName);
   for lProcInstrumentationInfo in aProcInfoList do
   begin
-    LUnitName := lProcInstrumentationInfo.ProcedureName;
-    if LUnitName <> '' then
+    LProcedureName := lProcInstrumentationInfo.ProcedureName;
+    if LProcedureName <> '' then
     begin
-      LDotPosition := Pos('.', LUnitName);
-      if (aSelectedClassIndex = 0) or ((aSelectedClassName[1] = '<') and (LDotPosition = 0)) or
-        ((aSelectedClassName[1] <> '<') and (UpperCase(First(LUnitName, LDotPosition - 1)) = LUppercasedClassName)) then
+      LClassName := lProcInstrumentationInfo.ClassName;
+      if (aSelectedClassIndex = 0) or ((aSelectedClassName[1] = '<') and (LClassName.IsEmpty)) or
+        ((aSelectedClassName[1] <> '<') and (UpperCase(LClassName) = LUppercasedClassName)) then
       begin
-        if (aSelectedClassName[1] <> '<') and (LDotPosition > 0) then
-          LProcInfo := TProcInfo.Create(ButFirst(LUnitName, LDotPosition))
+        if (aSelectedClassName[1] <> '<') and not lProcInstrumentationInfo.ClassMethodName.IsEmpty then
+          LProcInfo := TProcInfo.Create(lProcInstrumentationInfo.ClassMethodName)
         else
-          LProcInfo := TProcInfo.Create(LUnitName);
+          LProcInfo := TProcInfo.Create(LProcedureName);
         LProcInfo.piInstrument := lProcInstrumentationInfo.IsInstrumentedOrCheckedForInstrumentation;
-        if not LProcInfo.piInstrument then
-        begin
-          result.AllInstrumented := false;
-        end
-        else
-        begin
-          result.NoneInstrumented := false;
-        end;
         result.Add(LProcInfo);
       end;
+    end;
+  end;
+  result.fAllInstrumented := true;
+  result.fNoneInstrumented := true;
+  for LProcInfo in result do
+  begin
+    if result.fAllInstrumented then
+    begin
+      if not LProcInfo.piInstrument then
+        result.fAllInstrumented := false;
+    end;
+    if result.fNoneInstrumented then
+    begin
+      if LProcInfo.piInstrument then
+        result.fNoneInstrumented := false;
     end;
   end;
 end;

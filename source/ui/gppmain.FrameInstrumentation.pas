@@ -614,9 +614,8 @@ begin
       cl := UpperCase(GetSelectedClassName());
       for lProcInstrumentationInfo in lProcInstrumentationInfoList do
       begin
-        p := Pos('.', lProcInstrumentationInfo.ProcedureName);
-        if ((cl[1] = '<') and (p = 0)) or
-          ((cl[1] <> '<') and (UpperCase(Copy(lProcInstrumentationInfo.ProcedureName, 1, p - 1)) = cl)) then
+        if ((cl[1] = '<') and lProcInstrumentationInfo.ClassName.IsEmpty) or
+          ((cl[1] <> '<') and (UpperCase(lProcInstrumentationInfo.ClassName) = cl)) then
         begin
           openProject.InstrumentProc(GetSelectedUnitName, lProcInstrumentationInfo.ProcedureName,fVstSelectClassTools.getCheckedState(aNode) = TCheckedState.Checked);
         end;
@@ -746,7 +745,7 @@ begin
       try
         if not GetSelectedIsDirectory() then
         begin
-          LProcInfoList := GetProcsFromUnit(LProcInstrumentationInfoList,fVstSelectClassTools.GetSelectedIndex,GetSelectedClassName());
+          LProcInfoList := GetProcsForClassFromUnit(LProcInstrumentationInfoList,fVstSelectClassTools.GetSelectedIndex,GetSelectedClassName());
           for LInfo in LProcInfoList do
           begin
             LIndex := fVstSelectProcTools.AddEntry(nil,LInfo.piName).Index;

@@ -177,6 +177,7 @@ var
   un: TUnit;
   pr: TProc;
   LProcEnumor: TRootNode<TProc>.TEnumerator;
+  lDotPosition : integer;
 begin
   un := prUnits.Locate(aUnitName);
   if un <> nil then
@@ -188,7 +189,13 @@ begin
       begin
         pr := LProcEnumor.Current.Data;
         begin
+          lDotPosition := Pos('.', pr.Name);
           var lEntry := TProcedureInstrumentationInfo.create();
+          if lDotPosition > 0 then
+          begin
+            lEntry.ClassName := Copy(pr.Name, 1, lDotPosition - 1);
+            lEntry.ClassMethodName := Copy(pr.Name, lDotPosition+1, Length(pr.Name));
+          end;
           lEntry.ProcedureName := pr.Name;
           lEntry.IsInstrumentedOrCheckedForInstrumentation := pr.prInstrumented;
           aProcInfoList.Add(lEntry);

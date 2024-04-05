@@ -27,6 +27,8 @@ type
 
   TProcedureInstrumentationInfo = class
     ProcedureName : string;
+    ClassName : string;
+    ClassMethodName : string;
     IsInstrumentedOrCheckedForInstrumentation: boolean;
   end;
 
