@@ -24,11 +24,21 @@ type
     IsFullyInstrumented: boolean;
     IsNothingInstrumented: boolean;
   end;
+
+  TProcedureInstrumentationInfo = class
+    ProcedureName : string;
+    IsInstrumentedOrCheckedForInstrumentation: boolean;
+  end;
+
+
   TUnitInstrumentationInfoList = class(TObjectList<TUnitInstrumentationInfo>)
   public
     procedure SortByName();
   end;
 
+  TProcedureInstrumentationInfoList = class(TObjectList<TProcedureInstrumentationInfo>)
+    procedure SortByName();
+  end;
 
 const
   cProfUnitName  = 'GpProf';
@@ -62,6 +72,17 @@ begin
       function (const Left, Right: TUnitInstrumentationInfo): integer
       begin
           Result := CompareText(Left.UnitName,Right.UnitName);
+      end));
+end;
+
+{ TProcedureInstrumentationInfoList }
+
+procedure TProcedureInstrumentationInfoList.SortByName;
+begin
+Sort(TComparer<TProcedureInstrumentationInfo>.Construct(
+      function (const Left, Right: TProcedureInstrumentationInfo): integer
+      begin
+          Result := CompareText(Left.ProcedureName,Right.ProcedureName);
       end));
 end;
 

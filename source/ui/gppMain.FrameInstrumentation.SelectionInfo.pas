@@ -3,7 +3,7 @@ unit gppMain.FrameInstrumentation.SelectionInfo;
 interface
 
 uses
-  System.Classes, System.Generics.Collections;
+  System.Classes, System.Generics.Collections, gpparser.types;
 
 type
 
@@ -30,8 +30,8 @@ type
 
   TProcInfo = class
   public
-    anName: string;
-    anInstrument : boolean;
+    piName: string;
+    piInstrument : boolean;
     constructor Create(const aProcName : string);
 
   end;
@@ -50,11 +50,11 @@ type
   end;
   { takes the procedures defined in a unit a gets the instrumentalization state.
     @returns list with instumentatization info.}
-  function GetClassesFromUnit(const aUnitProcList : TStringList): TClassInfoList;
+  function GetClassesFromUnit(const aProcInfoList : TProcedureInstrumentationInfoList): TClassInfoList;
 
   { takes the procedures defined in a unit a gets the instrumentalization state.
     @returns list with instumentatization info.}
-  function GetProcsFromUnit(const aUnitProcList : TStringList; const aSelectedClassIndex :integer; const aSelectedClassName : string): TProcInfoList;
+  function GetProcsFromUnit(const aProcInfoList : TProcedureInstrumentationInfoList; const aSelectedClassIndex :integer; const aSelectedClassName : string): TProcInfoList;
 
 implementation
 
@@ -62,19 +62,19 @@ uses
   system.Sysutils,
   GpString;
 
-function GetClassesFromUnit(const aUnitProcList : TStringList): TClassInfoList;
+function GetClassesFromUnit(const aProcInfoList : TProcedureInstrumentationInfoList): TClassInfoList;
 var
-  i : integer;
+  lProcInstrumentationInfo : TProcedureInstrumentationInfo;
   LUnitProcName : string;
   LUnitProcNameDotPosition : integer;
   LCurrentEntry : TClassInfo;
   LIndexInClassList : integer;
 begin
   result := TClassInfoList.Create();
-  for i := 0 to aUnitProcList.Count - 1 do
+  for lProcInstrumentationInfo in aProcInfoList do
   begin
     // the unitProcList has a all/none flag at the end. remove that.
-    LUnitProcName := ButLast(aUnitProcList[i], 1);
+    LUnitProcName := lProcInstrumentationInfo.Procedurename;
     LUnitProcNameDotPosition := Pos('.', LUnitProcName);
     if LUnitProcNameDotPosition > 0 then
     begin
@@ -93,7 +93,7 @@ begin
     end
     else
       LCurrentEntry := result.ClasslessEntry;
-    if Last(aUnitProcList[i], 1) = '1' then
+    if lProcInstrumentationInfo.IsInstrumentedOrCheckedForInstrumentation then
     begin
       LCurrentEntry.anNone := false;
       result.AllClassesEntry.anNone := false;
@@ -106,9 +106,9 @@ begin
   end;
 end;
 
-function GetProcsFromUnit(const aUnitProcList : TStringList; const aSelectedClassIndex :integer; const aSelectedClassName : string): TProcInfoList;
+function GetProcsFromUnit(const aProcInfoList : TProcedureInstrumentationInfoList; const aSelectedClassIndex :integer; const aSelectedClassName : string): TProcInfoList;
 var
-  i : integer;
+  lProcInstrumentationInfo : TProcedureInstrumentationInfo;
   LUnitName : string;
   LUppercasedClassName : string;
   LDotPosition : integer;
@@ -116,9 +116,9 @@ var
 begin
   result := TProcInfoList.Create();
   LUppercasedClassName := Uppercase(aSelectedClassName);
-  for i := 0 to aUnitProcList.Count - 1 do
+  for lProcInstrumentationInfo in aProcInfoList do
   begin
-    LUnitName := ButLast(aUnitProcList[i], 1);
+    LUnitName := lProcInstrumentationInfo.ProcedureName;
     if LUnitName <> '' then
     begin
       LDotPosition := Pos('.', LUnitName);
@@ -129,8 +129,8 @@ begin
           LProcInfo := TProcInfo.Create(ButFirst(LUnitName, LDotPosition))
         else
           LProcInfo := TProcInfo.Create(LUnitName);
-        LProcInfo.anInstrument := Last(aUnitProcList[i], 1) = '1';
-        if not LProcInfo.anInstrument then
+        LProcInfo.piInstrument := lProcInstrumentationInfo.IsInstrumentedOrCheckedForInstrumentation;
+        if not LProcInfo.piInstrument then
         begin
           result.AllInstrumented := false;
         end
@@ -183,8 +183,8 @@ end;
 constructor TProcInfo.Create(const aProcName: string);
 begin
   inherited Create();
-  anName := aProcName;
-  anInstrument := true;
+  piName := aProcName;
+  piInstrument := true;
 end;
 
 { TProcInfoList }
@@ -204,7 +204,7 @@ begin
   result := -1;
   LName := UpperCase(aName);
   for i := 0 to Self.Count-1 do
-    if Uppercase(self[i].anName) = LName then
+    if Uppercase(self[i].piName) = LName then
       exit(i);
 end;
 

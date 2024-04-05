@@ -30,8 +30,8 @@ type
       aCommentType: TCommentType; aParseAsm: boolean;const anErrorList : TStrings);
     procedure Rescan(aExclUnits: String;const aConditionals: string;
       aCommentType: TCommentType; aParseAsm: boolean);
-    procedure GetUnitList(var aInfoList: TUnitInstrumentationInfoList;const aProjectDirOnly, aGetInstrumented: boolean);
-    procedure GetProcList(unitName: string; s: TStringList;getInstrumented: boolean);
+    procedure GetUnitList(const aInfoList: TUnitInstrumentationInfoList;const aProjectDirOnly: boolean);
+    procedure GetProcList(const aUnitName: string; const aProcInfoList : TProcedureInstrumentationInfoList);
     function GetUnitPath(unitName: string): string;
     procedure InstrumentAll(Instrument, projectDirOnly: boolean);
     procedure InstrumentUnit(unitName: string; Instrument: boolean);
@@ -143,8 +143,8 @@ begin
   end;
 end; { TProject.Parse }
 
-procedure TProject.GetUnitList(var aInfoList: TUnitInstrumentationInfoList;
-  const aProjectDirOnly, aGetInstrumented: boolean);
+procedure TProject.GetUnitList(const aInfoList: TUnitInstrumentationInfoList;
+  const aProjectDirOnly: boolean);
 var
   un: TUnit;
   LUnitEnumor: TRootNode<TUnit>.TEnumerator;
@@ -172,15 +172,13 @@ begin
 end; { TProject.GetUnitList }
 
 
-procedure TProject.GetProcList(unitName: string; s: TStringList;
-  getInstrumented: boolean);
+procedure TProject.GetProcList(const aUnitName: string; const aProcInfoList : TProcedureInstrumentationInfoList);
 var
   un: TUnit;
   pr: TProc;
   LProcEnumor: TRootNode<TProc>.TEnumerator;
 begin
-  s.Clear;
-  un := prUnits.Locate(unitName);
+  un := prUnits.Locate(aUnitName);
   if un <> nil then
   begin
     with un.unProcs do
@@ -189,10 +187,12 @@ begin
       while LProcEnumor.MoveNext do
       begin
         pr := LProcEnumor.Current.Data;
-        if getInstrumented then
-          s.Add(pr.Name + IntToStr(Ord(pr.prInstrumented)))
-        else
-          s.Add(pr.Name);
+        begin
+          var lEntry := TProcedureInstrumentationInfo.create();
+          lEntry.ProcedureName := pr.Name;
+          lEntry.IsInstrumentedOrCheckedForInstrumentation := pr.prInstrumented;
+          aProcInfoList.Add(lEntry);
+        end;
       end;
     end;
     LProcEnumor.Free;
@@ -436,30 +436,28 @@ end;
 procedure TProject.SaveInstrumentalizationSelection(const aFilename: string);
 var
   LInstrumentedUnits : TUnitInstrumentationInfoList;
-  LInstrumentedProcs : TStringList;
+  LInstrumentedProcs : TProcedureInstrumentationInfoList;
+  LInstrumentedProc : TProcedureInstrumentationInfo;
   LSerializer : TUnitSelectionSerializer;
-  LProcNameWithInstr : string;
-  LProcName : string;
 begin
   LInstrumentedUnits := TUnitInstrumentationInfoList.Create();
-  LInstrumentedProcs := TStringList.Create();
+  LInstrumentedProcs := TProcedureInstrumentationInfoList.Create();
   LSerializer := TUnitSelectionSerializer.Create(aFilename);
   try
-    GetUnitList(LInstrumentedUnits,false, true);
+    GetUnitList(LInstrumentedUnits,false);
 
     for var LInfo in LInstrumentedUnits do
     begin
       if not LInfo.IsNothingInstrumented then
       begin
         LSerializer.AddUnit(LInfo.UnitName);
-        GetProcList(LInfo.UnitName,LInstrumentedProcs,true);
-        for LProcNameWithInstr in LInstrumentedProcs do
+        GetProcList(LInfo.UnitName,LInstrumentedProcs);
+        for LInstrumentedProc in LInstrumentedProcs do
         begin
           // evaluate instrumented prefix
-          if LProcNameWithInstr.EndsWith('1') then
+          if LInstrumentedProc.IsInstrumentedOrCheckedForInstrumentation then
           begin
-            LProcName := Copy(LProcNameWithInstr,1,Length(LProcNameWithInstr)-1);
-            LSerializer.AddProc(LProcName);
+            LSerializer.AddProc(LInstrumentedProc.ProcedureName);
           end;
         end;
       end;
