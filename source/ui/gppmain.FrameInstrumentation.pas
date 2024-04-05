@@ -9,8 +9,6 @@ uses
   gpParser, Vcl.Menus, Vcl.WinXCtrls, VirtualTrees.BaseAncestorVCL,
   VirtualTrees.BaseTree, VirtualTrees.AncestorVCL;
 
-const
-  ALL_UNITS = '<all units>';
 
 type
   TOnShowStatusBarMessage = procedure (const msg: string; const beep: boolean) of object;
@@ -160,7 +158,7 @@ begin
   lUnitName := '';
   if assigned(aNode) then
     lUnitName := fVstSelectUnitTools.GetName(aNode);
-  if lUnitName = ALL_UNITS then
+  if TSpecialTagEnum.ste_AllItem in fVstSelectUnitTools.GetSpecialTagSet(aNode) then
   begin
     vstSelectUnits.BeginUpdate;
     try
@@ -176,7 +174,7 @@ begin
   end
   else
   begin
-    if not (TSpecialTagEnum.ste_Directory in fVstSelectUnitTools.GetSpecialTagSet(aNode)) then
+    if TSpecialTagEnum.ste_UnitClassOrProc in fVstSelectUnitTools.GetSpecialTagSet(aNode) then
     begin
       if instrument then
         openProject.InstrumentUnit(fVstSelectUnitTools.GetName(aNode), fVstSelectUnitTools.GetCheckedState(aNode)=TCheckedState.checked);
@@ -227,7 +225,7 @@ begin
         lUnitInfoList.SortByName;
         lAllInstrumented := true;
         nonei := true;
-        LFirstNode := fVstSelectUnitTools.AddEntry(nil,ALL_UNITS, [ste_AllItem]);
+        LFirstNode := fVstSelectUnitTools.AddEntry(nil,'<all units>', [ste_AllItem]);
         for var lUnitInfo in lUnitInfoList do
         begin
 
