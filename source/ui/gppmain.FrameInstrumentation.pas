@@ -246,6 +246,8 @@ begin
               begin
                 lDirectoryNode := fVstSelectUnitTools.AddEntry(lParentDirNode, lSplittedPath[j], [ste_Directory]);
               end;
+              if lParentDirNode = nil then
+                vstSelectUnits.Expanded[lDirectoryNode] := true;
               lParentDirNode := lDirectoryNode;
             end;
             LNode := fVstSelectUnitTools.AddEntry(lDirectoryNode, lUnitInfo.UnitName);
