@@ -34,8 +34,8 @@ type
     procedure GetProcList(const aUnitName: string; const aProcInfoList : TProcedureInstrumentationInfoList);
     function GetUnitPath(unitName: string): string;
     procedure InstrumentAll(Instrument, projectDirOnly: boolean);
-    procedure InstrumentUnit(unitName: string; Instrument: boolean);
-    procedure InstrumentProc(unitName, procName: string; Instrument: boolean);
+    procedure InstrumentUnit(const aUnitName: string; const aInstrument: boolean);
+    procedure InstrumentProc(const aUnitName, aProcName: string; const aInstrument: boolean);
     procedure InstrumentTUnit(anUnit: TUnit; Instrument: boolean);
     function AllInstrumented(projectDirOnly: boolean): boolean;
     function NoneInstrumented(projectDirOnly: boolean): boolean;
@@ -232,33 +232,32 @@ begin
   end;
 end; { TProject.InstrumentAll }
 
-procedure TProject.InstrumentUnit(unitName: string; Instrument: boolean);
+procedure TProject.InstrumentUnit(const aUnitName: string; const aInstrument: boolean);
 var
-  un: TUnit;
+  lUnit: TUnit;
 begin
-  un := prUnits.Locate(unitName);
-  if un <> nil then
-    InstrumentTUnit(un, Instrument);
+  lUnit := prUnits.Locate(aUnitName);
+  if assigned(lUnit) then
+    InstrumentTUnit(lUnit, aInstrument);
 end; { TProject.InstrumentUnit }
 
-procedure TProject.InstrumentProc(unitName, procName: string;
-  Instrument: boolean);
+procedure TProject.InstrumentProc(const aUnitName, aProcName: string; const aInstrument: boolean);
 var
-  un: TUnit;
-  pr: TProc;
+  lUnit: TUnit;
+  lProc: TProc;
 begin
-  un := prUnits.Locate(unitName);
-  if un = nil then
+  lUnit := prUnits.Locate(aUnitName);
+  if not assigned(lUnit) then
     raise Exception.Create('Trying to instrument unexistent unit!')
   else
   begin
-    pr := un.LocateProc(procName);
-    if pr = nil then
+    lProc := lUnit.LocateProc(aProcName);
+    if not assigned(lProc) then
       raise Exception.Create('Trying to instrument unexistend procedure!')
     else
     begin
-      pr.prInstrumented := Instrument;
-      un.CheckInstrumentedProcs;
+      lProc.prInstrumented := aInstrument;
+      lUnit.CheckInstrumentedProcs;
     end;
   end;
 end; { TProject.InstrumentProc }

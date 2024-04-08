@@ -595,8 +595,7 @@ procedure TfrmMainInstrumentation.clbClassesClickCheck(Sender: TObject; const aN
 var
   lProcInstrumentationInfoList: TProcedureInstrumentationInfoList;
   lProcInstrumentationInfo: TProcedureInstrumentationInfo;
-  cl: string;
-  p : integer;
+  lUppercasedSelectedClassName: string;
 begin
   if fVstSelectClassTools.getCheckedState(aNode) = TCheckedState.greyed then
     fVstSelectClassTools.setCheckedState(aNode, TCheckedState.Checked);
@@ -611,11 +610,11 @@ begin
     lProcInstrumentationInfoList := TProcedureInstrumentationInfoList.Create;
     try
       openProject.GetProcList(GetSelectedUnitName, lProcInstrumentationInfoList);
-      cl := UpperCase(GetSelectedClassName());
+      lUppercasedSelectedClassName := UpperCase(GetSelectedClassName());
       for lProcInstrumentationInfo in lProcInstrumentationInfoList do
       begin
-        if ((cl[1] = '<') and lProcInstrumentationInfo.ClassName.IsEmpty) or
-          ((cl[1] <> '<') and (UpperCase(lProcInstrumentationInfo.ClassName) = cl)) then
+        if ((lUppercasedSelectedClassName[1] = '<') and lProcInstrumentationInfo.ClassName.IsEmpty) or
+          ((lUppercasedSelectedClassName[1] <> '<') and (UpperCase(lProcInstrumentationInfo.ClassName) = lUppercasedSelectedClassName)) then
         begin
           openProject.InstrumentProc(GetSelectedUnitName, lProcInstrumentationInfo.ProcedureName,fVstSelectClassTools.getCheckedState(aNode) = TCheckedState.Checked);
         end;
