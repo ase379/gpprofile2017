@@ -69,11 +69,15 @@ type
   end;
 
   TProcInfo = class
+  strict private
+    fpiName: string;
+    fpiClassName : String;
   public
-    piName: string;
     piInstrument : boolean;
-    constructor Create(const aProcName : string);
+    constructor Create(const aProcName,aClassName : string);
 
+    property piName: string read fpiName;
+    property piClassName: string read fpiClassName;
   end;
 
   TProcInfoList = class(TObjectList<TProcInfo>)
@@ -86,6 +90,8 @@ type
     function GetIndexByName(const aName : string): integer;
 
     procedure UpdateInstrumentedState();
+
+    procedure AreAllClassMethodsInstrumented(const aClassName: string; var aAllInstrumented, aNoneInstrumented: boolean);
 
     property AllInstrumented : boolean read fAllInstrumented write fAllInstrumented;
     property NoneInstrumented : boolean read fNoneInstrumented write fNoneInstrumented;
@@ -162,9 +168,9 @@ begin
     if (not lProcInstrumentationInfo.IsProcedureValidForSelectedClass(aSelectionInfo)) then
       continue;
     if (not aSelectionInfo.IsItem) and not lProcInstrumentationInfo.ClassMethodName.IsEmpty then
-      LProcInfo := TProcInfo.Create(lProcInstrumentationInfo.ClassMethodName)
+      LProcInfo := TProcInfo.Create(lProcInstrumentationInfo.ClassMethodName, lProcInstrumentationInfo.ClassName)
     else
-      LProcInfo := TProcInfo.Create(LProcedureName);
+      LProcInfo := TProcInfo.Create(LProcedureName, lProcInstrumentationInfo.ClassName);
     LProcInfo.piInstrument := lProcInstrumentationInfo.IsInstrumentedOrCheckedForInstrumentation;
     result.Add(LProcInfo);
   end;
@@ -207,16 +213,40 @@ end;
 
 { TProcInfo }
 
-constructor TProcInfo.Create(const aProcName: string);
+constructor TProcInfo.Create(const aProcName, aClassName: string);
 begin
   inherited Create();
-  piName := aProcName;
+  fpiName := aProcName;
+  fpiClassName := aClassName;
   piInstrument := true;
 end;
 
 { TProcInfoList }
 
-constructor TProcInfoList.Create;
+procedure TProcInfoList.AreAllClassMethodsInstrumented(const aClassName: string; var aAllInstrumented, aNoneInstrumented: boolean);
+begin
+  aAllInstrumented := true;
+  aNoneInstrumented := true;
+  for var LProcInfo in self do
+  begin
+    if not sameText(LProcInfo.piClassName, aClassname) then
+      continue;
+
+    if aAllInstrumented then
+    begin
+      if not LProcInfo.piInstrument then
+        aAllInstrumented := false;
+    end;
+    if aNoneInstrumented then
+    begin
+      if LProcInfo.piInstrument then
+        aNoneInstrumented := false;
+    end;
+  end;
+
+end;
+
+constructor TProcInfoList.Create();
 begin
   inherited Create(true);
   fAllInstrumented := true;

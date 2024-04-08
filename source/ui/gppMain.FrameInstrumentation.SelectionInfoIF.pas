@@ -7,6 +7,8 @@ const
   ALL_CLASSLESS_PROCEDURES = '<all classless procedures>';
   ALL_CLASSES = '<all classes>';
   ALL_PROCEDURES = '<all procedures>';
+  ALL_METHODS_CLASS_START = '<all ';
+  ALL_METHODS_CLASS_END = ' methods>';
 
 type
   ISelectionInfo = interface
@@ -20,6 +22,15 @@ type
     function GetProcedureNameForSelection(const aProcedureName: string): string;
   end;
 
+
+function GetAllClassMethodsString(const aClassName: String): String;
+
+
 implementation
+
+function GetAllClassMethodsString(const aClassName: String): String;
+begin
+  result := ALL_METHODS_CLASS_START + aClassName + ALL_METHODS_CLASS_END;
+end;
 
 end.
