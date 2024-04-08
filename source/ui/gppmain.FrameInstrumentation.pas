@@ -594,7 +594,9 @@ var
 begin
   if fVstSelectClassTools.getCheckedState(aNode) = TCheckedState.greyed then
     fVstSelectClassTools.setCheckedState(aNode, TCheckedState.Checked);
-  if aNode = nil then
+
+  // index 0 means "Selected all in the unit"
+  if aNode.Index = 0 then
   begin
     fVstSelectUnitTools.SetCheckedState(fVstSelectUnitTools.GetSelectedIndex,fVstSelectClassTools.getCheckedState(aNode));
     clbUnitsClickCheck(fVstSelectUnitTools.GetSelectedNode());
