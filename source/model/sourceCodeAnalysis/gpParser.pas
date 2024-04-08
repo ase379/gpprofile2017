@@ -410,6 +410,7 @@ begin
   vOldCurDir := GetCurrentDir;
   if not SetCurrentDir(ExtractFilePath(prUnit.FullName)) then
     Assert(False);
+  LUnitEnumor := nil;
   try
     with prUnits do
     begin
@@ -422,6 +423,7 @@ begin
       end;
     end;
   finally
+    LUnitEnumor.Free;
     SetCurrentDir(vOldCurDir);
   end;
 end;
