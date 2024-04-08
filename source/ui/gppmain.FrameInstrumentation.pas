@@ -225,7 +225,7 @@ begin
         lUnitInfoList.SortByName;
         lAllInstrumented := true;
         nonei := true;
-        LFirstNode := fVstSelectUnitTools.AddEntry(nil,'<all units>', [ste_AllItem]);
+        LFirstNode := fVstSelectUnitTools.AddEntry(nil,ALL_UNITS, [ste_AllItem]);
         for var lUnitInfo in lUnitInfoList do
         begin
 
@@ -524,9 +524,7 @@ var
   i : integer;
   LFoundNode : PVirtualNode;
   LProcsList: TProcedureInstrumentationInfoList;
-const
-  CLASSLESS_PROCEUDURES = '<classless procedures>';
-  ALL_CLASSES = '<all classes>';
+
 begin
   LClassInfoList := nil;
   LProcsList := TProcedureInstrumentationInfoList.Create;
@@ -551,8 +549,8 @@ begin
         begin
           if not recheck then
             // need to insert it, we rebuid the items
-            LFoundNode := fVstSelectClassTools.InsertEntry(0, CLASSLESS_PROCEUDURES, [ste_AllItem]);
-          SearchAndConfigureItem(LFoundNode,  LClassInfoList.ClasslessEntry, CLASSLESS_PROCEUDURES);
+            LFoundNode := fVstSelectClassTools.InsertEntry(0, ALL_CLASSLESS_PROCEUDURES, [ste_AllItem]);
+          SearchAndConfigureItem(LFoundNode,  LClassInfoList.ClasslessEntry, ALL_CLASSLESS_PROCEUDURES);
         end;
         if not(LClassInfoList.AllClassesEntry.anAll and LClassInfoList.AllClassesEntry.anNone) then
         begin
@@ -747,9 +745,9 @@ begin
           if LProcInfoList.Count > 0 then
           begin
             if fVstSelectClassTools.GetSelectedIndex = 0 then
-              fVstSelectProcTools.InsertEntry(0, '<all procedures>', [ste_AllItem])
+              fVstSelectProcTools.InsertEntry(0, ALL_PROCEDURES, [ste_AllItem])
             else if lClassSelectionInfo.IsItem then
-              fVstSelectProcTools.InsertEntry(0, '<all classless procedures>', [ste_AllItem])
+              fVstSelectProcTools.InsertEntry(0, ALL_CLASSLESS_PROCEUDURES, [ste_AllItem])
             else
               fVstSelectProcTools.InsertEntry(0, '<all ' + lClassSelectionInfo.SelectionString + ' methods>', [ste_AllItem]);
             ConfigureAllItemCheckBox(0,LProcInfoList.AllInstrumented, LProcInfoList.NoneInstrumented);

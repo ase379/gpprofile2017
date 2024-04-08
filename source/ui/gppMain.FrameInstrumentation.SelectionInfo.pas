@@ -31,7 +31,7 @@ type
     ClassName : string;
     ClassMethodName : string;
     IsInstrumentedOrCheckedForInstrumentation: boolean;
-    function IsProcedureValidForSelectedClass(const aSelectionInfo : ISelectionInfo) : boolean;
+    function IsProcedureValidForSelectedClass(const aClassSelectionInfo: ISelectionInfo) : boolean;
   end;
 
 
@@ -299,13 +299,25 @@ end;
 
 { TProcedureInstrumentationInfo }
 
-function TProcedureInstrumentationInfo.IsProcedureValidForSelectedClass(const aSelectionInfo : ISelectionInfo): boolean;
+function TProcedureInstrumentationInfo.IsProcedureValidForSelectedClass(const aClassSelectionInfo : ISelectionInfo): boolean;
 begin
   result := false;
-  if (aSelectionInfo.isItem and self.ClassName.IsEmpty) then
-    exit(true);
-  if not aSelectionInfo.isItem and (SameText(self.ClassName, aSelectionInfo.SelectionString)) then
-    exit(true);
+  if aClassSelectionInfo.isItem then
+  begin
+    if sameText(aClassSelectionInfo.SelectionString, ALL_CLASSES) then
+    begin
+      result := true;
+    end
+    else if sameText(aClassSelectionInfo.SelectionString, ALL_CLASSLESS_PROCEUDURES) then
+    begin
+      result := self.ClassName.IsEmpty;
+    end;
+
+  end
+  else
+  begin
+    result := SameText(self.ClassName, aClassSelectionInfo.SelectionString);
+  end;
 end;
 
 end.
