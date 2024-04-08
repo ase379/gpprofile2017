@@ -3,9 +3,41 @@ unit gppMain.FrameInstrumentation.SelectionInfo;
 interface
 
 uses
-  System.Classes, System.Generics.Collections, gpparser.types;
+  System.Classes, System.SysUtils, System.Generics.Collections, gpparser.types,
+  gppMain.FrameInstrumentation.SelectionInfoIF;
 
 type
+  TSelectionInfo = class(TInterfacedObject, ISelectionInfo)
+  private
+    fSelectionString : String;
+    fIsItem : boolean;
+  protected
+    function getIsItem : boolean;
+    function getSelectionString : String;
+  public
+    constructor Create(const aSelectionString: String);
+  end;
+
+  TUnitInstrumentationInfo = class
+    UnitName : string;
+    IsFullyInstrumented: boolean;
+    IsNothingInstrumented: boolean;
+  end;
+
+  TProcedureInstrumentationInfo = class
+    ProcedureName : string;
+    ClassName : string;
+    ClassMethodName : string;
+    IsInstrumentedOrCheckedForInstrumentation: boolean;
+    function IsProcedureValidForSelectedClass(const aSelectionInfo : ISelectionInfo) : boolean;
+  end;
+
+
+  TUnitInstrumentationInfoList = class(TObjectList<TUnitInstrumentationInfo>)
+  public
+    procedure SortByName();
+  end;
+
 
   TClassInfo = class
     anName: string;
@@ -26,6 +58,12 @@ type
     property ClasslessEntry : TClassInfo read fClasslessEntry;
     property AllClassesEntry : TClassInfo read fAllClassesEntry;
 
+  end;
+
+
+  TProcedureInstrumentationInfoList = class(TObjectList<TProcedureInstrumentationInfo>)
+  public
+    procedure SortByName();
   end;
 
   TProcInfo = class
@@ -54,13 +92,12 @@ type
 
   { takes the procedures defined in a unit a gets the instrumentalization state.
     @returns list with instumentatization info.}
-  function GetProcsForClassFromUnit(const aProcInfoList : TProcedureInstrumentationInfoList; const aSelectedClassIndex :integer; const aSelectedClassName : string): TProcInfoList;
+  function GetProcsForClassFromUnit(const aProcInfoList : TProcedureInstrumentationInfoList; const aSelectionInfo: ISelectionInfo): TProcInfoList;
 
 implementation
 
 uses
-  system.Sysutils,
-  GpString;
+  GpString, System.Generics.Defaults;
 
 function GetClassesFromUnit(const aProcInfoList : TProcedureInstrumentationInfoList): TClassInfoList;
 var
@@ -106,26 +143,21 @@ begin
   end;
 end;
 
-function GetProcsForClassFromUnit(const aProcInfoList : TProcedureInstrumentationInfoList; const aSelectedClassIndex :integer; const aSelectedClassName : string): TProcInfoList;
+function GetProcsForClassFromUnit(const aProcInfoList : TProcedureInstrumentationInfoList; const aSelectionInfo : ISelectionInfo): TProcInfoList;
 var
   lProcInstrumentationInfo : TProcedureInstrumentationInfo;
   LProcedureName : string;
-  LClassName : string;
-  LUppercasedClassName : string;
   LProcInfo : TProcInfo;
 begin
   result := TProcInfoList.Create();
-  LUppercasedClassName := Uppercase(aSelectedClassName);
   for lProcInstrumentationInfo in aProcInfoList do
   begin
     LProcedureName := lProcInstrumentationInfo.ProcedureName;
     if LProcedureName <> '' then
     begin
-      LClassName := lProcInstrumentationInfo.ClassName;
-      if (aSelectedClassIndex = 0) or ((aSelectedClassName[1] = '<') and (LClassName.IsEmpty)) or
-        ((aSelectedClassName[1] <> '<') and (UpperCase(LClassName) = LUppercasedClassName)) then
+      if (lProcInstrumentationInfo.IsProcedureValidForSelectedClass(aSelectionInfo)) then
       begin
-        if (aSelectedClassName[1] <> '<') and not lProcInstrumentationInfo.ClassMethodName.IsEmpty then
+        if (not aSelectionInfo.IsItem) and not lProcInstrumentationInfo.ClassMethodName.IsEmpty then
           LProcInfo := TProcInfo.Create(lProcInstrumentationInfo.ClassMethodName)
         else
           LProcInfo := TProcInfo.Create(LProcedureName);
@@ -213,6 +245,59 @@ begin
   for i := 0 to Self.Count-1 do
     if Uppercase(self[i].piName) = LName then
       exit(i);
+end;
+
+{ tSelectionInfo }
+
+constructor TSelectionInfo.Create(const aSelectionString: String);
+begin
+  fSelectionString := aSelectionString;
+  fIsItem := aSelectionString.StartsWith('<') and aSelectionString.EndsWith('>');
+end;
+
+function TSelectionInfo.getIsItem: boolean;
+begin
+  result := fIsItem;
+end;
+
+function TSelectionInfo.getSelectionString: String;
+begin
+  result := fSelectionString;
+end;
+
+{ TUnitInstrumentationInfoList }
+
+procedure TUnitInstrumentationInfoList.SortByName;
+begin
+  Sort(TComparer<TUnitInstrumentationInfo>.Construct(
+      function (const Left, Right: TUnitInstrumentationInfo): integer
+      begin
+          Result := CompareText(Left.UnitName,Right.UnitName);
+      end));
+end;
+
+{ TProcedureInstrumentationInfoList }
+
+procedure TProcedureInstrumentationInfoList.SortByName;
+begin
+Sort(TComparer<TProcedureInstrumentationInfo>.Construct(
+      function (const Left, Right: TProcedureInstrumentationInfo): integer
+      begin
+          Result := CompareText(Left.ProcedureName,Right.ProcedureName);
+      end));
+end;
+
+{ TProcedureInstrumentationInfo }
+
+function TProcedureInstrumentationInfo.IsProcedureValidForSelectedClass(const aSelectionInfo : ISelectionInfo): boolean;
+var
+  lIsItem : boolean;
+begin
+  result := false;
+  if (aSelectionInfo.isItem and self.ClassName.IsEmpty) then
+    exit(true);
+  if not aSelectionInfo.isItem and (SameText(self.ClassName, aSelectionInfo.SelectionString)) then
+    exit(true);
 end;
 
 end.

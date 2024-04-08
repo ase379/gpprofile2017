@@ -7,7 +7,7 @@ uses
   Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.Dialogs, VirtualTrees, Vcl.StdCtrls, Vcl.ExtCtrls,
   virtualTree.tools.checkable,System.Generics.Collections,
   gpParser, Vcl.Menus, Vcl.WinXCtrls, VirtualTrees.BaseAncestorVCL,
-  VirtualTrees.BaseTree, VirtualTrees.AncestorVCL;
+  VirtualTrees.BaseTree, VirtualTrees.AncestorVCL, gppMain.FrameInstrumentation.SelectionInfoIF;
 
 
 type
@@ -57,7 +57,7 @@ type
     procedure InvokeSearch(const aSearchTerm: string; const aTreeTool: TCheckableListTools);
     function  GetSelectedUnitName(): string;
     function  GetSelectedIsDirectory(): boolean;
-    function  GetSelectedClassName(): string;
+    function  GetSelectedClassInfo: ISelectionInfo;
     function  GetSelectedUnitIndex(): integer;
     procedure SetSelectedUnitIndex(const anIndex : integer);
 
@@ -293,9 +293,10 @@ begin
   end;
 end; { TfrmMain.FillUnitTree }
 
-function TfrmMainInstrumentation.GetSelectedClassName: string;
+function TfrmMainInstrumentation.GetSelectedClassInfo: ISelectionInfo;
 begin
-  result := fVstSelectClassTools.GetName(fVstSelectClassTools.GetSelectedNode);
+
+  result := TSelectionInfo.Create(fVstSelectClassTools.GetName(fVstSelectClassTools.GetSelectedNode));
 end;
 
 function TfrmMainInstrumentation.GetSelectedIsDirectory: boolean;
@@ -414,8 +415,9 @@ var
   LUnit: TUnit;
   LFqProcName : string;
   LEnumor : TVTVirtualNodeEnumerator;
-
+  lSelectedClassInfo : ISelectionInfo;
 begin
+  lSelectedClassInfo := GetSelectedClassInfo();
   if fVstSelectProcTools.GetCheckedState(index) = TCheckedState.greyed then
     fVstSelectProcTools.SetCheckedState(index, TCheckedState.checked);
   if index = 0 then
@@ -429,10 +431,10 @@ begin
         // skip first, else the evalutation contains the evalutation result as input
         if i = 0 then
           continue;
-        if GetSelectedClassName[1] = '<' then
+        if lSelectedClassInfo.IsItem then
           LFqProcName := fVstSelectProcTools.GetName(i)
         else
-          LFqProcName := GetSelectedClassName + '.' + fVstSelectProcTools.GetName(i);
+          LFqProcName := lSelectedClassInfo.SelectionString + '.' + fVstSelectProcTools.GetName(i);
         fVstSelectProcTools.SetCheckedState(i, fVstSelectProcTools.GetCheckedState(0));
         openProject.InstrumentProc(GetSelectedUnitName, LFqProcName, fVstSelectProcTools.IsChecked(i));
       end;
@@ -442,7 +444,7 @@ begin
   end
   else
   begin
-    if GetSelectedClassName[1] = '<' then
+    if lSelectedClassInfo.IsItem then
       LFqProcName := fVstSelectProcTools.GetName(index)
     else
       LFqProcName := GetSelectedClassName + '.' + fVstSelectProcTools.GetName(index);
@@ -595,7 +597,6 @@ procedure TfrmMainInstrumentation.clbClassesClickCheck(Sender: TObject; const aN
 var
   lProcInstrumentationInfoList: TProcedureInstrumentationInfoList;
   lProcInstrumentationInfo: TProcedureInstrumentationInfo;
-  lUppercasedSelectedClassName: string;
 begin
   if fVstSelectClassTools.getCheckedState(aNode) = TCheckedState.greyed then
     fVstSelectClassTools.setCheckedState(aNode, TCheckedState.Checked);
@@ -610,15 +611,9 @@ begin
     lProcInstrumentationInfoList := TProcedureInstrumentationInfoList.Create;
     try
       openProject.GetProcList(GetSelectedUnitName, lProcInstrumentationInfoList);
-      lUppercasedSelectedClassName := UpperCase(GetSelectedClassName());
       for lProcInstrumentationInfo in lProcInstrumentationInfoList do
-      begin
-        if ((lUppercasedSelectedClassName[1] = '<') and lProcInstrumentationInfo.ClassName.IsEmpty) or
-          ((lUppercasedSelectedClassName[1] <> '<') and (UpperCase(lProcInstrumentationInfo.ClassName) = lUppercasedSelectedClassName)) then
-        begin
+        if (lProcInstrumentationInfo.IsProcedureValidForSelectedClass(GetSelectedClassName())) then
           openProject.InstrumentProc(GetSelectedUnitName, lProcInstrumentationInfo.ProcedureName,fVstSelectClassTools.getCheckedState(aNode) = TCheckedState.Checked);
-        end;
-      end;
     finally
       lProcInstrumentationInfoList.free;
     end;

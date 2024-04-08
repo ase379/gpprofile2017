@@ -10,7 +10,7 @@ uses
   gppIDT,
   Dialogs,
   gppTree,
-  gpParser.BaseProject, gpParser.types, gpParser.Units, gpParser.Selections;
+  gpParser.BaseProject, gpParser.types, gpParser.Units, gpParser.Selections, gppMain.FrameInstrumentation.SelectionInfo;
 
 type
   TNotifyProc = procedure(const aUnitName: String) of object;
