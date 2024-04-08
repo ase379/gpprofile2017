@@ -14,6 +14,8 @@ type
   protected
     function getIsItem : boolean;
     function getSelectionString : String;
+    function GetProcedureNameForSelection(const aProcedureName: string): string;
+
   public
     constructor Create(const aSelectionString: String);
   end;
@@ -260,6 +262,14 @@ begin
   result := fIsItem;
 end;
 
+function TSelectionInfo.GetProcedureNameForSelection(const aProcedureName: string): string;
+begin
+  if self.fIsItem then
+    result := aProcedureName
+  else
+   result := fSelectionString + '.' + aProcedureName;
+end;
+
 function TSelectionInfo.getSelectionString: String;
 begin
   result := fSelectionString;
@@ -290,8 +300,6 @@ end;
 { TProcedureInstrumentationInfo }
 
 function TProcedureInstrumentationInfo.IsProcedureValidForSelectedClass(const aSelectionInfo : ISelectionInfo): boolean;
-var
-  lIsItem : boolean;
 begin
   result := false;
   if (aSelectionInfo.isItem and self.ClassName.IsEmpty) then

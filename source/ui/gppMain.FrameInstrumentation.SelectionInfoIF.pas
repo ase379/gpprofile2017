@@ -11,7 +11,7 @@ type
     property SelectionString: String read getSelectionString;
     property IsItem : boolean read getIsItem;
 
-    function getSelectedProcNameForClassSelection(const aProcedureName: string): string;
+    function GetProcedureNameForSelection(const aProcedureName: string): string;
   end;
 
 implementation

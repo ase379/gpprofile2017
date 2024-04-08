@@ -431,10 +431,7 @@ begin
         // skip first, else the evalutation contains the evalutation result as input
         if i = 0 then
           continue;
-        if lSelectedClassInfo.IsItem then
-          LFqProcName := fVstSelectProcTools.GetName(i)
-        else
-          LFqProcName := lSelectedClassInfo.SelectionString + '.' + fVstSelectProcTools.GetName(i);
+        LFqProcName := lSelectedClassInfo.GetProcedureNameForSelection(fVstSelectProcTools.GetName(i));
         fVstSelectProcTools.SetCheckedState(i, fVstSelectProcTools.GetCheckedState(0));
         openProject.InstrumentProc(GetSelectedUnitName, LFqProcName, fVstSelectProcTools.IsChecked(i));
       end;
@@ -444,10 +441,7 @@ begin
   end
   else
   begin
-    if lSelectedClassInfo.IsItem then
-      LFqProcName := fVstSelectProcTools.GetName(index)
-    else
-      LFqProcName := GetSelectedClassName + '.' + fVstSelectProcTools.GetName(index);
+    LFqProcName := lSelectedClassInfo.GetProcedureNameForSelection(fVstSelectProcTools.GetName(index));
     openProject.InstrumentProc(GetSelectedUnitName, LFqProcName, fVstSelectProcTools.IsChecked(index));
     LUnit := openProject.LocateUnit(GetSelectedUnitName);
     if LUnit.unAllInst then
@@ -611,8 +605,9 @@ begin
     lProcInstrumentationInfoList := TProcedureInstrumentationInfoList.Create;
     try
       openProject.GetProcList(GetSelectedUnitName, lProcInstrumentationInfoList);
+      var lClassSelectionInfo := GetSelectedClassInfo;
       for lProcInstrumentationInfo in lProcInstrumentationInfoList do
-        if (lProcInstrumentationInfo.IsProcedureValidForSelectedClass(GetSelectedClassName())) then
+        if (lProcInstrumentationInfo.IsProcedureValidForSelectedClass(lClassSelectionInfo)) then
           openProject.InstrumentProc(GetSelectedUnitName, lProcInstrumentationInfo.ProcedureName,fVstSelectClassTools.getCheckedState(aNode) = TCheckedState.Checked);
     finally
       lProcInstrumentationInfoList.free;
@@ -727,6 +722,7 @@ var
   LIndex : integer;
   LInfo : TProcInfo;
   LProcInfoList : TProcInfoList;
+  lClassSelectionInfo : ISelectionInfo;
 begin
   LProcInstrumentationInfoList := TProcedureInstrumentationInfoList.Create;
   try
@@ -739,7 +735,8 @@ begin
       try
         if not GetSelectedIsDirectory() then
         begin
-          LProcInfoList := GetProcsForClassFromUnit(LProcInstrumentationInfoList,fVstSelectClassTools.GetSelectedIndex,GetSelectedClassName());
+          lClassSelectionInfo := GetSelectedClassInfo();
+          LProcInfoList := GetProcsForClassFromUnit(LProcInstrumentationInfoList, lClassSelectionInfo);
           for LInfo in LProcInfoList do
           begin
             LIndex := fVstSelectProcTools.AddEntry(nil,LInfo.piName).Index;
@@ -749,10 +746,10 @@ begin
           begin
             if fVstSelectClassTools.GetSelectedIndex = 0 then
               fVstSelectProcTools.InsertEntry(0, '<all procedures>', [ste_AllItem])
-            else if GetSelectedClassName.StartsWith('<') then
+            else if lClassSelectionInfo.IsItem then
               fVstSelectProcTools.InsertEntry(0, '<all classless procedures>', [ste_AllItem])
             else
-              fVstSelectProcTools.InsertEntry(0, '<all ' + GetSelectedClassName + ' methods>', [ste_AllItem]);
+              fVstSelectProcTools.InsertEntry(0, '<all ' + lClassSelectionInfo.SelectionString + ' methods>', [ste_AllItem]);
             ConfigureAllItemCheckBox(0,LProcInfoList.AllInstrumented, LProcInfoList.NoneInstrumented);
           end;
           LProcInfoList.free;
@@ -770,19 +767,18 @@ end;
 
 procedure TfrmMainInstrumentation.ReloadSource;
 var
-  unt: string;
-  cls: string;
-  prc: string;
+  lSelectedUnitName: string;
+  lClassSelectionInfo : ISelectionInfo;
+  lSelectedProcedureName : String;
+  lResolvedProcName: string;
 begin
   if vstSelectProcs.SelectedCount <= 0 then
     Exit;
-  cls := GetSelectedClassName;
-  if cls[1] = '<' then
-    prc := fVstSelectProcTools.GetName(fVstSelectProcTools.GetSelectedIndex)
-  else
-    prc := cls + '.' + fVstSelectProcTools.GetName(fVstSelectProcTools.GetSelectedIndex);
-  unt := GetSelectedUnitName;
-  OnReloadSource(openProject.GetUnitPath(unt), openProject.GetFirstLine(unt, prc));
+  lClassSelectionInfo := GetSelectedClassInfo;
+  lSelectedProcedureName := fVstSelectProcTools.GetName(fVstSelectProcTools.GetSelectedIndex);
+  lResolvedProcName := lClassSelectionInfo.GetProcedureNameForSelection(lSelectedProcedureName);
+  lSelectedUnitName := GetSelectedUnitName;
+  OnReloadSource(openProject.GetUnitPath(lSelectedUnitName), openProject.GetFirstLine(lSelectedUnitName, lResolvedProcName));
 end;
 
 procedure TfrmMainInstrumentation.RemoveInstrumentation(const aOnDoInstrument : TOnDoInstrument);
