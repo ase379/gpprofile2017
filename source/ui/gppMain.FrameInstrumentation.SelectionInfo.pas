@@ -85,6 +85,8 @@ type
 
     function GetIndexByName(const aName : string): integer;
 
+    procedure UpdateInstrumentedState();
+
     property AllInstrumented : boolean read fAllInstrumented write fAllInstrumented;
     property NoneInstrumented : boolean read fNoneInstrumented write fNoneInstrumented;
   end;
@@ -155,34 +157,18 @@ begin
   for lProcInstrumentationInfo in aProcInfoList do
   begin
     LProcedureName := lProcInstrumentationInfo.ProcedureName;
-    if LProcedureName <> '' then
-    begin
-      if (lProcInstrumentationInfo.IsProcedureValidForSelectedClass(aSelectionInfo)) then
-      begin
-        if (not aSelectionInfo.IsItem) and not lProcInstrumentationInfo.ClassMethodName.IsEmpty then
-          LProcInfo := TProcInfo.Create(lProcInstrumentationInfo.ClassMethodName)
-        else
-          LProcInfo := TProcInfo.Create(LProcedureName);
-        LProcInfo.piInstrument := lProcInstrumentationInfo.IsInstrumentedOrCheckedForInstrumentation;
-        result.Add(LProcInfo);
-      end;
-    end;
+    if LProcedureName = '' then
+      continue;
+    if (not lProcInstrumentationInfo.IsProcedureValidForSelectedClass(aSelectionInfo)) then
+      continue;
+    if (not aSelectionInfo.IsItem) and not lProcInstrumentationInfo.ClassMethodName.IsEmpty then
+      LProcInfo := TProcInfo.Create(lProcInstrumentationInfo.ClassMethodName)
+    else
+      LProcInfo := TProcInfo.Create(LProcedureName);
+    LProcInfo.piInstrument := lProcInstrumentationInfo.IsInstrumentedOrCheckedForInstrumentation;
+    result.Add(LProcInfo);
   end;
-  result.fAllInstrumented := true;
-  result.fNoneInstrumented := true;
-  for LProcInfo in result do
-  begin
-    if result.fAllInstrumented then
-    begin
-      if not LProcInfo.piInstrument then
-        result.fAllInstrumented := false;
-    end;
-    if result.fNoneInstrumented then
-    begin
-      if LProcInfo.piInstrument then
-        result.fNoneInstrumented := false;
-    end;
-  end;
+  result.UpdateInstrumentedState;
 end;
 
 
@@ -249,6 +235,28 @@ begin
       exit(i);
 end;
 
+
+procedure TProcInfoList.UpdateInstrumentedState;
+var
+  LProcInfo : TProcInfo;
+begin
+  fAllInstrumented := true;
+  fNoneInstrumented := true;
+  for LProcInfo in self do
+  begin
+    if fAllInstrumented then
+    begin
+      if not LProcInfo.piInstrument then
+        fAllInstrumented := false;
+    end;
+    if fNoneInstrumented then
+    begin
+      if LProcInfo.piInstrument then
+        fNoneInstrumented := false;
+    end;
+  end;
+end;
+
 { tSelectionInfo }
 
 constructor TSelectionInfo.Create(const aSelectionString: String);
@@ -308,11 +316,10 @@ begin
     begin
       result := true;
     end
-    else if sameText(aClassSelectionInfo.SelectionString, ALL_CLASSLESS_PROCEUDURES) then
+    else if sameText(aClassSelectionInfo.SelectionString, ALL_CLASSLESS_PROCEDURES) then
     begin
       result := self.ClassName.IsEmpty;
     end;
-
   end
   else
   begin

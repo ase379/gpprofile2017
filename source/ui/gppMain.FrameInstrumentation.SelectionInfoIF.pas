@@ -4,7 +4,7 @@ interface
 
 const
   ALL_UNITS = '<all units>';
-  ALL_CLASSLESS_PROCEUDURES = '<all classless procedures>';
+  ALL_CLASSLESS_PROCEDURES = '<all classless procedures>';
   ALL_CLASSES = '<all classes>';
   ALL_PROCEDURES = '<all procedures>';
 

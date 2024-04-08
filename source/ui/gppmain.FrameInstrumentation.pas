@@ -549,8 +549,8 @@ begin
         begin
           if not recheck then
             // need to insert it, we rebuid the items
-            LFoundNode := fVstSelectClassTools.InsertEntry(0, ALL_CLASSLESS_PROCEUDURES, [ste_AllItem]);
-          SearchAndConfigureItem(LFoundNode,  LClassInfoList.ClasslessEntry, ALL_CLASSLESS_PROCEUDURES);
+            LFoundNode := fVstSelectClassTools.InsertEntry(0, ALL_CLASSLESS_PROCEDURES, [ste_AllItem]);
+          SearchAndConfigureItem(LFoundNode,  LClassInfoList.ClasslessEntry, ALL_CLASSLESS_PROCEDURES);
         end;
         if not(LClassInfoList.AllClassesEntry.anAll and LClassInfoList.AllClassesEntry.anNone) then
         begin
@@ -746,8 +746,8 @@ begin
           begin
             if fVstSelectClassTools.GetSelectedIndex = 0 then
               fVstSelectProcTools.InsertEntry(0, ALL_PROCEDURES, [ste_AllItem])
-            else if lClassSelectionInfo.IsItem then
-              fVstSelectProcTools.InsertEntry(0, ALL_CLASSLESS_PROCEUDURES, [ste_AllItem])
+            else if sameText(lClassSelectionInfo.SelectionString, ALL_CLASSLESS_PROCEDURES) then
+              fVstSelectProcTools.InsertEntry(0, ALL_CLASSLESS_PROCEDURES, [ste_AllItem])
             else
               fVstSelectProcTools.InsertEntry(0, '<all ' + lClassSelectionInfo.SelectionString + ' methods>', [ste_AllItem]);
             ConfigureAllItemCheckBox(0,LProcInfoList.AllInstrumented, LProcInfoList.NoneInstrumented);
