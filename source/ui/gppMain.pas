@@ -1066,7 +1066,7 @@ end;
 procedure TfrmMain.clbUnitsKeyPress(Sender: TObject; var Key: Char);
 begin
   if Key = #32 then
-    FInstrumentationFrame.clbUnitsClick();
+    FInstrumentationFrame.clbUnitsClick(FInstrumentationFrame.GetSelectedUnitNode());
   inherited;
 end;
 

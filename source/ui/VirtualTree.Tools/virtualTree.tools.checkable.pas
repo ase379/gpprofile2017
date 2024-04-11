@@ -138,7 +138,6 @@ begin
     result := GetCheckedState(LNode);
 end;
 
-
 function TCheckableListTools.GetCheckedState(const aNode: PVirtualNode): TCheckedState;
 begin
   result := TCheckedState.unchecked;
