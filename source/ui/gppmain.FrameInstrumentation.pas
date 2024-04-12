@@ -446,7 +446,7 @@ begin
     else if LUnit.unNoneInst then
       fVstSelectProcTools.SetCheckedState(0, TCheckedState.unchecked)
     else
-      fVstSelectProcTools.Getnode(0).CheckState := TCheckState.csCheckedDisabled;
+      fVstSelectProcTools.Getnode(0).CheckState := TCheckState.csMixedNormal;
   end;
   if recreateCl then
     RecreateClasses(true, fVstSelectUnitTools.GetSelectedNode);
