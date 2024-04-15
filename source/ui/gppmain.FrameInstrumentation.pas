@@ -70,6 +70,8 @@ type
 
 
     procedure UpdateCheckStateOfUnits();
+    procedure UpdateCheckStateOfAllUnitsItem();
+    procedure UpdateCheckStateOfDirectoryWithSpecificNode(const aDirNode: PVirtualNode);
     procedure UpdateCheckStateOfUnitsWithSpecificNode(const aUnitNode: PVirtualNode);
     procedure UpdateCheckStateOfClassesForUnit(const aUnitNode: PVirtualNode);
     /// <summary>
@@ -171,40 +173,18 @@ var
 begin
   vstSelectUnits.BeginUpdate;
   try
-    var lProjectDirOnly := not chkShowAll.Checked;
-    var lAllInstrumented := openProject.AllInstrumented(lProjectDirOnly);
-    var lNoneInstrumented := openProject.NoneInstrumented(lProjectDirOnly);
-    if lAllInstrumented then
-      fVstSelectUnitTools.SetCheckedState(0, TCheckedState.checked)
-    else if lNoneInstrumented then
-      fVstSelectUnitTools.SetCheckedState(0, TCheckedState.unchecked)
-    else
-      fVstSelectUnitTools.SetCheckedState(0, TCheckedState.greyed);
-
-
+    UpdateCheckStateOfAllUnitsItem();
     LEnumor := vstSelectUnits.Nodes().GetEnumerator();
     while (LEnumor.MoveNext) do
     begin
-      if DoesNodePointToAllItem(lEnumor.Current) then
-        continue;
-      if DoesNodePointToDirectory(lEnumor.Current) then
-        continue;
-
-      var lUnitName := fVstSelectUnitTools.GetName(LEnumor.Current);
-      var lUnit := openProject.GetUnit(lUnitName, lProjectDirOnly);
-      if lUnit.unAllInst then
-        fVstSelectUnitTools.SetCheckedState(LEnumor.Current, TCheckedState.checked)
-      else if lUnit.unNoneInst then
-        fVstSelectUnitTools.SetCheckedState(LEnumor.Current, TCheckedState.unchecked)
-      else
-        fVstSelectUnitTools.SetCheckedState(LEnumor.Current, TCheckedState.greyed);
+      UpdateCheckStateOfUnitsWithSpecificNode(LEnumor.Current)
     end;
   finally
     vstSelectUnits.EndUpdate;
   end;
 end;
 
-procedure TfrmMainInstrumentation.UpdateCheckStateOfUnitsWithSpecificNode(const aUnitNode: PVirtualNode);
+procedure TfrmMainInstrumentation.UpdateCheckStateOfAllUnitsItem();
 begin
   vstSelectUnits.BeginUpdate;
   try
@@ -217,19 +197,58 @@ begin
       fVstSelectUnitTools.SetCheckedState(0, TCheckedState.unchecked)
     else
       fVstSelectUnitTools.SetCheckedState(0, TCheckedState.greyed);
-    if assigned(aUnitNode) and (aUnitNode.Index <> 0) then
+  finally
+    vstSelectUnits.EndUpdate;
+  end;
+end;
+
+procedure TfrmMainInstrumentation.UpdateCheckStateOfUnitsWithSpecificNode(const aUnitNode: PVirtualNode);
+begin
+  vstSelectUnits.BeginUpdate;
+  try
+    UpdateCheckStateOfAllUnitsItem();
+    var lProjectDirOnly := not chkShowAll.Checked;
+    if assigned(aUnitNode) then
     begin
-      if not DoesNodePointToDirectory(aUnitNode) then
-      begin
-        var lUnitName := fVstSelectUnitTools.GetName(aUnitNode);
-        var lUnit := openProject.GetUnit(lUnitName, lProjectDirOnly);
-        if lUnit.unAllInst then
-          fVstSelectUnitTools.SetCheckedState(aUnitNode, TCheckedState.checked)
-        else if lUnit.unNoneInst then
-          fVstSelectUnitTools.SetCheckedState(aUnitNode, TCheckedState.unchecked)
-        else
-          fVstSelectUnitTools.SetCheckedState(aUnitNode, TCheckedState.greyed);
-      end;
+      if DoesNodePointToAllItem(aUnitNode) then
+        exit;
+      if DoesNodePointToDirectory(aUnitNode) then
+        exit;
+
+      var lUnitName := fVstSelectUnitTools.GetName(aUnitNode);
+      var lUnit := openProject.GetUnit(lUnitName, lProjectDirOnly);
+      if lUnit.unAllInst then
+        fVstSelectUnitTools.SetCheckedState(aUnitNode, TCheckedState.checked)
+      else if lUnit.unNoneInst then
+        fVstSelectUnitTools.SetCheckedState(aUnitNode, TCheckedState.unchecked)
+      else
+        fVstSelectUnitTools.SetCheckedState(aUnitNode, TCheckedState.greyed);
+
+    end;
+  finally
+    vstSelectUnits.EndUpdate;
+  end;
+end;
+
+
+procedure TfrmMainInstrumentation.UpdateCheckStateOfDirectoryWithSpecificNode(const aDirNode: PVirtualNode);
+begin
+  vstSelectUnits.BeginUpdate;
+  try
+    var lProjectDirOnly := not chkShowAll.Checked;
+    if assigned(aDirNode) then
+    begin
+      if DoesNodePointToAllItem(aDirNode) then
+        exit;
+      var lUnitName := fVstSelectUnitTools.GetName(aUnitNode);
+      var lUnit := openProject.GetUnit(lUnitName, lProjectDirOnly);
+      if lUnit.unAllInst then
+        fVstSelectUnitTools.SetCheckedState(aUnitNode, TCheckedState.checked)
+      else if lUnit.unNoneInst then
+        fVstSelectUnitTools.SetCheckedState(aUnitNode, TCheckedState.unchecked)
+      else
+        fVstSelectUnitTools.SetCheckedState(aUnitNode, TCheckedState.greyed);
+
     end;
   finally
     vstSelectUnits.EndUpdate;
