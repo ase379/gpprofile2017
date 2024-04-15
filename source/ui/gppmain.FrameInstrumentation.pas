@@ -71,7 +71,6 @@ type
 
     procedure UpdateCheckStateOfUnits();
     procedure UpdateCheckStateOfAllUnitsItem();
-    procedure UpdateCheckStateOfDirectoryWithSpecificNode(const aDirNode: PVirtualNode);
     procedure UpdateCheckStateOfUnitsWithSpecificNode(const aUnitNode: PVirtualNode);
     procedure UpdateCheckStateOfClassesForUnit(const aUnitNode: PVirtualNode);
     /// <summary>
@@ -230,30 +229,6 @@ begin
   end;
 end;
 
-
-procedure TfrmMainInstrumentation.UpdateCheckStateOfDirectoryWithSpecificNode(const aDirNode: PVirtualNode);
-begin
-  vstSelectUnits.BeginUpdate;
-  try
-    var lProjectDirOnly := not chkShowAll.Checked;
-    if assigned(aDirNode) then
-    begin
-      if DoesNodePointToAllItem(aDirNode) then
-        exit;
-      var lUnitName := fVstSelectUnitTools.GetName(aUnitNode);
-      var lUnit := openProject.GetUnit(lUnitName, lProjectDirOnly);
-      if lUnit.unAllInst then
-        fVstSelectUnitTools.SetCheckedState(aUnitNode, TCheckedState.checked)
-      else if lUnit.unNoneInst then
-        fVstSelectUnitTools.SetCheckedState(aUnitNode, TCheckedState.unchecked)
-      else
-        fVstSelectUnitTools.SetCheckedState(aUnitNode, TCheckedState.greyed);
-
-    end;
-  finally
-    vstSelectUnits.EndUpdate;
-  end;
-end;
 
 procedure TfrmMainInstrumentation.EnablePC;
 begin
