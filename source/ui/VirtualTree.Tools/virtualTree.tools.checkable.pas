@@ -207,7 +207,6 @@ begin
     TCheckedState.checked : aNode.CheckState := TCheckState.csCheckedNormal;
     TCheckedState.greyed : aNode.CheckState := TCheckState.csMixedNormal;
   end;
-  FList.InvalidateNode(aNode);
 end;
 
 function TCheckableListTools.IsChecked(const anIndex: Cardinal): boolean;
@@ -216,7 +215,6 @@ begin
 end;
 
 /// Events
-
 
 procedure TCheckableListTools.OnFreeNode(Sender: TBaseVirtualTree;
   Node: PVirtualNode);

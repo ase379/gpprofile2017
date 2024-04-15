@@ -1197,18 +1197,15 @@ var
 begin
   unAllInst := true;
   unNoneInst := true;
-  with unProcs do
+  LEnumor := unProcs.GetEnumerator();
+  while LEnumor.MoveNext do
   begin
-    LEnumor := GetEnumerator();
-    while LEnumor.MoveNext do
-    begin
-      if not LEnumor.Current.Data.prInstrumented then
-        unAllInst := False
-      else
-        unNoneInst := False;
-    end;
-    LEnumor.Free;
+    if not LEnumor.Current.Data.prInstrumented then
+      unAllInst := False
+    else
+      unNoneInst := False;
   end;
+  LEnumor.Free;
 end; { TUnit.CheckInstrumentedProcs }
 
 function TUnit.LocateUnit(const unitName: string): TUnit;

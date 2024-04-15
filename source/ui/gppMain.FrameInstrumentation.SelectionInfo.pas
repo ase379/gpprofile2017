@@ -305,7 +305,12 @@ begin
   if self.fIsItem then
     result := aProcedureName
   else
-   result := fSelectionString + '.' + aProcedureName;
+  begin
+    if fSelectionString.IsEmpty() then
+      result := aProcedureName
+    else
+      result := fSelectionString + '.' + aProcedureName;
+  end;
 end;
 
 function TSelectionInfo.getSelectionString: String;

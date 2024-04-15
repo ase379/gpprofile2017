@@ -30,6 +30,7 @@ type
       aCommentType: TCommentType; aParseAsm: boolean;const anErrorList : TStrings);
     procedure Rescan(aExclUnits: String;const aConditionals: string;
       aCommentType: TCommentType; aParseAsm: boolean);
+    function GetUnit(const aUnitName: string;const aProjectDirOnly: boolean): TUnit;
     procedure GetUnitList(const aInfoList: TUnitInstrumentationInfoList;const aProjectDirOnly: boolean);
     procedure GetProcList(const aUnitName: string; const aProcInfoList : TProcedureInstrumentationInfoList);
     function GetUnitPath(unitName: string): string;
@@ -141,7 +142,31 @@ begin
   finally
     SetCurrentDir(vOldCurDir);
   end;
-end; { TProject.Parse }
+end;
+
+function TProject.GetUnit(const aUnitName: string;const aProjectDirOnly: boolean): TUnit;
+var
+  un: TUnit;
+  LUnitEnumor: TRootNode<TUnit>.TEnumerator;
+begin
+  result := nil;
+  with prUnits do
+  begin
+    var lUppercasedName := Uppercase(aUnitName);
+    LUnitEnumor := GetEnumerator();
+    while LUnitEnumor.MoveNext do
+    begin
+      un := LUnitEnumor.Current.Data;
+      if un.IsValidForInstrumentation() and ((not aProjectDirOnly) or un.unInProjectDir) and
+        (Uppercase(un.Name) = lUppercasedName) then
+      begin
+        result := un;
+        break;
+      end;
+    end;
+    LUnitEnumor.Free;
+  end;
+end;
 
 procedure TProject.GetUnitList(const aInfoList: TUnitInstrumentationInfoList;
   const aProjectDirOnly: boolean);
