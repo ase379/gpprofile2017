@@ -742,7 +742,7 @@ procedure TfrmMainInstrumentation.clbUnitsClickCheck(const aNode: PVirtualNode);
 begin
   var lCheckedState := fVstSelectUnitTools.GetCheckedState(aNode);
   InstrumentUnit(aNode, lCheckedState);
-  if aNode.Index = 0 then
+  if DoesNodePointToAllItem(aNode) then
   begin
     UpdateCheckStateOfUnits();
     var lSelectedUnitNode := fVstSelectUnitTools.GetSelectedNode;
