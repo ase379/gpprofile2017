@@ -27,7 +27,7 @@ type
   {$SCOPEDENUMS OFF}
   TCheckableListTools = class(TVirtualTreeBaseTools)
   private
-    fListType : TCheckableItemDataEnum;
+    fTreeType : TCheckableItemDataEnum;
     fSortcols: array of TColumnIndex;
 
     procedure OnFreeNode(Sender: TBaseVirtualTree;Node: PVirtualNode);
@@ -36,7 +36,7 @@ type
     procedure OnCompareNodes(Sender: TBaseVirtualTree; Node1, Node2: PVirtualNode;
       Column: TColumnIndex; var Result: Integer);
   public
-    constructor Create(const aList: TVirtualStringTree; const aListType : TCheckableItemDataEnum);
+    constructor Create(const aTree: TVirtualStringTree; const aTreeType : TCheckableItemDataEnum);
     destructor Destroy;override;
     function AddEntry(const aParent : PVirtualNode;const aName : String): PVirtualNode;overload;
     function AddEntry(const aParent : PVirtualNode;const aName : String; const aSpecialTagSet : TSpecialTagEnumSet):PVirtualNode;overload;
@@ -74,10 +74,10 @@ function TCheckableListTools.AddEntry(const aParent: PVirtualNode; const aName: 
 var
   LData : PCheckableItemData;
 begin
-  result := flist.AddChild(aParent);
+  result := fTree.AddChild(aParent);
   result.CheckType := ctTriStateCheckBox;
   LData := PCheckableItemData(result.GetData);
-  case fListType of
+  case fTreeType of
     cid_unit,
     cid_Class,
     cid_Procs :
@@ -95,10 +95,10 @@ var
   LPredecessor : PVirtualNode;
 begin
   LPredecessor := GetNode(anIndex);
-  result := flist.InsertNode(LPredecessor, TVTNodeAttachMode.amInsertBefore);
+  result := fTree.InsertNode(LPredecessor, TVTNodeAttachMode.amInsertBefore);
   result.CheckType := ctTriStateCheckBox;
   LData := PCheckableItemData(result.GetData);
-  case fListType of
+  case fTreeType of
     cid_unit,
     cid_Class,
     cid_Procs :
@@ -110,16 +110,16 @@ begin
 end;
 
 
-constructor TCheckableListTools.Create(const aList: TVirtualStringTree; const aListType : TCheckableItemDataEnum);
+constructor TCheckableListTools.Create(const aTree: TVirtualStringTree; const aTreeType : TCheckableItemDataEnum);
 begin
-  inherited Create(aList);
-  fListType := aListType;
-  fList.NodeDataSize := SizeOf(TCheckableItemData);
-  fList.OnFreeNode := self.OnFreeNode;
-  fList.OnCompareNodes := self.OnCompareNodes;
-  fList.ongettext := OnGetText;
-  fList.TreeOptions.MiscOptions := fList.TreeOptions.MiscOptions + [TVTMiscOption.toCheckSupport];
-  fList.TreeOptions.SelectionOptions := fList.TreeOptions.SelectionOptions + [TVTSelectionOption.toSyncCheckboxesWithSelection];
+  inherited Create(aTree);
+  fTreeType := aTreeType;
+  fTree.NodeDataSize := SizeOf(TCheckableItemData);
+  fTree.OnFreeNode := self.OnFreeNode;
+  fTree.OnCompareNodes := self.OnCompareNodes;
+  fTree.ongettext := OnGetText;
+  fTree.TreeOptions.MiscOptions := fTree.TreeOptions.MiscOptions + [TVTMiscOption.toCheckSupport];
+  fTree.TreeOptions.SelectionOptions := fTree.TreeOptions.SelectionOptions + [TVTSelectionOption.toSyncCheckboxesWithSelection];
 end;
 
 destructor TCheckableListTools.Destroy;
@@ -161,7 +161,7 @@ function TCheckableListTools.GetSpecialTagSet(const aNode: PVirtualNode): TSpeci
 var
   LData : PCheckableItemData;
 begin
-  case fListType of
+  case fTreeType of
     cid_unit,
     cid_Class,
     cid_Procs :
@@ -180,7 +180,7 @@ var
 begin
   if not Assigned(aNode) then
     Exit('');
-  case fListType of
+  case fTreeType of
     cid_unit,
     cid_Class,
     cid_Procs :
@@ -233,7 +233,7 @@ var
 begin
   LData := node.GetData;
   CellText := '';
-  case fListType of
+  case fTreeType of
     cid_Unit,
     cid_Class,
     cid_Procs:
@@ -252,13 +252,13 @@ var
 begin
   if Length(fSortCols) > 0 then
   begin
-    LData1 := FList.GetNodeData(Node1);
-    LData2 := fList.GetNodeData(Node2);
+    LData1 := fTree.GetNodeData(Node1);
+    LData2 := fTree.GetNodeData(Node2);
 
     if Assigned(LData1) and Assigned(LData2) then
       for i := High(fSortCols) downto 0 do
       begin
-        Result := CompareStr(FList.Text[Node1,i],FList.Text[Node2,i]);
+        Result := CompareStr(fTree.Text[Node1,i],fTree.Text[Node2,i]);
         if Result <> 0 then
           Break;
       end;
