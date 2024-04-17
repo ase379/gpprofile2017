@@ -51,6 +51,8 @@ type
     function GetCheckedState(const aNode: PVirtualNode): TCheckedState; overload;
     procedure SetCheckedState(const anIndex: Cardinal;const aCheckedState : TCheckedState); overload;
     procedure SetCheckedState(const aNode: PVirtualNode;const aCheckedState : TCheckedState); overload;
+    procedure SetCheckedStateForAllAndNone(const aNode: PVirtualNode; const aAllInstrumented, aNoneInstrumented: boolean); overload;
+    procedure SetCheckedStateForAllAndNone(const aNodeIndex: integer; const aAllInstrumented, aNoneInstrumented: boolean); overload;
 
     function IsChecked(const anIndex : Cardinal): boolean;
   end;
@@ -207,6 +209,26 @@ begin
     TCheckedState.checked : aNode.CheckState := TCheckState.csCheckedNormal;
     TCheckedState.greyed : aNode.CheckState := TCheckState.csMixedNormal;
   end;
+end;
+
+procedure TCheckableListTools.SetCheckedStateForAllAndNone(const aNodeIndex: integer; const aAllInstrumented, aNoneInstrumented: boolean);
+begin
+  if aAllInstrumented then
+    SetCheckedState(aNodeIndex, TCheckedState.checked)
+  else if aNoneInstrumented then
+    SetCheckedState(aNodeIndex, TCheckedState.unchecked)
+  else
+    SetCheckedState(aNodeIndex, TCheckedState.greyed);
+end;
+
+procedure TCheckableListTools.SetCheckedStateForAllAndNone(const aNode: PVirtualNode; const aAllInstrumented, aNoneInstrumented: boolean);
+begin
+  if aAllInstrumented then
+    SetCheckedState(aNode, TCheckedState.checked)
+  else if aNoneInstrumented then
+    SetCheckedState(aNode, TCheckedState.unchecked)
+  else
+    SetCheckedState(aNode, TCheckedState.greyed);
 end;
 
 function TCheckableListTools.IsChecked(const anIndex: Cardinal): boolean;

@@ -167,6 +167,47 @@ begin
 end;
 
 procedure TfrmMainInstrumentation.UpdateCheckStateOfUnits();
+
+  procedure UpdateParentForNodeWithSiblings(const aFirstChildNode : pVirtualNode);
+  var
+    lAllChecked : boolean;
+    lNoneChecked : boolean;
+    lNode : pVirtualNode;
+  begin
+
+    lAllChecked := true;
+    lNoneChecked := true;
+    lNode := aFirstChildNode;
+    if not assigned(lNode) then
+      exit;
+    if assigned(lNode) and not assigned(lNode.Parent) then
+      exit;
+
+    while(assigned(lNode)) do
+    begin
+      if fVstSelectUnitTools.GetCheckedState(lNode) = TCheckedState.checked then
+        lNoneChecked := false
+      else if fVstSelectUnitTools.GetCheckedState(lNode) = TCheckedState.unchecked then
+        lAllChecked := false;
+      lNode := lNode.NextSibling;
+    end;
+    fVstSelectUnitTools.SetCheckedStateForAllAndNone(aFirstChildNode.parent, lAllChecked, lNoneChecked);
+
+  end;
+
+  procedure UpdateCheckedStatesForDirectories(const aNode : pVirtualNode);
+  var
+    lFirstChild : pVirtualNode;
+  begin
+    lFirstChild := aNode.FirstChild;
+    if assigned(lFirstChild) then
+    begin
+      UpdateCheckedStatesForDirectories(lFirstChild);
+      UpdateParentForNodeWithSiblings(lFirstChild);
+    end;
+  end;
+
+
 var
   LEnumor : TVTVirtualNodeEnumerator;
 begin
@@ -177,6 +218,17 @@ begin
     while (LEnumor.MoveNext) do
     begin
       UpdateCheckStateOfUnitsWithSpecificNode(LEnumor.Current)
+    end;
+
+    if chkShowDirStructure.Checked then
+    begin
+      var lAllItemNode := fVstSelectUnitTools.GetNode(0);
+      var lNode := lAllItemNode.NextSibling;
+      while assigned(lNode) do
+      begin
+        UpdateCheckedStatesForDirectories(lNode);
+        lNode := lNode.NextSibling;
+      end;
     end;
   finally
     vstSelectUnits.EndUpdate;
@@ -190,12 +242,8 @@ begin
     var lProjectDirOnly := not chkShowAll.Checked;
     var lAllInstrumented := openProject.AllInstrumented(lProjectDirOnly);
     var lNoneInstrumented := openProject.NoneInstrumented(lProjectDirOnly);
-    if lAllInstrumented then
-      fVstSelectUnitTools.SetCheckedState(0, TCheckedState.checked)
-    else if lNoneInstrumented then
-      fVstSelectUnitTools.SetCheckedState(0, TCheckedState.unchecked)
-    else
-      fVstSelectUnitTools.SetCheckedState(0, TCheckedState.greyed);
+    var lAllItemNode := fVstSelectUnitTools.GetNode(0);
+    fVstSelectUnitTools.SetCheckedStateForAllAndNone(lAllItemNode, lAllInstrumented, lNoneInstrumented);
   finally
     vstSelectUnits.EndUpdate;
   end;
@@ -222,7 +270,6 @@ begin
         fVstSelectUnitTools.SetCheckedState(aUnitNode, TCheckedState.unchecked)
       else
         fVstSelectUnitTools.SetCheckedState(aUnitNode, TCheckedState.greyed);
-
     end;
   finally
     vstSelectUnits.EndUpdate;
