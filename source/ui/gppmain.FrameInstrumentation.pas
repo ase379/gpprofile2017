@@ -197,13 +197,14 @@ procedure TfrmMainInstrumentation.UpdateCheckStateOfUnits();
 
   procedure UpdateCheckedStatesForDirectories(const aNode : pVirtualNode);
   var
-    lFirstChild : pVirtualNode;
+    lNode : pVirtualNode;
   begin
-    lFirstChild := aNode.FirstChild;
-    if assigned(lFirstChild) then
+    lNode := aNode.FirstChild;
+    while assigned(lNode) do
     begin
-      UpdateCheckedStatesForDirectories(lFirstChild);
-      UpdateParentForNodeWithSiblings(lFirstChild);
+      UpdateCheckedStatesForDirectories(lNode);
+      UpdateParentForNodeWithSiblings(lNode);
+      lNode := lNode.NextSibling;
     end;
   end;
 
