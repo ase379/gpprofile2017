@@ -36,8 +36,14 @@ type
 
 
   TUnitInstrumentationInfoList = class(TObjectList<TUnitInstrumentationInfo>)
+  private
+    fAllInstrumented : boolean;
+    fNoneInstrumented : boolean;
   public
     procedure SortByName();
+
+    property AllInstrumented: boolean read fAllInstrumented write fAllInstrumented;
+    property NoneInstrumented: boolean read fNoneInstrumented write fNoneInstrumented;
   end;
 
 

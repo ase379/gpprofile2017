@@ -10,7 +10,8 @@ uses
   gppIDT,
   Dialogs,
   gppTree,
-  gpParser.BaseProject, gpParser.types, gpParser.Units, gpParser.Selections, gppMain.FrameInstrumentation.SelectionInfo;
+  gpParser.BaseProject, gpParser.types, gpParser.Units, gpParser.Selections, gpParser.Project.InstrumentationState,
+  gppMain.FrameInstrumentation.SelectionInfo;
 
 type
   TNotifyProc = procedure(const aUnitName: String) of object;
@@ -18,11 +19,11 @@ type
 
   TProject = class;
 
-
   TProject = class(TBaseProject)
   private
     prUnit: TUnit;
     prUnits: TGlbUnitList;
+    fObserver: IProjectObserver;
   public
     constructor Create(const aProjectName: string;const aSelectedDelphiVersion : string);
     destructor Destroy; override;
@@ -30,6 +31,9 @@ type
       aCommentType: TCommentType; aParseAsm: boolean;const anErrorList : TStrings);
     procedure Rescan(aExclUnits: String;const aConditionals: string;
       aCommentType: TCommentType; aParseAsm: boolean);
+
+    procedure RegisterObserver(const aObserver: IProjectObserver);
+
     function GetUnit(const aUnitName: string;const aProjectDirOnly: boolean): TUnit;
     procedure GetUnitList(const aInfoList: TUnitInstrumentationInfoList;const aProjectDirOnly: boolean);
     procedure GetProcList(const aUnitName: string; const aProcInfoList : TProcedureInstrumentationInfoList);
@@ -40,7 +44,6 @@ type
     procedure InstrumentTUnit(anUnit: TUnit; Instrument: boolean);
     function AllInstrumented(projectDirOnly: boolean): boolean;
     function NoneInstrumented(projectDirOnly: boolean): boolean;
-    function AnyInstrumented(projectDirOnly: boolean): boolean;
     procedure Instrument(aProjectDirOnly: boolean; aExclUnits: String;aNotify: TNotifyInstProc;
       aCommentType: TCommentType; aBackupFile: boolean;
       aIncFileName, aConditionals: string; aParseAsm: boolean);
@@ -176,6 +179,8 @@ var
   lEntry : TUnitInstrumentationInfo;
 begin
   aInfoList.Clear;
+  aInfoList.AllInstrumented := true;
+  aInfoList.NoneInstrumented := true;
   with prUnits do
   begin
     LUnitEnumor := GetEnumerator();
@@ -190,6 +195,20 @@ begin
         lEntry.IsFullyInstrumented := un.unAllInst;
         lEntry.IsNothingInstrumented := un.unNoneInst;
         aInfoList.Add(lEntry);
+
+        if lEntry.IsFullyInstrumented then
+        begin
+          aInfoList.NoneInstrumented := false;
+        end
+        else if lEntry.IsNothingInstrumented then
+        begin
+          aInfoList.AllInstrumented := false;
+        end
+        else
+        begin
+          aInfoList.AllInstrumented := false;
+          aInfoList.NoneInstrumented:= false;
+        end;
       end;
     end;
     LUnitEnumor.Free;
@@ -250,8 +269,12 @@ begin
     begin
       un := LUnitEnumor.Current.Data;
       if un.IsValidForInstrumentation then
+      begin
         if (not projectDirOnly) or un.unInProjectDir then
+        begin
           InstrumentTUnit(un, Instrument);
+        end;
+      end;
     end;
     LUnitEnumor.Free;
   end;
@@ -411,14 +434,14 @@ begin
   end;
 end; { TProject.GetFirstLine }
 
-function TProject.AnyInstrumented(projectDirOnly: boolean): boolean;
-begin
-  Result := prUnits.IsAnyUnitInstrumented(projectDirOnly);
-end;
-
 procedure TProject.ApplySelections(const aUnitSelections: TUnitSelectionList; const aOnlyCheckUnitName: boolean);
 begin
   aUnitSelections.ApplySelections(prUnits,aOnlyCheckUnitName);
+end;
+
+procedure TProject.RegisterObserver(const aObserver: IProjectObserver);
+begin
+  fObserver := aObserver;
 end;
 
 procedure TProject.Rescan(aExclUnits: String;
