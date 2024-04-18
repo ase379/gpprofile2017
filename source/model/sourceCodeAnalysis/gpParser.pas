@@ -10,7 +10,7 @@ uses
   gppIDT,
   Dialogs,
   gppTree,
-  gpParser.BaseProject, gpParser.types, gpParser.Units, gpParser.Selections, gpParser.Project.InstrumentationState,
+  gpParser.BaseProject, gpParser.types, gpParser.Units, gpParser.Selections,
   gppMain.FrameInstrumentation.SelectionInfo;
 
 type
@@ -23,7 +23,6 @@ type
   private
     prUnit: TUnit;
     prUnits: TGlbUnitList;
-    fObserver: IProjectObserver;
   public
     constructor Create(const aProjectName: string;const aSelectedDelphiVersion : string);
     destructor Destroy; override;
@@ -31,8 +30,6 @@ type
       aCommentType: TCommentType; aParseAsm: boolean;const anErrorList : TStrings);
     procedure Rescan(aExclUnits: String;const aConditionals: string;
       aCommentType: TCommentType; aParseAsm: boolean);
-
-    procedure RegisterObserver(const aObserver: IProjectObserver);
 
     function GetUnit(const aUnitName: string;const aProjectDirOnly: boolean): TUnit;
     procedure GetUnitList(const aInfoList: TUnitInstrumentationInfoList;const aProjectDirOnly: boolean);
@@ -437,11 +434,6 @@ end; { TProject.GetFirstLine }
 procedure TProject.ApplySelections(const aUnitSelections: TUnitSelectionList; const aOnlyCheckUnitName: boolean);
 begin
   aUnitSelections.ApplySelections(prUnits,aOnlyCheckUnitName);
-end;
-
-procedure TProject.RegisterObserver(const aObserver: IProjectObserver);
-begin
-  fObserver := aObserver;
 end;
 
 procedure TProject.Rescan(aExclUnits: String;

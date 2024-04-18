@@ -55,6 +55,10 @@ type
     procedure SetCheckedStateForAllAndNone(const aNodeIndex: integer; const aAllInstrumented, aNoneInstrumented: boolean); overload;
 
     function IsChecked(const anIndex : Cardinal): boolean;
+
+    function DoesNodePointToAllItem(const aNode: PVirtualNode): boolean;
+    function DoesNodePointToDirectory(const aNode: PVirtualNode): boolean;
+
   end;
 
 implementation
@@ -127,6 +131,17 @@ end;
 destructor TCheckableListTools.Destroy;
 begin
   inherited;
+end;
+
+
+function TCheckableListTools.DoesNodePointToAllItem(const aNode: PVirtualNode): boolean;
+begin
+  result := TSpecialTagEnum.ste_AllItem in GetSpecialTagSet(aNode);
+end;
+
+function TCheckableListTools.DoesNodePointToDirectory(const aNode: PVirtualNode): boolean;
+begin
+  result := TSpecialTagEnum.ste_Directory in GetSpecialTagSet(aNode);
 end;
 
 
