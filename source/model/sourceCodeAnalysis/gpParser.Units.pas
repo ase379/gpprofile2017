@@ -725,416 +725,207 @@ begin
   unParsed := true;
   LSelfBuffer := '';
   fUnitParserStack := TUnitParserStack.Create;
-  try
-    if not aRescan then
+  if not aRescan then
+  begin
+    // Anton Alisov: not sure, for what reason ResolveFullyQualifiedUnitPath() is called here with unFullName instead of Name
+    if not ResolveFullyQualifiedUnitPath(FullName, aDefaultDir, vUnitFullName) then
     begin
-      // Anton Alisov: not sure, for what reason ResolveFullyQualifiedUnitPath() is called here with unFullName instead of Name
-      if not ResolveFullyQualifiedUnitPath(FullName, aDefaultDir, vUnitFullName) then
-      begin
-        fProject.prMissingUnitNames.AddOrSetValue(FullName,0);
-        raise EUnitInSearchPathNotFoundError.Create('Unit not found in search path: ' + FullName);
-      end;
-      fFullName := vUnitFullName;
-      Assert(IsAbsolutePath(FullName));
-      unInProjectDir := (self.FullName = fProject.GetFullUnitName) or
-        AnsiSameText(ExtractFilePath(self.FullName),
-        ExtractFilePath(fProject.GetFullUnitName));
-    end
-    else
-    begin
-      unProcs.Free;
-      unProcs := TProcList.Create;
-      unUnits.Free;
-      unUnits := TUnitList.Create;
+      fProject.prMissingUnitNames.AddOrSetValue(FullName,0);
+      raise EUnitInSearchPathNotFoundError.Create('Unit not found in search path: ' + FullName);
     end;
-    unAPIs.Free;
-    unAPIs := TAPIList.Create;
+    fFullName := vUnitFullName;
+    Assert(IsAbsolutePath(FullName));
+    unInProjectDir := (self.FullName = fProject.GetFullUnitName) or
+      AnsiSameText(ExtractFilePath(self.FullName),
+      ExtractFilePath(fProject.GetFullUnitName));
+  end
+  else
+  begin
+    unProcs.Free;
+    unProcs := TProcList.Create;
+    unUnits.Free;
+    unUnits := TUnitList.Create;
+  end;
+  unAPIs.Free;
+  unAPIs := TAPIList.Create;
 
-    fCurrentUnitParserStackEntry := nil;
-    CreateNewParser(FullName, aDefaultDir);
-    if not FileAge(FullName,unFileDate) then
-      unFileDate := 0.0;
-    state := stScan;
-    stateComment := stNone;
-    implement := False;
-    block := 0;
-    procName := '';
-    proclnum := -1;
-    stk := '';
-    lnumstk := '';
-    ugpprof := UpperCase(cProfUnitName);
-    cmtEnterBegin := -1;
-    cmtEnterEnd := -1;
-    cmtExitBegin := -1;
-    cmtExitEnd := -1;
-    fName := '';
-    unLocation := '';
-    SetLength(unUsesOffset, 0);
-    SetLength(unImplementOffset, 0);
-    SetLength(unStartUses, 0);
-    SetLength(unEndUses, 0);
+  fCurrentUnitParserStackEntry := nil;
+  CreateNewParser(FullName, aDefaultDir);
+  if not FileAge(FullName,unFileDate) then
+    unFileDate := 0.0;
+  state := stScan;
+  stateComment := stNone;
+  implement := False;
+  block := 0;
+  procName := '';
+  proclnum := -1;
+  stk := '';
+  lnumstk := '';
+  ugpprof := UpperCase(cProfUnitName);
+  cmtEnterBegin := -1;
+  cmtEnterEnd := -1;
+  cmtExitBegin := -1;
+  cmtExitEnd := -1;
+  fName := '';
+  unLocation := '';
+  SetLength(unUsesOffset, 0);
+  SetLength(unImplementOffset, 0);
+  SetLength(unStartUses, 0);
+  SetLength(unEndUses, 0);
 
-    prevTokenID := ptNull;
-    apiStart := -1;
-    apiStartEnd := -1;
-    lIsInAsmBlock := TBooleanStack.Create;
-    lIsInRecordDef := TBooleanStack.Create;
-    fSkippedList := TSkippedCodeRecList.Create();
-    fDefines := TDefineList.Create;
+  prevTokenID := ptNull;
+  apiStart := -1;
+  apiStartEnd := -1;
+  lIsInAsmBlock := TBooleanStack.Create;
+  lIsInRecordDef := TBooleanStack.Create;
+  fSkippedList := TSkippedCodeRecList.Create();
+  fDefines := TDefineList.Create;
+  try
+    fDefines.Assign(aConditionals);
     try
-      fDefines.Assign(aConditionals);
-      try
-        repeat
-          while fCurrentUnitParserStackEntry.Lexer.tokenID <> ptNull do
-          begin
-            tokenID := fCurrentUnitParserStackEntry.Lexer.tokenID;
-            tokenData := fCurrentUnitParserStackEntry.Lexer.token;
-            tokenPos := fCurrentUnitParserStackEntry.Lexer.tokenPos;
-            tokenLN := fCurrentUnitParserStackEntry.Lexer.LineNumber;
+      repeat
+        while fCurrentUnitParserStackEntry.Lexer.tokenID <> ptNull do
+        begin
+          tokenID := fCurrentUnitParserStackEntry.Lexer.tokenID;
+          tokenData := fCurrentUnitParserStackEntry.Lexer.token;
+          tokenPos := fCurrentUnitParserStackEntry.Lexer.tokenPos;
+          tokenLN := fCurrentUnitParserStackEntry.Lexer.LineNumber;
 
-            LDirective := ProcessDirectives(fProject, tokenID, tokenData);
+          LDirective := ProcessDirectives(fProject, tokenID, tokenData);
 
-            if not fSkippedList.SkippingCode then
-            begin // we're not in the middle of conditionally removed block
-              if (tokenID = ptPoint) and (prevTokenID = ptEnd) then
-                Break; // final end.
+          if not fSkippedList.SkippingCode then
+          begin // we're not in the middle of conditionally removed block
+            if (tokenID = ptPoint) and (prevTokenID = ptEnd) then
+              Break; // final end.
 
-              if (LDirective = 'INCLUDE') or (LDirective = 'I') then
-              begin // process $INCLUDE
-                // process {$I *.INC}
-                incName := ExtractParameter(tokendata, 1);
-                // having double spaces causes problems with ExtractParameter; the result is then empty...
-                if incName = '' then
-                begin
-                  incName := tokenData.Replace('  ',' ',[rfReplaceAll]);
-                  incName := ExtractParameter(incName, 1);
-                end;
-                if FirstEl(incName, '.', -1) = '*' then
-                  incName := FirstEl(ExtractFileName(FullName), '.', -1) +
-                    '.' + ButFirstEl(incName, '.', -1);
-                if incName = '' then
-                  raise Exception.Create('Include contains empty unit name : "'+ tokenData + '".' );
-                if not CreateNewParser(incName, aDefaultDir) then
-                  raise EUnitInSearchPathNotFoundError.Create('Unit not found in search path: '+ incName);
-                continue;
-              end
-              else if LDirective = 'DEFINE' then // process $DEFINE
-                fDefines.Define(ExtractParameter(tokenData, 1))
-              else if LDirective = 'UNDEF' then // process $UNDEF
-                fDefines.Undefine(ExtractParameter(tokenData, 1));
-
-              if lIsInAsmBlock.PeekOrReturnFalseIfEmpy() and ((prevTokenID = ptAddressOp) or
-                (prevTokenID = ptDoubleAddressOp)) and (tokenID <> ptAddressOp)
-                and (tokenID <> ptDoubleAddressOp) then
-                tokenID := ptIdentifier;
-
-              // fix mwPasParser's feature - these are not reserved words!
-              if (tokenID = ptRead) or (tokenID = ptWrite) or (tokenID = ptName)
-                or (tokenID = ptIndex) or (tokenID = ptStored) or
-                (tokenID = ptReadonly) or (tokenID = ptResident) or
-                (tokenID = ptNodefault) or (tokenID = ptAutomated) or
-                (tokenID = ptWriteonly) then
-                tokenID := ptIdentifier;
-
-              if (tokenID = ptBorComment) or (tokenID = ptAnsiComment) or
-                (tokenID = ptCompDirect) then
+            if (LDirective = 'INCLUDE') or (LDirective = 'I') then
+            begin // process $INCLUDE
+              // process {$I *.INC}
+              incName := ExtractParameter(tokendata, 1);
+              // having double spaces causes problems with ExtractParameter; the result is then empty...
+              if incName = '' then
               begin
-                if tokenData = fProject.prConditStartUses then
-                  AddToIntArray(unStartUses, tokenPos)
-                else if tokenData = fProject.prConditEndUses then
-                  AddToIntArray(unEndUses, tokenPos)
-                else if ((tokenID = ptBorComment) and
-                  (Copy(tokenData, 1, 1 + Length(fProject.prAPIIntro)) = '{' +
-                  fProject.prAPIIntro)) or
-                  ((tokenID = ptAnsiComment) and
-                  (Copy(tokenData, 1, 2 + Length(fProject.prAPIIntro)) = '(*' +
-                  fProject.prAPIIntro)) then
-                begin
-                  if tokenID = ptBorComment then
-                    apiCmd := TrimL
-                      (Trim(ButLast(ButFirst(tokenData,
-                      1 + Length(fProject.prAPIIntro)), 1)))
-                  else
-                    apiCmd := TrimL
-                      (Trim(ButLast(ButFirst(tokenData,
-                      2 + Length(fProject.prAPIIntro)), 2)));
-
-                  if not fUnitParserStack.HasEntries then
-                    unAPIs.AddMeta(apiCmd, tokenPos,
-                      tokenPos + Length(tokenData) - 1);
-                end
-                else if tokenData = fProject.prConditStartAPI then
-                begin
-                  apiStart := tokenPos;
-                  apiStartEnd := tokenPos + Length(tokenData) - 1;
-                end
-                else if tokenData = fProject.prConditEndAPI then
-                  if not fUnitParserStack.HasEntries then
-                    unAPIs.AddExpanded(apiStart, apiStartEnd, tokenPos,
-                      tokenPos + Length(tokenData) - 1);
+                incName := tokenData.Replace('  ',' ',[rfReplaceAll]);
+                incName := ExtractParameter(incName, 1);
               end;
+              if FirstEl(incName, '.', -1) = '*' then
+                incName := FirstEl(ExtractFileName(FullName), '.', -1) +
+                  '.' + ButFirstEl(incName, '.', -1);
+              if incName = '' then
+                raise Exception.Create('Include contains empty unit name : "'+ tokenData + '".' );
+              if not CreateNewParser(incName, aDefaultDir) then
+                raise EUnitInSearchPathNotFoundError.Create('Unit not found in search path: '+ incName);
+              continue;
+            end
+            else if LDirective = 'DEFINE' then // process $DEFINE
+              fDefines.Define(ExtractParameter(tokenData, 1))
+            else if LDirective = 'UNDEF' then // process $UNDEF
+              fDefines.Undefine(ExtractParameter(tokenData, 1));
 
-              if state = stWaitSemi then
+            if lIsInAsmBlock.PeekOrReturnFalseIfEmpy() and ((prevTokenID = ptAddressOp) or
+              (prevTokenID = ptDoubleAddressOp)) and (tokenID <> ptAddressOp)
+              and (tokenID <> ptDoubleAddressOp) then
+              tokenID := ptIdentifier;
+
+            // fix mwPasParser's feature - these are not reserved words!
+            if (tokenID = ptRead) or (tokenID = ptWrite) or (tokenID = ptName)
+              or (tokenID = ptIndex) or (tokenID = ptStored) or
+              (tokenID = ptReadonly) or (tokenID = ptResident) or
+              (tokenID = ptNodefault) or (tokenID = ptAutomated) or
+              (tokenID = ptWriteonly) then
+              tokenID := ptIdentifier;
+
+            if (tokenID = ptBorComment) or (tokenID = ptAnsiComment) or
+              (tokenID = ptCompDirect) then
+            begin
+              if tokenData = fProject.prConditStartUses then
+                AddToIntArray(unStartUses, tokenPos)
+              else if tokenData = fProject.prConditEndUses then
+                AddToIntArray(unEndUses, tokenPos)
+              else if ((tokenID = ptBorComment) and
+                (Copy(tokenData, 1, 1 + Length(fProject.prAPIIntro)) = '{' +
+                fProject.prAPIIntro)) or
+                ((tokenID = ptAnsiComment) and
+                (Copy(tokenData, 1, 2 + Length(fProject.prAPIIntro)) = '(*' +
+                fProject.prAPIIntro)) then
+              begin
+                if tokenID = ptBorComment then
+                  apiCmd := TrimL
+                    (Trim(ButLast(ButFirst(tokenData,
+                    1 + Length(fProject.prAPIIntro)), 1)))
+                else
+                  apiCmd := TrimL
+                    (Trim(ButLast(ButFirst(tokenData,
+                    2 + Length(fProject.prAPIIntro)), 2)));
+
+                if not fUnitParserStack.HasEntries then
+                  unAPIs.AddMeta(apiCmd, tokenPos,
+                    tokenPos + Length(tokenData) - 1);
+              end
+              else if tokenData = fProject.prConditStartAPI then
+              begin
+                apiStart := tokenPos;
+                apiStartEnd := tokenPos + Length(tokenData) - 1;
+              end
+              else if tokenData = fProject.prConditEndAPI then
+                if not fUnitParserStack.HasEntries then
+                  unAPIs.AddExpanded(apiStart, apiStartEnd, tokenPos,
+                    tokenPos + Length(tokenData) - 1);
+            end;
+
+            if state = stWaitSemi then
+            begin
+              if tokenID = ptSemicolon then
+              begin
+                AddToIntArray(unImplementOffset, tokenPos + 1);
+                state := stScan;
+              end;
+            end
+            else if state = stParseUses then
+            begin
+              if (tokenID = ptSemicolon) or (tokenID = ptComma) then
               begin
                 if tokenID = ptSemicolon then
-                begin
-                  AddToIntArray(unImplementOffset, tokenPos + 1);
                   state := stScan;
+                if fName <> '' then
+                begin
+                  uun := UpperCase(fName);
+                  unUnits.Add(fProject.LocateOrCreateUnit(fName, ExpandLocation(unLocation),
+                    (uun = ugpprof) or fProject.IsAnExcludedUnit(uun))as TUnit);
                 end;
+                fName := '';
+                unLocation := '';
               end
-              else if state = stParseUses then
+              else if tokenID = ptIdentifier then // unit name
+                fName := fName + tokenData
+              else if tokenID = ptPoint then
+                fName := fName + '.'
+              else if tokenID = ptStringConst then
+              // unit location from "in 'somepath\someunit.pas'" (dpr-file)
+                unLocation := tokenData
+            end
+            else if state = stScanProcSkipGenericParams then
+            begin
+              if tokenID = ptGreater then
+                state := stScanProcName;
+            end
+            else if state = stScanProcName then
+            begin
+              if (tokenID = ptIdentifier) or (tokenID = ptPoint) or
+                (tokenID = ptRegister) then
               begin
-                if (tokenID = ptSemicolon) or (tokenID = ptComma) then
-                begin
-                  if tokenID = ptSemicolon then
-                    state := stScan;
-                  if fName <> '' then
-                  begin
-                    uun := UpperCase(fName);
-                    unUnits.Add(fProject.LocateOrCreateUnit(fName, ExpandLocation(unLocation),
-                      (uun = ugpprof) or fProject.IsAnExcludedUnit(uun))as TUnit);
-                  end;
-                  fName := '';
-                  unLocation := '';
-                end
-                else if tokenID = ptIdentifier then // unit name
-                  fName := fName + tokenData
-                else if tokenID = ptPoint then
-                  fName := fName + '.'
-                else if tokenID = ptStringConst then
-                // unit location from "in 'somepath\someunit.pas'" (dpr-file)
-                  unLocation := tokenData
+                procName := procName + tokenData;
+                proclnum := tokenLN;
               end
-              else if state = stScanProcSkipGenericParams then
-              begin
-                if tokenID = ptGreater then
-                  state := stScanProcName;
-              end
-              else if state = stScanProcName then
-              begin
-                if (tokenID = ptIdentifier) or (tokenID = ptPoint) or
-                  (tokenID = ptRegister) then
-                begin
-                  procName := procName + tokenData;
-                  proclnum := tokenLN;
-                end
-                else if tokenID = ptLower then
-                // "<" in method name => skip params of generic till ">"
-                  state := stScanProcSkipGenericParams
-                else if tokenID in [ptSemicolon, ptRoundOpen, ptColon] then
-                  state := stScanProcAfterName
-              end
-              else if state = stScanProcAfterName then
-              begin
-                if ((tokenID = ptProcedure) or (tokenID = ptFunction) or
-                  (tokenID = ptConstructor) or (tokenID = ptDestructor)) and implement
-                then
-                begin
-                  state := stScanProcName;
-                  block := 0;
-                  if procName <> '' then
-                  begin
-                    stk := stk + '/' + procName;
-                    lnumstk := lnumstk + '/' + IntToStr(proclnum);
-                  end;
-                  procName := '';
-                  proclnum := -1;
-                end
-                else if (tokenID = ptForward) or (tokenID = ptExternal) then
-                begin
-                  procName := '';
-                  proclnum := -1;
-                end
-                else
-                begin
-                  if IsBlockStartToken(tokenID) then
-                    Inc(block)
-                  else if IsBlockEndToken(prevTokenID, tokenID) then
-                    Dec(block);
-
-                  if block < 0 then
-                  begin
-                    state := stScan;
-                    stk := '';
-                    lnumstk := '';
-                    procName := '';
-                    proclnum := -1;
-                  end
-                  else if (block > 0) and (not lIsInRecordDef.PeekOrReturnFalseIfEmpy()) then
-                  begin
-                    if stk <> '' then
-                      procn := ButFirst(stk, 1) + '/' + procName
-                    else
-                      procn := procName;
-
-                    if not fUnitParserStack.HasEntries then
-                      if (tokenID <> ptAsm) or aParseAsm then
-                        unProcs.Add(procn, (tokenID = ptAsm), tokenPos, tokenLN,
-                          proclnum);
-
-                    state := stScanProcBody;
-                    stateComment := stWaitEnterBegin;
-                  end;
-                end;
-              end
-              else if state = stScanProcBody then
-              begin
-                if IsBlockStartToken(tokenID) then
-                  Inc(block)
-                else if IsBlockEndToken(prevTokenID, tokenID) then
-                  Dec(block);
-
-                if (tokenID = ptBorComment) or (tokenID = ptCompDirect) then
-                begin
-                  if tokenData = fProject.prConditStart then
-                  begin
-                    if stateComment = stWaitEnterBegin then
-                    begin
-                      cmtEnterBegin := tokenPos;
-                      stateComment := stWaitEnterEnd;
-                    end
-                    else if (stateComment = stWaitExitBegin) or
-                      (stateComment = stWaitExitBegin2) then
-                    begin
-                      cmtExitBegin := tokenPos;
-                      stateComment := stWaitExitEnd;
-                    end;
-                  end
-                  else if tokenData = fProject.prConditEnd then
-                  begin
-                    if stateComment = stWaitEnterEnd then
-                    begin
-                      cmtEnterEnd := tokenPos;
-                      stateComment := stWaitExitBegin;
-                    end
-                    else if stateComment = stWaitExitEnd then
-                    begin
-                      cmtExitEnd := tokenPos;
-                      stateComment := stWaitExitBegin2;
-                    end;
-                  end
-                end
-                else if (tokenID = ptIdentifier) then
-                begin
-
-                  LDataLowerCase := tokenData.ToLowerInvariant;
-                  if LDataLowerCase = fProject.prNameThreadForDebugging then
-                  begin
-                    LSelfBuffer := '';
-                    lThreadNameTokenPos := tokenPos;
-
-                    lLexerRunPos := fCurrentUnitParserStackEntry.Lexer.RunPos;
-                    try
-                      lCurrentLexerRunPos := lLexerRunPos;
-
-                      // subtract the NameThreadForDebugging part
-                      dec(lCurrentLexerRunPos, fProject.prNameThreadForDebugging.Length);
-                      fCurrentUnitParserStackEntry.Lexer.RunPos := lCurrentLexerRunPos;
-
-                      // if instrumented: gpprof is the last term.. it is removed in the textReplacer.. skip it
-                      GoBackToStartOfTerm(lCurrentLexerRunPos, 'gpprof.', lCurrentLexerRunPos);
-
-                      if (GoBackToStartOfTerm(lCurrentLexerRunPos, '}', lCurrentLexerRunPos)) then
-                        LSelfBuffer := '}'+ lSelfBuffer;
-
-                      if (GoBackToStartOfTerm(lCurrentLexerRunPos, fProject.prCurrentThread+'.', lCurrentLexerRunPos)) then
-                        LSelfBuffer := fProject.prCurrentThread+'.' + lSelfBuffer;
-
-
-                      if (GoBackToStartOfTerm(lCurrentLexerRunPos, '}', lCurrentLexerRunPos)) then
-                        LSelfBuffer := '}'+ lSelfBuffer;
-
-                      if (GoBackToStartOfTerm(lCurrentLexerRunPos, '{', lCurrentLexerRunPos)) then
-                        LSelfBuffer := '{'+ lSelfBuffer;
-
-
-                      if (GoBackToStartOfTerm(lCurrentLexerRunPos, fProject.prtTThread+'.', lCurrentLexerRunPos)) then
-                        LSelfBuffer := fProject.prtTThread + '.' + lSelfBuffer;
-
-                      if (GoBackToStartOfTerm(lCurrentLexerRunPos, '}', lCurrentLexerRunPos)) then
-                        LSelfBuffer := '}'+ lSelfBuffer;
-
-                      if (GoBackToStartOfTerm(lCurrentLexerRunPos, '{', lCurrentLexerRunPos)) then
-                        LSelfBuffer := '{'+ lSelfBuffer;
-
-                      if (GoBackToStartOfTerm(lCurrentLexerRunPos, 'self.', lCurrentLexerRunPos)) then
-                        LSelfBuffer := 'self.' + lSelfBuffer;
-
-                      if (GoBackToStartOfTerm(lCurrentLexerRunPos, '}', lCurrentLexerRunPos)) then
-                        LSelfBuffer := '}'+ lSelfBuffer;
-
-                      if (GoBackToStartOfTerm(lCurrentLexerRunPos, '{', lCurrentLexerRunPos)) then
-                        LSelfBuffer := '{'+ lSelfBuffer;
-
-                      if (GoBackToStartOfTerm(lCurrentLexerRunPos, 'tthread.', lCurrentLexerRunPos)) then
-                        LSelfBuffer := 'tthread.' + lSelfBuffer;
-
-                      if (GoBackToStartOfTerm(lCurrentLexerRunPos, '}', lCurrentLexerRunPos)) then
-                        LSelfBuffer := '}'+ lSelfBuffer;
-
-                      if (GoBackToStartOfTerm(lCurrentLexerRunPos, '{', lCurrentLexerRunPos)) then
-                        LSelfBuffer := '{'+ lSelfBuffer;
-
-                      if (GoBackToStartOfTerm(lCurrentLexerRunPos, 'gpprof.', lCurrentLexerRunPos)) then
-                        LSelfBuffer := 'gpprof.' + lSelfBuffer;
-
-                      if (GoBackToStartOfTerm(lCurrentLexerRunPos, '{', lCurrentLexerRunPos)) then
-                        LSelfBuffer := '{'+ lSelfBuffer;
-
-                      unProcs.Last.Data.unSetThreadNames.AddPosition(lThreadNameTokenPos, LSelfBuffer);
-                    finally
-                      fCurrentUnitParserStackEntry.Lexer.RunPos := lLexerRunPos;
-                    end
-                  end
-                end;
-
-                if block = 0 then
-                begin
-                  if not fUnitParserStack.HasEntries then
-                  begin
-                    unProcs.AddEnd(procn, tokenPos, tokenLN);
-                    if stateComment = stWaitExitBegin2 then
-                    begin
-                      unProcs.AddInstrumented(procn, cmtEnterBegin, cmtEnterEnd,
-                        cmtExitBegin, cmtExitEnd);
-                      CheckInstrumentedProcs;
-                    end;
-                  end;
-
-                  stateComment := stNone;
-                  if stk = '' then
-                  begin
-                    procName := '';
-                    proclnum := -1;
-                    state := stScan;
-                  end
-                  else
-                  begin
-                    procName := LastEl(stk, '/', -1);
-                    proclnum := StrToInt(LastEl(lnumstk, '/', -1));
-                    stk := ButLastEl(stk, '/', -1);
-                    lnumstk := ButLastEl(lnumstk, '/', -1);
-                    state := stScanProcAfterName;
-                  end;
-                end;
-              end
-              else if (tokenID = ptUses) or (tokenID = ptContains) then
-              begin
-                state := stParseUses;
-                if implement then
-                  AddToIntArray(unUsesOffset, tokenPos);
-              end
-              else if tokenID = ptImplementation then
-              begin
-                implement := true;
-                AddToIntArray(unImplementOffset, tokenPos);
-              end
-              else if tokenID = ptProgram then
-              begin
-                implement := true;
-                state := stWaitSemi;
-              end
-              else if ((tokenID = ptProcedure) or (tokenID = ptFunction) or
+              else if tokenID = ptLower then
+              // "<" in method name => skip params of generic till ">"
+                state := stScanProcSkipGenericParams
+              else if tokenID in [ptSemicolon, ptRoundOpen, ptColon] then
+                state := stScanProcAfterName
+            end
+            else if state = stScanProcAfterName then
+            begin
+              if ((tokenID = ptProcedure) or (tokenID = ptFunction) or
                 (tokenID = ptConstructor) or (tokenID = ptDestructor)) and implement
               then
               begin
@@ -1147,23 +938,229 @@ begin
                 end;
                 procName := '';
                 proclnum := -1;
-              end;
-            end; // if not skipping
+              end
+              else if (tokenID = ptForward) or (tokenID = ptExternal) then
+              begin
+                procName := '';
+                proclnum := -1;
+              end
+              else
+              begin
+                if IsBlockStartToken(tokenID) then
+                  Inc(block)
+                else if IsBlockEndToken(prevTokenID, tokenID) then
+                  Dec(block);
 
-            prevTokenID := tokenID;
-            fCurrentUnitParserStackEntry.Lexer.Next;
-          end; // while
-        until not RemoveLastParser;
-      finally
-        FreeAndNil(fDefines);
-      end;
+                if block < 0 then
+                begin
+                  state := stScan;
+                  stk := '';
+                  lnumstk := '';
+                  procName := '';
+                  proclnum := -1;
+                end
+                else if (block > 0) and (not lIsInRecordDef.PeekOrReturnFalseIfEmpy()) then
+                begin
+                  if stk <> '' then
+                    procn := ButFirst(stk, 1) + '/' + procName
+                  else
+                    procn := procName;
+
+                  if not fUnitParserStack.HasEntries then
+                    if (tokenID <> ptAsm) or aParseAsm then
+                      unProcs.Add(procn, (tokenID = ptAsm), tokenPos, tokenLN,
+                        proclnum);
+
+                  state := stScanProcBody;
+                  stateComment := stWaitEnterBegin;
+                end;
+              end;
+            end
+            else if state = stScanProcBody then
+            begin
+              if IsBlockStartToken(tokenID) then
+                Inc(block)
+              else if IsBlockEndToken(prevTokenID, tokenID) then
+                Dec(block);
+
+              if (tokenID = ptBorComment) or (tokenID = ptCompDirect) then
+              begin
+                if tokenData = fProject.prConditStart then
+                begin
+                  if stateComment = stWaitEnterBegin then
+                  begin
+                    cmtEnterBegin := tokenPos;
+                    stateComment := stWaitEnterEnd;
+                  end
+                  else if (stateComment = stWaitExitBegin) or
+                    (stateComment = stWaitExitBegin2) then
+                  begin
+                    cmtExitBegin := tokenPos;
+                    stateComment := stWaitExitEnd;
+                  end;
+                end
+                else if tokenData = fProject.prConditEnd then
+                begin
+                  if stateComment = stWaitEnterEnd then
+                  begin
+                    cmtEnterEnd := tokenPos;
+                    stateComment := stWaitExitBegin;
+                  end
+                  else if stateComment = stWaitExitEnd then
+                  begin
+                    cmtExitEnd := tokenPos;
+                    stateComment := stWaitExitBegin2;
+                  end;
+                end
+              end
+              else if (tokenID = ptIdentifier) then
+              begin
+
+                LDataLowerCase := tokenData.ToLowerInvariant;
+                if LDataLowerCase = fProject.prNameThreadForDebugging then
+                begin
+                  LSelfBuffer := '';
+                  lThreadNameTokenPos := tokenPos;
+
+                  lLexerRunPos := fCurrentUnitParserStackEntry.Lexer.RunPos;
+                  try
+                    lCurrentLexerRunPos := lLexerRunPos;
+
+                    // subtract the NameThreadForDebugging part
+                    dec(lCurrentLexerRunPos, fProject.prNameThreadForDebugging.Length);
+                    fCurrentUnitParserStackEntry.Lexer.RunPos := lCurrentLexerRunPos;
+
+                    // if instrumented: gpprof is the last term.. it is removed in the textReplacer.. skip it
+                    GoBackToStartOfTerm(lCurrentLexerRunPos, 'gpprof.', lCurrentLexerRunPos);
+
+                    if (GoBackToStartOfTerm(lCurrentLexerRunPos, '}', lCurrentLexerRunPos)) then
+                      LSelfBuffer := '}'+ lSelfBuffer;
+
+                    if (GoBackToStartOfTerm(lCurrentLexerRunPos, fProject.prCurrentThread+'.', lCurrentLexerRunPos)) then
+                      LSelfBuffer := fProject.prCurrentThread+'.' + lSelfBuffer;
+
+
+                    if (GoBackToStartOfTerm(lCurrentLexerRunPos, '}', lCurrentLexerRunPos)) then
+                      LSelfBuffer := '}'+ lSelfBuffer;
+
+                    if (GoBackToStartOfTerm(lCurrentLexerRunPos, '{', lCurrentLexerRunPos)) then
+                      LSelfBuffer := '{'+ lSelfBuffer;
+
+
+                    if (GoBackToStartOfTerm(lCurrentLexerRunPos, fProject.prtTThread+'.', lCurrentLexerRunPos)) then
+                      LSelfBuffer := fProject.prtTThread + '.' + lSelfBuffer;
+
+                    if (GoBackToStartOfTerm(lCurrentLexerRunPos, '}', lCurrentLexerRunPos)) then
+                      LSelfBuffer := '}'+ lSelfBuffer;
+
+                    if (GoBackToStartOfTerm(lCurrentLexerRunPos, '{', lCurrentLexerRunPos)) then
+                      LSelfBuffer := '{'+ lSelfBuffer;
+
+                    if (GoBackToStartOfTerm(lCurrentLexerRunPos, 'self.', lCurrentLexerRunPos)) then
+                      LSelfBuffer := 'self.' + lSelfBuffer;
+
+                    if (GoBackToStartOfTerm(lCurrentLexerRunPos, '}', lCurrentLexerRunPos)) then
+                      LSelfBuffer := '}'+ lSelfBuffer;
+
+                    if (GoBackToStartOfTerm(lCurrentLexerRunPos, '{', lCurrentLexerRunPos)) then
+                      LSelfBuffer := '{'+ lSelfBuffer;
+
+                    if (GoBackToStartOfTerm(lCurrentLexerRunPos, 'tthread.', lCurrentLexerRunPos)) then
+                      LSelfBuffer := 'tthread.' + lSelfBuffer;
+
+                    if (GoBackToStartOfTerm(lCurrentLexerRunPos, '}', lCurrentLexerRunPos)) then
+                      LSelfBuffer := '}'+ lSelfBuffer;
+
+                    if (GoBackToStartOfTerm(lCurrentLexerRunPos, '{', lCurrentLexerRunPos)) then
+                      LSelfBuffer := '{'+ lSelfBuffer;
+
+                    if (GoBackToStartOfTerm(lCurrentLexerRunPos, 'gpprof.', lCurrentLexerRunPos)) then
+                      LSelfBuffer := 'gpprof.' + lSelfBuffer;
+
+                    if (GoBackToStartOfTerm(lCurrentLexerRunPos, '{', lCurrentLexerRunPos)) then
+                      LSelfBuffer := '{'+ lSelfBuffer;
+
+                    unProcs.Last.Data.unSetThreadNames.AddPosition(lThreadNameTokenPos, LSelfBuffer);
+                  finally
+                    fCurrentUnitParserStackEntry.Lexer.RunPos := lLexerRunPos;
+                  end
+                end
+              end;
+
+              if block = 0 then
+              begin
+                if not fUnitParserStack.HasEntries then
+                begin
+                  unProcs.AddEnd(procn, tokenPos, tokenLN);
+                  if stateComment = stWaitExitBegin2 then
+                  begin
+                    unProcs.AddInstrumented(procn, cmtEnterBegin, cmtEnterEnd,
+                      cmtExitBegin, cmtExitEnd);
+                    CheckInstrumentedProcs;
+                  end;
+                end;
+
+                stateComment := stNone;
+                if stk = '' then
+                begin
+                  procName := '';
+                  proclnum := -1;
+                  state := stScan;
+                end
+                else
+                begin
+                  procName := LastEl(stk, '/', -1);
+                  proclnum := StrToInt(LastEl(lnumstk, '/', -1));
+                  stk := ButLastEl(stk, '/', -1);
+                  lnumstk := ButLastEl(lnumstk, '/', -1);
+                  state := stScanProcAfterName;
+                end;
+              end;
+            end
+            else if (tokenID = ptUses) or (tokenID = ptContains) then
+            begin
+              state := stParseUses;
+              if implement then
+                AddToIntArray(unUsesOffset, tokenPos);
+            end
+            else if tokenID = ptImplementation then
+            begin
+              implement := true;
+              AddToIntArray(unImplementOffset, tokenPos);
+            end
+            else if tokenID = ptProgram then
+            begin
+              implement := true;
+              state := stWaitSemi;
+            end
+            else if ((tokenID = ptProcedure) or (tokenID = ptFunction) or
+              (tokenID = ptConstructor) or (tokenID = ptDestructor)) and implement
+            then
+            begin
+              state := stScanProcName;
+              block := 0;
+              if procName <> '' then
+              begin
+                stk := stk + '/' + procName;
+                lnumstk := lnumstk + '/' + IntToStr(proclnum);
+              end;
+              procName := '';
+              proclnum := -1;
+            end;
+          end; // if not skipping
+
+          prevTokenID := tokenID;
+          fCurrentUnitParserStackEntry.Lexer.Next;
+        end; // while
+      until not RemoveLastParser;
     finally
-      FreeAndNil(fSkippedList);
+      FreeAndNil(fDefines);
     end;
   finally
     lIsInAsmBlock.Free;
     lIsInRecordDef.Free;
     fUnitParserStack.Free;
+    FreeAndNil(fSkippedList);
   end;
 end; { TUnit.Parse }
 
