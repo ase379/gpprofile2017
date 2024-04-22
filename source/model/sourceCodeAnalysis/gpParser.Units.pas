@@ -724,7 +724,7 @@ var
 begin
   unParsed := true;
   LSelfBuffer := '';
-  fUnitParserStack := TUnitParserStack.Create;
+
   if not aRescan then
   begin
     // Anton Alisov: not sure, for what reason ResolveFullyQualifiedUnitPath() is called here with unFullName instead of Name
@@ -749,6 +749,7 @@ begin
   unAPIs.Free;
   unAPIs := TAPIList.Create;
 
+  fUnitParserStack := TUnitParserStack.Create;
   fCurrentUnitParserStackEntry := nil;
   CreateNewParser(FullName, aDefaultDir);
   if not FileAge(FullName,unFileDate) then
@@ -776,11 +777,12 @@ begin
   prevTokenID := ptNull;
   apiStart := -1;
   apiStartEnd := -1;
-  lIsInAsmBlock := TBooleanStack.Create;
-  lIsInRecordDef := TBooleanStack.Create;
-  fSkippedList := TSkippedCodeRecList.Create();
-  fDefines := TDefineList.Create;
+
   try
+    lIsInAsmBlock := TBooleanStack.Create;
+    lIsInRecordDef := TBooleanStack.Create;
+    fSkippedList := TSkippedCodeRecList.Create();
+    fDefines := TDefineList.Create;
     fDefines.Assign(aConditionals);
     try
       repeat
