@@ -13,10 +13,18 @@ type
     procedure Execute; override;
   end;
 
+
+procedure TestThreadsGlobalFunc();
+
+
 implementation
 
 uses
   System.SysUtils, gpprof;
+
+procedure TestThreadsGlobalFunc();
+begin
+end;
 
 { TTestThread }
 

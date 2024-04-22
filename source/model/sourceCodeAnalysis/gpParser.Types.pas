@@ -3,7 +3,7 @@ unit gpParser.Types;
 interface
 
 uses
-  System.SysUtils, System.Generics.Collections;
+  System.SysUtils,System.Generics.Collections;
 
 type
   // Do not change order
@@ -19,25 +19,11 @@ type
     procedure PopIfNotEmpty();
   end;
 
-  TUnitInstrumentationInfo = class
-    UnitName : string;
-    IsFullyInstrumented: boolean;
-    IsNothingInstrumented: boolean;
-  end;
-  TUnitInstrumentationInfoList = class(TObjectList<TUnitInstrumentationInfo>)
-  public
-    procedure SortByName();
-  end;
-
-
 const
   cProfUnitName  = 'GpProf';
 
 
 implementation
-
-uses
-  System.Generics.Defaults;
 
 { TBooleanStack }
 
@@ -53,16 +39,4 @@ begin
  if (self.Count > 0) then
   self.Pop();
 end;
-
-{ TUnitInstrumentationInfoList }
-
-procedure TUnitInstrumentationInfoList.SortByName;
-begin
-  Sort(TComparer<TUnitInstrumentationInfo>.Construct(
-      function (const Left, Right: TUnitInstrumentationInfo): integer
-      begin
-          Result := CompareText(Left.UnitName,Right.UnitName);
-      end));
-end;
-
 end.

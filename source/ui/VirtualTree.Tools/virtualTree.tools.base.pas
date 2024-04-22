@@ -14,7 +14,7 @@ type
   TVirtualTreeBaseTools = class
   private
   protected
-    fList: TVirtualStringTree;
+    fTree: TVirtualStringTree;
     fSortcols: array of TColumnIndex;
 
     /// <summary>
@@ -55,7 +55,7 @@ type
     class function FormatCnt(const cnt: integer): string;
     class function FormatPerc(const per: real): string;
 
-    property Tree : TVirtualStringTree read fList;
+    property Tree : TVirtualStringTree read fTree;
   end;
 
 implementation
@@ -70,10 +70,10 @@ uses
 
 constructor TVirtualTreeBaseTools.Create(const aList: TVirtualStringTree);
 begin
-  fList := aList;
-  fList.OnHeaderClick := self.OnHeaderClick;
-  fList.IncrementalSearch := TVTIncrementalSearch.isAll;
-  fList.OnIncrementalSearch := self.OnIncrementalSearch;
+  fTree := aList;
+  fTree.OnHeaderClick := self.OnHeaderClick;
+  fTree.IncrementalSearch := TVTIncrementalSearch.isAll;
+  fTree.OnIncrementalSearch := self.OnIncrementalSearch;
 end;
 
 destructor TVirtualTreeBaseTools.Destroy;
@@ -83,19 +83,19 @@ end;
 
 procedure TVirtualTreeBaseTools.BeginUpdate;
 begin
-  FList.BeginUpdate;
-  fList.TreeOptions.MiscOptions := fList.TreeOptions.MiscOptions;
+  fTree.BeginUpdate;
+  fTree.TreeOptions.MiscOptions := fTree.TreeOptions.MiscOptions;
 end;
 
 procedure TVirtualTreeBaseTools.EndUpdate;
 begin
-  fList.TreeOptions.MiscOptions := fList.TreeOptions.MiscOptions;
-  FList.EndUpdate;
+  fTree.TreeOptions.MiscOptions := fTree.TreeOptions.MiscOptions;
+  fTree.EndUpdate;
 end;
 
 procedure TVirtualTreeBaseTools.Clear;
 begin
-  fList.Clear();
+  fTree.Clear();
 end;
 
 function TVirtualTreeBaseTools.GetSelectedIndex: integer;
@@ -110,12 +110,12 @@ end;
 
 function TVirtualTreeBaseTools.GetSelectedNode: PVirtualNode;
 begin
-  result := fList.GetFirstSelected;
+  result := fTree.GetFirstSelected;
 end;
 
 function TVirtualTreeBaseTools.GetCount: integer;
 begin
-  result := fList.TotalCount;
+  result := fTree.TotalCount;
 end;
 
 
@@ -131,22 +131,22 @@ function TVirtualTreeBaseTools.GetName(const aNode: PVirtualNode; const column :
 begin
   result := '';
   if Assigned(aNode) then
-    fList.OnGetText(fList,aNode,column,TVSTTextType.ttNormal,Result);
+    fTree.OnGetText(fTree,aNode,column,TVSTTextType.ttNormal,Result);
 end;
 
 procedure TVirtualTreeBaseTools.setExpanded(const aNode: PVirtualNode; const aExpandedState : boolean);
 begin
-  fList.Expanded[aNode] := aExpandedState;
+  fTree.Expanded[aNode] := aExpandedState;
 end;
 
 procedure TVirtualTreeBaseTools.setSelectedIndex(const anIndex: cardinal);
 var
   LEnumor : TVTVirtualNodeEnumerator;
 begin
-  LEnumor := fList.Nodes().GetEnumerator();
+  LEnumor := fTree.Nodes().GetEnumerator();
   while(LEnumor.MoveNext) do
   begin
-    fList.Selected[LEnumor.Current] := LEnumor.Current.index = anIndex;
+    fTree.Selected[LEnumor.Current] := LEnumor.Current.index = anIndex;
   end;
 end;
 
@@ -155,7 +155,7 @@ procedure TVirtualTreeBaseTools.SetVisible(const aNode: PVirtualNode;const aVisi
 begin
  if not Assigned(aNode) then
     Exit;
-  fList.IsVisible[aNode] := aVisible;
+  fTree.IsVisible[aNode] := aVisible;
 end;
 
 function TVirtualTreeBaseTools.GetNode(const anIndex: Cardinal): PVirtualNode;
@@ -163,7 +163,7 @@ var
   LEnumor : TVTVirtualNodeEnumerator;
 begin
   result := nil;
-  LEnumor := fList.Nodes().GetEnumerator();
+  LEnumor := fTree.Nodes().GetEnumerator();
   while(LEnumor.MoveNext) do
   begin
     if LEnumor.Current.Index = anIndex then
@@ -191,7 +191,7 @@ var
   LEnumor : TVTVirtualNodeEnumerator;
 begin
   result := nil;
-  LEnumor := fList.Nodes().GetEnumerator();
+  LEnumor := fTree.Nodes().GetEnumerator();
   while(LEnumor.MoveNext) do
   begin
     if sametext(GetName(LEnumor.Current.Index), aName) then
@@ -208,14 +208,14 @@ procedure TVirtualTreeBaseTools.OnHeaderClick(Sender: TVTHeader;
 begin
   SetLength(fSortCols,length(fSortCols)+1);
   fSortCols[Length(fSortCols)-1] := HitInfo.Column;
-  fList.SortTree(HitInfo.Column,Sender.SortDirection,True);
+  fTree.SortTree(HitInfo.Column,Sender.SortDirection,True);
 
   if Sender.SortDirection=sdAscending then
     Sender.SortDirection:=sdDescending
   else
     Sender.SortDirection:=sdAscending;
-  fList.Header.SortDirection := Sender.SortDirection;
-  fList.Header.SortColumn := HitInfo.Column;
+  fTree.Header.SortDirection := Sender.SortDirection;
+  fTree.Header.SortColumn := HitInfo.Column;
 end;
 
 

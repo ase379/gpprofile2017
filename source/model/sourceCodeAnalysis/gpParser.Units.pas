@@ -159,20 +159,19 @@ var
   un: TUnit;
   LUnitEnumor: TRootNode<TUnit>.TEnumerator;
 begin
-  Result := False;
+  Result := true;
   LUnitEnumor := GetEnumerator();
   try
     while LUnitEnumor.MoveNext do
     begin
       un := LUnitEnumor.Current.Data;
-      if un.IsValidForInstrumentation and (un.unInProjectDir or (not aCheckProjectDirOnly)) then
+      if (un.unInProjectDir or (not aCheckProjectDirOnly)) and un.IsValidForInstrumentation then
         if not un.unAllInst then
-          Exit;
+          Exit(false);
     end;
   finally
     LUnitEnumor.Free;
   end;
-  Result := true;
 end;
 
 function TGlbUnitList.IsNoUnitInstrumented(const aCheckProjectDirOnly: Boolean): Boolean;
@@ -1198,18 +1197,15 @@ var
 begin
   unAllInst := true;
   unNoneInst := true;
-  with unProcs do
+  LEnumor := unProcs.GetEnumerator();
+  while LEnumor.MoveNext do
   begin
-    LEnumor := GetEnumerator();
-    while LEnumor.MoveNext do
-    begin
-      if not LEnumor.Current.Data.prInstrumented then
-        unAllInst := False
-      else
-        unNoneInst := False;
-    end;
-    LEnumor.Free;
+    if not LEnumor.Current.Data.prInstrumented then
+      unAllInst := False
+    else
+      unNoneInst := False;
   end;
+  LEnumor.Free;
 end; { TUnit.CheckInstrumentedProcs }
 
 function TUnit.LocateUnit(const unitName: string): TUnit;
