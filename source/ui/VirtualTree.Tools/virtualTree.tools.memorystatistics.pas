@@ -27,7 +27,7 @@ type
   TColumnInfoType = (undefined,Text,Percent, Mem, Count);
   TSimpleMemStatsListTools = class(TVirtualTreeBaseTools)
   private
-    fListType : TMemoryInfoTypeEnum;
+    fTreeType : TMemoryInfoTypeEnum;
     fProfileResults : TResults;
     fThreadIndex : Integer;
     function  GetThreadName(index: integer): string;
@@ -70,7 +70,7 @@ type
 
     property ThreadIndex : integer read fThreadIndex write fThreadIndex;
     property ProfileResults : TResults read fProfileResults write fProfileResults;
-    property ListView : TVirtualStringTree read fList;
+    property ListView : TVirtualStringTree read fTree;
   end;
 
 implementation
@@ -110,12 +110,12 @@ const
 constructor TSimpleMemStatsListTools.Create(const aList: TVirtualStringTree; const aListType : TMemoryInfoTypeEnum);
 begin
   inherited Create(AList);
-  fListType := aListType;
-  fList.NodeDataSize := SizeOf(TMemoryInfoRec);
-  fList.OnCompareNodes := self.OnCompareNodes;
-  fList.ongettext := OnGetText;
-  fList.OnAfterCellPaint := OnAftercellPaint;
-  fList.TreeOptions.SelectionOptions := fList.TreeOptions.SelectionOptions + [TVTSelectionOption.toFullRowSelect];
+  fTreeType := aListType;
+  fTree.NodeDataSize := SizeOf(TMemoryInfoRec);
+  fTree.OnCompareNodes := self.OnCompareNodes;
+  fTree.ongettext := OnGetText;
+  fTree.OnAfterCellPaint := OnAftercellPaint;
+  fTree.TreeOptions.SelectionOptions := fTree.TreeOptions.SelectionOptions + [TVTSelectionOption.toFullRowSelect];
 end;
 
 procedure TSimpleMemStatsListTools.AddEntry(const anEntryId : Cardinal);
@@ -123,10 +123,10 @@ var
   LData : PMemoryInfoRec;
   LNode : PVirtualNode;
 begin
-  LNode := flist.AddChild(nil);
+  LNode := fTree.AddChild(nil);
   LData := PMemoryInfoRec(LNode.GetData);
-  LData.ProfilingType := fListType;
-  case fListType of
+  LData.ProfilingType := fTreeType;
+  case fTreeType of
     pit_unit : LData.UnitId := anEntryId;
     pit_class : LData.ClassId := anEntryId;
     pit_proc: LData.ProcId := anEntryId;
@@ -142,10 +142,10 @@ var
   LData : PMemoryInfoRec;
   LNode : PVirtualNode;
 begin
-  LNode := flist.AddChild(nil);
+  LNode := fTree.AddChild(nil);
   LData := PMemoryInfoRec(LNode.GetData);
-  LData.ProfilingType := fListType;
-  case fListType of
+  LData.ProfilingType := fTreeType;
+  case fTreeType of
     pit_unit : LData.UnitId := anEntryId;
     pit_class : LData.ClassId := anEntryId;
     pit_proc: LData.ProcId := anEntryId;
@@ -170,9 +170,9 @@ var i :integer;
     lCellText : string;
 begin
   result := '';
-  for i := 0 to fList.Header.Columns.Count-1 do
+  for i := 0 to fTree.Header.Columns.Count-1 do
   begin
-    OnGetText(fList,aNode, i, TVSTTextType.ttNormal,lCellText);
+    OnGetText(fTree,aNode, i, TVSTTextType.ttNormal,lCellText);
     lCellText := StringReplace(lCellText, ',', '.', [rfReplaceAll]);
     result := result + lCellText + aDelimeter;
   end;
@@ -184,7 +184,7 @@ var
   LEnum : TVTVirtualNodeEnumerator;
 begin
   result := nil;
-  LEnum := fList.SelectedNodes(false).GetEnumerator();
+  LEnum := fTree.SelectedNodes(false).GetEnumerator();
   while(LEnum.MoveNext) do
   begin
     Exit(LEnum.Current);
@@ -206,16 +206,16 @@ var
   LEnumor : TVTVirtualNodeEnumerator;
 begin
   result := false;
-  LEnumor := fList.Nodes().GetEnumerator();
+  LEnumor := fTree.Nodes().GetEnumerator();
   while(LEnumor.MoveNext) do
   begin
     if PMemoryInfoRec(LEnumor.Current.GetData).GetId = anId then
     begin
-      fList.Selected[LEnumor.Current] := true;
+      fTree.Selected[LEnumor.Current] := true;
       result := true;
     end
     else
-      fList.Selected[LEnumor.Current] := false;
+      fTree.Selected[LEnumor.Current] := false;
   end;
 end;
 
@@ -226,7 +226,7 @@ begin
   result := '';
   LNode := self.GetSelectedNode;
   if Assigned(LNode) then
-    OnGetText(fList,LNode, 0, TVSTTextType.ttNormal,result);
+    OnGetText(fTree,LNode, 0, TVSTTextType.ttNormal,result);
 end;
 
 function TSimpleMemStatsListTools.GetThreadName(index: integer): string;
@@ -573,14 +573,14 @@ var
     LValueMax1,LValueMax2 : double;
     LColumnType : TColumnInfoType;
 begin
-  LData1 := FList.GetNodeData(Node1);
-  LData2 := fList.GetNodeData(Node2);
+  LData1 := fTree.GetNodeData(Node1);
+  LData2 := fTree.GetNodeData(Node2);
 
   if Assigned(LData1) and Assigned(LData2) then
   begin
     // column 0 is always the text
-    LText1 := FList.Text[Node1,Column];
-    LText2 := FList.Text[Node2,Column];
+    LText1 := fTree.Text[Node1,Column];
+    LText2 := fTree.Text[Node2,Column];
     if GetValue(LData1,column,LValue1,LValueMax1, LColumnType) and
        GetValue(LData2,column,LValue2,LValueMax2,LColumnType) then
     begin
@@ -626,21 +626,21 @@ begin
       LNodeIsSelected := sender.Selected[node];
       if not LNodeIsSelected then
       begin
-        Pen.Color := fList.Colors.BackGroundColor;
-        Brush.Color := fList.Colors.BackGroundColor;
+        Pen.Color := fTree.Colors.BackGroundColor;
+        Brush.Color := fTree.Colors.BackGroundColor;
         Brush.Style := bsSolid;
       end
       else
       begin
         if sender.Focused then
         begin
-          Pen.Color := fList.Colors.FocusedSelectionColor;
-          Brush.Color := fList.Colors.FocusedSelectionColor;
+          Pen.Color := fTree.Colors.FocusedSelectionColor;
+          Brush.Color := fTree.Colors.FocusedSelectionColor;
         end
         else
         begin
-          Pen.Color := fList.Colors.UnfocusedSelectionColor;
-          Brush.Color := fList.Colors.UnfocusedSelectionColor;
+          Pen.Color := fTree.Colors.UnfocusedSelectionColor;
+          Brush.Color := fTree.Colors.UnfocusedSelectionColor;
         end;
         Brush.Style := bsSolid;
       end;
