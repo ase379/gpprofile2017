@@ -90,8 +90,6 @@ type
     fvstThreadsTools  : TSimpleTimeStatsListTools;
     fCurrentProfile: TResults;
     factHideNotExecuted : TAction;
-    factShowHideCallers : TAction;
-    factShowHideCallees : TAction;
     fOnReloadSource : TReloadSourceEvent;
     procedure FillClassView(resortOn: integer = -1);
     procedure FillProcView(resortOn: integer = -1);
@@ -128,8 +126,6 @@ type
 
     property CurrentProfile: TResults read fCurrentProfile write fCurrentProfile;
     property actHideNotExecuted : TAction read fActHideNotExecuted write fActHideNotExecuted;
-    property actShowHideCallers : TAction read factShowHideCallers write factShowHideCallers;
-    property actShowHideCallees : TAction read factShowHideCallees write factShowHideCallees;
     property OnReloadSource : TReloadSourceEvent read fOnReloadSource write fOnReloadSource;
    end;
 
@@ -625,36 +621,12 @@ end;
 
 procedure TfrmMainProfiling.ResetCallers;
 begin
-  with actShowHideCallers do begin
-    Tag := 1-Ord(pnlCallers.Visible);
-    if Tag = 1 then begin
-      Caption := 'Show &Callers';
-      Hint    := 'Show callers';
-    end
-    else begin
-      Caption := 'Hide &Callers';
-      Hint    := 'Hide callers';
-    end;
-    ImageIndex := 22+Tag;
-  end;
   RedisplayCallers;
   SlidersMoved;
 end; { TfrmMain.ResetCallers }
 
 procedure TfrmMainProfiling.ResetCallees;
 begin
-  with actShowHideCallees do begin
-    Tag := 1-Ord(pnlCallees.Visible);
-    if Tag = 1 then begin
-      Caption := 'Show Callees';
-      Hint    := 'Show callees';
-    end
-    else begin
-      Caption := 'Hide Callees';
-      Hint    := 'Hide callees';
-    end;
-    ImageIndex := 24+Tag;
-  end;
   RedisplayCallees;
   SlidersMoved;
 end; { TfrmMain.ResetCallers }

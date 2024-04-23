@@ -153,8 +153,6 @@ begin
 end;
 
 procedure TProcEntryList.AddThreadToExistsingProcRows(const aTotalNumberOfThreads: Cardinal);
-var
-  i : integer;
 begin
   for var lEntry in self do
   begin
