@@ -448,7 +448,7 @@ begin
     try
       if cbxSelectThreadProc.ItemIndex >= 0 then
       begin
-        for i := Low(resProcedures)+1 to High(resProcedures) do begin
+        for i := 1 to resProcedures.Count-1 do begin
           with resProcedures[i] do begin
             if (not actHideNotExecuted.Checked) or (peProcCnt[cbxSelectThreadProc.ItemIndex] > 0) then begin
               fvstProcsTools.AddEntry(i);

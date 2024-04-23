@@ -344,7 +344,7 @@ begin
   end
   else if aData.ProfilingType = pit_proc then
   begin
-    LTotalMem := fProfileResults.resProcedures[0].peProcTime[fThreadIndex];
+    LTotalMem := fProfileResults.resProcedures[0].peProcMem[fThreadIndex];
     if LTotalMem = 0  then
       Exit(false);
 
@@ -367,7 +367,7 @@ begin
   end
   else if aData.ProfilingType = pit_proc_callers then
   begin
-    LTotalMem := fProfileResults.resProcedures[0].peProcTime[fThreadIndex];
+    LTotalMem := fProfileResults.resProcedures[0].peProcMem[fThreadIndex];
     if LTotalMem = 0  then
       Exit(false);
     case aColumnIndex of
@@ -455,7 +455,7 @@ begin
     case Column of
       COL_UNIT_NAME: CellText := fProfileResults.resUnits[LData.UnitId].Name;
       COL_UNIT_TOTAL_PERC: CellText := FormatPerc(fProfileResults.resUnits[LData.UnitId].ueTotalMem[fThreadIndex]/TotalMem);
-      COL_UNIT_TOTAL_MEM: CellText := FormatTime(fProfileResults.resUnits[LData.UnitId].ueTotalMem[fThreadIndex]);
+      COL_UNIT_TOTAL_MEM: CellText := FormatMem(fProfileResults.resUnits[LData.UnitId].ueTotalMem[fThreadIndex]);
       COL_UNIT_TOTAL_CALLS: CellText := FormatCnt(fProfileResults.resUnits[LData.UnitId].ueTotalCnt[fThreadIndex]);
     end;
 
@@ -475,7 +475,7 @@ begin
         else
           CellText := FormatPerc(fProfileResults.resClasses[LData.ClassId].ceTotalMem[fThreadIndex]/TotalMem);
       end;
-      COL_CLASS_TOTAL_MEM: CellText := FormatTime(fProfileResults.resClasses[LData.ClassId].ceTotalMem[fThreadIndex]);
+      COL_CLASS_TOTAL_MEM: CellText := FormatMem(fProfileResults.resClasses[LData.ClassId].ceTotalMem[fThreadIndex]);
       COL_CLASS_TOTAL_CALLS: CellText := FormatCnt(fProfileResults.resClasses[LData.ClassId].ceTotalCnt[fThreadIndex]);
     end;
   end
@@ -494,7 +494,7 @@ begin
         else
           CellText := FormatPerc(fProfileResults.resProcedures[LData.ProcId].peProcMem[fThreadIndex]/TotalMem);
       end;
-      COL_PROC_TOTAL_MEM: CellText := FormatTime(fProfileResults.resProcedures[LData.ProcId].peProcMem[fThreadIndex]);
+      COL_PROC_TOTAL_MEM: CellText := FormatMem(fProfileResults.resProcedures[LData.ProcId].peProcMem[fThreadIndex]);
       COL_PROC_TOTAL_CALLS: CellText := FormatCnt(fProfileResults.resProcedures[LData.ProcId].peProcCnt[fThreadIndex]);
     end;
   end
@@ -513,7 +513,7 @@ begin
         else
           CellText := FormatPerc(fProfileResults.CallGraphInfo.GetGraphInfo(LData.CallerGraphIndex,LData.CallerProcId).ProcMem[fThreadIndex]/TotalMem);
       end;
-      COL_PROC_TOTAL_MEM: CellText := FormatTime(fProfileResults.CallGraphInfo.GetGraphInfo(LData.CallerGraphIndex,LData.CallerProcId).ProcMem[fThreadIndex]);
+      COL_PROC_TOTAL_MEM: CellText := FormatMem(fProfileResults.CallGraphInfo.GetGraphInfo(LData.CallerGraphIndex,LData.CallerProcId).ProcMem[fThreadIndex]);
       COL_PROC_TOTAL_CALLS: CellText := FormatCnt(fProfileResults.CallGraphInfo.GetGraphInfo(LData.CallerGraphIndex,LData.CallerProcId).ProcCnt[fThreadIndex]);
     end;
   end
@@ -534,7 +534,7 @@ begin
           CellText := FormatPerc(fProfileResults.CallGraphInfo.GetGraphInfo(LData.CalleeProcId,LData.CalleeGraphIndex).ProcMem[fThreadIndex]/TotalMem);
       end;
 
-      COL_PROC_TOTAL_MEM: CellText := FormatTime(fProfileResults.CallGraphInfo.GetGraphInfo(LData.CalleeProcId,LData.CalleeGraphIndex).ProcMem[fThreadIndex]);
+      COL_PROC_TOTAL_MEM: CellText := FormatMem(fProfileResults.CallGraphInfo.GetGraphInfo(LData.CalleeProcId,LData.CalleeGraphIndex).ProcMem[fThreadIndex]);
       COL_PROC_TOTAL_CALLS: CellText := FormatCnt(fProfileResults.CallGraphInfo.GetGraphInfo(LData.CalleeProcId,LData.CalleeGraphIndex).ProcCnt[fThreadIndex]);
     end;
   end
@@ -554,7 +554,7 @@ begin
         else
           CellText := FormatPerc(fProfileResults.resThreads[LData.ThreadId].teTotalMem/TotalMem);
       end;
-      COL_THREAD_TOTAL_TIME: CellText := FormatTime(fProfileResults.resThreads[LData.ThreadId].teTotalMem);
+      COL_THREAD_TOTAL_TIME: CellText := FormatMem(fProfileResults.resThreads[LData.ThreadId].teTotalMem);
       COL_THREAD_TOTAL_CALLS: CellText := FormatCnt(fProfileResults.resThreads[LData.ThreadId].teTotalCnt);
     end;
   end;
@@ -665,7 +665,7 @@ begin
       case LCellInfo of
         TColumnInfoType.Text : Text := 'Value :'+LValue.ToString()+' , max:'+LMax.ToString();
         TColumnInfoType.Percent : Text := FormatPerc(LNormalizedValue);
-        TColumnInfoType.Mem : Text := FormatTime(LValue);
+        TColumnInfoType.Mem : Text := FormatMem(LValue);
         TColumnInfoType.Count : Text := FormatCnt(Round(LValue));
       end;
       Font.Color := clWindowText;
