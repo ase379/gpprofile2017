@@ -75,12 +75,16 @@
     <PropertyGroup Condition="'$(Base_Win32)'!=''">
         <Icon_MainIcon>gpprof_Icon.ico</Icon_MainIcon>
         <Manifest_File>$(BDS)\bin\default_app.manifest</Manifest_File>
-        <AppEnableRuntimeThemes>true</AppEnableRuntimeThemes>
+        <VerInfo_Build>3</VerInfo_Build>
+        <VerInfo_Keys>CompanyName=;FileDescription=Profiler for all versions of Delphi;FileVersion=1.6.0.3;InternalName=GpProfile;LegalCopyright=(c) 1998, 1999 Primoz Gabrijelcic;LegalTrademarks=;OriginalFilename=;ProductName=GpProfile 2017;ProductVersion=1.6.0</VerInfo_Keys>
+        <AppDPIAwarenessMode>none</AppDPIAwarenessMode>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Base_Win64)'!=''">
-        <AppEnableRuntimeThemes>true</AppEnableRuntimeThemes>
         <Manifest_File>$(BDS)\bin\default_app.manifest</Manifest_File>
         <Icon_MainIcon>gpprof_Icon.ico</Icon_MainIcon>
+        <VerInfo_Build>3</VerInfo_Build>
+        <VerInfo_Keys>CompanyName=;FileDescription=Profiler for all versions of Delphi;FileVersion=1.6.0.3;InternalName=GpProfile;LegalCopyright=(c) 1998, 1999 Primoz Gabrijelcic;LegalTrademarks=;OriginalFilename=;ProductName=GpProfile 2017;ProductVersion=1.6.0</VerInfo_Keys>
+        <AppDPIAwarenessMode>none</AppDPIAwarenessMode>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_1)'!=''">
         <Version>7.0</Version>
@@ -99,11 +103,15 @@
     <PropertyGroup Condition="'$(Cfg_1_Win32)'!=''">
         <BT_BuildType>Debug</BT_BuildType>
         <AppDPIAwarenessMode>none</AppDPIAwarenessMode>
+        <VerInfo_Build>3</VerInfo_Build>
+        <VerInfo_Keys>CompanyName=;FileDescription=Profiler for all versions of Delphi;FileVersion=1.6.0.3;InternalName=GpProfile;LegalCopyright=(c) 1998, 1999 Primoz Gabrijelcic;LegalTrademarks=;OriginalFilename=;ProductName=GpProfile 2017;ProductVersion=1.6.0</VerInfo_Keys>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_1_Win64)'!=''">
         <DCC_ExeOutput>..\bin64</DCC_ExeOutput>
         <BT_BuildType>Debug</BT_BuildType>
         <AppDPIAwarenessMode>none</AppDPIAwarenessMode>
+        <VerInfo_Build>3</VerInfo_Build>
+        <VerInfo_Keys>CompanyName=;FileDescription=Profiler for all versions of Delphi;FileVersion=1.6.0.3;InternalName=GpProfile;LegalCopyright=(c) 1998, 1999 Primoz Gabrijelcic;LegalTrademarks=;OriginalFilename=;ProductName=GpProfile 2017;ProductVersion=1.6.0</VerInfo_Keys>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_2)'!=''">
         <Version>7.0</Version>
@@ -126,15 +134,15 @@
         <DCC_HppOutput>..\DCU</DCC_HppOutput>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_2_Win32)'!=''">
-        <VerInfo_Build>1</VerInfo_Build>
+        <VerInfo_Build>3</VerInfo_Build>
         <BT_BuildType>Debug</BT_BuildType>
-        <VerInfo_Release>8</VerInfo_Release>
-        <AppDPIAwarenessMode>none</AppDPIAwarenessMode>
-        <VerInfo_Keys>CompanyName=;FileDescription=Profiler for all versions of Delphi;FileVersion=1.5.9.0;InternalName=GpProfile;LegalCopyright=(c) 1998, 1999 Primoz Gabrijelcic;LegalTrademarks=;OriginalFilename=;ProductName=GpProfile 2017;ProductVersion=1.5.9</VerInfo_Keys>
+        <VerInfo_Keys>CompanyName=;FileDescription=Profiler for all versions of Delphi;FileVersion=1.6.0.3;InternalName=GpProfile;LegalCopyright=(c) 1998, 1999 Primoz Gabrijelcic;LegalTrademarks=;OriginalFilename=;ProductName=GpProfile 2017;ProductVersion=1.5.9</VerInfo_Keys>
+        <DCC_DebugDCUs>true</DCC_DebugDCUs>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_2_Win64)'!=''">
-        <AppDPIAwarenessMode>none</AppDPIAwarenessMode>
         <BT_BuildType>Debug</BT_BuildType>
+        <VerInfo_Build>3</VerInfo_Build>
+        <VerInfo_Keys>CompanyName=;FileDescription=Profiler for all versions of Delphi;FileVersion=1.6.0.3;InternalName=GpProfile;LegalCopyright=(c) 1998, 1999 Primoz Gabrijelcic;LegalTrademarks=;OriginalFilename=;ProductName=GpProfile 2017;ProductVersion=1.6.0</VerInfo_Keys>
     </PropertyGroup>
     <ProjectExtensions>
         <Borland.Personality>Delphi.Personality.12</Borland.Personality>
