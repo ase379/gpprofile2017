@@ -24,19 +24,19 @@ type
     procedure RaiseMissingAttributeError(const anTagName, anAttributeName : string);
 
   public
-    procedure LoadSelectionFile(const aFilename : string);
+    procedure LoadSelectionFromStream(const aStream: TStream);
     procedure ApplySelections(const aUnits : TUnitList; const aOnlyCheckUnitName : boolean);
   end;
 
   TUnitSelectionSerializer = class
   private
-    fFilename : string;
+    fStream : TStream;
     fXmlDocument : IXMLDocument;
     fRootNode : IXMLNode;
     fUnitsNode : IXMLNode;
     fUnitNode : IXMLNode;
   public
-    constructor Create(const aFilename : string);
+    constructor Create(const aStream : TStream);
     destructor Destroy; override;
     procedure AddUnit(const aUnitName: string);
     procedure AddProc(const aProcName: string);
@@ -150,7 +150,7 @@ begin
 end;
 
 
-procedure TUnitSelectionList.LoadSelectionFile(const aFilename: string);
+procedure TUnitSelectionList.LoadSelectionFromStream(const aStream: TStream);
 var
   LXmlDocument : IXMLDocument;
   LUnitsNode,
@@ -162,7 +162,8 @@ var
   LUnitSelection : TUnitSelection;
 begin
   Self.Clear;
-  LXmlDocument := LoadXMLDocument(aFilename);
+  LXmlDocument := NewXMLDocument();
+  LXmlDocument.LoadFromStream(aStream);
   for I := 0 to LXmlDocument.DocumentElement.ChildNodes.Count-1 do
   begin
     LUnitsNode := LXmlDocument.DocumentElement.ChildNodes[I];
@@ -198,16 +199,18 @@ end;
 
 { TUnitSelectionSerializer }
 
-constructor TUnitSelectionSerializer.Create(const aFilename : string);
+
+constructor TUnitSelectionSerializer.Create(const aStream : TStream);
 begin
   inherited Create();
-  fFilename := aFilename;
+  fStream := aStream;
   fXmlDocument := NewXMLDocument;
   fXmlDocument.Encoding := 'utf-8';
   fXmlDocument.Options := [doNodeAutoIndent]; // looks better in Editor ;)
   fRootNode := fXmlDocument.AddChild('ISelection');
   fUnitsNode := fRootNode.AddChild('Units');
 end;
+
 
 destructor TUnitSelectionSerializer.Destroy;
 begin
@@ -217,7 +220,7 @@ end;
 
 procedure TUnitSelectionSerializer.Save;
 begin
-  fXmlDocument.SaveToFile(fFilename);
+  fXmlDocument.SaveToStream(fStream);
 end;
 
 procedure TUnitSelectionSerializer.AddUnit(const aUnitName: string);

@@ -49,8 +49,8 @@ type
     function LocateUnit(const aUnitName: string): TUnit;
     function IsMissingUnit(const aUnitName : string): Boolean;
 
-    procedure LoadInstrumentalizationSelection(const aFilename : string);
-    procedure SaveInstrumentalizationSelection(const aFilename : string);
+    procedure LoadInstrumentalizationSelection(const aStream: TStream);
+    procedure SaveInstrumentalizationSelection(const aStream: TStream);
     procedure ApplySelections(const aUnitSelections: TUnitSelectionList; const aOnlyCheckUnitName : boolean);
 
     function LocateOrCreateUnit(const unitName, unitLocation: string;const excluded: boolean): TBaseUnit; override;
@@ -468,20 +468,20 @@ begin
   end;
 end;
 
-procedure TProject.LoadInstrumentalizationSelection(const aFilename: string);
+procedure TProject.LoadInstrumentalizationSelection(const aStream: TStream);
 var
   LUnitSelections: TUnitSelectionList;
 begin
   LUnitSelections := TUnitSelectionList.Create(true);
   try
-    LUnitSelections.LoadSelectionFile(aFilename);
+    LUnitSelections.LoadSelectionFromStream(aStream);
     ApplySelections(LUnitSelections, false);
   finally
     LUnitSelections.Free;
   end;
 end;
 
-procedure TProject.SaveInstrumentalizationSelection(const aFilename: string);
+procedure TProject.SaveInstrumentalizationSelection(const aStream: TStream);
 var
   LInstrumentedUnits : TUnitInstrumentationInfoList;
   LInstrumentedProcs : TProcedureInstrumentationInfoList;
@@ -490,7 +490,7 @@ var
 begin
   LInstrumentedUnits := TUnitInstrumentationInfoList.Create();
   LInstrumentedProcs := TProcedureInstrumentationInfoList.Create();
-  LSerializer := TUnitSelectionSerializer.Create(aFilename);
+  LSerializer := TUnitSelectionSerializer.Create(aStream);
   try
     GetUnitList(LInstrumentedUnits,false);
 

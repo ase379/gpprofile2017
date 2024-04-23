@@ -259,7 +259,7 @@ type
     procedure SlidersMoved;
     function  IsProjectConsole: boolean;
     procedure ResetSourcePreview(reposition: boolean);
-    procedure RestoreUIAfterParseProject;
+    procedure RestoreUIAfterParseProject(const aLastSelectionStream: TStream);
     procedure WMDropFiles (var aMsg: TMessage); message WM_DROPFILES;
     procedure ResetCallees;
  end;
@@ -366,7 +366,7 @@ begin
   SetSource;
 end; { TfrmMain.EnablePC }
 
-procedure TFrmMain.RestoreUIAfterParseProject();
+procedure TFrmMain.RestoreUIAfterParseProject(const aLastSelectionStream: TStream);
 begin
   TSessionData.ProjectOutputDir := openProject.OutputDir;
   StatusPanel0('Parsed', True);
@@ -383,15 +383,25 @@ begin
   actSaveInstrumentationSelection.Enabled := true;
   FInstrumentationFrame.openProject := openProject;
   FInstrumentationFrame.FillUnitTree(not FInstrumentationFrame.chkShowAll.Checked, FInstrumentationFrame.chkShowDirStructure.Checked);
+  if assigned(aLastSelectionStream) then
+    openProject.LoadInstrumentalizationSelection(aLastSelectionStream);
 end;
 
 procedure TfrmMain.ParseProject(const aProject: string; const aJustRescan: boolean);
 var
   vErrList: TStringList;
   LDefines : string;
+  lLastSelectionStream : TMemoryStream;
 begin
   Enabled := False;
   DisablePC;
+  lLastSelectionStream := nil;
+  if assigned(openProject) then
+  begin
+    lLastSelectionStream := TMemoryStream.Create();
+    openProject.SaveInstrumentalizationSelection(lLastSelectionStream);
+    lLastSelectionStream.Position := 0;
+  end;
   if not aJustRescan then
   begin
     FInstrumentationFrame.openProject := nil;
@@ -426,7 +436,8 @@ begin
           end;
           HideProgressBar;
           vErrList.Free;
-          RestoreUIAfterParseProject();
+          RestoreUIAfterParseProject(lLastSelectionStream);
+          lLastSelectionStream.Free;
           StatusPanel0('Parsing finished, it took '+fNeededSeconds.ToString+' seconds.',false);
         end);
       end,
@@ -452,7 +463,8 @@ begin
         TThread.Synchronize(nil, procedure
         begin
           HideProgressBar;
-          RestoreUIAfterParseProject();
+          RestoreUIAfterParseProject(lLastSelectionStream);
+          lLastSelectionStream.Free;
           StatusPanel0('Rescanning finished, it took '+fNeededSeconds.ToString+' seconds.',false);
         end);
       end,'rescanning');
@@ -965,7 +977,9 @@ end;
 procedure TfrmMain.MRUGisClick(Sender: TObject; LatestFile: string);
 begin
   try
-    openProject.LoadInstrumentalizationSelection(LatestFile);
+    var lFileStream := TFileStream.Create(LatestFile, fmOpenRead);
+    openProject.LoadInstrumentalizationSelection(lFileStream);
+    lFileStream.Free;
     // an auto-click is done... ignore instrumentation upon select
     FInstrumentationFrame.TriggerSelectionReload;
   except
@@ -2204,7 +2218,9 @@ begin
     begin
        if ExtractFileExt(LSaveDialog.FileName) = '' then
           LSaveDialog.FileName := LSaveDialog.FileName + TUIStrings.GPProfInstrumentationSelectionExt;
-      openProject.SaveInstrumentalizationSelection(LSaveDialog.FileName);
+      var lFileStream := TFileStream.Create(LSaveDialog.FileName, fmCreate);
+      openProject.SaveInstrumentalizationSelection(lFileStream);
+      lFileStream.free;
       MRUGis.LatestFile := LFilename;
     end;
     except on e: Exception do
