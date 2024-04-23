@@ -11,8 +11,7 @@ uses
 
 type
   {$SCOPEDENUMS ON}
-  TShownInformationTypeEnum = (Performance, Memory);
-
+ 
   TReloadSourceEvent = procedure(const aPath : string; aLine : integer) of object;
   TfrmMainProfiling = class(TFrame)
     PageControl2: TPageControl;
@@ -90,10 +89,7 @@ type
     fvstProcsCalleesTools : TSimpleTimeStatsListTools;
     fvstThreadsTools  : TSimpleTimeStatsListTools;
     fCurrentProfile: TResults;
-    fShownInformationType : TShownInformationTypeEnum;
     factHideNotExecuted : TAction;
-    factShowHideCallers : TAction;
-    factShowHideCallees : TAction;
     fOnReloadSource : TReloadSourceEvent;
     procedure FillClassView(resortOn: integer = -1);
     procedure FillProcView(resortOn: integer = -1);
@@ -129,10 +125,7 @@ type
     procedure ExportTo(fileName: string; exportProcs, exportClasses, exportUnits, exportThreads, exportCSV: boolean);
 
     property CurrentProfile: TResults read fCurrentProfile write fCurrentProfile;
-    property ShownInformationType : TShownInformationTypeEnum read fShownInformationType write fShownInformationType;
     property actHideNotExecuted : TAction read fActHideNotExecuted write fActHideNotExecuted;
-    property actShowHideCallers : TAction read factShowHideCallers write factShowHideCallers;
-    property actShowHideCallees : TAction read factShowHideCallees write factShowHideCallees;
     property OnReloadSource : TReloadSourceEvent read fOnReloadSource write fOnReloadSource;
    end;
 
@@ -451,7 +444,7 @@ begin
     try
       if cbxSelectThreadProc.ItemIndex >= 0 then
       begin
-        for i := Low(resProcedures)+1 to High(resProcedures) do begin
+        for i := 1 to resProcedures.Count-1 do begin
           with resProcedures[i] do begin
             if (not actHideNotExecuted.Checked) or (peProcCnt[cbxSelectThreadProc.ItemIndex] > 0) then begin
               fvstProcsTools.AddEntry(i);
@@ -628,36 +621,12 @@ end;
 
 procedure TfrmMainProfiling.ResetCallers;
 begin
-  with actShowHideCallers do begin
-    Tag := 1-Ord(pnlCallers.Visible);
-    if Tag = 1 then begin
-      Caption := 'Show &Callers';
-      Hint    := 'Show callers';
-    end
-    else begin
-      Caption := 'Hide &Callers';
-      Hint    := 'Hide callers';
-    end;
-    ImageIndex := 22+Tag;
-  end;
   RedisplayCallers;
   SlidersMoved;
 end; { TfrmMain.ResetCallers }
 
 procedure TfrmMainProfiling.ResetCallees;
 begin
-  with actShowHideCallees do begin
-    Tag := 1-Ord(pnlCallees.Visible);
-    if Tag = 1 then begin
-      Caption := 'Show Callees';
-      Hint    := 'Show callees';
-    end
-    else begin
-      Caption := 'Hide Callees';
-      Hint    := 'Hide callees';
-    end;
-    ImageIndex := 24+Tag;
-  end;
   RedisplayCallees;
   SlidersMoved;
 end; { TfrmMain.ResetCallers }

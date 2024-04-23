@@ -52,6 +52,8 @@ type
     class function FormatTime(const ticks,frequency: int64): string; overload;
     class function FormatTime(const value: double): string; overload;
 
+    class function FormatMem(const value: double): string;
+
     class function FormatCnt(const cnt: integer): string;
     class function FormatPerc(const per: real): string;
 
@@ -238,6 +240,12 @@ class function TVirtualTreeBaseTools.FormatTime(const value: double): string;
 begin
   Result := Format('%.6n',[value]);
 end;
+
+class function TVirtualTreeBaseTools.FormatMem(const value: double): string;
+begin
+  Result := Format('%.6n',[value]);
+end;
+
 
 class function TVirtualTreeBaseTools.FormatCnt(const cnt: integer): string;
 begin

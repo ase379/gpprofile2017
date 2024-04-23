@@ -16,6 +16,7 @@ type
     ppStartTime   : int64;
     ppTotalTime   : int64;
     ppChildTime   : int64;
+    ppTotalMem    : Cardinal;
   public
     constructor Create(const aThreadID, aProcID: Cardinal);
     destructor  Destroy; override;
@@ -29,6 +30,7 @@ type
     property StartTime : int64 read ppStartTime;
     property TotalTime : int64 read ppTotalTime;
     property ChildTime : int64 read ppChildTime write ppChildTime;
+    property TotalMem : Cardinal read ppTotalMem;
 
   end;
 
@@ -209,6 +211,7 @@ procedure TProcWithMemProxy.Stop(var pkt: TResPacket; const memPkt: TResMemPacke
 begin
   inherited;
   ppEndMem := memPkt.rpMemWorkingSize;
+  ppTotalMem := ppEndMem-ppStartMem;
 end;
 
 end.

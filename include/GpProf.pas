@@ -165,14 +165,22 @@ end; { Transmit }
 
 function GetMemWorkingSize() : Cardinal;
 var
-  lMemCounters: TProcessMemoryCounters;
+  MemoryManagerState: TMemoryManagerState;
+  SmallBlockState: TSmallBlockTypeState;
+  i: Integer;
 begin
-  result := 0;
-  lMemCounters := Default(TProcessMemoryCounters);
-  if GetProcessMemoryInfo(GetCurrentProcess,@lMemCounters,SizeOf(lMemCounters)) then
-    Result := lMemCounters.WorkingSetSize
-  else
-    RaiseLastOSError;
+  GetMemoryManagerState( MemoryManagerState );
+  Result := 0;
+  for i := low(MemoryManagerState.SmallBlockTypeStates) to
+        high(MemoryManagerState.SmallBlockTypeStates) do
+    begin
+    SmallBlockState := MemoryManagerState.SmallBlockTypeStates[i];
+    Inc(Result,
+    SmallBlockState.AllocatedBlockCount*SmallBlockState.UseableBlockSize);
+    end;
+
+  Inc(Result, MemoryManagerState.TotalAllocatedMediumBlockSize);
+  Inc(Result, MemoryManagerState.TotalAllocatedLargeBlockSize);
 end;
 
 procedure WriteMemWorkingSize();

@@ -6,18 +6,23 @@ uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes,
   Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.Dialogs, VirtualTrees, Vcl.StdCtrls, Vcl.ComCtrls, Vcl.ToolWin,
   Vcl.ExtCtrls, Vcl.Actnlist, vcl.menus,
-  gppresults,virtualTree.tools.timestatistics, System.Actions, System.ImageList, Vcl.ImgList, Vcl.WinXCtrls,
-  VirtualTrees.BaseAncestorVCL, VirtualTrees.BaseTree, VirtualTrees.AncestorVCL;
+  gppresults,virtualTree.tools.memorystatistics, System.Actions, System.ImageList, Vcl.ImgList, Vcl.WinXCtrls,
+  VirtualTrees.BaseAncestorVCL, VirtualTrees.AncestorVCL, VirtualTrees.BaseTree;
 
 type
   {$SCOPEDENUMS ON}
-  TShownInformationTypeEnum = (Performance, Memory);
-
   TReloadSourceEvent = procedure(const aPath : string; aLine : integer) of object;
   TfrmMemProfiling = class(TFrame)
     PageControl2: TPageControl;
     tabProcedures: TTabSheet;
     splitCallees: TSplitter;
+    pnThreadProcs: TPanel;
+    lblSelectThreadProc: TLabel;
+    pnlBrowser: TPanel;
+    ToolBar3: TToolBar;
+    ToolButton18: TToolButton;
+    ToolButton19: TToolButton;
+    cbxSelectThreadProc: TComboBox;
     pnlTopTwo: TPanel;
     splitCallers: TSplitter;
     pnlCallers: TPanel;
@@ -26,10 +31,15 @@ type
     vstProcs: TVirtualStringTree;
     pnlCallees: TPanel;
     vstCallees: TVirtualStringTree;
-    pnlBottom: TPanel;
     tabClasses: TTabSheet;
     vstClasses: TVirtualStringTree;
+    pnThreadClass: TPanel;
+    Label1: TLabel;
+    cbxSelectThreadClass: TComboBox;
     tabUnits: TTabSheet;
+    pnThreadUnits: TPanel;
+    Label2: TLabel;
+    cbxSelectThreadUnit: TComboBox;
     vstUnits: TVirtualStringTree;
     tabThreads: TTabSheet;
     vstThreads: TVirtualStringTree;
@@ -48,18 +58,12 @@ type
     sbFilterClasses: TSearchBox;
     sbFilterUnits: TSearchBox;
     sbFilterThreads: TSearchBox;
-    pnThreadProcs: TPanel;
-    pnlBrowser: TPanel;
-    ToolBar3: TToolBar;
-    ToolButton18: TToolButton;
-    ToolButton19: TToolButton;
     procedure splitCallersMoved(Sender: TObject);
     procedure cbxSelectThreadProcChange(Sender: TObject);
     procedure cbxSelectThreadUnitChange(Sender: TObject);
     procedure cbxSelectThreadClassChange(Sender: TObject);
-    procedure vstProcsNodeClick(Sender: TBaseVirtualTree; const HitInfo: THitInfo);
     procedure PageControl2Change(Sender: TObject);
-    procedure vstCalleesNodeClick(Sender: TBaseVirtualTree; const HitInfo: THitInfo);
+    procedure executeChange(Sender: TBaseVirtualTree);
     procedure vstCalleesNodeDblClick(Sender: TBaseVirtualTree; const HitInfo: THitInfo);
     procedure actBrowsePreviousExecute(Sender: TObject);
     procedure actBrowseNextExecute(Sender: TObject);
@@ -71,20 +75,20 @@ type
     procedure sbFilterClassesInvokeSearch(Sender: TObject);
     procedure sbFilterUnitsInvokeSearch(Sender: TObject);
     procedure sbFilterThreadsInvokeSearch(Sender: TObject);
+    procedure vstProcsChange(Sender: TBaseVirtualTree; Node: PVirtualNode);
+    procedure vstCallersChange(Sender: TBaseVirtualTree; Node: PVirtualNode);
+    procedure vstCalleesChange(Sender: TBaseVirtualTree; Node: PVirtualNode);
   private
     callersPerc               : real;
     calleesPerc               : real;
-    fvstUnitsTools : TSimpleTimeStatsListTools;
-    fvstClassesTools : TSimpleTimeStatsListTools;
-    fvstProcsTools : TSimpleTimeStatsListTools;
-    fvstProcsCallersTools : TSimpleTimeStatsListTools;
-    fvstProcsCalleesTools : TSimpleTimeStatsListTools;
-    fvstThreadsTools  : TSimpleTimeStatsListTools;
-    fOpenProfile: TResults;
-    fShownInformationType : TShownInformationTypeEnum;
+    fvstUnitsTools : TSimpleMemStatsListTools;
+    fvstClassesTools : TSimpleMemStatsListTools;
+    fvstProcsTools : TSimpleMemStatsListTools;
+    fvstProcsCallersTools : TSimpleMemStatsListTools;
+    fvstProcsCalleesTools : TSimpleMemStatsListTools;
+    fvstThreadsTools  : TSimpleMemStatsListTools;
+    fCurrentProfile: TResults;
     factHideNotExecuted : TAction;
-    factShowHideCallers : TAction;
-    factShowHideCallees : TAction;
     fOnReloadSource : TReloadSourceEvent;
     procedure FillClassView(resortOn: integer = -1);
     procedure FillProcView(resortOn: integer = -1);
@@ -100,13 +104,14 @@ type
     procedure Restack(fromPop, toPop: TPopupMenu; menuItem: TMenuItem);
     procedure RestackOne(fromPop, toPop: TPopupMenu);
     procedure PushBrowser(popBrowser: TPopupMenu; description: string; procID: integer);
-    procedure InvokeFilter(const aSearchTerm: string; const aTreeTool: TSimpleTimeStatsListTools;const column : integer = 0);
+    procedure InvokeFilter(const aSearchTerm: string; const aTreeTool: TSimpleMemStatsListTools;const column : integer = 0);
   public
 
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
     function Enable() : boolean;
     procedure Disable();
+    procedure FillThreadCombos;
     procedure FillViews(resortOn: integer = -1);
     procedure UpdateFocus;
 
@@ -114,16 +119,12 @@ type
     procedure ResetProfile;
     procedure ResetCallers;
     procedure ResetCallees;
-    procedure RepositionSliders;
     procedure SlidersMoved;
     procedure ClearBreakdown;
     procedure ExportTo(fileName: string; exportProcs, exportClasses, exportUnits, exportThreads, exportCSV: boolean);
 
-    property OpenProfile: TResults read fOpenProfile write fOpenProfile;
-    property ShownInformationType : TShownInformationTypeEnum read fShownInformationType write fShownInformationType;
+    property CurrentProfile: TResults read fCurrentProfile write fCurrentProfile;
     property actHideNotExecuted : TAction read fActHideNotExecuted write fActHideNotExecuted;
-    property actShowHideCallers : TAction read factShowHideCallers write factShowHideCallers;
-    property actShowHideCallees : TAction read factShowHideCallees write factShowHideCallees;
     property OnReloadSource : TReloadSourceEvent read fOnReloadSource write fOnReloadSource;
    end;
 
@@ -136,17 +137,17 @@ uses
 {$R *.dfm}
 
 
-{ TfrmMemProfiling }
+{ TfrmMainProfiling }
 
 constructor TfrmMemProfiling.Create(AOwner: TComponent);
 begin
   inherited Create(aOwner);
-  fvstUnitsTools   := TSimpleTimeStatsListTools.Create(vstUnits,TProfilingInfoTypeEnum.pit_unit);
-  fvstClassesTools := TSimpleTimeStatsListTools.Create(vstClasses,TProfilingInfoTypeEnum.pit_class);
-  fvstProcsTools   := TSimpleTimeStatsListTools.Create(vstProcs,TProfilingInfoTypeEnum.pit_proc);
-  fvstProcsCallersTools := TSimpleTimeStatsListTools.Create(vstCallers,TProfilingInfoTypeEnum.pit_proc_callers);
-  fvstProcsCalleesTools := TSimpleTimeStatsListTools.Create(vstCallees,TProfilingInfoTypeEnum.pit_proc_callees);
-  fvstThreadsTools := TSimpleTimeStatsListTools.Create(vstThreads,TProfilingInfoTypeEnum.pit_thread);
+  fvstUnitsTools   := TSimpleMemStatsListTools.Create(vstUnits,TMemoryInfoTypeEnum.pit_unit);
+  fvstClassesTools := TSimpleMemStatsListTools.Create(vstClasses,TMemoryInfoTypeEnum.pit_class);
+  fvstProcsTools   := TSimpleMemStatsListTools.Create(vstProcs,TMemoryInfoTypeEnum.pit_proc);
+  fvstProcsCallersTools := TSimpleMemStatsListTools.Create(vstCallers,TMemoryInfoTypeEnum.pit_proc_callers);
+  fvstProcsCalleesTools := TSimpleMemStatsListTools.Create(vstCallees,TMemoryInfoTypeEnum.pit_proc_callees);
+  fvstThreadsTools := TSimpleMemStatsListTools.Create(vstThreads,TMemoryInfoTypeEnum.pit_thread);
   PageControl2.ActivePage := tabProcedures;
 
 end;
@@ -164,20 +165,22 @@ end;
 
 function TfrmMemProfiling.Enable(): boolean;
 begin
-  result := true;
   PageControl2.Font.Color            := clWindowText;
+  result := cbxSelectThreadProc.Items.Count > 2;
+  if result then
+  begin
+    cbxSelectThreadProc.Color  := clWindow;
+    cbxSelectThreadClass.Color := clWindow;
+    cbxSelectThreadUnit.Color  := clWindow;
+  end;
 end;
 
 procedure TfrmMemProfiling.Disable;
 begin
   PageControl2.Font.Color            := clBtnShadow;
-end;
-
-
-procedure TfrmMemProfiling.RepositionSliders;
-begin
-  pnlCallees.Height := Round(calleesPerc*tabProcedures.Height);
-  pnlCallers.Height := Round(callersPerc*tabProcedures.Height);
+  cbxSelectThreadProc.Color          := clBtnFace;
+  cbxSelectThreadClass.Color         := clBtnFace;
+  cbxSelectThreadUnit.Color          := clBtnFace;
 end;
 
 procedure TfrmMemProfiling.SlidersMoved;
@@ -186,7 +189,7 @@ begin
   calleesPerc := pnlCallees.Height/tabProcedures.Height;
   if (calleesPerc > 1) then
     calleesPerc := 0.25;
-  if (callersPerc > 1) then
+    if (callersPerc > 1) then
     callersPerc := 0.25;
 
 end;
@@ -196,6 +199,47 @@ begin
   SlidersMoved;
 end;
 
+procedure TfrmMemProfiling.FillThreadCombos;
+var
+  i: integer;
+  LCaption : String;
+begin
+  with cbxSelectThreadProc do begin
+    Items.BeginUpdate;
+    try
+      Items.Clear;
+      if assigned(fCurrentProfile) then begin
+        Items.Add('All threads');
+        with fCurrentProfile do begin
+          for i := Low(resThreads)+1 to High(resThreads) do
+          begin
+            // first entries is handle 0 for unknown procs, skip it...
+            LCaption := uintToStr(resThreads[i].teThread) + ' - ';
+            if resThreads[i].Name = '' then
+              LCaption := LCaption + 'Thread '+IntToStr(i)
+            else
+              LCaption := LCaption + resThreads[i].Name;
+            Items.Add(LCaption)
+          end;
+        end;
+      end;
+      Enabled := (Items.Count > 2);
+      ItemIndex := IFF(Enabled,0,1);
+    finally Items.EndUpdate; end;
+  end;
+  cbxSelectThreadClass.Items.Assign(cbxSelectThreadProc.Items);
+  cbxSelectThreadClass.Enabled   := cbxSelectThreadProc.Enabled;
+  cbxSelectThreadClass.ItemIndex := cbxSelectThreadProc.ItemIndex;
+  cbxSelectThreadUnit.Items.Assign(cbxSelectThreadProc.Items);
+  cbxSelectThreadUnit.Enabled   := cbxSelectThreadProc.Enabled;
+  cbxSelectThreadUnit.ItemIndex := cbxSelectThreadProc.ItemIndex;
+  frmExport.expSelectThreadProc.Items.Assign(cbxSelectThreadProc.Items);
+  frmExport.expSelectThreadProc.Items.Add('Summary');
+  frmExport.expSelectThreadProc.Enabled := (frmExport.expSelectThreadProc.Items.Count > 3);
+  frmExport.expSelectThreadProc.ItemIndex := cbxSelectThreadProc.ItemIndex;
+end; { TfrmMainProfiling.FillThreadCombos }
+
+
 procedure TfrmMemProfiling.FillViews(resortOn: integer = -1);
 begin
   FillProcView(resortOn);
@@ -203,6 +247,7 @@ begin
   FillUnitView(resortOn);
   FillThreadView(resortOn);
   mnuExportProfile.Enabled     := true;
+  SlidersMoved();
 end;
 
 procedure TfrmMemProfiling.UpdateFocus;
@@ -218,28 +263,33 @@ begin
       vstThreads.SetFocus;
 end;
 
-procedure TfrmMemProfiling.vstCalleesNodeClick(Sender: TBaseVirtualTree; const HitInfo: THitInfo);
+procedure TfrmMemProfiling.vstCalleesChange(Sender: TBaseVirtualTree; Node: PVirtualNode);
+begin
+  executeChange(vstCallees);
+end;
+
+procedure TfrmMemProfiling.executeChange(Sender: TBaseVirtualTree);
 var
-  LProfilingType : TProfilingInfoTypeEnum;
+  LProfilingType : TMemoryInfoTypeEnum;
   LEnum : TVTVirtualNodeEnumerator;
   LProcId : Int64;
   LGraphId : integer;
 begin
   LProcId := -1;
   LGraphId := -1;
-  LProfilingType := TProfilingInfoTypeEnum.pit_proc; // unused here..
-  if assigned(openProfile) and (Sender is TVirtualStringTree) and ((Sender as TVirtualStringTree).SelectedCount>0) then
+  LProfilingType := TMemoryInfoTypeEnum.pit_proc; // unused here..
+  if assigned(fCurrentProfile) and (Sender is TVirtualStringTree) and ((Sender as TVirtualStringTree).SelectedCount>0) then
   begin
     LEnum := (Sender as TVirtualStringTree).SelectedNodes(false).GetEnumerator();
     while(LEnum.MoveNext) do
     begin
-      LProfilingType := PProfilingInfoRec(LEnum.Current.GetData).ProfilingType;
-      PProfilingInfoRec(LEnum.Current.GetData).GetCallStackInfo(LProcId,LGraphId);
+      LProfilingType := PMemoryInfoRec(LEnum.Current.GetData).ProfilingType;
+      PMemoryInfoRec(LEnum.Current.GetData).GetCallStackInfo(LProcId,LGraphId);
       Break;
     end;
-    with openProfile do
+    with fCurrentProfile do
     begin
-      if LProfilingType in [TProfilingInfoTypeEnum.pit_proc_callers,TProfilingInfoTypeEnum.pit_proc_callees] then
+      if LProfilingType in [TMemoryInfoTypeEnum.pit_proc_callers,TMemoryInfoTypeEnum.pit_proc_callees] then
       begin
         OnReloadSource(resUnits[resProcedures[LGraphId].peUID].FilePath,
                    resProcedures[LGraphId].peFirstLn);
@@ -250,7 +300,7 @@ end;
 
 procedure TfrmMemProfiling.vstCalleesNodeDblClick(Sender: TBaseVirtualTree; const HitInfo: THitInfo);
 var
-  LProfilingType : TProfilingInfoTypeEnum;
+  LProfilingType : TMemoryInfoTypeEnum;
   LEnum : TVTVirtualNodeEnumerator;
   LCaption : string;
   LSelectedProcID : Int64;
@@ -259,7 +309,7 @@ var
 begin
   LSelectedProcID := -1;
   LCallStackID := -1;
-  LProfilingType := TProfilingInfoTypeEnum.pit_proc; // unused here..
+  LProfilingType := TMemoryInfoTypeEnum.pit_proc; // unused here..
   if not (Sender is TVirtualStringTree) then
     raise Exception.Create('vstCalleesNodeDblClick: Sender is not a TVirtualStringTree.');
   LSendingTree := Sender as TVirtualStringTree;
@@ -270,26 +320,31 @@ begin
     LEnum := LSendingTree.SelectedNodes(false).GetEnumerator();
     while(LEnum.MoveNext) do
     begin
-      LProfilingType := PProfilingInfoRec(LEnum.Current.GetData).ProfilingType;
-      PProfilingInfoRec(LEnum.Current.GetData).GetCallStackInfo(LSelectedProcID,LCallStackID);
+      LProfilingType := PMemoryInfoRec(LEnum.Current.GetData).ProfilingType;
+      PMemoryInfoRec(LEnum.Current.GetData).GetCallStackInfo(LSelectedProcID,LCallStackID);
       Break;
     end;
     if LCallStackID<>-1 then
-      if LProfilingType in [TProfilingInfoTypeEnum.pit_proc_callers,TProfilingInfoTypeEnum.pit_proc_callees] then
+      if LProfilingType in [TMemoryInfoTypeEnum.pit_proc_callers,TMemoryInfoTypeEnum.pit_proc_callees] then
       begin
-        LCaption := openProfile.resProcedures[LCallStackID].Name;
+        LCaption := fCurrentProfile.resProcedures[LCallStackID].Name;
         PushBrowser(popBrowsePrevious,LCaption,LCallStackID);
       end;
     SelectProcs(LCallStackID);
   end;
 end;
 
-procedure TfrmMemProfiling.vstProcsNodeClick(Sender: TBaseVirtualTree; const HitInfo: THitInfo);
+procedure TfrmMemProfiling.vstCallersChange(Sender: TBaseVirtualTree; Node: PVirtualNode);
+begin
+  executeChange(vstCallers);
+end;
+
+procedure TfrmMemProfiling.vstProcsChange(Sender: TBaseVirtualTree; Node: PVirtualNode);
 begin
   lvProcsClick(Sender);
 end;
 
-{ TfrmMemProfiling.FillViews }
+{ TfrmMainProfiling.FillViews }
 
 
 procedure TfrmMemProfiling.FillThreadView(resortOn: integer = -1);
@@ -300,10 +355,10 @@ begin
   fvstThreadsTools.Clear();
   fvstThreadsTools.ThreadIndex := 0; // not needed
 
-  fvstThreadsTools.ProfileResults := openProfile;
-  with openProfile do begin
+  fvstThreadsTools.ProfileResults := fCurrentProfile;
+  with fCurrentProfile do begin
     try
-      if openProfile <> nil then begin
+      if assigned(fCurrentProfile) then begin
         for i := Low(resThreads)+1 to High(resThreads) do begin
           with resThreads[i] do begin
             if (not actHideNotExecuted.Checked) or (teTotalCnt > 0) then begin
@@ -316,7 +371,7 @@ begin
       fvstThreadsTools.EndUpdate;
     end;
   end;
-end; { TfrmMemProfiling.FillThreadView }
+end; { TfrmMainProfiling.FillThreadView }
 
 
 
@@ -326,22 +381,25 @@ var
 begin
   fvstUnitsTools.BeginUpdate;
   fvstUnitsTools.Clear();
-  fvstUnitsTools.ThreadIndex := 0;
-  fvstUnitsTools.ProfileResults := openProfile;
-  with openProfile do begin
+  fvstUnitsTools.ThreadIndex := cbxSelectThreadUnit.ItemIndex;
+  fvstUnitsTools.ProfileResults := fCurrentProfile;
+  with fCurrentProfile do begin
     try
+      if cbxSelectThreadUnit.ItemIndex >= 0 then
+	  begin
         for i := Low(resUnits)+1 to High(resUnits) do begin
           with resUnits[i] do begin
-            if (not actHideNotExecuted.Checked) or (ueTotalCnt[0] > 0) then begin
+            if (not actHideNotExecuted.Checked) or (ueTotalCnt[cbxSelectThreadUnit.ItemIndex] > 0) then begin
               fvstUnitsTools.AddEntry(i);
             end;
           end;
         end;
+      end;
     finally
       fvstUnitsTools.EndUpdate;
     end;
   end;
-end; { TfrmMemProfiling.FillUnitView }
+end; { TfrmMainProfiling.FillUnitView }
 
 
 
@@ -351,15 +409,18 @@ var
 begin
   fvstClassesTools.BeginUpdate;
   fvstClassesTools.Clear();
-  fvstClassesTools.ThreadIndex := 0;
-  fvstClassesTools.ProfileResults := openProfile;
-  with openProfile do begin
+  fvstClassesTools.ThreadIndex := cbxSelectThreadClass.ItemIndex;
+  fvstClassesTools.ProfileResults := fCurrentProfile;
+  with fCurrentProfile do begin
     try
-      for i := Low(resClasses)+1 to High(resClasses) do begin
-        with resClasses[i] do begin
-          if (not actHideNotExecuted.Checked) or (ceTotalCnt[0] > 0) then
-          begin
-            fvstClassesTools.AddEntry(i);
+      if cbxSelectThreadClass.ItemIndex >= 0 then
+      begin
+        for i := Low(resClasses)+1 to High(resClasses) do begin
+          with resClasses[i] do begin
+            if (not actHideNotExecuted.Checked) or (ceTotalCnt[cbxSelectThreadClass.ItemIndex] > 0) then
+            begin
+              fvstClassesTools.AddEntry(i);
+            end;
           end;
         end;
       end;
@@ -367,7 +428,7 @@ begin
       fvstClassesTools.EndUpdate;
     end;
   end;
-end; { TfrmMemProfiling.FillClassView }
+end; { TfrmMainProfiling.FillClassView }
 
 
 procedure TfrmMemProfiling.FillProcView(resortOn: integer = -1);
@@ -376,14 +437,17 @@ var
 begin
   fvstProcsTools.BeginUpdate;
   fvstProcsTools.Clear();
-  fvstProcsTools.ThreadIndex := 0;
-  fvstProcsTools.ProfileResults := openProfile;
-  with openProfile do begin
+  fvstProcsTools.ThreadIndex := cbxSelectThreadProc.ItemIndex;
+  fvstProcsTools.ProfileResults := fCurrentProfile;
+  with fCurrentProfile do begin
     try
-      for i := Low(resProcedures)+1 to High(resProcedures) do begin
-        with resProcedures[i] do begin
-          if (not actHideNotExecuted.Checked) or (peProcCnt[0] > 0) then begin
-            fvstProcsTools.AddEntry(i);
+      if cbxSelectThreadProc.ItemIndex >= 0 then
+      begin
+        for i := 1 to resProcedures.Count-1 do begin
+          with resProcedures[i] do begin
+            if (not actHideNotExecuted.Checked) or (peProcCnt[cbxSelectThreadProc.ItemIndex] > 0) then begin
+              fvstProcsTools.AddEntry(i);
+            end;
           end;
         end;
       end;
@@ -391,19 +455,18 @@ begin
       fvstProcsTools.EndUpdate;
     end;
   end;
-end; { TfrmMemProfiling.FillProcView }
-
+end; { TfrmMainProfiling.FillProcView }
 
 procedure TfrmMemProfiling.lvProcsClick(Sender: TObject);
 var
   uid: integer;
   LVST : TVirtualStringTree;
   LEnum : TVTVirtualNodeEnumerator;
-  LData : PProfilingInfoRec;
+  LData : PMemoryInfoRec;
   LSelectedID : integer;
 begin
   LSelectedID := -1;
-  if openProfile <> nil then
+  if assigned(fCurrentProfile) then
     with PageControl2, ActivePage do
     begin
       if ActivePage <> tabThreads then
@@ -420,11 +483,11 @@ begin
           LEnum := LVST.SelectedNodes(false).GetEnumerator();
           while(LEnum.MoveNext) do
           begin
-            LData := PProfilingInfoRec(LEnum.Current.GetData);
+            LData := PMemoryInfoRec(LEnum.Current.GetData);
             LSelectedID := LData.GetId;
           end;
         end;
-        with openProfile do begin
+        with fCurrentProfile do begin
         begin
           if LSelectedID >= 0 then
           begin
@@ -459,12 +522,12 @@ end;
 procedure TfrmMemProfiling.SelectProcs(pid: integer);
 var
   LEnumor : TVTVirtualNodeEnumerator;
-  LData : PProfilingInfoRec;
+  LData : PMemoryInfoRec;
 begin
   LEnumor := vstProcs.Nodes().GetEnumerator();
   while(LEnumor.MoveNext) do
   begin
-    LData := PProfilingInfoRec(LEnumor.Current.GetData());
+    LData := PMemoryInfoRec(LEnumor.Current.GetData());
     if LData.ProcId = pid then
     begin
       vstProcs.SetFocus;
@@ -479,6 +542,7 @@ end;
 
 procedure TfrmMemProfiling.ResetProfile();
 begin
+  fCurrentProfile := nil;
   fvstUnitsTools.ProfileResults := nil;
   fvstClassesTools.ProfileResults := nil;
   fvstProcsTools.ProfileResults := nil;
@@ -497,24 +561,27 @@ begin
   begin
     fvstProcsCalleesTools.BeginUpdate;
     fvstProcsCalleesTools.Clear();
-    fvstProcsCalleesTools.ThreadIndex := 0;
-    fvstProcsCalleesTools.ProfileResults := openProfile;
+    fvstProcsCalleesTools.ThreadIndex := cbxSelectThreadProc.ItemIndex;
+    fvstProcsCalleesTools.ProfileResults := fCurrentProfile;
     try
-      with openProfile do
+      with fCurrentProfile do
       begin
-        callingPID := fvstProcsTools.GetSelectedId;
-        for i := 1 to CallGraphInfoCount-1 do
+        if cbxSelectThreadProc.ItemIndex >= 0 then
         begin
-          LInfo := CallGraphInfo.GetGraphInfo(callingPID,i);
-          if assigned(LInfo) then
+          callingPID := fvstProcsTools.GetSelectedId;
+          for i := 1 to CallGraphInfoCount do
           begin
-            if (not actHideNotExecuted.Checked) or (LInfo.ProcCnt[0] > 0) then
+            LInfo := CallGraphInfo.GetGraphInfo(callingPID,i);
+            if assigned(LInfo) then
             begin
-              fvstProcsCalleesTools.AddEntry(callingPID,i);
-            end;
-          end; // with
-        end; // if
-        end; // for
+              if (not actHideNotExecuted.Checked) or (LInfo.ProcCnt[cbxSelectThreadProc.ItemIndex] > 0) then
+              begin
+                fvstProcsCalleesTools.AddEntry(callingPID,i);
+              end;
+            end; // with
+          end; // if
+          end; // for
+        end;
     finally
       fvstProcsCalleesTools.EndUpdate;
     end;
@@ -531,20 +598,20 @@ begin
   begin
     fvstProcsCallersTools.BeginUpdate;
     fvstProcsCallersTools.Clear();
-    fvstProcsCallersTools.ThreadIndex := 0;
-    fvstProcsCallersTools.ProfileResults := openProfile;
+    fvstProcsCallersTools.ThreadIndex := cbxSelectThreadProc.ItemIndex;
+    fvstProcsCallersTools.ProfileResults := fCurrentProfile;
     try
-      with openProfile do
+      if cbxSelectThreadProc.ItemIndex >= 0 then
       begin
         calledPID := fvstProcsTools.GetSelectedId();
-        for i := 1 to CallGraphInfoCount-1 do
+        for i := 1 to fCurrentProfile.CallGraphInfoCount do
         begin
-          LInfo := CallGraphInfo.GetGraphInfo(i,calledPID);
+          LInfo := fCurrentProfile.CallGraphInfo.GetGraphInfo(i,calledPID);
           if assigned(LInfo) then
-            if (not actHideNotExecuted.Checked) or (LInfo.ProcCnt[0] > 0) then
+            if (not actHideNotExecuted.Checked) or (LInfo.ProcCnt[cbxSelectThreadProc.ItemIndex] > 0) then
               fvstProcsCallersTools.AddEntry(calledPID, i);
         end; // if
-      end;
+      end; // for
     finally
       fvstProcsCallersTools.EndUpdate;
     end;
@@ -553,46 +620,21 @@ end;
 
 procedure TfrmMemProfiling.ResetCallers;
 begin
-  with actShowHideCallers do begin
-    Tag := 1-Ord(pnlCallers.Visible);
-    if Tag = 1 then begin
-      Caption := 'Show &Callers';
-      Hint    := 'Show callers';
-    end
-    else begin
-      Caption := 'Hide &Callers';
-      Hint    := 'Hide callers';
-    end;
-    ImageIndex := 22+Tag;
-  end;
   RedisplayCallers;
   SlidersMoved;
-end; { TfrmMain.ResetCallers }
+end;
 
 procedure TfrmMemProfiling.ResetCallees;
 begin
-  with actShowHideCallees do begin
-    Tag := 1-Ord(pnlCallees.Visible);
-    if Tag = 1 then begin
-      Caption := 'Show Callees';
-      Hint    := 'Show callees';
-    end
-    else begin
-      Caption := 'Hide Callees';
-      Hint    := 'Hide callees';
-    end;
-    ImageIndex := 24+Tag;
-  end;
   RedisplayCallees;
   SlidersMoved;
-end; { TfrmMain.ResetCallers }
-
+end;
 
 
 procedure TfrmMemProfiling.ExportTo(fileName: string; exportProcs, exportClasses,
   exportUnits, exportThreads, exportCSV: boolean);
 
-  procedure LExport(var f: textfile; aLvTools:TSimpleTimeStatsListTools; delim: char);
+  procedure LExport(var f: textfile; aLvTools:TSimpleMemStatsListTools; delim: char);
   var
     i   : integer;
     header: string;
@@ -756,7 +798,7 @@ begin
   InvokeFilter(sbFilterUnits.Text, fvstUnitsTools);
 end;
 
-procedure TfrmMemProfiling.InvokeFilter(const aSearchTerm: string; const aTreeTool : TSimpleTimeStatsListTools;const column : integer = 0);
+procedure TfrmMemProfiling.InvokeFilter(const aSearchTerm: string; const aTreeTool : TSimpleMemStatsListTools;const column : integer = 0);
 var
   LEnumor : TVTVirtualNodeEnumerator;
   lVisible : Boolean;

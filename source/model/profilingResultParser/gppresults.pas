@@ -10,7 +10,6 @@ uses
   System.Generics.Collections,
   gppResults.procs,
   gppResults.callGraph,
-  gppResults.memGraph,
   gppResults.types,
   gppResult.measurePointRegistry;
 
@@ -27,6 +26,7 @@ type
     teTotalTime  : int64;
     teTotalCnt   : integer;
     teActiveProcs: TActiveProcList;
+    teTotalMem  : Cardinal;
 
     property Name : String read GetName;
   end;
@@ -40,6 +40,7 @@ type
     ueQual     : AnsiString;
     ueTotalTime: array {thread} of int64;   // 0 = sum
     ueTotalCnt : array {thread} of integer; // 0 = sum
+    ueTotalMem: array {thread} of Cardinal;   // 0 = sum
 
     property FilePath : String read GetPath;
     property Name : String read GetName;
@@ -54,6 +55,7 @@ type
     ceFirstLn  : integer;
     ceTotalTime: array {thread} of int64;   // 0 = sum
     ceTotalCnt : array {thread} of integer; // 0 = sum
+    ceTotalMem: array {thread} of Cardinal;   // 0 = sum
 
     property Name : String read GetName;
   end;
@@ -124,13 +126,9 @@ type
     resThreads   : array of TThreadEntry;
     resUnits     : array of TUnitEntry;
     resClasses   : array of TClassEntry;
-    resProcedures: TArray<TProcEntry>;
+    resProcedures: TProcEntryList;
     fCallGraphInfoDict : TCallGraphInfoDict;
     fCallGraphInfoMaxElementCount : Integer;
-    /// <summary>
-    /// the calls for the mem stack
-    /// </summary>
-    fProcedureMemCallList : TProcedureMemCallList;
 
     resFrequency : int64;
     constructor Create(fileName: string; callback: TProgressCallback); overload;
@@ -154,7 +152,6 @@ type
     property    IsDigest: boolean read resPrfDigest;
     property    CallGraphInfo: TCallGraphInfoDict read fCallGraphInfoDict;
     property    CallGraphInfoCount: integer read fCallGraphInfoMaxElementCount;
-    property    ProcedureMemCallList: TProcedureMemCallList read fProcedureMemCallList;
   end;
 
 implementation
@@ -164,7 +161,6 @@ uses
   System.IOUtils,
   System.SysUtils,
   GpProfH,
-  gppResults.procArrayTools,
   gppCommon;
 
 
@@ -185,9 +181,9 @@ begin
   resNullOverhead    := 0;
   resNullError       := 0;
   resNullErrorAcc    := 0;
+  resProcedures := TProcEntryList.Create();
   // dictionary owning the values; all sub dicts are just refs
   fCallGraphInfoDict := TCallGraphInfoDict.Create();
-  fProcedureMemCallList := TProcedureMemCallList.Create();
   fMeasurePointRegistry := TMeasurePointRegistry.Create();
 end; { TResults.Create }
 
@@ -220,9 +216,9 @@ var
 begin
   fMeasurePointRegistry.free;
   fCallGraphInfoDict.free;
-  fProcedureMemCallList.free;
   for i := Low(resThreads) to High(resThreads) do
     resThreads[i].teActiveProcs.Free;
+  resProcedures.Free;
   inherited Destroy;
 end; { TResults.Destroy }
 
@@ -326,7 +322,7 @@ var
 begin
   CheckTag(PR_UNITTABLE);
   ReadInt(lNumberOfUnits);
-  SetLength(resUnits,lNumberOfUnits+1);      // resUnits[0] = Sum(resUnits[1:])
+  SetLength(resUnits,lNumberOfUnits+1);
   for i := 1 to lNumberOfUnits do begin
     with resUnits[i] do begin
       if Version >= 4 then ReadString(ueName)
@@ -334,13 +330,14 @@ begin
       if      Version >= 4 then ReadString(ueQual)
       else if Version > 1  then ReadShortstring(ueQual)
                            else ueQual := '';
-      SetLength(ueTotalTime,1);        // placeholder for a summary entry
+      SetLength(ueTotalTime,1);
       SetLength(ueTotalCnt,1);
+      SetLength(ueTotalMem, 1);
     end;
   end;
   CheckTag(PR_CLASSTABLE);
   ReadInt(lNumberOfClasses);
-  SetLength(resClasses,lNumberOfClasses+1);    // resClasses[0] = Sum(resClasses[1:])
+  SetLength(resClasses,lNumberOfClasses+1);
   for i := 1 to lNumberOfClasses do begin
     with resClasses[i] do begin
       if Version >= 4 then ReadString(ceName)
@@ -348,13 +345,15 @@ begin
       if Version > 1 then ReadInt(ceUID)
                      else ceUID := -1;
       ceFirstLn := MaxLongint;
-      SetLength(ceTotalTime,1);        // placeholder for a summary entry
+      SetLength(ceTotalTime,1);
       SetLength(ceTotalCnt,1);
+      SetLength(ceTotalMem,1);        // placeholder for a summary entry
     end;
   end;
   CheckTag(PR_PROCTABLE);
   ReadInt(lNumberOfProcs);
-  SetLength(resProcedures,lNumberOfProcs+1); // resProcedures[0] = Sum(resProcedures[1:])
+  // number of procs +1 one for summary
+  resProcedures.ResizeAndCreateProcs(lNumberOfProcs+1);
   for i := 1 to lNumberOfProcs do begin
     with resProcedures[i] do begin
       if Version >= 4 then ReadString(peName)
@@ -367,17 +366,17 @@ begin
           resClasses[peCID].ceFirstLn := peFirstLn;
       end
       else peFirstLn := -1;
-      SetLength(peProcTime,1);         // placeholder for a summary entry
-      SetLength(peProcTimeMin,1);      // placeholder for a unused entry
-      SetLength(peProcTimeMax,1);      // placeholder for a unused entry
-      SetLength(peProcTimeAvg,1);      // placeholder for a unused entry
-      SetLength(peProcChildTime,1);    // placeholder for a summary entry
-      SetLength(peProcCnt,1);          // placeholder for a summary entry
-      SetLength(peCurrentCallDepth,1);         // placeholder for a unused entry
+      SetLength(peProcTime,1);
+      SetLength(peProcMem, 1);
+      SetLength(peProcTimeMin,1);
+      SetLength(peProcTimeMax,1);
+      SetLength(peProcTimeAvg,1);
+      SetLength(peProcChildTime,1);
+      SetLength(peProcCnt,1);
+      SetLength(peCurrentCallDepth,1);
     end;
   end;
   fCallGraphInfoDict.Clear;
-  fProcedureMemCallList.Clear();
   // max number elements is (elements+1)*(elements+1): 1 child per parent.
   fCallGraphInfoMaxElementCount := lNumberOfProcs;
   for i := 1 to High(resClasses) do
@@ -521,7 +520,7 @@ var
   lThreadId : Cardinal;
 begin
   lThreadId := ThCreateLocate(pkt.rpThread);
-  pkt.rpProcID := Length(resProcedures);
+  pkt.rpProcID := resProcedures.Count;
   if IsMemProfilingEnabled then
     proxy := TMeasurePointWithMemProxy.Create(lThreadId,pkt.rpProcID,pkt.rpMeasurePointID)
   else
@@ -530,7 +529,7 @@ begin
   inc(fCallGraphInfoMaxElementCount);
 
   // the measure point needs to be inserted into the known procedures
-  TProcArrayTools.AddProcRow(resProcedures, pkt.rpMeasurePointID, pkt.rpProcID, Length(resThreads));
+  resProcedures.AddProcRow( pkt.rpMeasurePointID, pkt.rpProcID, Length(resThreads));
   EnterProc(proxy,pkt, mempkt);
 end; { TResults.EnterMeasurePointPkt }
 
@@ -632,6 +631,7 @@ begin
   if assigned(parent) then
     parent.ChildTime := parent.ChildTime + proxy.TotalTime + proxy.ChildTime;
   Inc(resProcedures[proxy.ProcID].peProcTime[LThreadID],proxy.TotalTime);
+  Inc(resProcedures[proxy.ProcID].peProcMem[LThreadID],proxy.TotalMem);
   if proxy.TotalTime < resProcedures[proxy.ProcID].peProcTimeMin[LThreadID] then
     resProcedures[proxy.ProcID].peProcTimeMin[LThreadID] := proxy.TotalTime;
   if proxy.TotalTime > resProcedures[proxy.ProcID].peProcTimeMax[LThreadID] then
@@ -650,6 +650,7 @@ begin
     LInfo := fCallGraphInfoDict.GetOrCreateGraphInfo(parent.ProcID,proxy.ProcID,High(resThreads));
 
     LInfo.ProcTime.AddTime(LThreadID,proxy.TotalTime);
+    LInfo.ProcMem.AddMem(LThreadID,proxy.TotalMem);
     if proxy.TotalTime < LInfo.ProcTimeMin[LThreadID] then
       LInfo.ProcTimeMin.AssignTime(LThreadID,proxy.TotalTime);
     if proxy.TotalTime > LInfo.ProcTimeMax[LThreadID] then
@@ -701,7 +702,7 @@ begin
     teActiveProcs := TActiveProcList.Create;
   end;
   // resize resProcedures
-  TProcArrayTools.AddThreadToExistsingProcRows(resProcedures, numth);
+  resProcedures.AddThreadToExistsingProcRows(numth);
   // resize fCallGraphInfoDict
   fCallGraphInfoDict.initGraphInfos();
   Result := numth-1;
@@ -715,6 +716,9 @@ var
   LInfoChild : TCallGraphInfo;
   LChildrenDict : TCallGraphInfoDict;
   lThreadIndex : integer;
+
+const
+  cAllThreads = 0;
 begin
   numth := High(resThreads);
   // resize resUnits and resClasses
@@ -722,58 +726,48 @@ begin
     with resUnits[i] do begin
       SetLength(ueTotalTime,numth+1);
       SetLength(ueTotalCnt,numth+1);
+      SetLength(ueTotalMem, numth+1);
     end;
   end;
   for i := Low(resClasses) to High(resClasses) do begin
     with resClasses[i] do begin
       SetLength(ceTotalTime,numth+1);
       SetLength(ceTotalCnt,numth+1);
+      SetLength(ceTotalMem,numth+1);
     end;
   end;
-  // resProcedures
-  for i := Low(resProcedures)+1 to High(resProcedures) do begin
-    with resProcedures[i] do begin
-      peProcTime[Low(peProcTime)] := 0;
-      peProcChildTime[Low(peProcChildTime)] := 0;
-      if (not IsDigest) then
-      begin
-        peProcTimeMin[Low(peProcTIme)] := High(uint64);
-        peProcTimeMax[Low(peProcTIme)] := 0;
-      end;
-      for j := Low(peProcTime)+1 to High(peProcTime) do begin
-        if peProcCnt[j] > 0 then begin
-          if peProcTimeMin[j] < peProcTimeMin[Low(peProcTime)] then
-            peProcTimeMin[Low(peProcTIme)] := peProcTimeMin[j];
-          if peProcTimeMax[j] > peProcTimeMax[Low(peProcTime)] then
-            peProcTimeMax[Low(peProcTIme)] := peProcTimeMax[j];
-        end;
-        Inc(peProcTime[Low(peProcTime)],peProcTime[j]);
-        if peProcTimeMin[j] = High(uint64) then
-          peProcTimeMin[j] := 0;
-        Inc(peProcChildTime[Low(peProcTime)],peProcChildTime[j]);
-        Inc(peProcCnt[Low(peProcCnt)],peProcCnt[j]);
-        Inc(resClasses[peCID].ceTotalTime[j],peProcTime[j]);
-        Inc(resClasses[peCID].ceTotalCnt[j],peProcCnt[j]);
-        Inc(resUnits[peUID].ueTotalTime[j],peProcTime[j]);
-        Inc(resUnits[peUID].ueTotalCnt[j],peProcCnt[j]);
-        if peProcCnt[j] = 0 then peProcTimeAvg[j] := 0
-                            else peProcTimeAvg[j] := peProcTime[j] div peProcCnt[j];
-      end;
-      if peProcTimeMin[Low(peProcTime)] = High(uint64) then
-        peProcTimeMin[Low(peProcTime)] := 0;
-      if peProcCnt[Low(peProcTime)] = 0
-        then peProcTimeAvg[Low(peProcTime)] := 0
-        else peProcTimeAvg[Low(peProcTime)] := peProcTime[Low(peProcTime)] div peProcCnt[Low(peProcTime)];
+  // Update the prcedure timings for the specific threads
+  for i := 1 to resProcedures.Count-1 do
+  begin
+    var lProcEntry : TProcEntry := resProcedures[i];
+    lProcEntry.ResetTotalValues(IsDigest);
+    for j := Low(lProcEntry.peProcTime)+1 to High(lProcEntry.peProcTime) do
+    begin
+      lProcEntry.UpdateMinMaxTimeForEntryWithIndex(j);
+      lProcEntry.UpdateTotalValues(j);
+      Inc(resClasses[lProcEntry.peCID].ceTotalTime[j],lProcEntry.peProcTime[j]);
+      Inc(resClasses[lProcEntry.peCID].ceTotalCnt[j],lProcEntry.peProcCnt[j]);
+      Inc(resClasses[lProcEntry.peCID].ceTotalMem[j],lProcEntry.peProcMem[j]);
+      Inc(resUnits[lProcEntry.peUID].ueTotalTime[j],lProcEntry.peProcTime[j]);
+      Inc(resUnits[lProcEntry.peUID].ueTotalCnt[j],lProcEntry.peProcCnt[j]);
+      Inc(resUnits[lProcEntry.peUID].ueTotalMem[j],lProcEntry.peProcMem[j]);
+      lProcEntry.UpdateAverageTimeForEntryWithIndex(j);
     end;
+    lProcEntry.UpdateAverageTime();
   end;
-  for j := Low(resProcedures[Low(resProcedures)].peProcTime) to High(resProcedures[Low(resProcedures)].peProcTime) do begin
-    resProcedures[Low(resProcedures)].peProcTime[j]      := 0;
-    resProcedures[Low(resProcedures)].peProcChildTime[j] := 0;
-    resProcedures[Low(resProcedures)].peProcCnt[j]       := 0;
-    for i := Low(resProcedures)+1 to High(resProcedures) do begin
-      Inc(resProcedures[Low(resProcedures)].peProcTime[j],resProcedures[i].peProcTime[j]);
-      Inc(resProcedures[Low(resProcedures)].peProcChildTime[j],resProcedures[i].peProcChildTime[j]);
-      Inc(resProcedures[Low(resProcedures)].peProcCnt[j],resProcedures[i].peProcCnt[j]);
+  // Update the prcedure timings for the overall thread
+  var lAllThreadsEntry := resProcedures[cAllThreads];
+  for j := Low(lAllThreadsEntry.peProcTime) to High(lAllThreadsEntry.peProcTime) do begin
+    lAllThreadsEntry.peProcTime[j]      := 0;
+    lAllThreadsEntry.peProcChildTime[j] := 0;
+    lAllThreadsEntry.peProcCnt[j]       := 0;
+    lAllThreadsEntry.peProcMem[j]      := 0;
+    for i := 1 to resProcedures.Count-1 do
+    begin
+      Inc(lAllThreadsEntry.peProcTime[j],resProcedures[i].peProcTime[j]);
+      Inc(lAllThreadsEntry.peProcChildTime[j],resProcedures[i].peProcChildTime[j]);
+      Inc(lAllThreadsEntry.peProcCnt[j],resProcedures[i].peProcCnt[j]);
+      Inc(lAllThreadsEntry.peProcMem[j],resProcedures[i].peProcMem[j]);
     end;
   end;
   // resClasses
@@ -781,18 +775,22 @@ begin
     with resClasses[i] do begin
       ceTotalTime[Low(ceTotalTime)] := 0;
       ceTotalCnt[Low(ceTotalCnt)]   := 0;
+      ceTotalMem[Low(ceTotalMem)]   := 0;
       for j := Low(ceTotalTime)+1 to High(ceTotalTime) do begin
         Inc(ceTotalTime[Low(ceTotalTime)],ceTotalTime[j]);
         Inc(ceTotalCnt[Low(ceTotalCnt)],ceTotalCnt[j]);
+        Inc(ceTotalMem[Low(ceTotalMem)],ceTotalMem[j]);
       end;
     end;
   end;
   for j := Low(resClasses[Low(resClasses)].ceTotalTime) to High(resClasses[Low(resClasses)].ceTotalTime) do begin
     resClasses[Low(resClasses)].ceTotalTime[j] := 0;
     resClasses[Low(resClasses)].ceTotalCnt[j]  := 0;
+    resClasses[Low(resClasses)].ceTotalMem[j]  := 0;
     for i := Low(resClasses)+1 to High(resClasses) do begin
       Inc(resClasses[Low(resClasses)].ceTotalTime[j],resClasses[i].ceTotalTime[j]);
       Inc(resClasses[Low(resClasses)].ceTotalCnt[j],resClasses[i].ceTotalCnt[j]);
+      Inc(resClasses[Low(resClasses)].ceTotalMem[j],resClasses[i].ceTotalMem[j]);
     end;
   end;
   // resUnits
@@ -800,28 +798,35 @@ begin
     with resUnits[i] do begin
       ueTotalTime[Low(ueTotalTime)] := 0;
       ueTotalCnt[Low(ueTotalTime)]  := 0;
+      ueTotalMem[Low(ueTotalTime)]  := 0;
       for j := Low(ueTotalTime)+1 to High(ueTotalTime) do begin
         Inc(ueTotalTime[Low(ueTotalTime)],ueTotalTime[j]);
         Inc(ueTotalCnt[Low(ueTotalCnt)],ueTotalCnt[j]);
+        Inc(ueTotalMem[Low(ueTotalMem)],ueTotalMem[j]);
       end;
     end;
   end;
   for j := Low(resUnits[Low(resUnits)].ueTotalTime) to High(resUnits[Low(resUnits)].ueTotalTime) do begin
     resUnits[Low(resUnits)].ueTotalTime[j] := 0;
     resUnits[Low(resUnits)].ueTotalCnt[j]  := 0;
+    resUnits[Low(resUnits)].ueTotalMem[j]  := 0;
     for i := Low(resUnits)+1 to High(resUnits) do begin
       Inc(resUnits[Low(resUnits)].ueTotalTime[j],resUnits[i].ueTotalTime[j]);
       Inc(resUnits[Low(resUnits)].ueTotalCnt[j],resUnits[i].ueTotalCnt[j]);
+      Inc(resUnits[Low(resUnits)].ueTotalMem[j],resUnits[i].ueTotalMem[j]);
     end;
   end;
   // resThreads
   resThreads[Low(resThreads)].teTotalTime := 0;
   resThreads[Low(resThreads)].teTotalCnt := 0;
+  resThreads[Low(resThreads)].teTotalMem := 0;
   for i := Low(resThreads)+1 to High(resThreads) do begin
     resThreads[i].teTotalTime := resUnits[Low(resUnits)].ueTotalTime[i];
     resThreads[i].teTotalCnt  := resUnits[Low(resUnits)].ueTotalCnt[i];
+    resThreads[i].teTotalMem  := resUnits[Low(resUnits)].ueTotalMem[i];
     Inc(resThreads[Low(resThreads)].teTotalTime,resThreads[i].teTotalTime);
     Inc(resThreads[Low(resThreads)].teTotalCnt,resThreads[i].teTotalCnt);
+    Inc(resThreads[Low(resThreads)].teTotalMem,resThreads[i].teTotalMem);
   end;
 
   // fCallGraphInfoDict: calculate average and min time
@@ -843,6 +848,8 @@ begin
         begin
           LInfo.ProcTime[lThreadIndex] := LInfo.ProcTime[lThreadIndex] + LInfoChild.ProcTime[lThreadIndex];
           LInfo.ProcTime[0] := LInfo.ProcTime[0] + LInfoChild.ProcTime[lThreadIndex];
+          LInfo.ProcMem[0] := LInfo.ProcMem[0] + LInfoChild.ProcMem[lThreadIndex];
+          LInfo.ProcMem[lThreadIndex] := LInfo.ProcMem[lThreadIndex] + LInfoChild.ProcMem[lThreadIndex];
         end; // if
       end; // for
     end; // for
@@ -859,14 +866,12 @@ begin
   resThreads[proxy.ThreadID].teActiveProcs.UpdateDeadTime(pkt);
   proxy.Start(pkt, mempkt);
   resThreads[proxy.ThreadID].teActiveProcs.Append(proxy);
-  if proxy.ProcID > Cardinal(Length(resProcedures)) then
+  if proxy.ProcID > Cardinal(resProcedures.Count) then
     raise EInvalidOp.Create('Error: Instrumentation count does not fit to the prf, please reinstrument.');
   Inc(resProcedures[proxy.ProcID].peCurrentCallDepth[proxy.ThreadID]);
 end;
 
 procedure TResults.ExitProc(const proxy,parent: TProcProxy; pkt: TResPacket; const mempkt: TResMemPacket);
-var
-  lMemConsumptionEntry : TMemConsumptionEntry;
 begin
   // decrement recursion level
   // remove proxy object from active procedure queue
@@ -885,24 +890,6 @@ begin
   proxy.Stop(pkt, mempkt);
   UpdateRunningTime(proxy,parent);
   resThreads[proxy.ThreadID].teActiveProcs.UpdateDeadTime(pkt);
-  if IsMemProfilingEnabled() then
-  begin
-    lMemConsumptionEntry := Default(TMemConsumptionEntry);
-    if proxy is TMeasurePointWithMemProxy then
-    begin
-      lMemConsumptionEntry.mceStartingMemWorkingSet := TMeasurePointWithMemProxy(proxy).StartMem;
-      lMemConsumptionEntry.mceEndingMemWorkingSet := TMeasurePointWithMemProxy(proxy).EndMem;
-    end
-    else if proxy is TProcWithMemProxy then
-    begin
-      lMemConsumptionEntry.mceStartingMemWorkingSet := TProcWithMemProxy(proxy).StartMem;
-      lMemConsumptionEntry.mceEndingMemWorkingSet := TProcWithMemProxy(proxy).EndMem;
-    end
-    else
-      raise Exception.Create('The given proxy does not have memory information.');
-    // update resource information after Stop();
-    fProcedureMemCallList.AddEntryToProcList(proxy.ProcID, lMemConsumptionEntry);
-  end;
 end; { TResults.ExitProc }
 
 procedure TResults.LoadCalibration;
@@ -985,8 +972,6 @@ var
 var
   i,j,k: integer;
   LInfo : TCallGraphInfo;
-  lMemComsumptionList : TMemConsumptionForProcedureCalls;
-  //lMemComsumptionEntry : TMemConsumptionEntry;
   lDigestFilename : String;
 const
   LAST_VALID_DIGESTVERSION = 4;
@@ -998,11 +983,10 @@ begin
   try
     var lNumberOfUnits := High(resUnits)-Low(resUnits)+1;
     var lNumberOfClasses := High(resClasses)-Low(resClasses)+1;
-    var lNumberOfProcedures := High(resProcedures)-Low(resProcedures)+1;
+    var lNumberOfProcedures := resProcedures.Count;
     var graphInfoCount := fCallGraphInfoMaxElementCount*fCallGraphInfoMaxElementCount+1;
-    var memInfoCount := fProcedureMemCallList.Count;
     lCount := 0;
-    lMaxCount := lNumberOfUnits + lNumberOfClasses + lNumberOfProcedures + graphInfoCount + memInfoCount;
+    lMaxCount := lNumberOfUnits + lNumberOfClasses + lNumberOfProcedures + graphInfoCount;
 
     WriteTag(PR_DIGEST);
     WriteTag(PR_DIGESTVER);
@@ -1019,6 +1003,7 @@ begin
         WriteString(teName);
         WriteInt64(teTotalTime);
         WriteInt(teTotalCnt);
+        WriteCardinal(teTotalMem);
       end;
     WriteTag(PR_DIGUNITS);
     WriteInt(lNumberOfUnits);
@@ -1033,6 +1018,9 @@ begin
         WriteInt(High(ueTotalCnt)-Low(ueTotalCnt)+1);
         for j := Low(ueTotalCnt) to High(ueTotalCnt) do
           WriteInt(ueTotalCnt[j]);
+        WriteInt(High(ueTotalMem)-Low(ueTotalMem)+1);
+        for j := Low(ueTotalMem) to High(ueTotalMem) do
+          WriteCardinal(ueTotalMem[j]);
       end;
     WriteTag(PR_DIGCLASSES);
 
@@ -1049,10 +1037,13 @@ begin
         WriteInt(High(ceTotalCnt)-Low(ceTotalCnt)+1);
         for j := Low(ceTotalCnt) to High(ceTotalCnt) do
           WriteInt(ceTotalCnt[j]);
+        WriteInt(High(ceTotalMem)-Low(ceTotalMem)+1);
+        for j := Low(ceTotalMem) to High(ceTotalMem) do
+          WriteCardinal(ceTotalMem[j]);
       end;
     WriteTag(PR_DIGPROCS);
     WriteInt(lNumberOfProcedures);
-    for i := Low(resProcedures) to High(resProcedures) do
+    for i := 0 to resProcedures.Count-1 do
       with resProcedures[i] do begin
         incrementAndTriggerProgress();
         WriteString(peName);
@@ -1078,6 +1069,9 @@ begin
         WriteInt(High(peProcTimeAvg)-Low(peProcTimeAvg)+1);
         for j := Low(peProcTimeAvg) to High(peProcTimeAvg) do
           WriteInt64(peProcTimeAvg[j]);
+        WriteInt(High(peProcMem)-Low(peProcMem)+1);
+        for j := Low(peProcMem) to High(peProcMem) do
+          WriteCardinal(peProcMem[j]);
       end;
     WriteTag(PR_DIGCALLG);
     for i := 0 to fCallGraphInfoMaxElementCount do
@@ -1106,21 +1100,6 @@ begin
       end;
     end;
     WriteInt(PR_DIGENDCG);
-    WriteTag(PR_DIG_START_MEMG);
-    WriteCardinal(fProcedureMemCallList.Count);
-    for i := 0 to fProcedureMemCallList.Count-1 do
-    begin
-      incrementAndTriggerProgress();
-      lMemComsumptionList := fProcedureMemCallList.Read(i);
-      WriteInt(lMemComsumptionList.ProcId);
-      WriteInt(lMemComsumptionList.Count);
-      for j := 0 to lMemComsumptionList.Count-1 do
-      begin
-        WriteCardinal(lMemComsumptionList[j].mceStartingMemWorkingSet);
-        WriteCardinal(lMemComsumptionList[j].mceEndingMemWorkingSet);
-      end;
-    end;
-    WriteTag(PR_DIG_END_MEMG);
     // dump call graph
     WriteTag(PR_ENDDIGEST);
   finally
@@ -1162,9 +1141,6 @@ var
   LInfo : TCallGraphInfo;
   LInt64 : Int64;
   LInt : Integer;
-  //lNumberOfMemEntries : Cardinal;
-  lMemComsumptionList : TMemConsumptionForProcedureCalls;
-  lMemComsumptionEntry : TMemConsumptionEntry;
 begin
   fpstart  := resFile.FilePos;
   filesz   := resFile.FileSize;
@@ -1185,6 +1161,7 @@ begin
             ReadString(teName);
             ReadInt64(teTotalTime);
             ReadInt(teTotalCnt);
+            ReadCardinal(teTotalMem);
           end;
       end; // PR_DIGTHREADS;
       PR_DIGUNITS: begin
@@ -1201,6 +1178,9 @@ begin
             ReadInt(num);
             SetLength(ueTotalCnt,num);
             for j := Low(ueTotalCnt) to High(ueTotalCnt) do ReadInt(ueTotalCnt[j]);
+            ReadInt(num);
+            SetLength(ueTotalMem,num);
+            for j := Low(ueTotalMem) to High(ueTotalMem) do ReadCardinal(ueTotalMem[j]);
           end;
       end; // PR_DIGUNITS
       PR_DIGCLASSES: begin
@@ -1218,14 +1198,17 @@ begin
             ReadInt(num);
             SetLength(ceTotalCnt,num);
             for j := Low(ceTotalCnt) to High(ceTotalCnt) do ReadInt(ceTotalCnt[j]);
+            ReadInt(num);
+            SetLength(ceTotalMem,num);
+            for j := Low(ceTotalMem) to High(ceTotalMem) do ReadCardinal(ceTotalMem[j]);
           end;
       end; // PR_DIGCLASSES
       PR_DIGPROCS: begin
         ReadInt(num);
-        SetLength(resProcedures,num);
+        resProcedures.ResizeAndCreateProcs(num);
         fCallGraphInfoMaxElementCount := num;
         fCallGraphInfoDict.Clear();
-        for i := Low(resProcedures) to High(resProcedures) do
+        for i := 0 to resProcedures.Count-1 do
           with resProcedures[i] do begin
             UpdateStatus;
             ReadString(peName);
@@ -1251,6 +1234,9 @@ begin
             ReadInt(num);
             SetLength(peProcTimeAvg,num);
             for j := Low(peProcTimeAvg) to High(peProcTimeAvg) do ReadUInt64(peProcTimeAvg[j]);
+            ReadInt(num);
+            SetLength(peProcMem,num);
+            for j := Low(peProcMem) to High(peProcMem) do ReadCardinal(peProcMem[j]);
           end;
       end; // PR_DIGPROCS
       PR_DIGCALLG: begin
@@ -1298,29 +1284,6 @@ begin
           end;
         until false;
       end; // PR_DIGCALLG
-      PR_DIG_START_MEMG:
-      begin
-        fProcedureMemCallList.Clear();
-        ReadInt(LInt); // Count
-        fProcedureMemCallList.Count := lInt;
-        for i := 0 to fProcedureMemCallList.Count-1 do
-        begin
-          { Read the list of the proces with its invokations. }
-          ReadInt(LInt); // procID
-          // we could ask the mem core, but as the list is sorted, we create it be outselves.
-          lMemComsumptionList := TMemConsumptionForProcedureCalls.Create(LInt);
-          fProcedureMemCallList.Write(i, lMemComsumptionList); // define entry
-          ReadInt(lInt); // Count
-          lMemComsumptionList.Count := LInt; // init count and create empty records
-          for j := 0 to lMemComsumptionList.Count-1 do
-          begin
-            ReadCardinal(lMemComsumptionEntry.mceStartingMemWorkingSet);
-            ReadCardinal(lMemComsumptionEntry.mceEndingMemWorkingSet);
-            lMemComsumptionList[j] := lMemComsumptionEntry;
-          end;
-        end;
-      end;
-
     end; // case
   until tag = PR_ENDDIGEST;
 end; { TResults.LoadDigest }

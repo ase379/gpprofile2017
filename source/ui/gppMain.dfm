@@ -2,24 +2,22 @@ object frmMain: TfrmMain
   Left = 312
   Top = 179
   Caption = 'GpProfile'
-  ClientHeight = 640
-  ClientWidth = 1484
+  ClientHeight = 639
+  ClientWidth = 1480
   Color = clBtnFace
   Constraints.MinHeight = 640
   Constraints.MinWidth = 480
   ParentFont = True
   KeyPreview = True
   Menu = MainMenu1
-  OldCreateOrder = True
   OnCreate = FormCreate
   OnDestroy = FormDestroy
   OnShow = FormShow
-  PixelsPerInch = 96
-  TextHeight = 13
+  TextHeight = 15
   object StatusBar: TStatusBar
     Left = 0
-    Top = 616
-    Width = 1484
+    Top = 615
+    Width = 1480
     Height = 24
     Panels = <
       item
@@ -35,16 +33,16 @@ object frmMain: TfrmMain
   object Panel0: TPanel
     Left = 0
     Top = 0
-    Width = 1484
-    Height = 616
+    Width = 1480
+    Height = 615
     Align = alClient
     BevelEdges = []
     BevelOuter = bvNone
     TabOrder = 1
     object splitSourcePreview: TSplitter
       Left = 0
-      Top = 492
-      Width = 1484
+      Top = 491
+      Width = 1480
       Height = 3
       Cursor = crVSplit
       Align = alBottom
@@ -55,33 +53,32 @@ object frmMain: TfrmMain
     object Panel1: TPanel
       Left = 0
       Top = 0
-      Width = 1484
-      Height = 492
+      Width = 1480
+      Height = 491
       Align = alClient
       BevelOuter = bvNone
       TabOrder = 0
       object PageControl1: TPageControl
         Left = 0
         Top = 0
-        Width = 1484
-        Height = 492
-        ActivePage = tabPerformanceAnalysis
+        Width = 1480
+        Height = 491
+        ActivePage = tabPerformanceResults
         Align = alClient
         HotTrack = True
         TabOrder = 0
         OnChange = PageControl1Change
-        ExplicitTop = -3
         object tabInstrumentation: TTabSheet
           Caption = 'Source Code Instrumentation'
           ImageIndex = 16
           object tbrInstrument: TToolBar
             Left = 0
             Top = 0
-            Width = 1476
-            Height = 52
+            Width = 1472
+            Height = 54
             AutoSize = True
-            ButtonHeight = 52
-            ButtonWidth = 132
+            ButtonHeight = 54
+            ButtonWidth = 144
             Caption = 'ToolBar1'
             EdgeInner = esNone
             EdgeOuter = esNone
@@ -98,14 +95,14 @@ object frmMain: TfrmMain
               Style = tbsDropDown
             end
             object btnRescanProject: TToolButton
-              Left = 147
+              Left = 159
               Top = 0
               Action = actRescanProject
               ImageIndex = 1
               Style = tbsTextButton
             end
             object btnInstrumentDelimiter1: TToolButton
-              Left = 279
+              Left = 303
               Top = 0
               Width = 5
               Caption = 'btnInstrumentDelimiter1'
@@ -113,21 +110,21 @@ object frmMain: TfrmMain
               Style = tbsSeparator
             end
             object btnInstrument: TToolButton
-              Left = 284
+              Left = 308
               Top = 0
               Action = actInstrument
               ImageIndex = 3
               Style = tbsTextButton
             end
             object btnRemoveInstrumentation: TToolButton
-              Left = 416
+              Left = 452
               Top = 0
               Action = actRemoveInstrumentation
               ImageIndex = 4
               Style = tbsTextButton
             end
             object btnInstrumentDelimiter2: TToolButton
-              Left = 548
+              Left = 596
               Top = 0
               Width = 5
               Caption = 'btnInstrumentDelimiter2'
@@ -135,7 +132,7 @@ object frmMain: TfrmMain
               Style = tbsSeparator
             end
             object btnLoadSelection: TToolButton
-              Left = 553
+              Left = 601
               Top = 0
               Action = actLoadInstrumentationSelection
               DropdownMenu = popRecentGis
@@ -143,13 +140,13 @@ object frmMain: TfrmMain
               Style = tbsDropDown
             end
             object btnSaveSelection: TToolButton
-              Left = 700
+              Left = 760
               Top = 0
               Action = actSaveInstrumentationSelection
               ImageIndex = 7
             end
             object btnInstrumentDelimiter3: TToolButton
-              Left = 832
+              Left = 904
               Top = 0
               Width = 8
               Caption = 'btnInstrumentDelimiter3'
@@ -157,7 +154,7 @@ object frmMain: TfrmMain
               Style = tbsSeparator
             end
             object btnProjectOptions: TToolButton
-              Left = 840
+              Left = 912
               Top = 0
               Action = actProjectOptions
               ParentShowHint = False
@@ -166,17 +163,36 @@ object frmMain: TfrmMain
             end
           end
         end
-        object tabPerformanceAnalysis: TTabSheet
-          Caption = 'Performance Analysis'
-          ImageIndex = 17
+        object tabPerformanceResults: TTabSheet
+          Caption = 'Performance Result Analysis'
+          ImageIndex = 1
+          object PageControl2: TPageControl
+            Left = 0
+            Top = 54
+            Width = 1472
+            Height = 407
+            ActivePage = tabPerformanceAnalysis
+            Align = alClient
+            TabOrder = 0
+            ExplicitTop = 0
+            ExplicitHeight = 461
+            object tabPerformanceAnalysis: TTabSheet
+              Caption = 'Performance Analysis'
+              ImageIndex = 17
+            end
+            object tabMemoryAnalysis: TTabSheet
+              Caption = 'Memory Consumption Analysis'
+              ImageIndex = 2
+            end
+          end
           object tbrAnalysis: TToolBar
             Left = 0
             Top = 0
-            Width = 1476
-            Height = 52
+            Width = 1472
+            Height = 54
             AutoSize = True
-            ButtonHeight = 52
-            ButtonWidth = 94
+            ButtonHeight = 54
+            ButtonWidth = 100
             Caption = 'ToolBar1'
             EdgeInner = esNone
             EdgeOuter = esNone
@@ -184,7 +200,8 @@ object frmMain: TfrmMain
             ParentShowHint = False
             ShowCaptions = True
             ShowHint = True
-            TabOrder = 0
+            TabOrder = 1
+            ExplicitWidth = 1464
             object btnOpenProfile: TToolButton
               Left = 0
               Top = 0
@@ -194,13 +211,13 @@ object frmMain: TfrmMain
               Style = tbsDropDown
             end
             object btnRescanProfile: TToolButton
-              Left = 109
+              Left = 115
               Top = 0
               Action = actRescanProfile
               ImageIndex = 1
             end
             object btnAnalysisDelimiter1: TToolButton
-              Left = 203
+              Left = 215
               Top = 0
               Width = 5
               Caption = 'btnAnalysisDelimiter1'
@@ -208,25 +225,25 @@ object frmMain: TfrmMain
               Style = tbsSeparator
             end
             object btnRenameMoveProfile: TToolButton
-              Left = 208
+              Left = 220
               Top = 0
               Action = actRenameMoveProfile
               ImageIndex = 2
             end
             object btnMakeCopyProfile: TToolButton
-              Left = 302
+              Left = 320
               Top = 0
               Action = actMakeCopyProfile
               ImageIndex = 3
             end
             object btnDelUndelProfile: TToolButton
-              Left = 396
+              Left = 420
               Top = 0
               Action = actDelUndelProfile
               ImageIndex = 4
             end
             object btnExportProfile: TToolButton
-              Left = 490
+              Left = 520
               Top = 0
               Action = actExportProfile
               ImageIndex = 5
@@ -237,8 +254,8 @@ object frmMain: TfrmMain
     end
     object pnlSourcePreview: TPanel
       Left = 0
-      Top = 495
-      Width = 1484
+      Top = 494
+      Width = 1480
       Height = 121
       Align = alBottom
       BevelOuter = bvNone
@@ -246,7 +263,7 @@ object frmMain: TfrmMain
       object sourceCodeEdit: TSynEdit
         Left = 0
         Top = 0
-        Width = 1484
+        Width = 1480
         Height = 121
         Align = alClient
         Font.Charset = DEFAULT_CHARSET
@@ -310,7 +327,7 @@ object frmMain: TfrmMain
       Left = 3
       Top = 3
       Width = 89
-      Height = 21
+      Height = 23
       Hint = 'Layout Name'
       TabOrder = 0
       OnKeyPress = inpLayoutNameKeyPress

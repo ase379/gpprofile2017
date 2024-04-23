@@ -132,6 +132,9 @@ type
     Action2: TAction;
     actShowPerformanceData: TAction;
     actShowMemoryData: TAction;
+    tabMemoryAnalysis: TTabSheet;
+    PageControl2: TPageControl;
+    tabPerformanceResults: TTabSheet;
     procedure FormCreate(Sender: TObject);
     procedure MRUClick(Sender: TObject; LatestFile: String);
     procedure FormDestroy(Sender: TObject);
@@ -207,8 +210,11 @@ type
     inLVResize                : boolean;
     FInstrumentationFrame     : TfrmMainInstrumentation;
     fPerformanceFrame         : TfrmMainProfiling;
+    fMemoryFrame              : TfrmMemProfiling;
     fNeededSeconds            : Double;
     procedure ReloadJumpList();
+    procedure ResetCallers();
+
 
     procedure ExecuteAsync(const aProc: TAsyncExecuteProc;const aOnFinishedProc: TAsyncFinishedProc;const aActionName : string);
     procedure ParseProject(const aProject: string; const aJustRescan: boolean);
@@ -255,6 +261,7 @@ type
     procedure ResetSourcePreview(reposition: boolean);
     procedure RestoreUIAfterParseProject;
     procedure WMDropFiles (var aMsg: TMessage); message WM_DROPFILES;
+    procedure ResetCallees;
  end;
 
 var
@@ -549,19 +556,27 @@ end; { TfrmMain.RebuildDelphiVer }
 procedure TfrmMain.DisablePC2;
 begin
   tabPerformanceAnalysis.Font.Color             := clBtnShadow;
+  tabMemoryAnalysis.Font.Color             := clBtnShadow;
   fPerformanceFrame.Disable();
+  fMemoryFrame.Disable();
   if PageControl1.ActivePage = tabPerformanceAnalysis then
+    sourceCodeEdit.Color := clBtnFace;
+  if PageControl1.ActivePage = tabMemoryAnalysis then
     sourceCodeEdit.Color := clBtnFace;
 end; { TfrmMain.DisablePC2 }
 
 procedure TfrmMain.EnablePC2;
 begin
   tabPerformanceAnalysis.Font.Color             := clWindowText;
+  tabMemoryAnalysis.Font.Color             := clWindowText;
   StatusPanel0('',false);
   fPerformanceFrame.Enable();
+  fMemoryFrame.Enable();
   if fPerformanceFrame.Enable then
   begin
     if PageControl1.ActivePage = tabPerformanceAnalysis then
+      sourceCodeEdit.Color := SynPasSyn.SpaceAttri.Background;
+    if PageControl1.ActivePage = tabMemoryAnalysis then
       sourceCodeEdit.Color := SynPasSyn.SpaceAttri.Background;
     SetSource;
   end;
@@ -637,9 +652,12 @@ begin
   begin
     actProfileOptions.Enabled := true;
     fPerformanceFrame.CurrentProfile := fCurrentProfile;
+    fMemoryFrame.CurrentProfile := fCurrentProfile;
   end;
   Show;
   fPerformanceFrame.FillThreadCombos;
+  fMemoryFrame.FillThreadCombos;
+
   if assigned(fCurrentProfile) then
     EnablePC2;
   Enabled := true;
@@ -650,10 +668,13 @@ begin
     actHideNotExecuted.Checked := TGlobalPreferences.GetProfilePref('HideNotExecuted', TGlobalPreferences.HideNotExecuted);
     fPerformanceFrame.FillViews(1);
     fPerformanceFrame.ClearBreakdown;
+    fMemoryFrame.FillViews(1);
+    fMemoryFrame.ClearBreakdown;
     actHideNotExecuted.Enabled   := true;
     actRescanProfile.Enabled     := true;
     actExportProfile.Enabled     := true;
     fPerformanceFrame.mnuExportProfile.Enabled     := true;
+    fMemoryFrame.mnuExportProfile.Enabled := true;
     actRenameMoveProfile.Enabled := true;
     actShowPerformanceData.Enabled := true;
     actShowMemoryData.Enabled    := true;
@@ -853,11 +874,18 @@ begin
   fPerformanceFrame.Parent := tabPerformanceAnalysis;
   fPerformanceFrame.Align := alClient;
   fPerformanceFrame.actHideNotExecuted := actHideNotExecuted;
-  fPerformanceFrame.actShowHideCallers := actShowHideCallers;
-  fPerformanceFrame.actShowHideCallees := actShowHideCallees;
   fPerformanceFrame.OnReloadSource := LoadSource;
   fPerformanceFrame.mnuExportProfile.onClick := mnuExportProfileClick;
   fPerformanceFrame.popAnalysisListview.Items[0].Action := actHideNotExecuted;
+
+  fMemoryFrame := TfrmMemProfiling.Create(self);
+  fMemoryFrame.Parent := tabMemoryAnalysis;
+  fMemoryFrame.Align := alClient;
+  fMemoryFrame.actHideNotExecuted := actHideNotExecuted;
+  fMemoryFrame.OnReloadSource := LoadSource;
+  fMemoryFrame.mnuExportProfile.onClick := mnuExportProfileClick;
+  fMemoryFrame.popAnalysisListview.Items[0].Action := actHideNotExecuted;
+
   Application.DefaultFont.Name :=  'Segoe UI';
   Application.DefaultFont.Size :=  8;
   inLVResize := false;
@@ -1000,12 +1028,20 @@ begin
       WriteInteger('pnlCalleesHeight',fPerformanceFrame.pnlCallees.Height);
       WriteBool('pnlCallersVisible',fPerformanceFrame.pnlCallers.Visible);
       WriteBool('pnlCalleesVisible',fPerformanceFrame.pnlCallees.Visible);
+
       PutHeader(reg,fPerformanceFrame.vstProcs,'lvProcs');
       PutHeader(reg,fPerformanceFrame.vstClasses,'lvClasses');
       PutHeader(reg,fPerformanceFrame.vstUnits,'lvUnits');
       PutHeader(reg,fPerformanceFrame.vstThreads,'lvThreads');
       PutHeader(reg,fPerformanceFrame.vstCallers,'lvCallers');
       PutHeader(reg,fPerformanceFrame.vstCallees,'lvCallees');
+
+      PutHeader(reg,fMemoryFrame.vstProcs,'lvProcsMem');
+      PutHeader(reg,fMemoryFrame.vstClasses,'lvClassesMem');
+      PutHeader(reg,fMemoryFrame.vstUnits,'lvUnitsMem');
+      PutHeader(reg,fMemoryFrame.vstThreads,'lvThreadsMem');
+      PutHeader(reg,fMemoryFrame.vstCallers,'lvCallersMem');
+      PutHeader(reg,fMemoryFrame.vstCallees,'lvCalleesMem');
     end;
   finally reg.Free; end;
 end; { TfrmMain.SaveMetrics }
@@ -1257,9 +1293,19 @@ begin
     splitSourcePreview.Visible := previewVisibleInstr;
     ResetSourcePreview(true);
   end
-  else begin
-    fPerformanceFrame.updatefocus;
-    fPerformanceFrame.lvProcsClick(Sender);
+  else
+  begin
+    if PageControl1.ActivePage = tabPerformanceAnalysis then
+    begin
+      fPerformanceFrame.updatefocus;
+      fPerformanceFrame.lvProcsClick(Sender);
+    end
+    else if PageControl1.ActivePage = tabMemoryAnalysis then
+    begin
+      fMemoryFrame.UpdateFocus;
+      fMemoryFrame.lvProcsClick(Sender);
+    end;
+
     pnlSourcePreview.Visible := previewVisibleAnalysis;
     splitSourcePreview.Visible := previewVisibleAnalysis;
     ResetSourcePreview(true);
@@ -1370,13 +1416,21 @@ begin
         previewVisibleAnalysis  := ReadBool('previewVisibleAnalysis',true);
         fPerformanceFrame.pnlCallers.Height       := ReadInteger('pnlCallersHeight',fPerformanceFrame.pnlCallers.Height);
         fPerformanceFrame.pnlCallees.Height       := ReadInteger('pnlCalleesHeight',fPerformanceFrame.pnlCallees.Height);
+        fMemoryFrame.pnlCallers.Height       := fPerformanceFrame.pnlCallers.Height;
+        fMemoryFrame.pnlCallees.Height       := fPerformanceFrame.pnlCallees.Height;
+
         fPerformanceFrame.splitCallers.Visible    := ReadBool('pnlCalleesVisible',false);
         fPerformanceFrame.splitCallees.Visible    := ReadBool('pnlCallersVisible',false);
-        fPerformanceFrame.pnlCallees.Visible      := fPerformanceFrame.splitCallers.Visible;
-        fPerformanceFrame.pnlCallers.Visible      := fPerformanceFrame.splitCallees.Visible;
-        if PageControl1.ActivePage = tabInstrumentation
-          then pnlSourcePreview.Visible := previewVisibleInstr
-          else pnlSourcePreview.Visible := previewVisibleAnalysis;
+        fMemoryFrame.splitCallers.Visible := fPerformanceFrame.splitCallers.Visible;
+        fMemoryFrame.splitCallees.Visible := fPerformanceFrame.splitCallees.Visible;
+        fPerformanceFrame.pnlCallees.Visible      := fPerformanceFrame.splitCallees.Visible;
+        fMemoryFrame.pnlCallees.Visible           := fPerformanceFrame.pnlCallees.Visible;
+        fPerformanceFrame.pnlCallers.Visible      := fPerformanceFrame.splitCallers.Visible;
+        fMemoryFrame.pnlCallers.Visible := fPerformanceFrame.pnlCallers.Visible;
+        if PageControl1.ActivePage = tabInstrumentation then
+          pnlSourcePreview.Visible := previewVisibleInstr
+        else
+          pnlSourcePreview.Visible := previewVisibleAnalysis;
         splitSourcePreview.Visible := pnlSourcePreview.Visible;
         GetHeaders(reg,fPerformanceFrame.vstProcs,'lvProcs');
         GetHeaders(reg,fPerformanceFrame.vstClasses,'lvClasses');
@@ -1384,9 +1438,16 @@ begin
         GetHeaders(reg,fPerformanceFrame.vstThreads,'lvThreads');
         GetHeaders(reg,fPerformanceFrame.vstCallers,'lvCallers');
         GetHeaders(reg,fPerformanceFrame.vstCallees,'lvCallees');
+        GetHeaders(reg,fMemoryFrame.vstProcs,'lvProcs');
+        GetHeaders(reg,fMemoryFrame.vstClasses,'lvClasses');
+        GetHeaders(reg,fMemoryFrame.vstUnits,'lvUnits');
+        GetHeaders(reg,fMemoryFrame.vstThreads,'lvThreads');
+        GetHeaders(reg,fMemoryFrame.vstCallers,'lvCallers');
+        GetHeaders(reg,fMemoryFrame.vstCallees,'lvCallees');
+
         ResetSourcePreview(false);
-        fPerformanceFrame.ResetCallers;
-        fPerformanceFrame.ResetCallees;
+        ResetCallers();
+        ResetCallees;
       end;
     finally reg.Free; end;
   finally EnableAlign; end;
@@ -1529,6 +1590,7 @@ procedure TfrmMain.actHideNotExecutedExecute(Sender: TObject);
 begin
   actHideNotExecuted.Checked := not actHideNotExecuted.Checked;
   fPerformanceFrame.FillViews;
+  fMemoryFrame.FillViews();
   TGlobalPreferences.SetProfilePref('HideNotExecuted', actHideNotExecuted.Checked);
 end;
 
@@ -1646,6 +1708,7 @@ end;
 procedure TfrmMain.SlidersMoved;
 begin
   fPerformanceFrame.SlidersMoved;
+  fMemoryFrame.SlidersMoved;
 end;
 
 procedure TfrmMain.actMakeCopyProfileExecute(Sender: TObject);
@@ -1758,6 +1821,7 @@ end;
 procedure TfrmMain.ResetProfile();
 begin
   fPerformanceFrame.resetprofile();
+  fMemoryFrame.resetprofile();
   FreeAndNil(fCurrentProfile);
 end;
 
@@ -1765,6 +1829,7 @@ procedure TfrmMain.NoProfile;
 begin
   ResetProfile();
   fPerformanceFrame.FillThreadCombos;
+  fMemoryFrame.FillThreadCombos;
   currentProfile := '';
   PageControl1.ActivePage := tabInstrumentation;
   PageControl1Change(self);
@@ -1772,10 +1837,13 @@ begin
   SetSource;
   fPerformanceFrame.FillViews(1);
   fPerformanceFrame.ClearBreakdown;
+  fMemoryFrame.FillViews(1);
+  fMemoryFrame.ClearBreakdown;
   actHideNotExecuted.Enabled   := false;
   actRescanProfile.Enabled     := false;
   actExportProfile.Enabled     := false;
   fPerformanceFrame.mnuExportProfile.Enabled     := false;
+  fMemoryFrame.mnuExportProfile.Enabled     := false;
   actRenameMoveProfile.Enabled := false;
   actShowPerformanceData.Enabled := false;
   actShowMemoryData.Enabled := false;
@@ -2049,25 +2117,73 @@ begin
   ResetSourcePreview(true);
   if fPerformanceFrame.pnlCallers.Height > fPerformanceFrame.pnlTopTwo.Height then
     fPerformanceFrame.pnlCallers.Height := fPerformanceFrame.pnlTopTwo.Height div 2;
+  if fMemoryFrame.pnlCallers.Height > fMemoryFrame.pnlTopTwo.Height then
+    fMemoryFrame.pnlCallers.Height := fMemoryFrame.pnlTopTwo.Height div 2;
 end;
 
-procedure TfrmMain.actShowHideCallersExecute(Sender: TObject);
+procedure TfrmMain.ResetCallers();
 begin
-  if fPerformanceFrame.pnlCallers.Visible then begin
-    fPerformanceFrame.pnlCallers.Hide;
-    fPerformanceFrame.splitCallers.Hide;
-  end
-  else begin
-    fPerformanceFrame.splitCallers.Show;
-    fPerformanceFrame.pnlCallers.Show;
+  with actShowHideCallers do
+  begin
+    Tag := 1-Ord(fPerformanceFrame.pnlCallers.Visible);
+    if Tag = 1 then begin
+      Caption := 'Show &Callers';
+      Hint    := 'Show callers';
+    end
+    else begin
+      Caption := 'Hide &Callers';
+      Hint    := 'Hide callers';
+    end;
+    ImageIndex := 22+Tag;
   end;
   fPerformanceFrame.ResetCallers;
+  fMemoryFrame.ResetCallers;
+end;
+
+procedure TfrmMain.ResetCallees();
+begin
+  with actShowHideCallees do begin
+    Tag := 1-Ord(fPerformanceFrame.pnlCallees.Visible);
+    if Tag = 1 then begin
+      Caption := 'Show Callees';
+      Hint    := 'Show callees';
+    end
+    else begin
+      Caption := 'Hide Callees';
+      Hint    := 'Hide callees';
+    end;
+    ImageIndex := 24+Tag;
+  end;
+  fPerformanceFrame.ResetCallees;
+  fMemoryFrame.ResetCallees;
+end; { TfrmMain.ResetCallers }
+
+procedure TfrmMain.actShowHideCallersExecute(Sender: TObject);
+
+  procedure setPanelAndSplitterVisible(const aPanel : TPanel; const aSplitter : TSplitter);
+  begin
+     if aPanel.Visible then
+    begin
+      aPanel.Hide;
+      aSplitter.Hide;
+    end
+    else
+    begin
+      aSplitter.Show;
+      aPanel.Show;
+    end;
+  end;
+
+begin
+  setPanelAndSplitterVisible(fPerformanceFrame.pnlCallers, fPerformanceFrame.splitCallers);
+  setPanelAndSplitterVisible(fMemoryFrame.pnlCallers, fMemoryFrame.splitCallers);
+  ResetCallers();
 end;
 
 procedure TfrmMain.actShowHideCallersUpdate(Sender: TObject);
 begin
-  actShowHideCallers.Enabled := (PageControl1.ActivePage = tabPerformanceAnalysis) and
-                                (fPerformanceFrame.PageControl2.ActivePage = fPerformanceFrame.tabProcedures);
+  actShowHideCallers.Enabled := (PageControl1.ActivePage = tabPerformanceResults) and
+    ((fPerformanceFrame.PageControl2.ActivePage = fPerformanceFrame.tabProcedures) or (fMemoryFrame.PageControl2.ActivePage = fMemoryFrame.tabProcedures));
 end;
 
 procedure TfrmMain.actSaveInstrumentationSelectionExecute(Sender: TObject);
@@ -2100,22 +2216,32 @@ begin
 end;
 
 procedure TfrmMain.actShowHideCalleesExecute(Sender: TObject);
-begin
-  if fPerformanceFrame.pnlCallees.Visible then begin
-    fPerformanceFrame.pnlCallees.Hide;
-    fPerformanceFrame.splitCallees.Hide;
-  end
-  else begin
-    fPerformanceFrame.pnlCallees.Show;
-    fPerformanceFrame.splitCallees.Show;
+
+
+  procedure setPanelAndSplitterVisible(const aPanel : TPanel; const aSplitter : TSplitter);
+  begin
+     if aPanel.Visible then
+    begin
+      aPanel.Hide;
+      aSplitter.Hide;
+    end
+    else
+    begin
+      aSplitter.Show;
+      aPanel.Show;
+    end;
   end;
-  fPerformanceFrame.ResetCallees;
+
+begin
+  setPanelAndSplitterVisible(fPerformanceFrame.pnlCallees,fPerformanceFrame.splitCallees);
+  setPanelAndSplitterVisible(fMemoryFrame.pnlCallees,fMemoryFrame.splitCallees);
+  ResetCallees;
 end;
 
 procedure TfrmMain.actShowHideCalleesUpdate(Sender: TObject);
 begin
-  actShowHideCallees.Enabled := (PageControl1.ActivePage = tabPerformanceAnalysis) and
-                                (fPerformanceFrame.PageControl2.ActivePage = fPerformanceFrame.tabProcedures);
+  actShowHideCallees.Enabled := (PageControl1.ActivePage = tabPerformanceResults) and
+    ((fPerformanceFrame.PageControl2.ActivePage = fPerformanceFrame.tabProcedures) or (fMemoryFrame.PageControl2.ActivePage = fMemoryFrame.tabProcedures));
 end;
 
 

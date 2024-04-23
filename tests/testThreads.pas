@@ -34,6 +34,7 @@ begin
 end;
 
 procedure TTestThread.Execute;
+var lPointer : Pointer;
 begin
   NameThreadForDebugging('AwesomeThread', self.ThreadID);
   var lOuterScope := gpprof.CreateMeasurePointScope('MP_TestThreadExecuteOuter');
@@ -42,8 +43,10 @@ begin
   self.namethreadfordebugging('AwesomeThread2-SelfNameReplacement', self.ThreadID);
   TThread.NameThreadForDebugging('AwesomeThread3-TThreadReplacement');
   Sleep(1000);
+  GetMem(lPointer, 1024);
   lInnerScope := nil;
   Sleep(1000);
+  FreeMem(lPointer);
   lOuterScope := nil;
   inherited;
 end;
