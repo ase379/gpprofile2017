@@ -26,3 +26,4 @@ BIN/*.map
 /source/VirtualTree.Tools/__recovery/virtualTree.tools.statistics.pas
 *.dsk
 *.bk2
+/gpprof_2017*
