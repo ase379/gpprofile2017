@@ -1,20 +1,20 @@
-$version = "1.6.0.3"
+$version = "1.6.0.4"
 $srcBin32 = "..\bin"
 $srcBin64 = "..\bin64"
 $targetFolder32 = "..\gpprof_2017_v"+$version
-$targetFolder32Include = $folder32+"\include"	
+$targetFolder32Include = $targetFolder32+"\include"	
 $targetFolder64 = "..\gpprof_2017x64_v"+$version
-$targetFolder64Include = $folder64+"\include"	
+$targetFolder64Include = $targetFolder64+"\include"	
 $targetZip32 = "..\gpprof_2017_v"+$version+".zip"
 $targetZip64 = "..\gpprof_2017x64_v"+$version+".zip"
     
-if (Test-Path -Path $folder32) {
-    Write-Host "$folder32 already exists, recreating it"
-    Remove-Item $folder32 -Recurse
+if (Test-Path -Path $targetFolder32) {
+    Write-Host "$targetFolder32 already exists, recreating it"
+    Remove-Item $targetFolder32 -Recurse
 }
-if (Test-Path -Path $folder64) {
-    Write-Host "$folder64 already exists, recreating it"
-    Remove-Item $folder64 -Recurse
+if (Test-Path -Path $targetFolder64) {
+    Write-Host "$targetFolder64 already exists, recreating it"
+    Remove-Item $targetFolder64 -Recurse
 }
 
 Write-Host "Creating 32 bit folder structure" -f Green
