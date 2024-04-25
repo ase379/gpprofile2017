@@ -216,7 +216,7 @@ begin
   if not assigned(fopenProject) then
     exit;
 
-  if not (fVstSelectUnitTools.GetSpecialTagSet(fVstSelectUnitTools.GetSelectedNode()) = []) then
+  if not (fVstSelectUnitTools.GetSpecialTagSet(fVstSelectUnitTools.GetSelectedNode()) = [ste_UnitClassOrProc]) then
       exit;
 
   LWizard := tfmUnitWizard.Create(nil);
@@ -564,7 +564,7 @@ begin
       else if openProject <> nil then
         OnShowStatusBarMessage(openProject.Name, false);
       OnReloadSource(LUnitPath,0); // force reset
-      btnUnitSelectionWizard.Enabled := assigned(LSelectedNode) and (fVstSelectUnitTools.GetSpecialTagSet(LSelectedNode) = []);
+      btnUnitSelectionWizard.Enabled := assigned(LSelectedNode) and (fVstSelectUnitTools.GetSpecialTagSet(LSelectedNode) = [ste_UnitClassOrProc]);
     finally
       fVstSelectUnitTools.EndUpdate();
       fVstSelectClassTools.EndUpdate;
