@@ -48,6 +48,12 @@ procedure TMeasurePointRegistry.RegisterMeasurePoint(const aProcId : Cardinal; c
 var
   lEntry : TMeasurePointRegistryEntry;
 begin
+  if fNameToEntryDict.TryGetValue(aMeasurePointId, lEntry) then
+  begin
+    var error := 'The Measure Point "'+aMeasurePointId+'" has been used multiple times.'+sLineBreak+
+                'Please correct it, the name must be unique.';
+    raise Exception.Create(error)
+  end;
   lEntry := TMeasurePointRegistryEntry.Create;
   lEntry.ProcId := aProcId;
   lEntry.MeasurePointId := aMeasurePointId;
@@ -62,7 +68,7 @@ end;
 
 procedure TMeasurePointRegistry.UnRegisterMeasurePoint(const aMeasurePointId : String);
 begin
-  fNameToEntryDict.Remove(aMeasurePointId);
+  // do not unregister for finding double mp ids.
 end;
 
 end.
