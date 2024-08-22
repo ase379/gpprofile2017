@@ -1506,7 +1506,7 @@ begin
     LDragNDropHandler.DetermineDroppedFiles();
     for LFilename in LDragNDropHandler.Filenames do
     begin
-      if LFilename.EndsWith('.dpr', true) then
+      if LFilename.EndsWith('.dpr', true) or LFilename.EndsWith('.dpk', true) then
       begin
         LoadProject(LFilename);
         Break;

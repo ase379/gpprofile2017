@@ -40,8 +40,8 @@ type
     fSkippedList : TSkippedCodeRecList;
     fUnitParserStack : TUnitParserStack;
     fCurrentUnitParserStackEntry : TUnitParserStackEntry;
-    fName: TFilename;
-    fFullName: TFileName;
+    fName: String;
+    fFullName: String;
 
 
     procedure AddToIntArray(var anArray: TArray<Integer>;const aValue: Integer);
@@ -105,8 +105,8 @@ type
     function NeedsToBeReparsed() : Boolean;
     function IsValidForInstrumentation(): boolean;
 
-    property Name : TFilename read fName;
-    property FullName : TFilename read fFullName;
+    property Name : String read fName;
+    property FullName : String read fFullName;
   end;
 
 implementation
@@ -340,6 +340,7 @@ const
   EXT_INCLUDE = '.inc';
   EXT_PAS_SOURCE = '.pas';
   EXT_PAS_PROJECT_SOURCE = '.dpr';
+  EXT_PAS_PACKAGE_SOURCE = '.dpk';
 var
   i, k: Integer;
   LDefDir: string;
@@ -355,7 +356,8 @@ begin
   Result := False;
 
   LExtension := ExtractFileExt(aUnitName).ToLower;
-  if (LExtension <> EXT_PAS_SOURCE) and (LExtension <> EXT_PAS_PROJECT_SOURCE) and (LExtension <> EXT_INCLUDE) then
+  if (LExtension <> EXT_PAS_SOURCE) and (LExtension <> EXT_PAS_PROJECT_SOURCE) and (LExtension <> EXT_PAS_PACKAGE_SOURCE) and
+  (LExtension <> EXT_INCLUDE) then
   begin
     LUnitName := aUnitName + EXT_PAS_SOURCE;
     LExtension := EXT_PAS_SOURCE;
@@ -655,6 +657,7 @@ var
   tokenData: string;
   tokenPos: Integer;
   tokenLN: Integer;
+  lIsPackageDpkFile : boolean;
   lIsInAsmBlock: TBooleanStack;
   lIsInRecordDef: TBooleanStack;
   prevTokenID: TptTokenKind;
@@ -779,6 +782,7 @@ begin
   apiStartEnd := -1;
 
   try
+    lIsPackageDpkFile := FullName.EndsWith('.dpk');
     lIsInAsmBlock := TBooleanStack.Create;
     lIsInRecordDef := TBooleanStack.Create;
     fSkippedList := TSkippedCodeRecList.Create();
@@ -793,6 +797,8 @@ begin
           tokenPos := fCurrentUnitParserStackEntry.Lexer.tokenPos;
           tokenLN := fCurrentUnitParserStackEntry.Lexer.LineNumber;
 
+          if lIsPackageDpkFile and (tokendata.ToLower = 'contains') and (tokenid = ptIdentifier) then
+            tokenID := ptContains;
           LDirective := ProcessDirectives(fProject, tokenID, tokenData);
 
           if not fSkippedList.SkippingCode then
