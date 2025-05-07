@@ -358,9 +358,9 @@ const
     end;
   end; { TGpHugeFile.FreeBuffer }
 
-  function OffsetPtr(ptr: pointer; offset: DWORD): pointer;
+  function OffsetPtr(ptr: Pointer; offset: NativeUInt): Pointer;
   begin
-    Result := pointer(PByte(ptr)+offset);
+    Result := Pointer(NativeUInt(ptr) + offset);
   end; { OffsetPtr }
 
   procedure TGpHugeFile.Transmit(const buf; count: DWORD; var transferred: DWORD);

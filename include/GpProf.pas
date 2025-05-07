@@ -129,9 +129,9 @@ begin
   FillChar(prfBuf^, BUF_SIZE, 0);
 end; { FlushFile }
 
-function OffsetPtr(ptr: pointer; offset: DWORD): pointer;
+function OffsetPtr(ptr: Pointer; offset: NativeUInt): Pointer;
 begin
-  Result := pointer(NativeUInt(ptr)+offset);
+  Result := Pointer(NativeUInt(ptr) + offset);
 end; { OffsetPtr }
 
 procedure Transmit(const buf; count: DWORD);
