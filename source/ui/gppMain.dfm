@@ -656,15 +656,6 @@ object frmMain: TfrmMain
     Left = 197
     Top = 294
   end
-  object MRU: TGPMRUFiles
-    PopupMenu = popRecent
-    MaxFiles = 9
-    StandAloneMenu = True
-    DeleteEntry = False
-    OnClick = MRUClick
-    Left = 107
-    Top = 134
-  end
   object MainMenu1: TMainMenu
     Left = 609
     Top = 206
@@ -736,15 +727,6 @@ object frmMain: TfrmMain
   object popRecentPrf: TPopupMenu
     Left = 197
     Top = 234
-  end
-  object MRUPrf: TGPMRUFiles
-    PopupMenu = popRecentPrf
-    MaxFiles = 9
-    StandAloneMenu = True
-    DeleteEntry = False
-    OnClick = MRUPrfClick
-    Left = 107
-    Top = 164
   end
   object popLayout: TPopupMenu
     Left = 293
@@ -3670,14 +3652,5 @@ object frmMain: TfrmMain
   object popRecentGis: TPopupMenu
     Left = 317
     Top = 210
-  end
-  object MRUGis: TGPMRUFiles
-    PopupMenu = popRecentGis
-    MaxFiles = 9
-    StandAloneMenu = True
-    DeleteEntry = False
-    OnClick = MRUGisClick
-    Left = 107
-    Top = 204
   end
 end

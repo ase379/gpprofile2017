@@ -31,12 +31,10 @@ type
     actRemoveInstrumentation: TAction;
     popRecent: TPopupMenu;
     actRescanProject: TAction;
-    MRU: TGPMRUFiles;
     MainMenu1: TMainMenu;
     popDelphiVer: TPopupMenu;
     actOpenProfile: TAction;
     popRecentPrf: TPopupMenu;
-    MRUPrf: TGPMRUFiles;
     Help1: TMenuItem;
     About1: TMenuItem;
     actHideNotExecuted: TAction;
@@ -127,7 +125,6 @@ type
     ApplicationTaskbar: TTaskbar;
     JumpList1: TJumpList;
     popRecentGis: TPopupMenu;
-    MRUGis: TGPMRUFiles;
     Action1: TAction;
     Action2: TAction;
     actShowPerformanceData: TAction;
@@ -136,7 +133,6 @@ type
     PageControl2: TPageControl;
     tabPerformanceResults: TTabSheet;
     procedure FormCreate(Sender: TObject);
-    procedure MRUClick(Sender: TObject; LatestFile: String);
     procedure FormDestroy(Sender: TObject);
     procedure actExitExecute(Sender: TObject);
     procedure actPreferencesExecute(Sender: TObject);
@@ -147,7 +143,6 @@ type
     procedure actRemoveInstrumentationExecute(Sender: TObject);
     procedure actOpenProfileExecute(Sender: TObject);
     procedure PageControl1Change(Sender: TObject);
-    procedure MRUPrfClick(Sender: TObject; LatestFile: String);
     procedure actInstrumentRunExecute(Sender: TObject);
     procedure btnCancelLoadClick(Sender: TObject);
     procedure FormShow(Sender: TObject);
@@ -194,7 +189,6 @@ type
     procedure clbClassesKeyPress(Sender: TObject; var Key: Char);
     procedure actLoadInstrumentationSelectionExecute(Sender: TObject);
     procedure actSaveInstrumentationSelectionExecute(Sender: TObject);
-    procedure MRUGisClick(Sender: TObject; LatestFile: string);
   private
     openProject               : TProject;
     fCurrentProfile           : TResults;
@@ -212,9 +206,17 @@ type
     fPerformanceFrame         : TfrmMainProfiling;
     fMemoryFrame              : TfrmMemProfiling;
     fNeededSeconds            : Double;
+    MRU: TGPMRUFiles;
+    MRUPrf: TGPMRUFiles;
+    MRUGis: TGPMRUFiles;
     procedure ReloadJumpList();
     procedure ResetCallers();
 
+	// MRU creation and events
+    procedure CreateMRU;
+    procedure MRUClick(Sender: TObject; LatestFile: String);
+    procedure MRUPrfClick(Sender: TObject; LatestFile: String);
+    procedure MRUGisClick(Sender: TObject; LatestFile: string);
 
     procedure ExecuteAsync(const aProc: TAsyncExecuteProc;const aOnFinishedProc: TAsyncFinishedProc;const aActionName : string);
     procedure ParseProject(const aProject: string; const aJustRescan: boolean);
@@ -299,6 +301,33 @@ uses
 {$I HELP.INC}
 
 {========================= TfrmMain =========================}
+
+procedure TfrmMain.CreateMRU;
+begin
+  // Create MRU component
+  MRU := TGPMRUFiles.Create(Self);
+  MRU.PopupMenu := popRecent; // Assign existing popup menu
+  MRU.MaxFiles := 9;
+  MRU.StandAloneMenu := True;
+  MRU.DeleteEntry := False;
+  MRU.OnClick := MRUClick; // Assign event handler
+
+  // Create MRUPrf component
+  MRUPrf := TGPMRUFiles.Create(Self);
+  MRUPrf.PopupMenu := popRecentPrf; // Assign existing popup menu
+  MRUPrf.MaxFiles := 9;
+  MRUPrf.StandAloneMenu := True;
+  MRUPrf.DeleteEntry := False;
+  MRUPrf.OnClick := MRUPrfClick; // Assign event handler
+
+  // Create MRUGis component
+  MRUGis := TGPMRUFiles.Create(Self);
+  MRUGis.PopupMenu := popRecentGis; // Assign existing popup menu
+  MRUGis.MaxFiles := 9;
+  MRUGis.StandAloneMenu := True;
+  MRUGis.DeleteEntry := False;
+  MRUGis.OnClick := MRUGisClick; // Assign event handler
+end;
 
 procedure TfrmMain.CMDialogKey(var msg: TCMDialogKey);
 var
@@ -876,6 +905,8 @@ end; { TfrmMain.LoadLayouts }
 
 procedure TfrmMain.FormCreate(Sender: TObject);
 begin
+  CreateMRU;
+  
   FInstrumentationFrame := TfrmMainInstrumentation.Create(self);
   FInstrumentationFrame.Parent := tabInstrumentation;
   FInstrumentationFrame.Align := alClient;
