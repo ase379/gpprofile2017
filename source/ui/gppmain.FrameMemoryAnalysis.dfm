@@ -139,7 +139,6 @@ object frmMemProfiling: TfrmMemProfiling
             Height = 127
             Align = alClient
             Header.AutoSizeIndex = 0
-            Header.Height = 20
             Header.MinHeight = 20
             Header.Options = [hoColumnResize, hoDrag, hoShowSortGlyphs, hoVisible]
             PopupMenu = popAnalysisListview
@@ -201,7 +200,6 @@ object frmMemProfiling: TfrmMemProfiling
             Height = 304
             Align = alClient
             Header.AutoSizeIndex = 0
-            Header.Height = 20
             Header.MinHeight = 20
             Header.Options = [hoColumnResize, hoDrag, hoShowSortGlyphs, hoVisible]
             PopupMenu = popAnalysisListview
@@ -267,7 +265,6 @@ object frmMemProfiling: TfrmMemProfiling
           Height = 127
           Align = alClient
           Header.AutoSizeIndex = 0
-          Header.Height = 20
           Header.MinHeight = 20
           Header.Options = [hoColumnResize, hoDrag, hoShowSortGlyphs, hoVisible]
           PopupMenu = popAnalysisListview
@@ -325,7 +322,6 @@ object frmMemProfiling: TfrmMemProfiling
         Height = 608
         Align = alClient
         Header.AutoSizeIndex = 0
-        Header.Height = 20
         Header.MinHeight = 20
         Header.Options = [hoColumnResize, hoDrag, hoShowSortGlyphs, hoVisible]
         PopupMenu = popAnalysisListview
@@ -432,6 +428,7 @@ object frmMemProfiling: TfrmMemProfiling
         Width = 889
         Height = 608
         Align = alClient
+        DefaultNodeHeight = 19
         Header.AutoSizeIndex = 0
         Header.Height = 20
         Header.MinHeight = 20
@@ -441,7 +438,6 @@ object frmMemProfiling: TfrmMemProfiling
         TreeOptions.PaintOptions = [toShowButtons, toShowDropmark, toThemeAware, toUseBlendedImages]
         Touch.InteractiveGestures = [igPan, igPressAndTap]
         Touch.InteractiveGestureOptions = [igoPanSingleFingerHorizontal, igoPanSingleFingerVertical, igoPanInertia, igoPanGutter, igoParentPassthrough]
-        ExplicitTop = 62
         Columns = <
           item
             MinWidth = 200
@@ -489,7 +485,6 @@ object frmMemProfiling: TfrmMemProfiling
         Height = 641
         Align = alClient
         Header.AutoSizeIndex = 0
-        Header.Height = 20
         Header.MinHeight = 20
         Header.Options = [hoColumnResize, hoDrag, hoShowSortGlyphs, hoVisible]
         PopupMenu = popAnalysisListview
