@@ -29,6 +29,8 @@ object frmMain: TfrmMain
     ParentFont = True
     UseSystemFont = False
     OnResize = StatusBarResize
+    ExplicitTop = 598
+    ExplicitWidth = 1474
   end
   object Panel0: TPanel
     Left = 0
@@ -39,6 +41,8 @@ object frmMain: TfrmMain
     BevelEdges = []
     BevelOuter = bvNone
     TabOrder = 1
+    ExplicitWidth = 1474
+    ExplicitHeight = 598
     object splitSourcePreview: TSplitter
       Left = 0
       Top = 491
@@ -58,6 +62,8 @@ object frmMain: TfrmMain
       Align = alClient
       BevelOuter = bvNone
       TabOrder = 0
+      ExplicitWidth = 1474
+      ExplicitHeight = 474
       object PageControl1: TPageControl
         Left = 0
         Top = 0
@@ -68,6 +74,8 @@ object frmMain: TfrmMain
         HotTrack = True
         TabOrder = 0
         OnChange = PageControl1Change
+        ExplicitWidth = 1474
+        ExplicitHeight = 474
         object tabInstrumentation: TTabSheet
           Caption = 'Source Code Instrumentation'
           ImageIndex = 16
@@ -95,14 +103,14 @@ object frmMain: TfrmMain
               Style = tbsDropDown
             end
             object btnRescanProject: TToolButton
-              Left = 159
+              Left = 169
               Top = 0
               Action = actRescanProject
               ImageIndex = 1
               Style = tbsTextButton
             end
             object btnInstrumentDelimiter1: TToolButton
-              Left = 303
+              Left = 313
               Top = 0
               Width = 5
               Caption = 'btnInstrumentDelimiter1'
@@ -110,21 +118,21 @@ object frmMain: TfrmMain
               Style = tbsSeparator
             end
             object btnInstrument: TToolButton
-              Left = 308
+              Left = 318
               Top = 0
               Action = actInstrument
               ImageIndex = 3
               Style = tbsTextButton
             end
             object btnRemoveInstrumentation: TToolButton
-              Left = 452
+              Left = 462
               Top = 0
               Action = actRemoveInstrumentation
               ImageIndex = 4
               Style = tbsTextButton
             end
             object btnInstrumentDelimiter2: TToolButton
-              Left = 596
+              Left = 606
               Top = 0
               Width = 5
               Caption = 'btnInstrumentDelimiter2'
@@ -132,7 +140,7 @@ object frmMain: TfrmMain
               Style = tbsSeparator
             end
             object btnLoadSelection: TToolButton
-              Left = 601
+              Left = 611
               Top = 0
               Action = actLoadInstrumentationSelection
               DropdownMenu = popRecentGis
@@ -140,13 +148,13 @@ object frmMain: TfrmMain
               Style = tbsDropDown
             end
             object btnSaveSelection: TToolButton
-              Left = 760
+              Left = 780
               Top = 0
               Action = actSaveInstrumentationSelection
               ImageIndex = 7
             end
             object btnInstrumentDelimiter3: TToolButton
-              Left = 904
+              Left = 924
               Top = 0
               Width = 8
               Caption = 'btnInstrumentDelimiter3'
@@ -154,7 +162,7 @@ object frmMain: TfrmMain
               Style = tbsSeparator
             end
             object btnProjectOptions: TToolButton
-              Left = 912
+              Left = 932
               Top = 0
               Action = actProjectOptions
               ParentShowHint = False
@@ -171,10 +179,11 @@ object frmMain: TfrmMain
             Top = 54
             Width = 1472
             Height = 407
-            ActivePage = tabPerformanceAnalysis
+            ActivePage = tabMemoryAnalysis
             Align = alClient
             TabOrder = 0
-            ExplicitHeight = 397
+            ExplicitWidth = 1466
+            ExplicitHeight = 390
             object tabPerformanceAnalysis: TTabSheet
               Caption = 'Performance Analysis'
               ImageIndex = 17
@@ -200,7 +209,7 @@ object frmMain: TfrmMain
             ShowCaptions = True
             ShowHint = True
             TabOrder = 1
-            ExplicitWidth = 1464
+            ExplicitWidth = 1466
             object btnOpenProfile: TToolButton
               Left = 0
               Top = 0
@@ -210,13 +219,13 @@ object frmMain: TfrmMain
               Style = tbsDropDown
             end
             object btnRescanProfile: TToolButton
-              Left = 115
+              Left = 125
               Top = 0
               Action = actRescanProfile
               ImageIndex = 1
             end
             object btnAnalysisDelimiter1: TToolButton
-              Left = 215
+              Left = 225
               Top = 0
               Width = 5
               Caption = 'btnAnalysisDelimiter1'
@@ -224,25 +233,25 @@ object frmMain: TfrmMain
               Style = tbsSeparator
             end
             object btnRenameMoveProfile: TToolButton
-              Left = 220
+              Left = 230
               Top = 0
               Action = actRenameMoveProfile
               ImageIndex = 2
             end
             object btnMakeCopyProfile: TToolButton
-              Left = 320
+              Left = 330
               Top = 0
               Action = actMakeCopyProfile
               ImageIndex = 3
             end
             object btnDelUndelProfile: TToolButton
-              Left = 420
+              Left = 430
               Top = 0
               Action = actDelUndelProfile
               ImageIndex = 4
             end
             object btnExportProfile: TToolButton
-              Left = 520
+              Left = 530
               Top = 0
               Action = actExportProfile
               ImageIndex = 5
@@ -259,6 +268,8 @@ object frmMain: TfrmMain
       Align = alBottom
       BevelOuter = bvNone
       TabOrder = 1
+      ExplicitTop = 477
+      ExplicitWidth = 1474
       object sourceCodeEdit: TSynEdit
         Left = 0
         Top = 0
@@ -302,6 +313,7 @@ object frmMain: TfrmMain
         Lines.Strings = (
           'sourceCodeEdit')
         SelectedColor.Alpha = 0.400000005960464500
+        ExplicitWidth = 1474
       end
     end
   end

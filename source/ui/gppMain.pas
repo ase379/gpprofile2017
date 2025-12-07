@@ -612,7 +612,10 @@ begin
   tabMemoryAnalysis.Font.Color             := clWindowText;
   StatusPanel0('',false);
   fPerformanceFrame.Enable();
-  fMemoryFrame.Enable();
+  if TGlobalPreferences.ProfilingMemSupport then
+    fMemoryFrame.Enable()
+  else
+    fMemoryFrame.Disable();
   if fPerformanceFrame.Enable then
   begin
     if PageControl1.ActivePage = tabPerformanceAnalysis then
@@ -709,13 +712,17 @@ begin
     actHideNotExecuted.Checked := TGlobalPreferences.GetProfilePref('HideNotExecuted', TGlobalPreferences.HideNotExecuted);
     fPerformanceFrame.FillViews(1);
     fPerformanceFrame.ClearBreakdown;
-    fMemoryFrame.FillViews(1);
-    fMemoryFrame.ClearBreakdown;
+    fPerformanceFrame.mnuExportProfile.Enabled     := true;
+    if TGlobalPreferences.ProfilingMemSupport then
+    begin
+      fMemoryFrame.FillViews(1);
+      fMemoryFrame.ClearBreakdown;
+    end;
+    fMemoryFrame.mnuExportProfile.Enabled := TGlobalPreferences.ProfilingMemSupport;
+
     actHideNotExecuted.Enabled   := true;
     actRescanProfile.Enabled     := true;
     actExportProfile.Enabled     := true;
-    fPerformanceFrame.mnuExportProfile.Enabled     := true;
-    fMemoryFrame.mnuExportProfile.Enabled := true;
     actRenameMoveProfile.Enabled := true;
     actShowPerformanceData.Enabled := true;
     actShowMemoryData.Enabled    := true;
@@ -2220,9 +2227,11 @@ procedure TfrmMain.actShowHideCallersExecute(Sender: TObject);
   end;
 
 begin
+  var lfocusedTab := PageControl2.ActivePage;
   setPanelAndSplitterVisible(fPerformanceFrame.pnlCallers, fPerformanceFrame.splitCallers);
   setPanelAndSplitterVisible(fMemoryFrame.pnlCallers, fMemoryFrame.splitCallers);
   ResetCallers();
+  PageControl2.ActivePage := lfocusedTab;
 end;
 
 procedure TfrmMain.actShowHideCallersUpdate(Sender: TObject);
@@ -2280,9 +2289,11 @@ procedure TfrmMain.actShowHideCalleesExecute(Sender: TObject);
   end;
 
 begin
+  var lfocusedTab := PageControl2.ActivePage;
   setPanelAndSplitterVisible(fPerformanceFrame.pnlCallees,fPerformanceFrame.splitCallees);
   setPanelAndSplitterVisible(fMemoryFrame.pnlCallees,fMemoryFrame.splitCallees);
   ResetCallees;
+  PageControl2.ActivePage := lfocusedTab;
 end;
 
 procedure TfrmMain.actShowHideCalleesUpdate(Sender: TObject);
