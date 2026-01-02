@@ -36,8 +36,8 @@ procedure ProfilerExitProc(const aProcID: Cardinal);
 function CreateMeasurePointScope(const aMeasurePointId : String): IMeasurePointScope;
 
 procedure ProfilerTerminate;
-procedure NameThreadForDebugging(AThreadName: AnsiString; AThreadID: TThreadID = TThreadID(-1)); overload;
-procedure NameThreadForDebugging(AThreadName: string; AThreadID: TThreadID = TThreadID(-1)); overload;
+procedure NameThreadForDebugging(const AThreadName: AnsiString; AThreadID: TThreadID = TThreadID(-1)); overload;
+procedure NameThreadForDebugging(const AThreadName: string; AThreadID: TThreadID = TThreadID(-1)); overload;
 
 implementation
 
@@ -335,13 +335,13 @@ begin
   Result := Copy(fName,1,Length(fName)-Length(ExtractFileExt(fName)))+'.'+newExt;
 end; { CombineNames }
 
-procedure NameThreadForDebugging(AThreadName: AnsiString; AThreadID: TThreadID = TThreadID(-1)); overload;
+procedure NameThreadForDebugging(const AThreadName: AnsiString; AThreadID: TThreadID = TThreadID(-1)); overload;
 begin
   NameThreadForDebugging(string(aThreadName), aThreadID);
 end; { NameThreadForDebugging }
 
 
-procedure NameThreadForDebugging(AThreadName: string; AThreadID: TThreadID = TThreadID(-1)); overload;
+procedure NameThreadForDebugging(const AThreadName: string; AThreadID: TThreadID = TThreadID(-1)); overload;
 var LEntry : TThreadInformation;
 begin
   TThread.NameThreadForDebugging(aThreadName, aThreadId);
@@ -505,10 +505,9 @@ begin
       prfName             := CombineNames(prfModuleName, 'prf');
       if profPrfOutputFile <> '' then
         prfName := profPrfOutputFile + '.prf';
-      prfBuf              := VirtualAlloc(nil, BUF_SIZE, MEM_RESERVE + MEM_COMMIT, PAGE_READWRITE);
-      prfBufOffs          := 0;
-      Win32Check(VirtualLock(prfBuf, BUF_SIZE));
+      GetMem(prfBuf,BUF_SIZE);
       Win32Check(prfBuf <> nil);
+      prfBufOffs          := 0;
       FillChar(prfBuf^, BUF_SIZE, 0);
       InitializeCriticalSection(prfLock);
       prfFile := CreateFile(PChar(prfName), GENERIC_WRITE, 0, nil, CREATE_ALWAYS,
@@ -586,8 +585,7 @@ procedure Finalize;
 begin
   FlushFile;
   Win32Check(CloseHandle(prfFile));
-  Win32Check(VirtualUnlock(prfBuf, BUF_SIZE));
-  Win32Check(VirtualFree(prfBuf, 0, MEM_RELEASE));
+  FreeMem(prfBuf, BUF_SIZE);
   prfThreads.Free;
   prfThreadsInfo.free;
   DeleteCriticalSection(prfLock);
