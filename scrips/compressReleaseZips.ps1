@@ -1,4 +1,4 @@
-$version = "1.6.0.7"
+$version = "1.6.0.8"
 $srcBin32 = "..\bin"
 $srcBin64 = "..\bin64"
 $targetFolder32 = "..\gpprof_2017_v"+$version
