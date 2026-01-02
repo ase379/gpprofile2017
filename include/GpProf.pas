@@ -481,7 +481,10 @@ var
   myFile : TextFile;
 begin
   AssignFile(myFile, aFilename);
-  Append(myFile);
+  if FileExists(aFilename) then
+    Append(myFile)
+  else
+    Rewrite(myFile);
   WriteLn(myFile, aMessage);
   CloseFile(myFile);
 end;
