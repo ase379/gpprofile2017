@@ -19,7 +19,7 @@ type
     constructor Create();
     destructor Destroy; override;
 
-    procedure RegisterMeasurePoint(const aProcId : Cardinal; const aMeasurePointId : String);
+    function RegisterMeasurePoint(const aProcId : Cardinal; const aMeasurePointId : String): TMeasurePointRegistryEntry;
     procedure UnRegisterMeasurePoint(const aMeasurePointId : String);
 
     function GetMeasurePointEntry(const aMeasurePointId : String) : TMeasurePointRegistryEntry;
@@ -44,7 +44,7 @@ begin
   inherited;
 end;
 
-procedure TMeasurePointRegistry.RegisterMeasurePoint(const aProcId : Cardinal; const aMeasurePointId : String);
+function TMeasurePointRegistry.RegisterMeasurePoint(const aProcId : Cardinal; const aMeasurePointId : String) : TMeasurePointRegistryEntry;
 var
   lEntry : TMeasurePointRegistryEntry;
 begin
@@ -54,10 +54,10 @@ begin
                 'Please correct it, the name must be unique.';
     raise Exception.Create(error)
   end;
-  lEntry := TMeasurePointRegistryEntry.Create;
-  lEntry.ProcId := aProcId;
-  lEntry.MeasurePointId := aMeasurePointId;
-  fNameToEntryDict.AddOrSetValue(aMeasurePointId, lEntry);
+  result := TMeasurePointRegistryEntry.Create;
+  result.ProcId := aProcId;
+  result.MeasurePointId := aMeasurePointId;
+  fNameToEntryDict.AddOrSetValue(aMeasurePointId, result);
 end;
 
 function TMeasurePointRegistry.GetMeasurePointEntry(const aMeasurePointId : String) : TMeasurePointRegistryEntry;
