@@ -490,10 +490,11 @@ procedure TResults.EnterProcPkt(const pkt: TResPacket; const mempkt: TResMemPack
 var
   proxy: TProcProxy;
 begin
+  var lThreadId := ThCreateLocate(pkt.rpThread);
   if IsMemProfilingEnabled then
-    proxy := TProcWithMemProxy.Create(ThCreateLocate(pkt.rpThread),pkt.rpProcID)
+    proxy := TProcWithMemProxy.Create(lThreadId,pkt.rpProcID)
   else
-    proxy := TProcProxy.Create(ThCreateLocate(pkt.rpThread),pkt.rpProcID);
+    proxy := TProcProxy.Create(lThreadId,pkt.rpProcID);
   EnterProc(proxy,pkt, mempkt);
 end; { TResults.EnterProcPkt }
 
@@ -519,18 +520,23 @@ var
   proxy: TProcProxy;
   lThreadId : Cardinal;
 begin
+  var lExistingMP := fMeasurePointRegistry.GetMeasurePointEntry(pkt.rpMeasurePointID);
+  if not assigned(lExistingMP) then
+  begin
+    lExistingMP := fMeasurePointRegistry.RegisterMeasurePoint(resProcedures.Count, pkt.rpMeasurePointID);
+    inc(fCallGraphInfoMaxElementCount);
+    // the measure point needs to be inserted into the known procedures
+    resProcedures.AddProcRow( pkt.rpMeasurePointID, pkt.rpProcID, Length(resThreads));
+  end;
+  pkt.rpProcID := lExistingMP.ProcId;
+
   lThreadId := ThCreateLocate(pkt.rpThread);
-  pkt.rpProcID := resProcedures.Count;
   if IsMemProfilingEnabled then
     proxy := TMeasurePointWithMemProxy.Create(lThreadId,pkt.rpProcID,pkt.rpMeasurePointID)
   else
     proxy := TMeasurePointProxy.Create(lThreadId,pkt.rpProcID,pkt.rpMeasurePointID);
-  fMeasurePointRegistry.RegisterMeasurePoint(pkt.rpProcId, pkt.rpMeasurePointID);
-  inc(fCallGraphInfoMaxElementCount);
 
-  // the measure point needs to be inserted into the known procedures
-  resProcedures.AddProcRow( pkt.rpMeasurePointID, pkt.rpProcID, Length(resThreads));
-  EnterProc(proxy,pkt, mempkt);
+  EnterProc(proxy, pkt, mempkt);
 end; { TResults.EnterMeasurePointPkt }
 
 
@@ -543,8 +549,6 @@ begin
   pkt.rpProcID := lLastMeasurePointEntry.ProcId;
   ExitProcPkt(pkt, mempkt);
   inherited;
-  fMeasurePointRegistry.UnRegisterMeasurePoint(pkt.rpMeasurePointID);
-
 end; { TResults.ExitMeasurePointPkt }
 
 
