@@ -367,7 +367,7 @@ begin
 
   if FileExists(LUnitName) then
   begin
-    aUnitFullName := LowerCase(ExpandUNCFileName(LUnitName));
+    aUnitFullName := ExpandUNCFileName(LUnitName);
     Result := true;
     Exit;
   end;
@@ -375,7 +375,7 @@ begin
 
   if FileExists(LDefDir + LUnitName) then
   begin
-    aUnitFullName := LowerCase(LDefDir + LUnitName);
+    aUnitFullName := LDefDir + LUnitName;
     Result := true;
     Exit;
   end;
@@ -388,7 +388,7 @@ begin
     LUnitPath := MakeSmartBackslash(LSearchPath) + LUnitName;
     if FileExists(LUnitPath) then
     begin
-      aUnitFullName := LowerCase(LUnitPath);
+      aUnitFullName := LUnitPath;
       Result := true;
       Exit;
     end;
@@ -407,7 +407,7 @@ begin
         LUnitPath := LUnitPath + fProject.Namespaces[k] + '.' + LUnitName ;
         if FileExists(LUnitPath) then
         begin
-          aUnitFullName := LowerCase(LUnitPath);
+          aUnitFullName := LUnitPath;
           Result := true;
           Exit;
         end;
@@ -422,7 +422,7 @@ begin
     LUnitPath := TPath.Combine(LUnitPath, aUnitName);
     if FileExists(LUnitPath) then
     begin
-      aUnitFullName := LowerCase(LUnitPath);
+      aUnitFullName := LUnitPath;
       Result := true;
       Exit;
     end;
