@@ -64,7 +64,7 @@
     <PropertyGroup Condition="'$(Base)'!=''">
         <DCC_DcuOutput>..\DCU</DCC_DcuOutput>
         <DCC_ExeOutput>..\bin</DCC_ExeOutput>
-        <DCC_UnitSearchPath>..\include;..\lib\SynEdit\source;..\GPComponents\GPNative\source;..\lib\VirtualTreeView\Source;ui;ui\VirtualTree.Tools;model;model\profilingResultParser;model\sourceCodeAnalysis;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
+        <DCC_UnitSearchPath>..\include;..\lib\SynEdit\Source;..\lib\SynEdit\Source\Highlighters;..\GPComponents\GPNative\source;..\lib\VirtualTreeView\Source;ui;ui\VirtualTree.Tools;model;model\profilingResultParser;model\sourceCodeAnalysis;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
         <DCC_Namespace>Vcl;Vcl.Imaging;Vcl.Touch;Vcl.Samples;Vcl.Shell;System;Xml;Data;Datasnap;Web;Soap;Winapi;System.Win;$(DCC_Namespace)</DCC_Namespace>
         <VerInfo_Locale>1033</VerInfo_Locale>
         <VerInfo_MinorVer>6</VerInfo_MinorVer>
