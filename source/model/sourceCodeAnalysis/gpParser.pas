@@ -35,6 +35,7 @@ type
     procedure GetUnitList(const aInfoList: TUnitInstrumentationInfoList;const aProjectDirOnly: boolean);
     procedure GetProcList(const aUnitName: string; const aProcInfoList : TProcedureInstrumentationInfoList);
     function GetUnitPath(unitName: string): string;
+    function GetUnitRealCasePath(unitName: string): string;
     procedure InstrumentAll(Instrument, projectDirOnly: boolean);
     procedure InstrumentUnit(const aUnitName: string; const aInstrument: boolean);
     procedure InstrumentProc(const aUnitName, aProcName: string; const aInstrument: boolean);
@@ -412,6 +413,31 @@ begin
   else
     Result := un.FullName;
 end; { TProject.GetUnitPath }
+
+function TProject.GetUnitRealCasePath(unitName: string): string;
+
+  function GetRealCasePath(const APath: string): string;
+  var
+    SR: TSearchRec;
+  begin
+    if APath = ExtractFileDrive(APath) + PathDelim then
+      Exit(UpperCase(APath));
+
+    var lPath := ExcludeTrailingPathDelimiter(APath);
+    if System.SysUtils.FindFirst(lPath, faAnyFile, SR) = 0 then
+    try
+      var lParentPath := ExtractFilePath(lPath);
+      Result := IncludeTrailingPathDelimiter(GetRealCasePath(lParentPath)) + SR.Name;
+    finally
+      System.SysUtils.FindClose(SR);
+    end
+    else
+      Result := APath;
+  end;
+
+begin
+  Result := GetRealCasePath(GetUnitPath(unitName));
+end; { TProject.GetUnitRealCasePath }
 
 function TProject.GetFirstLine(unitName, procName: string): Integer;
 var

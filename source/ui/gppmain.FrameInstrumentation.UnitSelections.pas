@@ -25,7 +25,7 @@ implementation
 
 uses 
   VirtualTrees.Types, gppMain.FrameInstrumentation.SelectionInfoIF, gppMain.FrameInstrumentation.SelectionInfo, 
-  System.StrUtils, System.Types, System.SysUtils;
+  System.StrUtils, System.Types;
   
 { TCheckableUnitTreeTools }
 
@@ -74,26 +74,6 @@ begin
 end;
 
 procedure TCheckableUnitTreeTools.FillUnitTree(const aOnlyUnitsOfDPR: boolean; const aShowDirectories: boolean);
-
-  function GetRealCasePath(const APath: string): string;
-  var
-    SR: TSearchRec;
-  begin
-    if APath = ExtractFileDrive(APath) + PathDelim then
-      Exit(UpperCase(APath));
-
-    var lPath := ExcludeTrailingPathDelimiter(APath);
-    if FindFirst(lPath, faAnyFile, SR) = 0 then
-    try
-      var lParentPath := ExtractFilePath(lPath);
-      Result := IncludeTrailingPathDelimiter(GetRealCasePath(lParentPath)) + SR.Name;
-    finally
-      FindClose(SR);
-    end
-    else
-      Result := APath;
-  end;
-
 var
   lUnitInfoList : TUnitInstrumentationInfoList;
   LFirstNode,
@@ -117,7 +97,7 @@ begin
         begin
           for var lUnitInfo in lUnitInfoList do
           begin
-            lUnitInfo.UnitPath := GetRealCasePath(openproject.GetUnitPath(lUnitInfo.UnitName));
+            lUnitInfo.UnitPath := openproject.GetUnitRealCasePath(lUnitInfo.UnitName);
           end;
           lUnitInfoList.SortByPath;
         end else
