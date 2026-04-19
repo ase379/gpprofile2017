@@ -25,7 +25,7 @@ implementation
 
 uses 
   VirtualTrees.Types, gppMain.FrameInstrumentation.SelectionInfoIF, gppMain.FrameInstrumentation.SelectionInfo, 
-  System.StrUtils, System.Types;
+  System.StrUtils, System.Types, System.SysUtils;
   
 { TCheckableUnitTreeTools }
 
@@ -74,13 +74,32 @@ begin
 end;
 
 procedure TCheckableUnitTreeTools.FillUnitTree(const aOnlyUnitsOfDPR: boolean; const aShowDirectories: boolean);
+
+  function GetRealCasePath(const APath: string): string;
+  var
+    SR: TSearchRec;
+  begin
+    if APath = ExtractFileDrive(APath) + PathDelim then
+      Exit(UpperCase(APath));
+
+    var lPath := ExcludeTrailingPathDelimiter(APath);
+    if FindFirst(lPath, faAnyFile, SR) = 0 then
+    try
+      var lParentPath := ExtractFilePath(lPath);
+      Result := IncludeTrailingPathDelimiter(GetRealCasePath(lParentPath)) + SR.Name;
+    finally
+      FindClose(SR);
+    end
+    else
+      Result := APath;
+  end;
+
 var
   lUnitInfoList : TUnitInstrumentationInfoList;
   LFirstNode,
   lDirectoryNode,
   lParentDirNode,
   LNode : PVirtualNode;
-  lFullPath: String;
   lSplittedPath : TStringDynArray;
   j: Integer;
 begin
@@ -92,15 +111,52 @@ begin
       if openProject <> nil then
       begin
         openProject.GetUnitList(lUnitInfoList, aOnlyUnitsOfDPR);
-        lUnitInfoList.SortByName;
+
+        // sort
+        if aShowDirectories then
+        begin
+          for var lUnitInfo in lUnitInfoList do
+          begin
+            lUnitInfo.UnitPath := GetRealCasePath(openproject.GetUnitPath(lUnitInfo.UnitName));
+          end;
+          lUnitInfoList.SortByPath;
+        end else
+        begin
+          lUnitInfoList.SortByName;
+        end;
+
         LFirstNode := AddEntry(nil,ALL_UNITS, [ste_AllItem]);
+
+        // first pass: add directories
+        if aShowDirectories then
+        begin
+          for var lUnitInfo in lUnitInfoList do
+          begin
+            lSplittedPath := SplitString(lUnitInfo.UnitPath, '\');
+
+            lParentDirNode := nil;
+            for j := low(lSplittedPath) to high(lSplittedPath)-1 do
+            begin
+              if assigned(lParentDirNode) then
+                lDirectoryNode := GetChildByName(lParentDirNode, lSplittedPath[j])
+              else
+                lDirectoryNode := GetNodeByName(lSplittedPath[j]);
+              if lDirectoryNode = nil then
+                lDirectoryNode := AddEntry(lParentDirNode, lSplittedPath[j], [ste_Directory]);
+              if lParentDirNode = nil then
+                Tree.Expanded[lDirectoryNode] := true;
+              lParentDirNode := lDirectoryNode;
+            end;
+          end;
+        end;
+
+        // second pass: add units
         for var lUnitInfo in lUnitInfoList do
         begin
 
           if aShowDirectories then
           begin
-            lFullPath := openproject.GetUnitPath(lUnitInfo.UnitName);
-            lSplittedPath := SplitString(lFullPath, '\');
+            lSplittedPath := SplitString(lUnitInfo.UnitPath, '\');
 
             lDirectoryNode := nil;
             lParentDirNode := nil;
@@ -110,10 +166,7 @@ begin
                 lDirectoryNode := GetChildByName(lParentDirNode, lSplittedPath[j])
               else
                 lDirectoryNode := GetNodeByName(lSplittedPath[j]);
-              if lDirectoryNode = nil then
-              begin
-                lDirectoryNode := AddEntry(lParentDirNode, lSplittedPath[j], [ste_Directory]);
-              end;
+              Assert(lDirectoryNode <> nil);
               if lParentDirNode = nil then
                 Tree.Expanded[lDirectoryNode] := true;
               lParentDirNode := lDirectoryNode;
@@ -135,7 +188,6 @@ begin
           else
           begin
             Tree.CheckState[LNode] := TCheckState.csMixedNormal;
-
           end;
         end;
         
