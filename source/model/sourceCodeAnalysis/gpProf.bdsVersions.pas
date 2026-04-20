@@ -2,6 +2,8 @@ unit gpProf.bdsVersions;
 
 interface
 
+// https://docwiki.embarcadero.com/RADStudio/en/Compiler_Versions
+
 uses
   system.Classes;
 
@@ -30,12 +32,14 @@ type
     DelphiXE6,
     DelphiXE7,
     DelphiXE8,
-    DelphiSeattle,
-    DelphiBelin,
-    DelphiTokyo,
-    DelphiRio,
-    DelphiSydney,
-    DelphiAlexandria
+    DelphiSeattle,    // 10.0.x
+    DelphiBelin,      // 10.1.x
+    DelphiTokyo,      // 10.2.x
+    DelphiRio,        // 10.3.x
+    DelphiSydney,     // 10.4.x
+    DelphiAlexandria, // 11.x
+    DelphiAthens,     // 12.x
+    DelphiFlorence    // 13.x
   );
 
 
@@ -70,6 +74,8 @@ const SEATTLE = '10.0 Seattle';
       RIO = '10.3 Rio';
       SYDNEY = '10.4 Sydney';
       ALEXANDRIA = '11.x Alexandria';
+      ATHENS = '12.x Athens';
+      FLORENCE = '13.x Florence';
 
 var
   ProductVersionMapping: TDictionary<String, String>;
@@ -149,6 +155,8 @@ begin
     DelphiRio: result := RIO;
     DelphiSydney : result := SYDNEY;
     DelphiAlexandria : result := ALEXANDRIA;
+    DelphiAthens : result := ATHENS;
+    DelphiFlorence : result := FLORENCE;
   end;
 end;
 
@@ -167,7 +175,7 @@ begin
     Delphi8: result := 'VER160';
     Delphi2005: result := 'VER170';
     Delphi2006: result := 'VER180';
-    Delphi2007: result := 'VER190';
+    Delphi2007: result := 'VER185'; // VER190 - Delphi 2007 for .Net
     Delphi2009: result := 'VER200';
     Delphi2010: result := 'VER210';
     DelphiXE: result := 'VER220';
@@ -184,6 +192,8 @@ begin
     DelphiRio: result := 'VER330';
     DelphiSydney: result := 'VER340';
     DelphiAlexandria: result := 'VER350';
+    DelphiAthens : result := 'VER360';
+    DelphiFlorence : result := 'VER370';
   end;
 end;
 
@@ -215,6 +225,9 @@ end;
 Initialization
 
 ProductVersionMapping := TDictionary<String, String>.Create();
+
+ProductVersionMapping.add('37.0', FLORENCE);
+ProductVersionMapping.add('23.0', ATHENS);
 ProductVersionMapping.add('22.0', ALEXANDRIA);
 ProductVersionMapping.add('21.0', SYDNEY);
 ProductVersionMapping.add('20.0', RIO);
@@ -231,5 +244,6 @@ ProductVersionMapping.add('9.0', 'XE2');
 ProductVersionMapping.add('8.0', 'XE');
 ProductVersionMapping.add('7.0', '2010');
 ProductVersionMapping.add('6.0', '2009');
+ProductVersionMapping.add('5.0', '2007');
 
 end.
