@@ -33,7 +33,7 @@ type
     DelphiXE7,
     DelphiXE8,
     DelphiSeattle,    // 10.0.x
-    DelphiBelin,      // 10.1.x
+    DelphiBerlin,     // 10.1.x
     DelphiTokyo,      // 10.2.x
     DelphiRio,        // 10.3.x
     DelphiSydney,     // 10.4.x
@@ -150,7 +150,7 @@ begin
     DelphiXE7: result := 'XE7';
     DelphiXE8: result := 'XE8';
     DelphiSeattle: result := '10 Seattle';
-    DelphiBelin: result := BERLIN;
+    DelphiBerlin: result := BERLIN;
     DelphiTokyo: result := TOKYO;
     DelphiRio: result := RIO;
     DelphiSydney : result := SYDNEY;
@@ -187,7 +187,7 @@ begin
     DelphiXE7: result := 'VER280';
     DelphiXE8: result := 'VER290';
     DelphiSeattle: result := 'VER300';
-    DelphiBelin: result := 'VER310';
+    DelphiBerlin: result := 'VER310';
     DelphiTokyo: result := 'VER320';
     DelphiRio: result := 'VER330';
     DelphiSydney: result := 'VER340';
