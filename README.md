@@ -9,7 +9,7 @@ Features are:
 - New shiny UI with high DPI support.
 - Applying project defines in the parser to support multi-target code.
 - A whole lot of bug fixes
-- Using NameThreadForDebugging() for tracing the thread names in the result files.
+- Using `NameThreadForDebugging()` for tracing the thread names in the result files.
 - The PRF output filename can be now be configured using several placeholders, e.g. the ModuleName or the ProcessName and ID.
 - 32 and 64 Bit support.
 - Low performance impact on the subject that is instrumented.
@@ -27,11 +27,25 @@ Easy as 1-2-3:
 3) Copy the content of the include dir into your application sources folder or add the include dir to the search path. Build your application in Delphi, run it, do some tasks and close.
 
 After that return to GpProfile window and enjoy the results! :)
-## Measure Points ##
-Since Version 1.6.0, you can add measurePoints:
-Use gpprof.CreateMeasurePointScope() to obtain a measure point. Upon disposal, the measure point will write out the timings.
 
-A sample can be found in the GProfTester project (in TTestThread.Execute())  
+## Measure Points ##
+Since Version 1.6.0, you can add Measure Points:
+
+Use `GpProf.CreateMeasurePointScope` or low-level API to obtain a measure point. Upon disposal, the measure point will write out the timings.
+
+```pascal
+// Using measure point scope
+var mp1 := CreateMeasurePointScope('MP-1');
+... // do some work
+mp1 := nil;
+```
+
+```pascal
+// Using low-level API (zero memory allocation)
+ProfilerEnterMP('MP-1');
+... // do some work
+ProfilerExitMP('MP-1');
+```
 
 # Credits #
 
