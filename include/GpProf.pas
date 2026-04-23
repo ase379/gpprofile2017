@@ -33,11 +33,8 @@ procedure ProfilerStartThread;
 procedure ProfilerEnterProc(const aProcID: Cardinal);
 procedure ProfilerExitProc(const aProcID: Cardinal);
 
-procedure ProfilerEnterMP(const aMeasurePointId: UTF8String); overload; inline;
-procedure ProfilerEnterMP(const aMeasurePointId: PUTF8Char; const aMeasurePointIdLen: Integer); overload;
-
-procedure ProfilerExitMP(const aMeasurePointId: UTF8String); overload; inline;
-procedure ProfilerExitMP(const aMeasurePointId: PUTF8Char; const aMeasurePointIdLen: Integer); overload;
+procedure ProfilerEnterMP(const aMeasurePointId: UTF8String);
+procedure ProfilerExitMP(const aMeasurePointId: UTF8String);
 
 function CreateMeasurePointScope(const aMeasurePointId: string): IMeasurePointScope;
 
@@ -231,13 +228,6 @@ begin
   WriteCardinal(Length(aValue));
   if Length(aValue)>0 then
     Transmit(aValue[1], Length(aValue));
-end;
-
-procedure WriteRawData(const aValue; const aSize: Integer); inline;
-begin
-  WriteCardinal(aSize);
-  if aSize>0 then
-    Transmit(aValue, aSize);
 end;
 
 procedure WriteTicks(ticks: TLargeInteger);
@@ -652,11 +642,6 @@ begin
 end; { ProfilerTerminate }
 
 procedure ProfilerEnterMP(const aMeasurePointId: UTF8String);
-begin
-  ProfilerEnterMP(PUTF8Char(aMeasurePointId), Length(aMeasurePointId));
-end;
-
-procedure ProfilerEnterMP(const aMeasurePointId: PUTF8Char; const aMeasurePointIdLen: Integer);
 var
   ct : Cardinal;
   cnt: TLargeInteger;
@@ -671,7 +656,7 @@ begin
       FlushCounter;
       WriteTag(PR_ENTER_MP);
       WriteThread(ct);
-      WriteRawData(aMeasurePointId^,aMeasurePointIdLen);
+      WriteUtf8String(aMeasurePointId);
       WriteTicks(Cnt);
       if profProfilingMemoryEnabled then
         WriteMemWorkingSize();
@@ -681,11 +666,6 @@ begin
 end;
 
 procedure ProfilerExitMP(const aMeasurePointId: UTF8String);
-begin
-  ProfilerExitMP(PUTF8Char(aMeasurePointId), Length(aMeasurePointId));
-end;
-
-procedure ProfilerExitMP(const aMeasurePointId: PUTF8Char; const aMeasurePointIdLen: Integer);
 var
   ct : Cardinal;
   cnt: TLargeInteger;
@@ -700,7 +680,7 @@ begin
       FlushCounter;
       WriteTag(PR_EXIT_MP);
       WriteThread(ct);
-      WriteRawData(aMeasurePointId^,aMeasurePointIdLen);
+      WriteUtf8String(aMeasurePointId);
       WriteTicks(Cnt);
       if profProfilingMemoryEnabled then
         WriteMemWorkingSize();
