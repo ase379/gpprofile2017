@@ -466,37 +466,40 @@ end; { TThreadList.Search }
 
 procedure ReadIncSettings;
 var
-  buf: array [0..256] of char;
-  ini: string;
+  LBuf: array [0..256] of char;
+  LIniFileName: string;
+  LIni: TMemIniFile;
 begin
-  GetModuleFileName(HInstance,buf,256);
-  prfModuleName := string(buf);
+  GetModuleFileName(HInstance,LBuf,256);
+  prfModuleName := string(LBuf);
   prfDisabled := true;
   profProfilingAutostart := false;
-  ini := Copy(prfModuleName,1,Length(prfModuleName)-Length(ExtractFileExt(prfModuleName)))+'.GPI';
-  if not FileExists(ini) then
+  LIniFileName := Copy(prfModuleName,1,Length(prfModuleName)-Length(ExtractFileExt(prfModuleName)))+'.GPI';
+  if not FileExists(LIniFileName) then
     MessageBox(0, PChar(Format('Cannot find initialization file %s! '+
-      'Profiling will be disabled.', [ini])), 'GpProfile', MB_OK + MB_ICONERROR)
+      'Profiling will be disabled.', [LIniFileName])), 'GpProfile', MB_OK + MB_ICONERROR)
   else begin
-    with TIniFile.Create(ini) do begin
-      profTableName := ReadString('IDTables','TableName','');
+    LIni := TMemIniFile.Create(LIniFileName);
+    try
+      profTableName := LIni.ReadString('IDTables','TableName','');
       if profTableName <> '' then begin
         if not FileExists(profTableName) then
           MessageBox(0, PChar(Format('Cannot find data file %s! '+
             'Profiling will be disabled.', [profTableName])), 'GpProfile',
             MB_OK + MB_ICONERROR)
         else begin
-          profProcSize           := ReadInteger('Procedures','ProcSize',4);
-          profCompressTicks      := ReadBool('Performance','CompressTicks',false);
-          profCompressThreads    := ReadBool('Performance','CompressThreads',false);
-          profProfilingAutostart := ReadBool('Performance','ProfilingAutostart',true);
-          profProfilingMemoryEnabled := ReadBool('Performance','ProfilingMemSupport',false);
-          profPrfOutputFile := ReadString('Output','PrfOutputFilename','$(ModulePath)');
+          profProcSize           := LIni.ReadInteger('Procedures','ProcSize',4);
+          profCompressTicks      := LIni.ReadBool('Performance','CompressTicks',false);
+          profCompressThreads    := LIni.ReadBool('Performance','CompressThreads',false);
+          profProfilingAutostart := LIni.ReadBool('Performance','ProfilingAutostart',true);
+          profProfilingMemoryEnabled := LIni.ReadBool('Performance','ProfilingMemSupport',false);
+          profPrfOutputFile := LIni.ReadString('Output','PrfOutputFilename','$(ModulePath)');
           profPrfOutputFile := ResolvePrfRuntimePlaceholders(profPrfOutputFile);
           prfDisabled            := false;
         end;
       end;
-      Free;
+    finally
+      LIni.Free;
     end;
   end;
 end; { ReadIncSettings }
@@ -619,7 +622,9 @@ begin
 end; { Finalize }
 
 procedure ProfilerTerminate;
-var i : integer;
+var
+  i: integer;
+  LItem: TThreadInformation;
 begin
   if not prfInitialized then Exit;
   ProfilerStop;
@@ -631,10 +636,9 @@ begin
   WriteCardinal(prfThreadsInfo.count);
   for i := 0 to prfThreadsInfo.count-1 do
   begin
-    with prfThreadsInfo[i] as TThreadInformation do begin
-      WriteCardinal(ID);
-      WriteUtf8String(Name);
-    end;
+    LItem := TThreadInformation(prfThreadsInfo[i]);
+    WriteCardinal(LItem.ID);
+    WriteUtf8String(LItem.Name);
   end;
   WriteInt(PR_END_THREADINFO);
 
