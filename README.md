@@ -29,11 +29,14 @@ Easy as 1-2-3:
 After that return to GpProfile window and enjoy the results! :)
 
 ## Measure Points ##
-Since Version 1.6.0, you can add Measure Points:
+Since version 1.6.0, you can add **measure points**:
 
-Use `GpProf.CreateMeasurePointScope` or low-level API to obtain a measure point. Upon disposal, the measure point will write out the timings.
+Use `CreateMeasurePointScope` or the low-level API (`ProfilerEnterMP` and `ProfilerExitMP` functions) from [GpProf.pas](./include/GpProf.pas) to create a measure point. When the scope is released, the measure point will write out the timings.
 
 ```pascal
+uses
+  GpProf;
+...
 // Using measure point scope
 var mp1 := CreateMeasurePointScope('MP-1');
 ... // do some work
@@ -41,10 +44,13 @@ mp1 := nil;
 ```
 
 ```pascal
+uses
+  GpProf;
+...
 // Using low-level API (zero memory allocation)
 ProfilerEnterMP('MP-1');
 ... // do some work
-ProfilerExitMP('MP-1');
+ProfilerExitMP('MP-1'); // make sure to pass exactly the same name as in ProfilerEnterMP
 ```
 
 # Credits #
