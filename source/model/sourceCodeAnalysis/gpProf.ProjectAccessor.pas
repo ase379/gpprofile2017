@@ -115,14 +115,15 @@ function TProjectAccessor.InnerReplaceMacros(const aMacro: string; const aProduc
     LRegistryAccessor : TRegistryAccessor;
     LEntry : TDelphiRegistryEntry;
   begin
-    Result := GetEnvironmentVariable(aVarName);
+    Result := Trim(GetEnvironmentVariable(aVarName));
 
-    if Result.Trim() = '' then
+    if Result = '' then
     begin
       LRegistryAccessor := TRegistryAccessor.Create('');
       try
         LEntry := LRegistryAccessor.GetByProductVersion(aProductVersion);
-        Result := LEntry.GetEnvVar(aVarName);
+        if Assigned(LEntry) then
+          Result := LEntry.GetEnvVar(aVarName);
       finally
         LRegistryAccessor.Free();
       end;
