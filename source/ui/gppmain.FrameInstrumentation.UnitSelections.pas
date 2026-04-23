@@ -146,9 +146,7 @@ begin
                 lDirectoryNode := GetChildByName(lParentDirNode, lSplittedPath[j])
               else
                 lDirectoryNode := GetNodeByName(lSplittedPath[j]);
-              Assert(lDirectoryNode <> nil);
-              if lParentDirNode = nil then
-                Tree.Expanded[lDirectoryNode] := true;
+              Assert(lDirectoryNode <> nil, lUnitInfo.UnitPath);
               lParentDirNode := lDirectoryNode;
             end;
             LNode := AddEntry(lDirectoryNode, lUnitInfo.UnitName);
