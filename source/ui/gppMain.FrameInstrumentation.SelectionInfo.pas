@@ -22,6 +22,7 @@ type
 
   TUnitInstrumentationInfo = class
     UnitName : string;
+    UnitPath : string;
     IsFullyInstrumented: boolean;
     IsNothingInstrumented: boolean;
   end;
@@ -41,6 +42,7 @@ type
     fNoneInstrumented : boolean;
   public
     procedure SortByName();
+    procedure SortByPath();
 
     property AllInstrumented: boolean read fAllInstrumented write fAllInstrumented;
     property NoneInstrumented: boolean read fNoneInstrumented write fNoneInstrumented;
@@ -332,6 +334,15 @@ begin
       function (const Left, Right: TUnitInstrumentationInfo): integer
       begin
           Result := CompareText(Left.UnitName,Right.UnitName);
+      end));
+end;
+
+procedure TUnitInstrumentationInfoList.SortByPath;
+begin
+  Sort(TComparer<TUnitInstrumentationInfo>.Construct(
+      function (const Left, Right: TUnitInstrumentationInfo): integer
+      begin
+          Result := CompareText(Left.UnitPath,Right.UnitPath);
       end));
 end;
 
