@@ -19,6 +19,26 @@ interface
 {$WARN SYMBOL_PLATFORM OFF}
 {$WARN SYMBOL_DEPRECATED OFF}
 
+{$IF CompilerVersion > 19}
+  {$DEFINE HAS_NAME_THREAD_FOR_DEBUGGING}
+  {$DEFINE HAS_THREAD_ID_TYPE}
+{$IFEND}
+
+(******************************************************************************)
+
+{$IFNDEF HAS_THREAD_ID_TYPE}
+type
+  TThreadID = Cardinal;
+{$ENDIF}
+
+{$IF CompilerVersion < 19}
+type
+  // fix Delphi 2007 invalid type declarations
+  // https://blog.dummzeuch.de/2018/09/08/nativeint-nativeuint-type-in-various-delphi-versions/
+  NativeInt = Integer;
+  NativeUInt = Cardinal;
+{$IFEND}
+
 type
   /// <summary>
   /// Marker interface for a measure point scope. upon destruction, the scope will be stored.
@@ -39,8 +59,13 @@ procedure ProfilerExitMP(const aMeasurePointId: UTF8String);
 function CreateMeasurePointScope(const aMeasurePointId: string): IMeasurePointScope;
 
 procedure ProfilerTerminate;
+
+{$IFDEF UNICODE}
 procedure NameThreadForDebugging(const AThreadName: AnsiString; AThreadID: TThreadID = TThreadID(-1)); overload; inline;
 procedure NameThreadForDebugging(const AThreadName: string; AThreadID: TThreadID = TThreadID(-1)); overload;
+{$ELSE}
+procedure NameThreadForDebugging(const AThreadName: string; AThreadID: TThreadID = TThreadID(-1));
+{$ENDIF}
 
 implementation
 
@@ -362,15 +387,52 @@ begin
   Result := Copy(fName,1,Length(fName)-Length(ExtractFileExt(fName)))+'.'+newExt;
 end; { CombineNames }
 
+{$IFDEF UNICODE}
 procedure NameThreadForDebugging(const AThreadName: AnsiString; AThreadID: TThreadID);
 begin
   NameThreadForDebugging(string(aThreadName), aThreadID);
 end; { NameThreadForDebugging }
+{$ENDIF}
+
+{$IFNDEF HAS_NAME_THREAD_FOR_DEBUGGING}
+procedure SetCurrentThreadName(const AName: AnsiString; AThreadID: DWORD);
+type
+  {$A8}
+  TThreadNameInfo = record
+    dwType     : DWORD;   // must be 0x1000
+    szName     : LPCSTR;  // pointer to name (in user addr space)
+    dwThreadID : DWORD;   // thread ID (-1 indicates caller thread)
+    dwFlags    : DWORD;   // reserved for future use, must be zero
+  end;
+const
+  MS_VC_EXCEPTION: DWORD = $406D1388;
+var
+  LInfo: TThreadNameInfo;
+begin
+  // This code is extremely strange, but it's the documented way of doing it
+  // https://learn.microsoft.com/en-us/visualstudio/debugger/tips-for-debugging-threads
+
+  LInfo.dwType     := $1000;
+  LInfo.szName     := PAnsiChar(AName);
+  LInfo.dwThreadID := AThreadID;
+  LInfo.dwFlags    := 0;
+
+  try
+    RaiseException(MS_VC_EXCEPTION, 0, SizeOf(LInfo) div SizeOf(ULONG_PTR), @LInfo);
+  except
+    // do nothing
+  end;
+end;
+{$ENDIF}
 
 procedure NameThreadForDebugging(const AThreadName: string; AThreadID: TThreadID);
 var LEntry : TThreadInformation;
 begin
+  {$IFDEF HAS_NAME_THREAD_FOR_DEBUGGING}
   TThread.NameThreadForDebugging(aThreadName, aThreadId);
+  {$ELSE}
+  SetCurrentThreadName(AnsiString(aThreadName), aThreadId);
+  {$ENDIF}
   if not prfDisabled then
   begin
     LEntry := TThreadInformation.Create;
@@ -400,27 +462,27 @@ end; { TThreadList.Destroy }
 
 function TThreadList.Remap(const aThreadId: Cardinal): integer;
 var
-  remap   : Cardinal;
-  insert  : Cardinal;
-  tmpItems: PTLElements;
+  LRemap   : Cardinal;
+  LInsert  : Cardinal;
+  LTmpItems: PTLElements;
 begin
   if aThreadId = tlLast then
     Result := tlLastR
-  else if not Search(aThreadId, remap, insert) then begin
+  else if not Search(aThreadId, LRemap, LInsert) then begin
     // reallocate tlItems
-    GetMem(tmpItems, SizeOf(TTLEl)*(tlCount+1));
+    GetMem(LTmpItems, SizeOf(TTLEl)*(tlCount+1));
     if tlItems <> nil then begin
-      Move(tlItems^, tmpItems^, Sizeof(TTLEl)*tlCount);
+      Move(tlItems^, LTmpItems^, Sizeof(TTLEl)*tlCount);
       FreeMem(tlItems);
     end;
-    tlItems := tmpItems;
+    tlItems := LTmpItems;
     // get new remap number
     Inc(tlRemap);
     if byte(tlRemap) = 0 then Inc(tlRemap);
     // insert new element
-    if insert < tlCount then
-      Move(tlItems^[insert], tlItems^[insert + 1], (tlCount-insert)*SizeOf(TTLEl));
-    with tlItems^[Insert] do begin
+    if LInsert < tlCount then
+      Move(tlItems^[LInsert], tlItems^[LInsert + 1], (tlCount-LInsert)*SizeOf(TTLEl));
+    with tlItems^[LInsert] do begin
       tleThread := aThreadId;
       tleRemap  := tlRemap;
     end;
@@ -431,8 +493,8 @@ begin
   end
   else begin
     tlLast  := aThreadId;
-    tlLastR := remap;
-    Result  := remap;
+    tlLastR := LRemap;
+    Result  := LRemap;
   end;
 end; { TThreadList.Remap }
 
