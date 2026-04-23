@@ -193,7 +193,8 @@ var
   LNode : PVirtualNode;
 begin
   result := nil;
-  for LNode in fTree.Nodes do begin
+  for LNode in fTree.Nodes do
+  begin
     if SameText(GetName(LNode), aName) then
       Exit(LNode);
   end;
