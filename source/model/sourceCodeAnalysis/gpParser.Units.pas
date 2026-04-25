@@ -1252,12 +1252,22 @@ end; { TUnit.RegisterProcs }
 
 procedure TUnit.BackupInstrumentedFile(const aSrc: string);
 var
-  justName: string;
+  LSrcDir, LSrcFileName: string;
+  LBackupDir, LDest: string;
 begin
-  justName := ButLastEl(aSrc, '.', Ord(-1));
-  System.SysUtils.DeleteFile(justName + '.bk2');
-  RenameFile(justName + '.bk1', justName + '.bk2');
-  TFile.Copy(aSrc, justName + '.bk1', true);
+  LSrcDir := TPath.GetDirectoryName(aSrc);
+  LSrcFileName := TPath.GetFileName(aSrc);
+
+  LBackupDir := TPath.Combine(LSrcDir, '__gpprof');
+
+  if not TDirectory.Exists(LBackupDir) then
+    TDirectory.CreateDirectory(LBackupDir);
+
+  LDest := TPath.Combine(LBackupDir, LSrcFileName);
+
+  System.SysUtils.DeleteFile(LDest + '.bk2');
+  RenameFile(LDest + '.bk1', LDest + '.bk2');
+  TFile.Copy(aSrc, LDest + '.bk1', True);
 end;
 
 procedure TUnit.InstrumentUses(const ed: TFileEdit; const anIndex: Integer);
