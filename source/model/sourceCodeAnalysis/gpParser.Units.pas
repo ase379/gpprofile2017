@@ -442,12 +442,10 @@ begin
   LDirective := '';
   LIsInstrumentationFlag := false;
   case tokenID of
-    ptIfDefDirect : LDirective := 'IFDEF';
     ptIfOptDirect : LDirective := 'IFOPT';
     ptIfNDefDirect : LDirective := 'IFNDEF';
     ptIfDirect : LDirective := 'IF';
     ptIfEndDirect : LDirective := 'IFEND';
-    ptEndIfDirect : LDirective := 'ENDIF';
     ptElseDirect : LDirective := 'ELSE';
     ptIncludeDirect :
     begin
@@ -460,7 +458,9 @@ begin
     end;
     ptDefineDirect : LDirective := 'DEFINE';
     ptUndefDirect : LDirective := 'UNDEF';
-    ptCompDirect :
+
+    ptIfDefDirect,
+    ptEndIfDirect :
     begin
       LIsInstrumentationFlag := IsOneOf(tokenData,
         [aProject.prConditStart, aProject.prConditStartUses,
@@ -844,7 +844,7 @@ begin
               tokenID := ptIdentifier;
 
             if (tokenID = ptBorComment) or (tokenID = ptAnsiComment) or
-              (tokenID = ptCompDirect) then
+              (tokenID = ptIfDefDirect) or (tokenID = ptEndIfDirect) then
             begin
               if tokenData = fProject.prConditStartUses then
                 AddToIntArray(unStartUses, tokenPos)
@@ -991,7 +991,7 @@ begin
               else if IsBlockEndToken(prevTokenID, tokenID) then
                 Dec(block);
 
-              if (tokenID = ptBorComment) or (tokenID = ptCompDirect) then
+              if (tokenID = ptBorComment) or (tokenID = ptIfDefDirect) or (tokenID = ptEndIfDirect) then
               begin
                 if tokenData = fProject.prConditStart then
                 begin
