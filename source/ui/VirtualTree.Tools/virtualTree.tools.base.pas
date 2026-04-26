@@ -190,14 +190,13 @@ end;
 
 function TVirtualTreeBaseTools.GetNodeByName(const aName: string): PVirtualNode;
 var
-  LEnumor : TVTVirtualNodeEnumerator;
+  LNode : PVirtualNode;
 begin
   result := nil;
-  LEnumor := fTree.Nodes().GetEnumerator();
-  while(LEnumor.MoveNext) do
+  for LNode in fTree.Nodes do
   begin
-    if sametext(GetName(LEnumor.Current.Index), aName) then
-      Exit(LEnumor.Current);
+    if SameText(GetName(LNode), aName) then
+      Exit(LNode);
   end;
 end;
 

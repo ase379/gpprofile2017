@@ -367,7 +367,7 @@ begin
 
   if FileExists(LUnitName) then
   begin
-    aUnitFullName := LowerCase(ExpandUNCFileName(LUnitName));
+    aUnitFullName := ExpandUNCFileName(LUnitName);
     Result := true;
     Exit;
   end;
@@ -375,7 +375,7 @@ begin
 
   if FileExists(LDefDir + LUnitName) then
   begin
-    aUnitFullName := LowerCase(LDefDir + LUnitName);
+    aUnitFullName := LDefDir + LUnitName;
     Result := true;
     Exit;
   end;
@@ -388,7 +388,7 @@ begin
     LUnitPath := MakeSmartBackslash(LSearchPath) + LUnitName;
     if FileExists(LUnitPath) then
     begin
-      aUnitFullName := LowerCase(LUnitPath);
+      aUnitFullName := LUnitPath;
       Result := true;
       Exit;
     end;
@@ -407,7 +407,7 @@ begin
         LUnitPath := LUnitPath + fProject.Namespaces[k] + '.' + LUnitName ;
         if FileExists(LUnitPath) then
         begin
-          aUnitFullName := LowerCase(LUnitPath);
+          aUnitFullName := LUnitPath;
           Result := true;
           Exit;
         end;
@@ -422,7 +422,7 @@ begin
     LUnitPath := TPath.Combine(LUnitPath, aUnitName);
     if FileExists(LUnitPath) then
     begin
-      aUnitFullName := LowerCase(LUnitPath);
+      aUnitFullName := LUnitPath;
       Result := true;
       Exit;
     end;
@@ -442,12 +442,10 @@ begin
   LDirective := '';
   LIsInstrumentationFlag := false;
   case tokenID of
-    ptIfDefDirect : LDirective := 'IFDEF';
     ptIfOptDirect : LDirective := 'IFOPT';
     ptIfNDefDirect : LDirective := 'IFNDEF';
     ptIfDirect : LDirective := 'IF';
     ptIfEndDirect : LDirective := 'IFEND';
-    ptEndIfDirect : LDirective := 'ENDIF';
     ptElseDirect : LDirective := 'ELSE';
     ptIncludeDirect :
     begin
@@ -460,7 +458,9 @@ begin
     end;
     ptDefineDirect : LDirective := 'DEFINE';
     ptUndefDirect : LDirective := 'UNDEF';
-    ptCompDirect :
+
+    ptIfDefDirect,
+    ptEndIfDirect :
     begin
       LIsInstrumentationFlag := IsOneOf(tokenData,
         [aProject.prConditStart, aProject.prConditStartUses,
@@ -844,7 +844,7 @@ begin
               tokenID := ptIdentifier;
 
             if (tokenID = ptBorComment) or (tokenID = ptAnsiComment) or
-              (tokenID = ptCompDirect) then
+              (tokenID = ptIfDefDirect) or (tokenID = ptEndIfDirect) then
             begin
               if tokenData = fProject.prConditStartUses then
                 AddToIntArray(unStartUses, tokenPos)
@@ -991,7 +991,7 @@ begin
               else if IsBlockEndToken(prevTokenID, tokenID) then
                 Dec(block);
 
-              if (tokenID = ptBorComment) or (tokenID = ptCompDirect) then
+              if (tokenID = ptBorComment) or (tokenID = ptIfDefDirect) or (tokenID = ptEndIfDirect) then
               begin
                 if tokenData = fProject.prConditStart then
                 begin
@@ -1252,12 +1252,22 @@ end; { TUnit.RegisterProcs }
 
 procedure TUnit.BackupInstrumentedFile(const aSrc: string);
 var
-  justName: string;
+  LSrcDir, LSrcFileName: string;
+  LBackupDir, LDest: string;
 begin
-  justName := ButLastEl(aSrc, '.', Ord(-1));
-  System.SysUtils.DeleteFile(justName + '.bk2');
-  RenameFile(justName + '.bk1', justName + '.bk2');
-  TFile.Copy(aSrc, justName + '.bk1', true);
+  LSrcDir := TPath.GetDirectoryName(aSrc);
+  LSrcFileName := TPath.GetFileName(aSrc);
+
+  LBackupDir := TPath.Combine(LSrcDir, '__gpprof');
+
+  if not TDirectory.Exists(LBackupDir) then
+    TDirectory.CreateDirectory(LBackupDir);
+
+  LDest := TPath.Combine(LBackupDir, LSrcFileName);
+
+  System.SysUtils.DeleteFile(LDest + '.bk2');
+  RenameFile(LDest + '.bk1', LDest + '.bk2');
+  TFile.Copy(aSrc, LDest + '.bk1', True);
 end;
 
 procedure TUnit.InstrumentUses(const ed: TFileEdit; const anIndex: Integer);

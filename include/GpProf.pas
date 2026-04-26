@@ -12,14 +12,32 @@
     - Error is reported if <module>.gpi or <module>.gpd file is not found.
 *)
 
-unit gpprof;
+unit GpProf;
 
 interface
 
 {$WARN SYMBOL_PLATFORM OFF}
 {$WARN SYMBOL_DEPRECATED OFF}
 
-uses System.Classes;
+{$IF CompilerVersion > 19}
+  {$DEFINE HAS_NAME_THREAD_FOR_DEBUGGING}
+  {$DEFINE HAS_THREAD_ID_TYPE}
+{$IFEND}
+
+(******************************************************************************)
+
+{$IFNDEF HAS_THREAD_ID_TYPE}
+type
+  TThreadID = Cardinal;
+{$ENDIF}
+
+{$IF CompilerVersion < 19}
+type
+  // fix Delphi 2007 invalid type declarations
+  // https://blog.dummzeuch.de/2018/09/08/nativeint-nativeuint-type-in-various-delphi-versions/
+  NativeInt = Integer;
+  NativeUInt = Cardinal;
+{$IFEND}
 
 type
   /// <summary>
@@ -31,25 +49,34 @@ type
 procedure ProfilerStart;
 procedure ProfilerStop;
 procedure ProfilerStartThread;
+
 procedure ProfilerEnterProc(const aProcID: Cardinal);
 procedure ProfilerExitProc(const aProcID: Cardinal);
-function CreateMeasurePointScope(const aMeasurePointId : String): IMeasurePointScope;
+
+procedure ProfilerEnterMP(const aMeasurePointId: UTF8String);
+procedure ProfilerExitMP(const aMeasurePointId: UTF8String);
+
+function CreateMeasurePointScope(const aMeasurePointId: string): IMeasurePointScope;
 
 procedure ProfilerTerminate;
-procedure NameThreadForDebugging(const AThreadName: AnsiString; AThreadID: TThreadID = TThreadID(-1)); overload;
+
+{$IFDEF UNICODE}
+procedure NameThreadForDebugging(const AThreadName: AnsiString; AThreadID: TThreadID = TThreadID(-1)); overload; inline;
 procedure NameThreadForDebugging(const AThreadName: string; AThreadID: TThreadID = TThreadID(-1)); overload;
+{$ELSE}
+procedure NameThreadForDebugging(const AThreadName: string; AThreadID: TThreadID = TThreadID(-1));
+{$ENDIF}
 
 implementation
 
 uses
-  System.Generics.Collections,
   Windows,
-  psAPI,
+  Classes,
+  Contnrs,
   SysUtils,
   IniFiles,
   GpProfH,
-
-  gpprofCommon;
+  GpProfCommon;
 
 const
   BUF_SIZE = 64 * 1024; //64*1024;
@@ -57,9 +84,9 @@ const
 type
   TMeasurePointScope = class(TInterfacedObject, IMeasurePointScope)
   private
-    fMeasurePointId : String;
+    fMeasurePointId : UTF8String;
   public
-    constructor Create(const aMeasurePointId : String);
+    constructor Create(const aMeasurePointId : UTF8String);
     destructor Destroy; override;
   end;
 
@@ -88,22 +115,22 @@ type
 
   TThreadInformation = class
     ID : cardinal;
-    Name : ansistring;
+    Name : UTF8String;
   end;
 
-  TThreadInformationList = TObjectList<TThreadInformation>;
+  TThreadInformationList = TObjectList;
 
 var
   prfFile        : THandle;
   prfBuf         : pointer;
   prfBufOffs     : integer;
   prfLock        : TRTLCriticalSection;
-  prfFreq        : int64;
-  prfCounter     : int64;
+  prfFreq        : TLargeInteger;
+  prfCounter     : TLargeInteger;
   prfModuleName  : string;
   prfName        : string;
   prfRunning     : boolean;
-  prfLastTick    : int64;
+  prfLastTick    : TLargeInteger;
   prfOnlyThread  : Cardinal;
   prfThreads     : TThreadList;
   prfThreadsInfo : TThreadInformationList;
@@ -129,7 +156,7 @@ begin
   FillChar(prfBuf^, BUF_SIZE, 0);
 end; { FlushFile }
 
-function OffsetPtr(ptr: Pointer; offset: NativeUInt): Pointer;
+function OffsetPtr(ptr: Pointer; offset: NativeUInt): Pointer; inline;
 begin
   Result := Pointer(NativeUInt(ptr) + offset);
 end; { OffsetPtr }
@@ -190,20 +217,45 @@ begin
   lMemUsed := GetMemWorkingSize();
   Transmit(lMemUsed, sizeof(Cardinal));
 end;
-procedure WriteInt   (int: integer);  begin Transmit(int, SizeOf(integer)); end;
-procedure WriteCardinal   (value: Cardinal);  begin Transmit(value, SizeOf(Cardinal)); end;
-procedure WriteTag   (tag: byte);     begin Transmit(tag, SizeOf(byte)); end;
-procedure WriteID    (id: integer);   begin Transmit(id, profProcSize); end;
-procedure WriteGuid    (guid: TGUID);   begin Transmit(guid, SizeOf(TGUID)); end;
-procedure WriteBool  (bool: boolean); begin Transmit(bool, 1); end;
-procedure WriteAnsiString  (const value: ansistring);
+
+procedure WriteInt(int: integer); inline;
 begin
-  WriteCardinal(Length(value));
-  if Length(Value)>0 then
-    Transmit(value[1], Length(value));
+  Transmit(int, SizeOf(integer));
 end;
 
-procedure WriteTicks(ticks: int64);
+procedure WriteCardinal(value: Cardinal); inline;
+begin
+  Transmit(value, SizeOf(Cardinal));
+end;
+
+procedure WriteTag(tag: byte); inline;
+begin
+  Transmit(tag, SizeOf(byte));
+end;
+
+procedure WriteProcID(id: integer); inline;
+begin
+  Transmit(id, profProcSize);
+end;
+
+procedure WriteGuid(const guid: TGUID); inline;
+begin
+  Transmit(guid, SizeOf(TGUID));
+end;
+
+procedure WriteBool(bool: boolean); inline;
+begin
+  Transmit(bool, 1);
+end;
+
+procedure WriteUtf8String(const aValue: UTF8String); inline;
+begin
+  WriteCardinal(Length(aValue));
+  if Length(aValue)>0 then
+    Transmit(aValue[1], Length(aValue));
+end;
+
+procedure WriteTicks(ticks: TLargeInteger);
 type
   TTick = array [1..8] of Byte;
 var
@@ -242,7 +294,7 @@ begin
   end;
 end; { WriteThread }
 
-procedure FlushCounter;
+procedure FlushCounter; inline;
 begin
   if prfCounter <> 0 then begin
     WriteTicks(prfCounter);
@@ -250,10 +302,10 @@ begin
   end;
 end; { FlushCounter }
 
-procedure profilerEnterProc(const aProcID : Cardinal);
+procedure ProfilerEnterProc(const aProcID : Cardinal);
 var
   ct : Cardinal;
-  cnt: int64;
+  cnt: TLargeInteger;
 begin
   QueryPerformanceCounter(cnt);
   ct := GetCurrentThreadID;
@@ -265,7 +317,7 @@ begin
       FlushCounter;
       WriteTag(PR_ENTERPROC);
       WriteThread(ct);
-      WriteID(aProcID);
+      WriteProcID(aProcID);
       WriteTicks(cnt);
       if profProfilingMemoryEnabled then
         WriteMemWorkingSize();
@@ -289,7 +341,7 @@ begin
       FlushCounter;
       WriteTag(PR_EXITPROC);
       WriteThread(ct);
-      WriteID(aProcID);
+      WriteProcID(aProcID);
       WriteTicks(Cnt);
       if profProfilingMemoryEnabled then
         WriteMemWorkingSize();
@@ -300,7 +352,7 @@ end; { ProfilerExitProc }
 
 function CreateMeasurePointScope(const aMeasurePointId : String): IMeasurePointScope;
 begin
-  result := TMeasurePointScope.Create(aMeasurePointId);
+  result := TMeasurePointScope.Create(UTF8Encode(aMeasurePointId));
 end;
 
 procedure ProfilerStart;
@@ -330,30 +382,65 @@ begin
   finally LeaveCriticalSection(prfLock); end;
 end; { ProfilerStartThread }
 
-function CombineNames(fName, newExt: string): string;
+function CombineNames(const fName, newExt: string): string;
 begin
   Result := Copy(fName,1,Length(fName)-Length(ExtractFileExt(fName)))+'.'+newExt;
 end; { CombineNames }
 
-procedure NameThreadForDebugging(const AThreadName: AnsiString; AThreadID: TThreadID = TThreadID(-1)); overload;
+{$IFDEF UNICODE}
+procedure NameThreadForDebugging(const AThreadName: AnsiString; AThreadID: TThreadID);
 begin
   NameThreadForDebugging(string(aThreadName), aThreadID);
 end; { NameThreadForDebugging }
+{$ENDIF}
 
+{$IFNDEF HAS_NAME_THREAD_FOR_DEBUGGING}
+procedure SetCurrentThreadName(const AName: AnsiString; AThreadID: DWORD);
+type
+  {$A8}
+  TThreadNameInfo = record
+    dwType     : DWORD;   // must be 0x1000
+    szName     : LPCSTR;  // pointer to name (in user addr space)
+    dwThreadID : DWORD;   // thread ID (-1 indicates caller thread)
+    dwFlags    : DWORD;   // reserved for future use, must be zero
+  end;
+const
+  MS_VC_EXCEPTION: DWORD = $406D1388;
+var
+  LInfo: TThreadNameInfo;
+begin
+  // This code is extremely strange, but it's the documented way of doing it
+  // https://learn.microsoft.com/en-us/visualstudio/debugger/tips-for-debugging-threads
 
-procedure NameThreadForDebugging(const AThreadName: string; AThreadID: TThreadID = TThreadID(-1)); overload;
+  LInfo.dwType     := $1000;
+  LInfo.szName     := PAnsiChar(AName);
+  LInfo.dwThreadID := AThreadID;
+  LInfo.dwFlags    := 0;
+
+  try
+    RaiseException(MS_VC_EXCEPTION, 0, SizeOf(LInfo) div SizeOf(ULONG_PTR), @LInfo);
+  except
+    // do nothing
+  end;
+end;
+{$ENDIF}
+
+procedure NameThreadForDebugging(const AThreadName: string; AThreadID: TThreadID);
 var LEntry : TThreadInformation;
 begin
+  {$IFDEF HAS_NAME_THREAD_FOR_DEBUGGING}
   TThread.NameThreadForDebugging(aThreadName, aThreadId);
+  {$ELSE}
+  SetCurrentThreadName(AnsiString(aThreadName), aThreadId);
+  {$ENDIF}
   if not prfDisabled then
   begin
     LEntry := TThreadInformation.Create;
     LEntry.ID := AThreadId;
-    LEntry.Name := utf8Encode(AThreadName);
+    LEntry.Name := UTF8Encode(AThreadName);
     prfThreadsInfo.Add(LEntry);
   end;
 end; { NameThreadForDebugging }
-
 
 { TThreadList }
 
@@ -375,27 +462,27 @@ end; { TThreadList.Destroy }
 
 function TThreadList.Remap(const aThreadId: Cardinal): integer;
 var
-  remap   : Cardinal;
-  insert  : Cardinal;
-  tmpItems: PTLElements;
+  LRemap   : Cardinal;
+  LInsert  : Cardinal;
+  LTmpItems: PTLElements;
 begin
   if aThreadId = tlLast then
     Result := tlLastR
-  else if not Search(aThreadId, remap, insert) then begin
+  else if not Search(aThreadId, LRemap, LInsert) then begin
     // reallocate tlItems
-    GetMem(tmpItems, SizeOf(TTLEl)*(tlCount+1));
+    GetMem(LTmpItems, SizeOf(TTLEl)*(tlCount+1));
     if tlItems <> nil then begin
-      Move(tlItems^, tmpItems^, Sizeof(TTLEl)*tlCount);
+      Move(tlItems^, LTmpItems^, Sizeof(TTLEl)*tlCount);
       FreeMem(tlItems);
     end;
-    tlItems := tmpItems;
+    tlItems := LTmpItems;
     // get new remap number
     Inc(tlRemap);
     if byte(tlRemap) = 0 then Inc(tlRemap);
     // insert new element
-    if insert < tlCount then
-      Move(tlItems^[insert], tlItems^[insert + 1], (tlCount-insert)*SizeOf(TTLEl));
-    with tlItems^[Insert] do begin
+    if LInsert < tlCount then
+      Move(tlItems^[LInsert], tlItems^[LInsert + 1], (tlCount-LInsert)*SizeOf(TTLEl));
+    with tlItems^[LInsert] do begin
       tleThread := aThreadId;
       tleRemap  := tlRemap;
     end;
@@ -406,8 +493,8 @@ begin
   end
   else begin
     tlLast  := aThreadId;
-    tlLastR := remap;
-    Result  := remap;
+    tlLastR := LRemap;
+    Result  := LRemap;
   end;
 end; { TThreadList.Remap }
 
@@ -441,37 +528,40 @@ end; { TThreadList.Search }
 
 procedure ReadIncSettings;
 var
-  buf: array [0..256] of char;
-  ini: string;
+  LBuf: array [0..256] of char;
+  LIniFileName: string;
+  LIni: TMemIniFile;
 begin
-  GetModuleFileName(HInstance,buf,256);
-  prfModuleName := string(buf);
+  GetModuleFileName(HInstance,LBuf,256);
+  prfModuleName := string(LBuf);
   prfDisabled := true;
   profProfilingAutostart := false;
-  ini := Copy(prfModuleName,1,Length(prfModuleName)-Length(ExtractFileExt(prfModuleName)))+'.GPI';
-  if not FileExists(ini) then
+  LIniFileName := Copy(prfModuleName,1,Length(prfModuleName)-Length(ExtractFileExt(prfModuleName)))+'.GPI';
+  if not FileExists(LIniFileName) then
     MessageBox(0, PChar(Format('Cannot find initialization file %s! '+
-      'Profiling will be disabled.', [ini])), 'GpProfile', MB_OK + MB_ICONERROR)
+      'Profiling will be disabled.', [LIniFileName])), 'GpProfile', MB_OK + MB_ICONERROR)
   else begin
-    with TIniFile.Create(ini) do begin
-      profTableName := ReadString('IDTables','TableName','');
+    LIni := TMemIniFile.Create(LIniFileName);
+    try
+      profTableName := LIni.ReadString('IDTables','TableName','');
       if profTableName <> '' then begin
         if not FileExists(profTableName) then
           MessageBox(0, PChar(Format('Cannot find data file %s! '+
             'Profiling will be disabled.', [profTableName])), 'GpProfile',
             MB_OK + MB_ICONERROR)
         else begin
-          profProcSize           := ReadInteger('Procedures','ProcSize',4);
-          profCompressTicks      := ReadBool('Performance','CompressTicks',false);
-          profCompressThreads    := ReadBool('Performance','CompressThreads',false);
-          profProfilingAutostart := ReadBool('Performance','ProfilingAutostart',true);
-          profProfilingMemoryEnabled := ReadBool('Performance','ProfilingMemSupport',false);
-          profPrfOutputFile := ReadString('Output','PrfOutputFilename','$(ModulePath)');
+          profProcSize           := LIni.ReadInteger('Procedures','ProcSize',4);
+          profCompressTicks      := LIni.ReadBool('Performance','CompressTicks',false);
+          profCompressThreads    := LIni.ReadBool('Performance','CompressThreads',false);
+          profProfilingAutostart := LIni.ReadBool('Performance','ProfilingAutostart',true);
+          profProfilingMemoryEnabled := LIni.ReadBool('Performance','ProfilingMemSupport',false);
+          profPrfOutputFile := LIni.ReadString('Output','PrfOutputFilename','$(ModulePath)');
           profPrfOutputFile := ResolvePrfRuntimePlaceholders(profPrfOutputFile);
           prfDisabled            := false;
         end;
       end;
-      Free;
+    finally
+      LIni.Free;
     end;
   end;
 end; { ReadIncSettings }
@@ -493,7 +583,6 @@ procedure Initialize();
 var
   LErrorPath : string;
 begin
-  ReadIncSettings;
   try
     ReadIncSettings;
     if not prfDisabled then begin
@@ -501,7 +590,7 @@ begin
       prfCounter          := 0;
       prfOnlyThread       := 0;
       prfThreads          := TThreadList.Create;
-      prfThreadsInfo      := TThreadInformationList.Create();
+      prfThreadsInfo      := TThreadInformationList.Create;
       prfMaxThreadNum     := 256;
       prfThreadBytes      := 1;
       prfLastTick         := -1;
@@ -595,7 +684,9 @@ begin
 end; { Finalize }
 
 procedure ProfilerTerminate;
-var i : integer;
+var
+  i: integer;
+  LItem: TThreadInformation;
 begin
   if not prfInitialized then Exit;
   ProfilerStop;
@@ -607,74 +698,73 @@ begin
   WriteCardinal(prfThreadsInfo.count);
   for i := 0 to prfThreadsInfo.count-1 do
   begin
-    WriteCardinal(prfThreadsInfo[i].ID);
-    WriteAnsiString(prfThreadsInfo[i].Name);
+    LItem := TThreadInformation(prfThreadsInfo[i]);
+    WriteCardinal(LItem.ID);
+    WriteUtf8String(LItem.Name);
   end;
   WriteInt(PR_END_THREADINFO);
 
   Finalize;
-
 end; { ProfilerTerminate }
 
+procedure ProfilerEnterMP(const aMeasurePointId: UTF8String);
+var
+  ct : Cardinal;
+  cnt: TLargeInteger;
+begin
+  QueryPerformanceCounter(cnt);
+  ct := GetCurrentThreadID;
+{$B+}
+  if prfRunning and ((prfOnlyThread = 0) or (prfOnlyThread = ct)) then begin
+{$B-}
+    EnterCriticalSection(prfLock);
+    try
+      FlushCounter;
+      WriteTag(PR_ENTER_MP);
+      WriteThread(ct);
+      WriteUtf8String(aMeasurePointId);
+      WriteTicks(Cnt);
+      if profProfilingMemoryEnabled then
+        WriteMemWorkingSize();
+      QueryPerformanceCounter(prfCounter);
+    finally LeaveCriticalSection(prfLock); end;
+  end;
+end;
+
+procedure ProfilerExitMP(const aMeasurePointId: UTF8String);
+var
+  ct : Cardinal;
+  cnt: TLargeInteger;
+begin
+  QueryPerformanceCounter(Cnt);
+  ct := GetCurrentThreadID;
+{$B+}
+  if prfRunning and ((prfOnlyThread = 0) or (prfOnlyThread = ct)) then begin
+{$B-}
+    EnterCriticalSection(prfLock);
+    try
+      FlushCounter;
+      WriteTag(PR_EXIT_MP);
+      WriteThread(ct);
+      WriteUtf8String(aMeasurePointId);
+      WriteTicks(Cnt);
+      if profProfilingMemoryEnabled then
+        WriteMemWorkingSize();
+      QueryPerformanceCounter(prfCounter);
+    finally LeaveCriticalSection(prfLock); end;
+  end;
+end;
 
 { TMeasurePointScope }
 
-constructor TMeasurePointScope.Create(const aMeasurePointId: String);
-
-  procedure ProfilerEnterMP(const aMeasurePointId : String);
-  var
-    ct : Cardinal;
-    cnt: int64;
-  begin
-    QueryPerformanceCounter(cnt);
-    ct := GetCurrentThreadID;
-  {$B+}
-    if prfRunning and ((prfOnlyThread = 0) or (prfOnlyThread = ct)) then begin
-  {$B-}
-      EnterCriticalSection(prfLock);
-      try
-        FlushCounter;
-        WriteTag(PR_ENTER_MP);
-        WriteThread(ct);
-        WriteAnsiString(utf8Encode(aMeasurePointId));
-        WriteTicks(Cnt);
-        if profProfilingMemoryEnabled then
-          WriteMemWorkingSize();
-        QueryPerformanceCounter(prfCounter);
-      finally LeaveCriticalSection(prfLock); end;
-    end;
-  end;
-
+constructor TMeasurePointScope.Create(const aMeasurePointId: UTF8String);
 begin
+  inherited Create;
   fMeasurePointId := aMeasurePointId;
   ProfilerEnterMP(fMeasurePointId);
 end;
 
 destructor TMeasurePointScope.Destroy;
-  procedure ProfilerExitMP(const aMeasurePointId : String);
-  var
-    ct : Cardinal;
-    cnt: TLargeinteger;
-  begin
-    QueryPerformanceCounter(Cnt);
-    ct := GetCurrentThreadID;
-  {$B+}
-    if prfRunning and ((prfOnlyThread = 0) or (prfOnlyThread = ct)) then begin
-  {$B-}
-      EnterCriticalSection(prfLock);
-      try
-        FlushCounter;
-        WriteTag(PR_EXIT_MP);
-        WriteThread(ct);
-        WriteAnsiString(utf8Encode(aMeasurePointId));
-        WriteTicks(Cnt);
-        if profProfilingMemoryEnabled then
-          WriteMemWorkingSize();
-        QueryPerformanceCounter(prfCounter);
-      finally LeaveCriticalSection(prfLock); end;
-    end;
-  end;
-
 begin
   ProfilerExitMP(fMeasurePointId);
   inherited;
@@ -691,7 +781,9 @@ initialization
     prfInitialized := true;
     gpprof.NameThreadForDebugging('Main Application Thread', MainThreadID);
   end;
+
 finalization
   ProfilerTerminate;
+
 end.
 

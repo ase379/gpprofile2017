@@ -2,13 +2,15 @@ unit GpProfCommon;
 
 interface
 
-  function ResolvePrfRuntimePlaceholders(const aFilenameWithPh: string): string;
+{$IF CompilerVersion > 19}
+  {$DEFINE HAS_UINT_TO_STR}
+{$IFEND}
 
-
+function ResolvePrfRuntimePlaceholders(const aFilenameWithPh: string): string;
 
 implementation
 
-uses windows, strUtils,sysutils,TlHelp32;
+uses Windows, StrUtils, SysUtils, TlHelp32;
 
 function HasPrfPlaceholder(var aText: string; const aKey: string): boolean;
 var
@@ -17,7 +19,6 @@ begin
   lPosition := PosEx(aKey, aText);
   result := lPosition > 0;
 end;
-
 
 procedure ReplacePrfPlaceholders(var aText: string; const aKey, aNewValue: string);
 var
@@ -30,7 +31,6 @@ begin
     lPosition := PosEx(aKey, aText);
   end;
 end;
-
 
 function GetProcessNameByID(const aPidToBeFound: Cardinal): string;
 var
@@ -58,7 +58,7 @@ begin
    Result := PName;
 end;
 
-function getCurrentModulePath(): string;
+function GetCurrentModulePath(): string;
 var
   buf: array [0..256] of char;
 begin
@@ -66,25 +66,30 @@ begin
   result := buf;
 end;
 
-function getCurrentModuleName(): string;
+function GetCurrentModuleName(): string;
 begin
-  result := getCurrentModulePath();
+  result := GetCurrentModulePath();
   result := ChangeFileExt(ExtractFileName(result),'');
 end;
+
+{$IFNDEF HAS_UINT_TO_STR}
+function UIntToStr(const aValue: Cardinal): string;
+begin
+  result := IntToStr(Int64(aValue));
+end;
+{$ENDIF}
 
 function ResolvePrfRuntimePlaceholders(const aFilenameWithPh: string): string;
 begin
   result := aFilenameWithPh;
   if HasPrfPlaceholder(result,'$(ProcessID)') then
-    ReplacePrfPlaceholders(result,'$(ProcessID)',  UIntToStr (GetCurrentProcessID()));
+    ReplacePrfPlaceholders(result,'$(ProcessID)', UIntToStr(GetCurrentProcessID()));
   if HasPrfPlaceholder(result,'$(ProcessName)') then
     ReplacePrfPlaceholders(result,'$(ProcessName)', GetProcessNameByID(GetCurrentProcessID()));
   if HasPrfPlaceholder(result,'$(ModuleName)') then
-    ReplacePrfPlaceholders(result,'$(ModuleName)', getCurrentModuleName());
+    ReplacePrfPlaceholders(result,'$(ModuleName)', GetCurrentModuleName());
   if HasPrfPlaceholder(result,'$(ModulePath)') then
-    ReplacePrfPlaceholders(result,'$(ModulePath)', ChangeFileExt(getCurrentModulePath(),''));
-
-
+    ReplacePrfPlaceholders(result,'$(ModulePath)', ChangeFileExt(GetCurrentModulePath(),''));
 end;
 
 end.
