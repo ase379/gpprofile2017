@@ -19,11 +19,11 @@ bin64/*.map
 BIN/*.map
 *.dproj.local
 **/__history
-/source/__recovery/__recovery.ini
-/source/__recovery/gppMain.dfm
-/source/__recovery/gppMain.pas
-/source/VirtualTree.Tools/__recovery/__recovery.ini
-/source/VirtualTree.Tools/__recovery/virtualTree.tools.statistics.pas
+/source/GpProf.UI/__recovery/__recovery.ini
+/source/GpProf.UI/__recovery/gppMain.dfm
+/source/GpProf.UI/__recovery/gppMain.pas
+/source/GpProf.UI/ui/VirtualTree.Tools/__recovery/__recovery.ini
+/source/GpProf.UI/ui/VirtualTree.Tools/__recovery/virtualTree.tools.statistics.pas
 *.dsk
 *.bk2
 /gpprof_2017*
