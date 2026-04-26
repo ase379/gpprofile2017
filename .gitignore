@@ -27,3 +27,7 @@ BIN/*.map
 *.dsk
 *.bk2
 /gpprof_2017*
+source/gpprof.dll.tests/*.exe
+source/gpprof.dll.tests/*.map
+source/gpprof.dll.tests/Win32/
+source/gpprof.dll.tests/Win64/
