@@ -25,37 +25,22 @@ if (-not (Test-Path $projectFile)) {
     exit 1
 }
 
-function Find-MSBuild {
-    # Try the Embarcadero-registered MSBuild locations first
-    $radPaths = @(
-        "$env:ProgramFiles\Embarcadero\Studio",
-        "${env:ProgramFiles(x86)}\Embarcadero\Studio"
-    )
-    foreach ($base in $radPaths) {
-        if (Test-Path $base) {
-            $msbuild = Get-ChildItem -Path $base -Recurse -Filter "MSBuild.exe" `
-                       -ErrorAction SilentlyContinue | Select-Object -First 1
-            if ($msbuild) { return $msbuild.FullName }
-        }
-    }
-    # Fall back to Visual Studio / Windows SDK MSBuild
-    $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
-    if (Test-Path $vswhere) {
-        $vsInstall = & $vswhere -latest -property installationPath 2>$null
-        if ($vsInstall) {
-            $candidate = Join-Path $vsInstall "MSBuild\Current\Bin\MSBuild.exe"
-            if (Test-Path $candidate) { return $candidate }
-        }
-    }
-    # Last resort: PATH
-    $found = Get-Command "MSBuild.exe" -ErrorAction SilentlyContinue
-    if ($found) { return $found.Source }
-    return $null
+###########################################################################
+# SET BDS TO BE ABLE TO COMPILE DELPHI WITH MSBUILD
+###########################################################################
+
+$DelphiInstallLocation = "${Env:ProgramFiles(x86)}\Embarcadero\Studio\37.0"
+if (!(Test-Path $DelphiInstallLocation)) {
+    Write-Error "Couldn't find Delphi Install..."
+    exit 1
+} else {
+    Write-Host "Found Delphi Install at $DelphiInstallLocation"
+    $env:BDS = $DelphiInstallLocation
 }
 
-$msbuild = Find-MSBuild
-if (-not $msbuild) {
-    Write-Error "MSBuild.exe not found. Please ensure Delphi (RAD Studio) or Visual Studio is installed."
+$msbuild = Join-Path $DelphiInstallLocation "bin\MSBuild.exe"
+if (-not (Test-Path $msbuild)) {
+    Write-Error "MSBuild.exe not found at: $msbuild"
     exit 1
 }
 
