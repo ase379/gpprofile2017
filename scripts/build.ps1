@@ -38,9 +38,22 @@ if (!(Test-Path $DelphiInstallLocation)) {
     $env:BDS = $DelphiInstallLocation
 }
 
-$msbuild = Join-Path $DelphiInstallLocation "bin\MSBuild.exe"
-if (-not (Test-Path $msbuild)) {
-    Write-Error "MSBuild.exe not found at: $msbuild"
+# Find MSBuild (RAD Studio relies on Visual Studio's MSBuild, not its own)
+$msbuild = $null
+$vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+if (Test-Path $vswhere) {
+    $vsInstall = & $vswhere -latest -property installationPath 2>$null
+    if ($vsInstall) {
+        $candidate = Join-Path $vsInstall "MSBuild\Current\Bin\MSBuild.exe"
+        if (Test-Path $candidate) { $msbuild = $candidate }
+    }
+}
+if (-not $msbuild) {
+    $found = Get-Command "MSBuild.exe" -ErrorAction SilentlyContinue
+    if ($found) { $msbuild = $found.Source }
+}
+if (-not $msbuild) {
+    Write-Error "MSBuild.exe not found. Please ensure Visual Studio or Build Tools are installed."
     exit 1
 }
 
