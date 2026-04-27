@@ -47,7 +47,7 @@
         <Base>true</Base>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Base)'!=''">
-        <DCC_UnitSearchPath>..\include;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
+        <DCC_UnitSearchPath>..\include;..\source\model\profilingResultParser;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
         <DCC_DcuOutput>.\$(Platform)\$(Config)</DCC_DcuOutput>
         <DCC_ExeOutput>.\$(Platform)\$(Config)</DCC_ExeOutput>
         <DCC_E>false</DCC_E>
@@ -108,6 +108,15 @@
         <DCCReference Include="testUnit.pas"/>
         <DCCReference Include="testThreads.pas"/>
         <DCCReference Include="testMultiDefines.pas"/>
+        <DCCReference Include="testClassMethods.pas"/>
+        <DCCReference Include="testGenerics.pas"/>
+        <DCCReference Include="testAnonymousMethods.pas"/>
+        <DCCReference Include="testAsmRoutines.pas"/>
+        <DCCReference Include="testNestedProcedures.pas"/>
+        <DCCReference Include="testCallGraphLogic.pas"/>
+        <DCCReference Include="testMeasurePointRegistryLogic.pas"/>
+        <DCCReference Include="testProcEntriesLogic.pas"/>
+        <DCCReference Include="testActiveProcListLogic.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>
