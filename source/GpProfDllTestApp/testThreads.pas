@@ -20,7 +20,7 @@ procedure TestThreadsGlobalFunc();
 implementation
 
 uses
-  System.SysUtils, gpprof;
+  System.SysUtils, GpProfDllClient;
 
 procedure TestThreadsGlobalFunc();
 begin
@@ -37,9 +37,9 @@ procedure TTestThread.Execute;
 var lPointer : Pointer;
 begin
   NameThreadForDebugging('AwesomeThread', self.ThreadID);
-  var lOuterScope := gpprof.CreateMeasurePointScope('MP_TestThreadExecuteOuter');
+  var lOuterScope := GpProfDllClient.CreateMeasurePointScope('MP_TestThreadExecuteOuter');
   NameThreadForDebugging('AwesomeThread-UnicodeChars-☺☼d156exÈ', self.ThreadID);
-  var lInnerScope := gpprof.CreateMeasurePointScope('MP_TestThreadExecuteInner');
+  var lInnerScope := GpProfDllClient.CreateMeasurePointScope('MP_TestThreadExecuteInner');
   self.namethreadfordebugging('AwesomeThread2-SelfNameReplacement', self.ThreadID);
   TThread.NameThreadForDebugging('AwesomeThread3-TThreadReplacement');
   Sleep(1000);

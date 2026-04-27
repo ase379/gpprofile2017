@@ -216,7 +216,11 @@ end;
 // ---------------------------------------------------------------------------
 
 const
-  GPPROFLIB = 'GpProfDll.dll';
+{$IFDEF WIN64}
+  GPPROFLIB = 'GpProfDll64.dll';
+{$ELSE}
+  GPPROFLIB = 'GpProfDll32.dll';
+{$ENDIF}
 
 procedure LoadGpProfDll;
 begin
