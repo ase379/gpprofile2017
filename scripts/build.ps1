@@ -26,7 +26,7 @@ if (-not (Test-Path $projectFile)) {
 }
 
 ###########################################################################
-# SET BDS TO BE ABLE TO COMPILE DELPHI WITH MSBUILD
+# SET BDS AND LOAD FULL DELPHI BUILD ENVIRONMENT VIA rsvars.bat
 ###########################################################################
 
 $DelphiInstallLocation = "${Env:ProgramFiles(x86)}\Embarcadero\Studio\37.0"
@@ -38,22 +38,23 @@ if (!(Test-Path $DelphiInstallLocation)) {
     $env:BDS = $DelphiInstallLocation
 }
 
-# Find MSBuild (RAD Studio relies on Visual Studio's MSBuild, not its own)
-$msbuild = $null
-$vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
-if (Test-Path $vswhere) {
-    $vsInstall = & $vswhere -latest -property installationPath 2>$null
-    if ($vsInstall) {
-        $candidate = Join-Path $vsInstall "MSBuild\Current\Bin\MSBuild.exe"
-        if (Test-Path $candidate) { $msbuild = $candidate }
+# rsvars.bat sets BDS, BDSPLATFORMSDKSDIR, FrameworkDir, FrameworkVersion,
+# MSBUILD_VERSION and adds the correct MSBuild.exe to PATH.
+$rsVars = Join-Path $DelphiInstallLocation "bin\rsvars.bat"
+if (-not (Test-Path $rsVars)) {
+    Write-Error "rsvars.bat not found at: $rsVars"
+    exit 1
+}
+Write-Host "Loading Delphi environment from $rsVars"
+cmd /c "`"$rsVars`" && set" | ForEach-Object {
+    if ($_ -match '^([^=]+)=(.*)$') {
+        [Environment]::SetEnvironmentVariable($Matches[1], $Matches[2], 'Process')
     }
 }
+
+$msbuild = (Get-Command "MSBuild.exe" -ErrorAction SilentlyContinue)?.Source
 if (-not $msbuild) {
-    $found = Get-Command "MSBuild.exe" -ErrorAction SilentlyContinue
-    if ($found) { $msbuild = $found.Source }
-}
-if (-not $msbuild) {
-    Write-Error "MSBuild.exe not found. Please ensure Visual Studio or Build Tools are installed."
+    Write-Error "MSBuild.exe not found on PATH after loading rsvars.bat."
     exit 1
 }
 
