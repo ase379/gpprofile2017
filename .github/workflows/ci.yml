@@ -1,0 +1,97 @@
+name: CI
+
+# Run on every push and on pull requests targeting any branch.
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    name: Build GpProfDll + run DUnit tests (Win32)
+    runs-on: windows-latest
+
+    env:
+      # Set the BDS repository variable to the RAD Studio installation root,
+      # e.g. C:\Program Files (x86)\Embarcadero\Studio\23.0 (Delphi 12 Athens)
+      #      C:\Program Files (x86)\Embarcadero\Studio\22.0 (Delphi 11 Alexandria)
+      # On a self-hosted runner the variable is usually already set in the system
+      # environment; override it here as needed via Settings → Variables → Actions.
+      BDS: ${{ vars.BDS }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # -----------------------------------------------------------------------
+      # Locate the Delphi compiler.  We try the BDS repository variable first,
+      # then fall back to the most common installation paths for Delphi 12/11.
+      # -----------------------------------------------------------------------
+      - name: Locate Delphi installation
+        id: delphi
+        shell: pwsh
+        run: |
+          $bds = $env:BDS
+          if (-not $bds) {
+            $candidates = @(
+              'C:\Program Files (x86)\Embarcadero\Studio\23.0',
+              'C:\Program Files (x86)\Embarcadero\Studio\22.0',
+              'C:\Program Files (x86)\Embarcadero\Studio\21.0',
+              'C:\Program Files (x86)\Embarcadero\Studio\20.0'
+            )
+            foreach ($p in $candidates) {
+              if (Test-Path "$p\bin\DCC32.exe") { $bds = $p; break }
+            }
+          }
+          if (-not $bds -or -not (Test-Path "$bds\bin\DCC32.exe")) {
+            Write-Error @"
+Delphi DCC32.exe not found.
+Set the BDS Actions repository variable to your RAD Studio installation directory,
+e.g.  C:\Program Files (x86)\Embarcadero\Studio\23.0
+or use a self-hosted runner that already has Delphi on PATH.
+"@
+            exit 1
+          }
+          Write-Host "Delphi found at: $bds"
+          # Export for subsequent steps
+          "BDS=$bds" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Add MSBuild to PATH
+        uses: microsoft/setup-msbuild@v2
+
+      # -----------------------------------------------------------------------
+      # Build the profiling instrumentation DLL (Win32, Release).
+      # -----------------------------------------------------------------------
+      - name: Build GpProfDll (Win32 · Release)
+        shell: pwsh
+        run: |
+          msbuild source\gpprof.dll\GpProfDll.dproj `
+            /t:Build `
+            /p:Config=Release /p:Platform=Win32 `
+            /v:minimal /nologo
+
+      # -----------------------------------------------------------------------
+      # Build the DUnit test console application (Win32, Release).
+      # DCC_ExeOutput is set to "." in the project, so the exe lands in
+      # source\gpprof.dll.tests\ alongside the stub GpProfDllTests.GPI file.
+      # -----------------------------------------------------------------------
+      - name: Build GpProfDllTests (Win32 · Release)
+        shell: pwsh
+        run: |
+          msbuild source\gpprof.dll.tests\GpProfDllTests.dproj `
+            /t:Build `
+            /p:Config=Release /p:Platform=Win32 `
+            /v:minimal /nologo
+
+      # -----------------------------------------------------------------------
+      # Run the DUnit tests.
+      # TextTestRunner.RunRegisteredTests sets ExitCode to
+      # FailureCount + ErrorCount; exit 0 means all tests passed.
+      # -----------------------------------------------------------------------
+      - name: Run DUnit tests
+        shell: pwsh
+        run: |
+          & .\source\gpprof.dll.tests\GpProfDllTests.exe
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "DUnit tests failed (exit code $LASTEXITCODE)"
+            exit $LASTEXITCODE
+          }
