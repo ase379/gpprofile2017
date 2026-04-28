@@ -29,8 +29,6 @@ object frmMain: TfrmMain
     ParentFont = True
     UseSystemFont = False
     OnResize = StatusBarResize
-    ExplicitTop = 598
-    ExplicitWidth = 1474
   end
   object Panel0: TPanel
     Left = 0
@@ -41,8 +39,6 @@ object frmMain: TfrmMain
     BevelEdges = []
     BevelOuter = bvNone
     TabOrder = 1
-    ExplicitWidth = 1474
-    ExplicitHeight = 598
     object splitSourcePreview: TSplitter
       Left = 0
       Top = 491
@@ -62,8 +58,6 @@ object frmMain: TfrmMain
       Align = alClient
       BevelOuter = bvNone
       TabOrder = 0
-      ExplicitWidth = 1474
-      ExplicitHeight = 474
       object PageControl1: TPageControl
         Left = 0
         Top = 0
@@ -74,8 +68,6 @@ object frmMain: TfrmMain
         HotTrack = True
         TabOrder = 0
         OnChange = PageControl1Change
-        ExplicitWidth = 1474
-        ExplicitHeight = 474
         object tabInstrumentation: TTabSheet
           Caption = 'Source Code Instrumentation'
           ImageIndex = 16
@@ -182,8 +174,6 @@ object frmMain: TfrmMain
             ActivePage = tabMemoryAnalysis
             Align = alClient
             TabOrder = 0
-            ExplicitWidth = 1466
-            ExplicitHeight = 390
             object tabPerformanceAnalysis: TTabSheet
               Caption = 'Performance Analysis'
               ImageIndex = 17
@@ -209,7 +199,6 @@ object frmMain: TfrmMain
             ShowCaptions = True
             ShowHint = True
             TabOrder = 1
-            ExplicitWidth = 1466
             object btnOpenProfile: TToolButton
               Left = 0
               Top = 0
@@ -268,8 +257,6 @@ object frmMain: TfrmMain
       Align = alBottom
       BevelOuter = bvNone
       TabOrder = 1
-      ExplicitTop = 477
-      ExplicitWidth = 1474
       object sourceCodeEdit: TSynEdit
         Left = 0
         Top = 0
@@ -312,8 +299,7 @@ object frmMain: TfrmMain
         Highlighter = SynPasSyn
         Lines.Strings = (
           'sourceCodeEdit')
-        SelectedColor.Alpha = 0.400000005960464500
-        ExplicitWidth = 1474
+        ScrollbarAnnotations = <>
       end
     end
   end
