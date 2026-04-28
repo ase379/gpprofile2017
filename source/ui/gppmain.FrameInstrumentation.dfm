@@ -31,7 +31,6 @@ object frmMainInstrumentation: TfrmMainInstrumentation
       Align = alLeft
       Caption = 'Show Directory Structure'
       TabOrder = 0
-      OnClick = chkShowDirStructureClick
     end
     object chkShowAll: TCheckBox
       AlignWithMargins = True
