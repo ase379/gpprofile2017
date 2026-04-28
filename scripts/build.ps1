@@ -1,13 +1,13 @@
 # Build gpprof for Win32 and Win64 and deploy to BIN/ and bin64/
 #
 # Requirements:
-#   - Delphi (RAD Studio) installed with MSBuild integration
-#   - Run from the 'scripts' directory or set $PSScriptRoot correctly
+#   - Delphi (RAD Studio 37.0) installed at %ProgramFiles(x86)%\Embarcadero\Studio\37.0
+#   - Windows PowerShell 5.1 or later
 #
-# Usage:
-#   .\build.ps1
-#   .\build.ps1 -Config Release
-#   .\build.ps1 -Config Debug
+# Usage (run from the repo root or any directory):
+#   .\scripts\build.ps1
+#   .\scripts\build.ps1 -Config Release
+#   .\scripts\build.ps1 -Config Debug
 
 param(
     [string]$Config = "Release"
@@ -52,7 +52,8 @@ cmd /c "`"$rsVars`" && set" | ForEach-Object {
     }
 }
 
-$msbuild = (Get-Command "MSBuild.exe" -ErrorAction SilentlyContinue)?.Source
+$msbuildCmd = Get-Command "MSBuild.exe" -ErrorAction SilentlyContinue
+$msbuild = if ($msbuildCmd) { $msbuildCmd.Source } else { $null }
 if (-not $msbuild) {
     Write-Error "MSBuild.exe not found on PATH after loading rsvars.bat."
     exit 1
