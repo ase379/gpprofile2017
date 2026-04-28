@@ -33,3 +33,5 @@ source/gpprof.dll.tests/Win32/
 source/gpprof.dll.tests/Win64/
 source/GpProfDllTestApp/Win32/
 source/GpProfDllTestApp/Win64/
+/source/gpprof.dll/Win32/**
+/source/gpprof.dll/Win64/**

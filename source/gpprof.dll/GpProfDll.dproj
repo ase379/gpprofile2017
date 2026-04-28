@@ -71,13 +71,15 @@
         <Manifest_File>(Ohne)</Manifest_File>
         <VerInfo_Locale>1033</VerInfo_Locale>
         <AppDPIAwarenessMode>none</AppDPIAwarenessMode>
-        <DCC_ExeOutput>..\..\BIN\</DCC_ExeOutput>
+        <PostBuildEvent><![CDATA[copy $(OUTPUTPATH) ..\..\bin\gpProf32.Dll
+$(PostBuildEvent)]]></PostBuildEvent>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Base_Win64)'!=''">
         <Manifest_File>(Ohne)</Manifest_File>
         <VerInfo_Locale>1033</VerInfo_Locale>
         <AppDPIAwarenessMode>none</AppDPIAwarenessMode>
-        <DCC_ExeOutput>..\..\bin64\</DCC_ExeOutput>
+        <PostBuildEvent><![CDATA[copy $(OUTPUTPATH) ..\..\bin\gpProf64.Dll
+$(PostBuildEvent)]]></PostBuildEvent>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_1)'!=''">
         <DCC_LocalDebugSymbols>false</DCC_LocalDebugSymbols>
@@ -144,37 +146,49 @@
     </ProjectExtensions>
     <Import Project="$(BDS)\Bin\CodeGear.Delphi.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Delphi.Targets')"/>
     <Import Project="$(APPDATA)\Embarcadero\$(BDSAPPDATABASEDIR)\$(PRODUCTVERSION)\UserTools.proj" Condition="Exists('$(APPDATA)\Embarcadero\$(BDSAPPDATABASEDIR)\$(PRODUCTVERSION)\UserTools.proj')"/>
-
-    <!--
-        AfterBuild: produce a platform-named copy of GpProfDll.dll and drop it
-        into the GpProfDllTestApp output directory so the test application can
-        load it at run time without any additional manual copying.
-
-            Win32 → GpProfDll32.dll   (in the DLL output dir and test app dir)
-            Win64 → GpProfDll64.dll   (in the DLL output dir and test app dir)
-    -->
     <Target Name="AfterBuild">
         <PropertyGroup>
             <_GpProfDllBitSuffix Condition="'$(Platform)'=='Win32'">32</_GpProfDllBitSuffix>
             <_GpProfDllBitSuffix Condition="'$(Platform)'=='Win64'">64</_GpProfDllBitSuffix>
-            <_GpProfDllRenamedName>GpProfDll$(_GpProfDllBitSuffix).dll</_GpProfDllRenamedName>
-            <!-- Absolute path to the DLL that was just linked -->
-            <_GpProfDllBuilt>$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '$(DCC_ExeOutput)', 'GpProfDll.dll'))</_GpProfDllBuilt>
-            <!-- Absolute path to the renamed copy in the DLL output folder -->
-            <_GpProfDllRenamed>$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '$(DCC_ExeOutput)', '$(_GpProfDllRenamedName)'))</_GpProfDllRenamed>
-            <!-- Absolute path to the GpProfDllTestApp output directory for this Platform/Config -->
-            <_TestAppBinDir>$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '..\..\GpProfDllTestApp\$(Platform)\$(Config)'))</_TestAppBinDir>
+            <_GpProfDllRenamedName>gpprof$(_GpProfDllBitSuffix).dll</_GpProfDllRenamedName>
+            <_GpProfDllBuilt>$([MSBuild]::NormalizePath(&apos;$(MSBuildProjectDirectory)&apos;, &apos;$(DCC_ExeOutput)&apos;, &apos;GpProfDll.dll&apos;))</_GpProfDllBuilt>
+            <_GpProfDllRenamed>$([MSBuild]::NormalizePath(&apos;$(MSBuildProjectDirectory)&apos;, &apos;$(DCC_ExeOutput)&apos;, &apos;$(_GpProfDllRenamedName)&apos;))</_GpProfDllRenamed>
+            <_TestAppBinDir>$([MSBuild]::NormalizePath(&apos;$(MSBuildProjectDirectory)&apos;, &apos;..\..\GpProfDllTestApp\$(Platform)\$(Config)&apos;))</_TestAppBinDir>
         </PropertyGroup>
-        <!-- 1. Create a platform-named copy alongside the original DLL output -->
-        <Copy SourceFiles="$(_GpProfDllBuilt)"
-              DestinationFiles="$(_GpProfDllRenamed)"
-              SkipUnchangedFiles="true"
-              Condition="Exists('$(_GpProfDllBuilt)')" />
-        <!-- 2. Copy the platform-named DLL to the test app output directory -->
-        <MakeDir Directories="$(_TestAppBinDir)" />
-        <Copy SourceFiles="$(_GpProfDllBuilt)"
-              DestinationFiles="$(_TestAppBinDir)\$(_GpProfDllRenamedName)"
-              SkipUnchangedFiles="true"
-              Condition="Exists('$(_GpProfDllBuilt)')" />
+        <Copy SourceFiles="$(_GpProfDllBuilt)" DestinationFiles="$(_GpProfDllRenamed)" SkipUnchangedFiles="true" Condition="Exists('$(_GpProfDllBuilt)')"/>
+        <MakeDir Directories="$(_TestAppBinDir)"/>
+        <Copy SourceFiles="$(_GpProfDllBuilt)" DestinationFiles="$(_TestAppBinDir)\$(_GpProfDllRenamedName)" SkipUnchangedFiles="true" Condition="Exists('$(_GpProfDllBuilt)')"/>
     </Target>
+    <PropertyGroup Condition="'$(Config)'=='Release' And '$(Platform)'=='Win32'">
+        <PreBuildEvent/>
+        <PreBuildEventIgnoreExitCode>False</PreBuildEventIgnoreExitCode>
+        <PreLinkEvent/>
+        <PreLinkEventIgnoreExitCode>False</PreLinkEventIgnoreExitCode>
+        <PostBuildEvent>copy $(OUTPUTPATH) ..\..\bin\gpProf32.Dll</PostBuildEvent>
+        <PostBuildEventIgnoreExitCode>False</PostBuildEventIgnoreExitCode>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Config)'=='Release' And '$(Platform)'=='Win64'">
+        <PreBuildEvent/>
+        <PreBuildEventIgnoreExitCode>False</PreBuildEventIgnoreExitCode>
+        <PreLinkEvent/>
+        <PreLinkEventIgnoreExitCode>False</PreLinkEventIgnoreExitCode>
+        <PostBuildEvent>copy $(OUTPUTPATH) ..\..\bin\gpProf64.Dll</PostBuildEvent>
+        <PostBuildEventIgnoreExitCode>False</PostBuildEventIgnoreExitCode>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Config)'=='Debug' And '$(Platform)'=='Win32'">
+        <PreBuildEvent/>
+        <PreBuildEventIgnoreExitCode>False</PreBuildEventIgnoreExitCode>
+        <PreLinkEvent/>
+        <PreLinkEventIgnoreExitCode>False</PreLinkEventIgnoreExitCode>
+        <PostBuildEvent>copy $(OUTPUTPATH) ..\..\bin\gpProf32.Dll</PostBuildEvent>
+        <PostBuildEventIgnoreExitCode>False</PostBuildEventIgnoreExitCode>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Config)'=='Debug' And '$(Platform)'=='Win64'">
+        <PreBuildEvent/>
+        <PreBuildEventIgnoreExitCode>False</PreBuildEventIgnoreExitCode>
+        <PreLinkEvent/>
+        <PreLinkEventIgnoreExitCode>False</PreLinkEventIgnoreExitCode>
+        <PostBuildEvent>copy $(OUTPUTPATH) ..\..\bin\gpProf64.Dll</PostBuildEvent>
+        <PostBuildEventIgnoreExitCode>False</PostBuildEventIgnoreExitCode>
+    </PropertyGroup>
 </Project>
