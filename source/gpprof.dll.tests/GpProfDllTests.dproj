@@ -47,7 +47,7 @@
         <Base>true</Base>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Base)'!=''">
-        <DCC_UnitSearchPath>..\..\include;$(BDS)\source\DUnit\src;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
+        <DCC_UnitSearchPath>..\..\include;$(BDS)\source\DUnit\src;$(BDS)\source\DUnitX;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
         <DCC_DcuOutput>.\$(Platform)\$(Config)</DCC_DcuOutput>
         <DCC_ExeOutput>.</DCC_ExeOutput>
         <DCC_E>false</DCC_E>
