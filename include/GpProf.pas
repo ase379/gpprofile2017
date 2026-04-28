@@ -603,8 +603,7 @@ begin
       FillChar(prfBuf^, BUF_SIZE, 0);
       InitializeCriticalSection(prfLock);
       prfFile := CreateFile(PChar(prfName), GENERIC_WRITE, 0, nil, CREATE_ALWAYS,
-                            FILE_ATTRIBUTE_NORMAL + FILE_FLAG_WRITE_THROUGH +
-                            FILE_FLAG_NO_BUFFERING, 0);
+                            FILE_ATTRIBUTE_NORMAL or FILE_FLAG_SEQUENTIAL_SCAN, 0);
       Win32Check(prfFile <> INVALID_HANDLE_VALUE);
       QueryPerformanceFrequency(prfFreq);
     end;
