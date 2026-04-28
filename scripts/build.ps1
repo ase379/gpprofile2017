@@ -1,7 +1,8 @@
 # Build gpprof for Win32 and Win64 and deploy to BIN/ and bin64/
 #
 # Requirements:
-#   - Delphi (RAD Studio 37.0) installed at %ProgramFiles(x86)%\Embarcadero\Studio\37.0
+#   - Delphi (RAD Studio) installed at %ProgramFiles(x86)%\Embarcadero\Studio\<version>
+#     (auto-detects the latest installed version from 99.0 down to 21.0)
 #   - Windows PowerShell 5.1 or later
 #
 # Usage (run from the repo root or any directory):
@@ -29,9 +30,19 @@ if (-not (Test-Path $projectFile)) {
 # SET BDS AND LOAD FULL DELPHI BUILD ENVIRONMENT VIA rsvars.bat
 ###########################################################################
 
-$DelphiInstallLocation = "${Env:ProgramFiles(x86)}\Embarcadero\Studio\37.0"
-if (!(Test-Path $DelphiInstallLocation)) {
-    Write-Error "Couldn't find Delphi Install..."
+# Auto-detect the latest installed RAD Studio version (99.0 down to 21.0)
+$DelphiInstallLocation = $null
+$studioBase = "${Env:ProgramFiles(x86)}\Embarcadero\Studio"
+for ($v = 99; $v -ge 21; $v--) {
+    $candidate = "$studioBase\$v.0"
+    if (Test-Path $candidate) {
+        $DelphiInstallLocation = $candidate
+        break
+    }
+}
+
+if (-not $DelphiInstallLocation) {
+    Write-Error "Couldn't find Delphi Install in $studioBase (searched 99.0 down to 21.0)"
     exit 1
 } else {
     Write-Host "Found Delphi Install at $DelphiInstallLocation"
