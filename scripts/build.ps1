@@ -19,13 +19,19 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-$repoRoot   = Resolve-Path "$PSScriptRoot\.."
-$projectFile = Join-Path $repoRoot "source\gpprof.dproj"
-$binDir     = Join-Path $repoRoot "BIN"
-$bin64Dir   = Join-Path $repoRoot "bin64"
+$repoRoot    = Resolve-Path "$PSScriptRoot\.."
+$projectFile = Join-Path $repoRoot "source\GpProf.UI\gpprof.dproj"
+$dllProject  = Join-Path $repoRoot "source\gpprof.dll\GpProfDll.dproj"
+$binDir      = Join-Path $repoRoot "BIN"
+$bin64Dir    = Join-Path $repoRoot "bin64"
 
 if (-not (Test-Path $projectFile)) {
     Write-Error "Project file not found: $projectFile"
+    exit 1
+}
+
+if (-not (Test-Path $dllProject)) {
+    Write-Error "DLL project file not found: $dllProject"
     exit 1
 }
 
@@ -74,14 +80,41 @@ if (-not $msbuild) {
 }
 
 Write-Host "Using MSBuild: $msbuild" -ForegroundColor Cyan
-Write-Host "Project: $projectFile" -ForegroundColor Cyan
-Write-Host "Config:  $Config" -ForegroundColor Cyan
+Write-Host "UI project:  $projectFile" -ForegroundColor Cyan
+Write-Host "DLL project: $dllProject" -ForegroundColor Cyan
+Write-Host "Config:      $Config" -ForegroundColor Cyan
 Write-Host ""
 Write-Warning "NOTE: Command-line compilation requires a paid RAD Studio edition (Professional/Enterprise/Architect). The Community Edition is NOT supported and will fail with 'This version does not support command line compiling'."
 
 # Ensure output directories exist
 New-Item -Path $binDir   -ItemType Directory -Force | Out-Null
 New-Item -Path $bin64Dir -ItemType Directory -Force | Out-Null
+
+###########################################################################
+# BUILD GpProfDll (shared profiling DLL)
+###########################################################################
+
+Write-Host ""
+Write-Host "Building GpProfDll Win32 ($Config)..." -ForegroundColor Green
+& $msbuild $dllProject /t:Build /p:Config=$Config /p:Platform=Win32 /nologo /v:minimal
+if ($LASTEXITCODE -ne 0) {
+    Write-Error "GpProfDll Win32 build failed with exit code $LASTEXITCODE"
+    exit $LASTEXITCODE
+}
+Write-Host "GpProfDll Win32 build succeeded. Output: $binDir" -ForegroundColor Green
+
+Write-Host ""
+Write-Host "Building GpProfDll Win64 ($Config)..." -ForegroundColor Green
+& $msbuild $dllProject /t:Build /p:Config=$Config /p:Platform=Win64 /nologo /v:minimal
+if ($LASTEXITCODE -ne 0) {
+    Write-Error "GpProfDll Win64 build failed with exit code $LASTEXITCODE"
+    exit $LASTEXITCODE
+}
+Write-Host "GpProfDll Win64 build succeeded. Output: $bin64Dir" -ForegroundColor Green
+
+###########################################################################
+# BUILD MAIN UI APPLICATION
+###########################################################################
 
 # Build Win32
 Write-Host ""
