@@ -1,8 +1,11 @@
 # Build gpprof for Win32 and Win64 and deploy to BIN/ and bin64/
 #
 # Requirements:
-#   - Delphi (RAD Studio) installed at %ProgramFiles(x86)%\Embarcadero\Studio\<version>
+#   - Delphi RAD Studio (paid/professional edition) installed at
+#     %ProgramFiles(x86)%\Embarcadero\Studio\<version>
 #     (auto-detects the latest installed version from 99.0 down to 21.0)
+#     NOTE: The Community Edition does NOT support command-line compilation.
+#           You need a Professional, Enterprise, or Architect edition.
 #   - Windows PowerShell 5.1 or later
 #
 # Usage (run from the repo root or any directory):
@@ -73,6 +76,8 @@ if (-not $msbuild) {
 Write-Host "Using MSBuild: $msbuild" -ForegroundColor Cyan
 Write-Host "Project: $projectFile" -ForegroundColor Cyan
 Write-Host "Config:  $Config" -ForegroundColor Cyan
+Write-Host ""
+Write-Warning "NOTE: Command-line compilation requires a paid RAD Studio edition (Professional/Enterprise/Architect). The Community Edition is NOT supported and will fail with 'This version does not support command line compiling'."
 
 # Ensure output directories exist
 New-Item -Path $binDir   -ItemType Directory -Force | Out-Null
