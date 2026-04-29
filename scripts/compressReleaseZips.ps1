@@ -1,12 +1,13 @@
 $version = "1.6.0.9"
-$srcBin32 = "..\bin"
-$srcBin64 = "..\bin64"
-$targetFolder32 = "..\gpprof_2017_v"+$version
-$targetFolder32Include = $targetFolder32+"\include"	
-$targetFolder64 = "..\gpprof_2017x64_v"+$version
-$targetFolder64Include = $targetFolder64+"\include"	
-$targetZip32 = "..\gpprof_2017_v"+$version+".zip"
-$targetZip64 = "..\gpprof_2017x64_v"+$version+".zip"
+$repoRoot = Resolve-Path "$PSScriptRoot\.."
+$srcBin32 = Join-Path $repoRoot "bin"
+$srcBin64 = Join-Path $repoRoot "bin64"
+$targetFolder32 = Join-Path $repoRoot ("gpprof_2017_v" + $version)
+$targetFolder32Include = Join-Path $targetFolder32 "include"
+$targetFolder64 = Join-Path $repoRoot ("gpprof_2017x64_v" + $version)
+$targetFolder64Include = Join-Path $targetFolder64 "include"
+$targetZip32 = Join-Path $repoRoot ("gpprof_2017_v" + $version + ".zip")
+$targetZip64 = Join-Path $repoRoot ("gpprof_2017x64_v" + $version + ".zip")
     
 if (Test-Path -Path $targetFolder32) {
     Write-Host "$targetFolder32 already exists, recreating it"
@@ -22,8 +23,9 @@ New-item -Path $targetFolder32 -ItemType Directory -Force	 | Out-Null
 New-item -Path $targetFolder32Include -ItemType Directory	-Force | Out-Null
 
 Write-Host "Copying bin32 artefacts from $srcBin32\* to $targetFolder32" -f Green
-Copy-Item -Path $srcBin32\* -Include *.exe,*.chm,*.eul -Destination $targetFolder32
-Copy-Item -Path ..\include\* -Include *.pas -Destination $targetFolder32Include
+Copy-Item -Path $srcBin32\* -Include *.exe, *.chm, *.eul -Destination $targetFolder32
+$includeDir = Join-Path $repoRoot "include"
+Copy-Item -Path (Join-Path $includeDir "*") -Include *.pas -Destination $targetFolder32Include
 Compress-Archive -LiteralPath $targetFolder32 -DestinationPath $targetZip32
 
 
@@ -33,8 +35,8 @@ New-item -Path $targetFolder64Include -ItemType Directory	-Force | Out-Null
 
 
 Write-Host "Copying bin64 artefacts from $srcBin64\* to $targetFolder64" -f Green
-Copy-Item -Path $srcBin64\* -Include *.exe,*.chm,*.eul -Destination $targetFolder64
-Copy-Item -Path ..\include\* -Include *.pas -Destination $targetFolder64Include
+Copy-Item -Path $srcBin64\* -Include *.exe, *.chm, *.eul -Destination $targetFolder64
+Copy-Item -Path (Join-Path $includeDir "*") -Include *.pas -Destination $targetFolder64Include
 
 Compress-Archive -LiteralPath $targetFolder64 -DestinationPath $targetZip64
 
