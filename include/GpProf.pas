@@ -147,13 +147,16 @@ var
   profPrfOutputFile     : string;
   profTableName         : string;
 
-procedure FlushFile;
+procedure FlushFile; inline;
 var
   written: DWORD;
 begin
-  Win32Check(WriteFile(prfFile, prfBuf^, BUF_SIZE, written, nil));
-  prfBufOffs := 0;
-  FillChar(prfBuf^, BUF_SIZE, 0);
+  if WriteFile(prfFile, prfBuf^, BUF_SIZE, written, nil) then
+  begin
+    prfBufOffs := 0;
+    FillChar(prfBuf^, BUF_SIZE, 0);
+  end else
+    RaiseLastWin32Error;
 end; { FlushFile }
 
 function OffsetPtr(ptr: Pointer; offset: NativeUInt): Pointer; inline;
@@ -163,9 +166,8 @@ end; { OffsetPtr }
 
 procedure Transmit(const buf; count: DWORD);
 var
-  res    : boolean;
-  place  : DWORD;
   bufp   : pointer;
+  place  : DWORD;
   written: DWORD;
 begin
   place := BUF_SIZE-prfBufOffs;
@@ -177,10 +179,12 @@ begin
     bufp := OffsetPtr(@buf,place);
     while count >= BUF_SIZE do begin
       Move(bufp^,prfBuf^,BUF_SIZE);
-      res := WriteFile(prfFile,prfBuf^,BUF_SIZE,written,nil);
-      if not res then RaiseLastWin32Error;
-      Dec(count,BUF_SIZE);
-      bufp := OffsetPtr(bufp,BUF_SIZE);
+      if WriteFile(prfFile,prfBuf^,BUF_SIZE,written,nil) then
+      begin
+        Dec(count,BUF_SIZE);
+        bufp := OffsetPtr(bufp,BUF_SIZE);
+      end else
+        RaiseLastWin32Error;
     end; //while
   end
   else bufp := @buf;
@@ -249,10 +253,13 @@ begin
 end;
 
 procedure WriteUtf8String(const aValue: UTF8String); inline;
+var
+  len: integer;
 begin
-  WriteCardinal(Length(aValue));
-  if Length(aValue)>0 then
-    Transmit(aValue[1], Length(aValue));
+  len := Length(aValue);
+  WriteCardinal(len);
+  if len > 0 then
+    Transmit(aValue[1], len);
 end;
 
 procedure WriteTicks(ticks: TLargeInteger);
@@ -603,8 +610,7 @@ begin
       FillChar(prfBuf^, BUF_SIZE, 0);
       InitializeCriticalSection(prfLock);
       prfFile := CreateFile(PChar(prfName), GENERIC_WRITE, 0, nil, CREATE_ALWAYS,
-                            FILE_ATTRIBUTE_NORMAL + FILE_FLAG_WRITE_THROUGH +
-                            FILE_FLAG_NO_BUFFERING, 0);
+                            FILE_ATTRIBUTE_NORMAL or FILE_FLAG_SEQUENTIAL_SCAN, 0);
       Win32Check(prfFile <> INVALID_HANDLE_VALUE);
       QueryPerformanceFrequency(prfFreq);
     end;
@@ -640,18 +646,27 @@ procedure CopyTables;
 var
   p: pointer;
   f: file;
+  fs: integer;
 begin
   if not FileExists(profTableName) then prfDisabled := true
   else begin
     Assign(f,profTableName);
     Reset(f,1);
     try
-      GetMem(p,FileSize(f));
-      try
-        BlockRead(f,p^,FileSize(f));
-        Transmit(p^,FileSize(f));
-      finally FreeMem(p); end;
-    finally Close(f); end;
+      fs := FileSize(f);
+      if fs > 0 then
+      begin
+        GetMem(p,fs);
+        try
+          BlockRead(f,p^,fs);
+          Transmit(p^,fs);
+        finally
+          FreeMem(p);
+        end;
+      end;
+    finally
+      Close(f);
+    end;
   end;
 end; { CopyTables }
 
