@@ -79,7 +79,7 @@ uses
   GpProfCommon;
 
 const
-  BUF_SIZE = 64 * 1024; //64*1024;
+  BUF_SIZE_DEFAULT = 64 * 1024; // 64 KB
 
 type
   TMeasurePointScope = class(TInterfacedObject, IMeasurePointScope)
@@ -146,15 +146,14 @@ var
   profProfilingMemoryEnabled: boolean;
   profPrfOutputFile     : string;
   profTableName         : string;
+  profBufSize           : integer = BUF_SIZE_DEFAULT;
 
 procedure FlushFile; inline;
 var
   written: DWORD;
 begin
-  if WriteFile(prfFile, prfBuf^, BUF_SIZE, written, nil) then
-  begin
+  if WriteFile(prfFile, prfBuf^, prfBufOffs, written, nil) then begin
     prfBufOffs := 0;
-    FillChar(prfBuf^, BUF_SIZE, 0);
   end else
     RaiseLastWin32Error;
 end; { FlushFile }
@@ -164,30 +163,27 @@ begin
   Result := Pointer(NativeUInt(ptr) + offset);
 end; { OffsetPtr }
 
-procedure Transmit(const buf; count: DWORD);
+procedure Transmit(const buf; count: integer);
 var
   bufp   : pointer;
-  place  : DWORD;
+  place  : integer;
   written: DWORD;
 begin
-  place := BUF_SIZE-prfBufOffs;
+  place := profBufSize - prfBufOffs;
   if place <= count then begin
     Move(buf,OffsetPtr(prfBuf,prfBufOffs)^,place); // fill the buffer
-    prfBufOffs := BUF_SIZE;
+    prfBufOffs := profBufSize;
     FlushFile;
     Dec(count,place);
     bufp := OffsetPtr(@buf,place);
-    while count >= BUF_SIZE do begin
-      Move(bufp^,prfBuf^,BUF_SIZE);
-      if WriteFile(prfFile,prfBuf^,BUF_SIZE,written,nil) then
-      begin
-        Dec(count,BUF_SIZE);
-        bufp := OffsetPtr(bufp,BUF_SIZE);
+    if count >= profBufSize then begin
+      if WriteFile(prfFile, bufp^, count, written, nil) then begin
+        count := 0;
       end else
         RaiseLastWin32Error;
-    end; //while
-  end
-  else bufp := @buf;
+    end;
+  end else
+    bufp := @buf;
   if count > 0 then begin // store leftovers
     Move(bufp^,OffsetPtr(prfBuf,prfBufOffs)^,count);
     Inc(prfBufOffs,count);
@@ -538,6 +534,7 @@ var
   LBuf: array [0..256] of char;
   LIniFileName: string;
   LIni: TMemIniFile;
+  LBufSizeKB: Integer;
 begin
   GetModuleFileName(HInstance,LBuf,256);
   prfModuleName := string(LBuf);
@@ -564,7 +561,20 @@ begin
           profProfilingMemoryEnabled := LIni.ReadBool('Performance','ProfilingMemSupport',false);
           profPrfOutputFile := LIni.ReadString('Output','PrfOutputFilename','$(ModulePath)');
           profPrfOutputFile := ResolvePrfRuntimePlaceholders(profPrfOutputFile);
-          prfDisabled            := false;
+
+          LBufSizeKB := BUF_SIZE_DEFAULT div 1024;
+          profBufSize := LIni.ReadInteger('Output','BufSizeKB',LBufSizeKB);
+          if (profBufSize >= LBufSizeKB) and (profBufSize < 1024 * 1024 {1 GB}) then
+          begin
+            profBufSize := profBufSize * 1024;
+          end else
+          begin
+            MessageBox(0, PChar(Format('Invalid BufSizeKB value: %d, fallback to the default size %d KB',
+              [profBufSize, LBufSizeKB])), 'GpProfile', MB_OK + MB_ICONERROR);
+            profBufSize := BUF_SIZE_DEFAULT;
+          end;
+
+          prfDisabled := false;
         end;
       end;
     finally
@@ -604,10 +614,9 @@ begin
       prfName             := CombineNames(prfModuleName, 'prf');
       if profPrfOutputFile <> '' then
         prfName := profPrfOutputFile + '.prf';
-      GetMem(prfBuf,BUF_SIZE);
+      GetMem(prfBuf,profBufSize);
       Win32Check(prfBuf <> nil);
       prfBufOffs          := 0;
-      FillChar(prfBuf^, BUF_SIZE, 0);
       InitializeCriticalSection(prfLock);
       prfFile := CreateFile(PChar(prfName), GENERIC_WRITE, 0, nil, CREATE_ALWAYS,
                             FILE_ATTRIBUTE_NORMAL or FILE_FLAG_SEQUENTIAL_SCAN, 0);
@@ -690,9 +699,10 @@ end; { WriteCalibration }
 
 procedure Finalize;
 begin
-  FlushFile;
+  if prfBufOffs > 0 then
+    FlushFile;
   Win32Check(CloseHandle(prfFile));
-  FreeMem(prfBuf, BUF_SIZE);
+  FreeMem(prfBuf);
   prfThreads.Free;
   prfThreadsInfo.free;
   DeleteCriticalSection(prfLock);
