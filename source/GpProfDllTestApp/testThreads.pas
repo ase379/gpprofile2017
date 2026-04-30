@@ -34,20 +34,29 @@ begin
 end;
 
 procedure TTestThread.Execute;
-var lPointer : Pointer;
+var
+  lPointer: Pointer;
+  lCtx: IGpProfContext;
+  lOuterScope: IMeasurePointScope;
+  lInnerScope: IMeasurePointScope;
 begin
-  NameThreadForDebugging('AwesomeThread', self.ThreadID);
-  var lOuterScope := GpProfDllClient.CreateMeasurePointScope('MP_TestThreadExecuteOuter');
-  NameThreadForDebugging('AwesomeThread-UnicodeChars-☺☼d156exÈ', self.ThreadID);
-  var lInnerScope := GpProfDllClient.CreateMeasurePointScope('MP_TestThreadExecuteInner');
-  self.namethreadfordebugging('AwesomeThread2-SelfNameReplacement', self.ThreadID);
-  TThread.NameThreadForDebugging('AwesomeThread3-TThreadReplacement');
-  Sleep(1000);
-  GetMem(lPointer, 1024);
-  lInnerScope := nil;
-  Sleep(1000);
-  FreeMem(lPointer);
-  lOuterScope := nil;
+  lCtx := AcquireGpProfContext;
+  try
+    if Assigned(lCtx) then lCtx.NameThread('AwesomeThread', self.ThreadID);
+    if Assigned(lCtx) then lOuterScope := lCtx.CreateMeasurePointScope('MP_TestThreadExecuteOuter');
+    if Assigned(lCtx) then lCtx.NameThread('AwesomeThread-UnicodeChars-☺☼d156exÈ', self.ThreadID);
+    if Assigned(lCtx) then lInnerScope := lCtx.CreateMeasurePointScope('MP_TestThreadExecuteInner');
+    self.namethreadfordebugging('AwesomeThread2-SelfNameReplacement', self.ThreadID);
+    TThread.NameThreadForDebugging('AwesomeThread3-TThreadReplacement');
+    Sleep(1000);
+    GetMem(lPointer, 1024);
+    lInnerScope := nil;
+    Sleep(1000);
+    FreeMem(lPointer);
+    lOuterScope := nil;
+  finally
+    DisposeGpProfContext(lCtx);
+  end;
   inherited;
 end;
 
