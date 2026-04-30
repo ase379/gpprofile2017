@@ -28,7 +28,9 @@ uses
   GpProf in '..\include\GpProf.pas',
   GpProfH in '..\include\GpProfH.pas',
   GpProfCommon in '..\include\GpProfCommon.pas',
-  testGpProfDll in 'testGpProfDll.pas';
+  GpProfDllClient in '..\include\GpProfDllClient.pas',
+  testGpProfDll in 'testGpProfDll.pas',
+  testGpProfDllContext in 'testGpProfDllContext.pas';
 
 begin
 {$IFDEF USE_DUNITX_GUI}

@@ -111,7 +111,9 @@
         <DCCReference Include="..\include\GpProf.pas"/>
         <DCCReference Include="..\include\GpProfH.pas"/>
         <DCCReference Include="..\include\GpProfCommon.pas"/>
+        <DCCReference Include="..\include\GpProfDllClient.pas"/>
         <DCCReference Include="testGpProfDll.pas"/>
+        <DCCReference Include="testGpProfDllContext.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>
