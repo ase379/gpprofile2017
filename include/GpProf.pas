@@ -98,7 +98,7 @@ type
   PTLElements = ^TTLElements;
   TTLElements = array [0..0] of TTLEl;
 
-  TThreadList = class
+  TThreadIdList = class
   private
     tlItems: PTLElements;
     tlCount: Cardinal;
@@ -132,7 +132,7 @@ var
   prfRunning     : boolean;
   prfLastTick    : TLargeInteger;
   prfOnlyThread  : Cardinal;
-  prfThreads     : TThreadList;
+  prfThreads     : TThreadIdList;
   prfThreadsInfo : TThreadInformationList;
   prfThreadBytes : integer;
   prfMaxThreadNum: Cardinal;
@@ -449,9 +449,9 @@ begin
   end;
 end; { NameThreadForDebugging }
 
-{ TThreadList }
+{ TThreadIdList }
 
-constructor TThreadList.Create;
+constructor TThreadIdList.Create;
 begin
   inherited Create;
   tlCount := 0;
@@ -459,15 +459,15 @@ begin
   tlItems := nil;
   tlLast := 0;
   tlLastR := 0;
-end; { TThreadList.Create }
+end; { TThreadIdList.Create }
 
-destructor TThreadList.Destroy;
+destructor TThreadIdList.Destroy;
 begin
   if tlItems <> nil then FreeMem(tlItems);
   inherited Destroy;
-end; { TThreadList.Destroy }
+end; { TThreadIdList.Destroy }
 
-function TThreadList.Remap(const aThreadId: Cardinal): integer;
+function TThreadIdList.Remap(const aThreadId: Cardinal): integer;
 var
   LRemap : Cardinal;
   LInsert: Cardinal;
@@ -497,9 +497,9 @@ begin
     tlLastR := LRemap;
     Result  := LRemap;
   end;
-end; { TThreadList.Remap }
+end; { TThreadIdList.Remap }
 
-function TThreadList.Search(const aThreadId: Cardinal; var remap, insertIdx: Cardinal): boolean;
+function TThreadIdList.Search(const aThreadId: Cardinal; var remap, insertIdx: Cardinal): boolean;
 var
   l, m, h: Cardinal;
   mid    : Cardinal;
@@ -525,7 +525,7 @@ begin
     if aThreadId > mid then insertIdx := m + 1
                     else insertIdx := m;
   end;
-end; { TThreadList.Search }
+end; { TThreadIdList.Search }
 
 procedure ReadIncSettings;
 var
@@ -590,7 +590,7 @@ begin
       prfRunning          := profProfilingAutostart;
       prfCounter          := 0;
       prfOnlyThread       := 0;
-      prfThreads          := TThreadList.Create;
+      prfThreads          := TThreadIdList.Create;
       prfThreadsInfo      := TThreadInformationList.Create;
       prfMaxThreadNum     := 256;
       prfThreadBytes      := 1;
