@@ -463,26 +463,20 @@ end; { TThreadList.Create }
 
 destructor TThreadList.Destroy;
 begin
-  if tlItems <> nil then Dispose(tlItems);
+  if tlItems <> nil then FreeMem(tlItems);
   inherited Destroy;
 end; { TThreadList.Destroy }
 
 function TThreadList.Remap(const aThreadId: Cardinal): integer;
 var
-  LRemap   : Cardinal;
-  LInsert  : Cardinal;
-  LTmpItems: PTLElements;
+  LRemap : Cardinal;
+  LInsert: Cardinal;
 begin
   if aThreadId = tlLast then
     Result := tlLastR
   else if not Search(aThreadId, LRemap, LInsert) then begin
-    // reallocate tlItems
-    GetMem(LTmpItems, SizeOf(TTLEl)*(tlCount+1));
-    if tlItems <> nil then begin
-      Move(tlItems^, LTmpItems^, Sizeof(TTLEl)*tlCount);
-      FreeMem(tlItems);
-    end;
-    tlItems := LTmpItems;
+    // grow tlItems
+    ReallocMem(tlItems, SizeOf(TTLEl)*(tlCount+1));
     // get new remap number
     Inc(tlRemap);
     if byte(tlRemap) = 0 then Inc(tlRemap);
