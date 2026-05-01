@@ -390,7 +390,7 @@ begin
   {$IFDEF HAS_NAME_THREAD_FOR_DEBUGGING}
   TThread.NameThreadForDebugging(aThreadName, aThreadId);
   {$ELSE}
-  NameThreadForDebugging(aThreadName, aThreadId);
+  GpProfCommon.NameThreadForDebugging(aThreadName, aThreadId);
   {$ENDIF}
   if not prfDisabled then
   begin
