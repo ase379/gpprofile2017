@@ -424,7 +424,7 @@ end; { TThreadIdList.Destroy }
 
 function TThreadIdList.GetItem(aIndex: Integer): TTLEl;
 begin
-  if aIndex < Integer(tlCount) then
+  if (aIndex >= 0) and (aIndex < Integer(tlCount)) then
     Result := tlItems^[aIndex]
   else
     raise Exception.CreateFmt(Self.ClassName + ': Invalid Item Index %d (Count = %d)', [aIndex, tlCount]);
@@ -701,7 +701,8 @@ begin
       WriteTag(PR_END_THREAD_ID_LIST);
     end;
 
-    FlushFile;
+    if prfBufOffs > 0 then
+      FlushFile;
   finally
     LeaveCriticalSection(prfLock);
   end;
