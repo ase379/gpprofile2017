@@ -94,11 +94,13 @@ type
     tlLast : Cardinal;
     tlLastR: Cardinal;
     function Search(const aThreadId: Cardinal; var remap, insertIdx: Cardinal): boolean;
+    function GetItem(aIndex: Integer): TTLEl;
   public
     constructor Create;
     destructor  Destroy; override;
     function    Remap(const aThreadId: Cardinal): integer;
     property    Count: Cardinal read tlCount;
+    property    Items[aIndex: Integer]: TTLEl read GetItem;
   end;
 
   TThreadInformation = class
@@ -420,6 +422,14 @@ begin
   inherited Destroy;
 end; { TThreadIdList.Destroy }
 
+function TThreadIdList.GetItem(aIndex: Integer): TTLEl;
+begin
+  if aIndex < Integer(tlCount) then
+    Result := tlItems^[aIndex]
+  else
+    raise Exception.CreateFmt(Self.ClassName + ': Invalid Item Index %d (Count = %d)', [aIndex, tlCount]);
+end; { TThreadIdList.GetItem }
+
 function TThreadIdList.Remap(const aThreadId: Cardinal): integer;
 var
   LRemap : Cardinal;
@@ -643,7 +653,6 @@ end; { WriteCalibration }
 
 procedure Finalize;
 begin
-  FlushFile;
   Win32Check(CloseHandle(prfFile));
   FreeMem(prfBuf, BUF_SIZE);
   prfThreads.Free;
@@ -655,22 +664,47 @@ procedure ProfilerTerminate;
 var
   i: integer;
   LItem: TThreadInformation;
+  LThreadsIdItem: TTLEl;
 begin
   if not prfInitialized then Exit;
+
   ProfilerStop;
   prfInitialized := False;
-  FlushCounter;
-  WriteTag(PR_ENDDATA);
 
-  WriteTag(PR_START_THREADINFO);
-  WriteCardinal(prfThreadsInfo.count);
-  for i := 0 to prfThreadsInfo.count-1 do
-  begin
-    LItem := TThreadInformation(prfThreadsInfo[i]);
-    WriteCardinal(LItem.ID);
-    WriteUtf8String(LItem.Name);
+  EnterCriticalSection(prfLock);
+  try
+    FlushCounter;
+    WriteTag(PR_ENDDATA);
+
+    // write compressed thread ids
+    if profCompressThreads then
+    begin
+      WriteTag(PR_START_THREAD_ID_LIST);
+      WriteCardinal(prfThreads.Count);
+      for i := 0 to prfThreads.Count-1 do
+      begin
+        LThreadsIdItem := prfThreads.Items[i];
+        WriteCardinal(LThreadsIdItem.tleThread);
+        WriteCardinal(LThreadsIdItem.tleRemap);
+      end;
+      WriteInt(PR_END_THREAD_ID_LIST);
+    end;
+
+    // write thread names
+    WriteTag(PR_START_THREADINFO);
+    WriteCardinal(prfThreadsInfo.count);
+    for i := 0 to prfThreadsInfo.count-1 do
+    begin
+      LItem := TThreadInformation(prfThreadsInfo[i]);
+      WriteCardinal(LItem.ID);
+      WriteUtf8String(LItem.Name);
+    end;
+    WriteInt(PR_END_THREADINFO);
+
+    FlushFile;
+  finally
+    LeaveCriticalSection(prfLock);
   end;
-  WriteInt(PR_END_THREADINFO);
 
   Finalize;
 end; { ProfilerTerminate }
