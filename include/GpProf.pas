@@ -19,25 +19,12 @@ interface
 {$WARN SYMBOL_PLATFORM OFF}
 {$WARN SYMBOL_DEPRECATED OFF}
 
-{$IF CompilerVersion > 19}
-  {$DEFINE HAS_NAME_THREAD_FOR_DEBUGGING}
-  {$DEFINE HAS_THREAD_ID_TYPE}
-{$IFEND}
+{$INCLUDE GpProf.inc}
 
 (******************************************************************************)
 
-{$IFNDEF HAS_THREAD_ID_TYPE}
-type
-  TThreadID = Cardinal;
-{$ENDIF}
-
-{$IF CompilerVersion < 19}
-type
-  // fix Delphi 2007 invalid type declarations
-  // https://blog.dummzeuch.de/2018/09/08/nativeint-nativeuint-type-in-various-delphi-versions/
-  NativeInt = Integer;
-  NativeUInt = Cardinal;
-{$IFEND}
+uses
+  GpProfCommonTypes;
 
 type
   /// <summary>
@@ -76,6 +63,7 @@ uses
   SysUtils,
   IniFiles,
   GpProfH,
+  GpProfLists,
   GpProfCommon;
 
 const
@@ -90,36 +78,6 @@ type
     destructor Destroy; override;
   end;
 
-  TTLEl = record
-    tleThread: integer;
-    tleRemap : integer;
-  end;
-
-  PTLElements = ^TTLElements;
-  TTLElements = array [0..0] of TTLEl;
-
-  TThreadList = class
-  private
-    tlItems: PTLElements;
-    tlCount: Cardinal;
-    tlRemap: Cardinal;
-    tlLast : Cardinal;
-    tlLastR: Cardinal;
-    function Search(const aThreadId: Cardinal; var remap, insertIdx: Cardinal): boolean;
-  public
-    constructor Create;
-    destructor  Destroy; override;
-    function    Remap(const aThreadId: Cardinal): integer;
-    property    Count: Cardinal read tlCount;
-  end;
-
-  TThreadInformation = class
-    ID : cardinal;
-    Name : UTF8String;
-  end;
-
-  TThreadInformationList = TObjectList;
-
 var
   prfFile        : THandle;
   prfBuf         : pointer;
@@ -132,7 +90,7 @@ var
   prfRunning     : boolean;
   prfLastTick    : TLargeInteger;
   prfOnlyThread  : Cardinal;
-  prfThreads     : TThreadList;
+  prfThreads     : TThreadIdList;
   prfThreadsInfo : TThreadInformationList;
   prfThreadBytes : integer;
   prfMaxThreadNum: Cardinal;
@@ -236,11 +194,6 @@ end;
 procedure WriteProcID(id: integer); inline;
 begin
   Transmit(id, profProcSize);
-end;
-
-procedure WriteGuid(const guid: TGUID); inline;
-begin
-  Transmit(guid, SizeOf(TGUID));
 end;
 
 procedure WriteBool(bool: boolean); inline;
@@ -397,44 +350,13 @@ begin
 end; { NameThreadForDebugging }
 {$ENDIF}
 
-{$IFNDEF HAS_NAME_THREAD_FOR_DEBUGGING}
-procedure SetCurrentThreadName(const AName: AnsiString; AThreadID: DWORD);
-type
-  {$A8}
-  TThreadNameInfo = record
-    dwType     : DWORD;   // must be 0x1000
-    szName     : LPCSTR;  // pointer to name (in user addr space)
-    dwThreadID : DWORD;   // thread ID (-1 indicates caller thread)
-    dwFlags    : DWORD;   // reserved for future use, must be zero
-  end;
-const
-  MS_VC_EXCEPTION: DWORD = $406D1388;
-var
-  LInfo: TThreadNameInfo;
-begin
-  // This code is extremely strange, but it's the documented way of doing it
-  // https://learn.microsoft.com/en-us/visualstudio/debugger/tips-for-debugging-threads
-
-  LInfo.dwType     := $1000;
-  LInfo.szName     := PAnsiChar(AName);
-  LInfo.dwThreadID := AThreadID;
-  LInfo.dwFlags    := 0;
-
-  try
-    RaiseException(MS_VC_EXCEPTION, 0, SizeOf(LInfo) div SizeOf(ULONG_PTR), @LInfo);
-  except
-    // do nothing
-  end;
-end;
-{$ENDIF}
-
 procedure NameThreadForDebugging(const AThreadName: string; AThreadID: TThreadID);
 var LEntry : TThreadInformation;
 begin
   {$IFDEF HAS_NAME_THREAD_FOR_DEBUGGING}
   TThread.NameThreadForDebugging(aThreadName, aThreadId);
   {$ELSE}
-  SetCurrentThreadName(AnsiString(aThreadName), aThreadId);
+  GpProfCommon.NameThreadForDebugging(aThreadName, aThreadId);
   {$ENDIF}
   if not prfDisabled then
   begin
@@ -444,90 +366,6 @@ begin
     prfThreadsInfo.Add(LEntry);
   end;
 end; { NameThreadForDebugging }
-
-{ TThreadList }
-
-constructor TThreadList.Create;
-begin
-  inherited Create;
-  tlCount := 0;
-  tlRemap := 0;
-  tlItems := nil;
-  tlLast := 0;
-  tlLastR := 0;
-end; { TThreadList.Create }
-
-destructor TThreadList.Destroy;
-begin
-  if tlItems <> nil then Dispose(tlItems);
-  inherited Destroy;
-end; { TThreadList.Destroy }
-
-function TThreadList.Remap(const aThreadId: Cardinal): integer;
-var
-  LRemap   : Cardinal;
-  LInsert  : Cardinal;
-  LTmpItems: PTLElements;
-begin
-  if aThreadId = tlLast then
-    Result := tlLastR
-  else if not Search(aThreadId, LRemap, LInsert) then begin
-    // reallocate tlItems
-    GetMem(LTmpItems, SizeOf(TTLEl)*(tlCount+1));
-    if tlItems <> nil then begin
-      Move(tlItems^, LTmpItems^, Sizeof(TTLEl)*tlCount);
-      FreeMem(tlItems);
-    end;
-    tlItems := LTmpItems;
-    // get new remap number
-    Inc(tlRemap);
-    if byte(tlRemap) = 0 then Inc(tlRemap);
-    // insert new element
-    if LInsert < tlCount then
-      Move(tlItems^[LInsert], tlItems^[LInsert + 1], (tlCount-LInsert)*SizeOf(TTLEl));
-    with tlItems^[LInsert] do begin
-      tleThread := aThreadId;
-      tleRemap  := tlRemap;
-    end;
-    Inc(tlCount);
-    tlLast  := aThreadId;
-    tlLastR := tlRemap;
-    Result  := tlRemap;
-  end
-  else begin
-    tlLast  := aThreadId;
-    tlLastR := LRemap;
-    Result  := LRemap;
-  end;
-end; { TThreadList.Remap }
-
-function TThreadList.Search(const aThreadId: Cardinal; var remap, insertIdx: Cardinal): boolean;
-var
-  l, m, h: Cardinal;
-  mid    : Cardinal;
-begin
-  if tlCount = 0 then begin
-    insertIdx := 0;
-    Result := False;
-  end
-  else begin
-    L := 0;
-    H := tlCount - 1;
-    repeat
-      m := L + (H - L) div 2;
-      mid := tlItems^[m].tleThread;
-      if aThreadId = mid then begin
-        remap := tlItems^[m].tleRemap;
-        Result := True;
-        Exit;
-      end else if aThreadId < mid then H := m - 1
-      else L := m + 1;
-    until L > H;
-    Result := False;
-    if aThreadId > mid then insertIdx := m + 1
-                    else insertIdx := m;
-  end;
-end; { TThreadList.Search }
 
 procedure ReadIncSettings;
 var
@@ -606,7 +444,7 @@ begin
       prfRunning          := profProfilingAutostart;
       prfCounter          := 0;
       prfOnlyThread       := 0;
-      prfThreads          := TThreadList.Create;
+      prfThreads          := TThreadIdList.Create;
       prfThreadsInfo      := TThreadInformationList.Create;
       prfMaxThreadNum     := 256;
       prfThreadBytes      := 1;
@@ -699,8 +537,6 @@ end; { WriteCalibration }
 
 procedure Finalize;
 begin
-  if prfBufOffs > 0 then
-    FlushFile;
   Win32Check(CloseHandle(prfFile));
   FreeMem(prfBuf);
   prfThreads.Free;
@@ -712,22 +548,48 @@ procedure ProfilerTerminate;
 var
   i: integer;
   LItem: TThreadInformation;
+  LThreadsIdItem: TTLEl;
 begin
   if not prfInitialized then Exit;
+
   ProfilerStop;
   prfInitialized := False;
-  FlushCounter;
-  WriteTag(PR_ENDDATA);
 
-  WriteTag(PR_START_THREADINFO);
-  WriteCardinal(prfThreadsInfo.count);
-  for i := 0 to prfThreadsInfo.count-1 do
-  begin
-    LItem := TThreadInformation(prfThreadsInfo[i]);
-    WriteCardinal(LItem.ID);
-    WriteUtf8String(LItem.Name);
+  EnterCriticalSection(prfLock);
+  try
+    FlushCounter;
+    WriteTag(PR_ENDDATA);
+
+    // write thread names
+    WriteTag(PR_START_THREADINFO);
+    WriteCardinal(prfThreadsInfo.count);
+    for i := 0 to prfThreadsInfo.count-1 do
+    begin
+      LItem := TThreadInformation(prfThreadsInfo[i]);
+      WriteCardinal(LItem.ID);
+      WriteUtf8String(LItem.Name);
+    end;
+    WriteTag(PR_END_THREADINFO);
+
+    // write compressed thread ids
+    if profCompressThreads then
+    begin
+      WriteTag(PR_START_THREAD_ID_LIST);
+      WriteCardinal(prfThreads.Count);
+      for i := 0 to prfThreads.Count-1 do
+      begin
+        LThreadsIdItem := prfThreads.Items[i];
+        WriteCardinal(LThreadsIdItem.tleThread);
+        WriteCardinal(LThreadsIdItem.tleRemap);
+      end;
+      WriteTag(PR_END_THREAD_ID_LIST);
+    end;
+
+    if prfBufOffs > 0 then
+      FlushFile;
+  finally
+    LeaveCriticalSection(prfLock);
   end;
-  WriteInt(PR_END_THREADINFO);
 
   Finalize;
 end; { ProfilerTerminate }

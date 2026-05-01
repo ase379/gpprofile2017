@@ -61,6 +61,12 @@ type
   end;
 
   TResults = class
+  private type
+    TThreadInfoArray = array of record
+      tiThreadId : Cardinal;
+      tiName     : AnsiString;
+    end;
+    TThreadIdMap = TDictionary<integer, integer>;
   private
     resFile           : TGpHugeFile;
     resName           : String;
@@ -95,7 +101,9 @@ type
     procedure   LoadTables;
     procedure   LoadCalibration;
     procedure   LoadData(callback: TProgressCallback);
-    procedure   LoadThreadInformation();
+    procedure   LoadThreads;
+    function    LoadThreadIdList: TThreadIdMap;
+    function    LoadThreadInformationList: TThreadInfoArray;
     procedure   LoadDigest(callback: TProgressCallback);
     procedure   ReadString(var str: AnsiString);
     procedure   ReadShortstring(var str: AnsiString);
@@ -202,7 +210,7 @@ begin
       LoadTables;
       if Version > 2 then LoadCalibration;
       LoadData(callback);
-      LoadThreadInformation();
+      LoadThreads;
       RecalcTimes;
     end;
   finally
@@ -441,20 +449,87 @@ begin
       // destroy proxy object
       ExitMeasurePointPkt(pkt, mempkt);
     end
-    else 
+    else
       raise Exception.Create('gppResults.TResults.LoadData: Invalid tag ('+pkt.rpTag.ToString()+').');
   end;
 end; { TResults.LoadData }
 
-procedure TResults.LoadThreadInformation;
+procedure TResults.LoadThreads;
+var
+  i, id: integer;
+begin
+  var LThreadInfo := LoadThreadInformationList;
+
+  if resCompressThreads then
+  begin
+    var LRemap := LoadThreadIdList;
+    if LRemap <> nil then
+    try
+      // remap indexes back to the ThreadIDs
+      for i := Low(resThreads) to High(resThreads) do
+      begin
+        if LRemap.TryGetValue(resThreads[i].teThread,id) then
+          resThreads[i].teThread := id;
+      end;
+    finally
+      LRemap.Free;
+    end;
+  end;
+
+  for var LInfo in LThreadInfo do
+  begin
+    i := ThLocate(LInfo.tiThreadId);
+    if i <> -1 then
+    begin
+      if Length(resThreads[i].teName) > 0 then
+        resThreads[i].teName := resThreads[i].teName + '; ';
+      resThreads[i].teName := resThreads[i].teName + LInfo.tiName;
+    end;
+  end;
+end;
+
+function TResults.LoadThreadIdList: TThreadIdMap;
+var
+  LTag : byte;
+  LPos : HugeInt;
+  LElementCount : Cardinal;
+  LThreadID : Cardinal;
+  LThreadIndex : Cardinal;
+  i : cardinal;
+begin
+  Result := nil;
+  LPos := resFile.FilePos;
+  if LPos = resFile.FileSize then
+    exit;
+  ReadTag(LTag);
+  if LTag <> PR_START_THREAD_ID_LIST then
+  begin
+    resFile.Seek(LPos);
+    exit;
+  end;
+  Result := TThreadIdMap.Create;
+  ReadCardinal(LElementCount);
+  if LElementCount > 0 then
+  begin
+    for i := 0 to LElementCount-1 do
+    begin
+      ReadCardinal(LThreadID);
+      ReadCardinal(LThreadIndex);
+      Result.AddOrSetValue(LThreadIndex,LThreadID);
+    end;
+  end;
+  ReadTag(LTag);
+  if LTag <> PR_END_THREAD_ID_LIST then
+    raise Exception.Create('Found PR_START_THREAD_ID_LIST without PR_END_THREAD_ID_LIST');
+end; { TResults.LoadThreadIdList }
+
+function TResults.LoadThreadInformationList: TThreadInfoArray;
 var LTag : byte;
     LPos : HugeInt;
     LElementCount : Cardinal;
-    LThreadID : Cardinal;
-    LThreadName : AnsiString;
     i : cardinal;
-    k : integer;
 begin
+  Result := nil;
   LPos := resFile.FilePos;
   if LPos = resFile.FileSize then
     exit;
@@ -467,24 +542,17 @@ begin
   ReadCardinal(LElementCount);
   if LElementCount > 0 then
   begin
+    SetLength(Result,LElementCount);
     for i := 0 to LElementCount-1 do
     begin
-      ReadCardinal(LThreadID);
-      ReadAnsiString(LThreadName);
-      k := ThLocate(LThreadID);
-      if k <> -1 then
-      begin
-        if Length(resThreads[k].teName) > 0 then
-          resThreads[k].teName := resThreads[k].teName + '; ';
-        resThreads[k].teName := resThreads[k].teName + LThreadName;
-      end;
+      ReadCardinal(Result[I].tiThreadId);
+      ReadAnsiString(Result[I].tiName);
     end;
   end;
   ReadTag(LTag);
   if lTag <> PR_END_THREADINFO then
     raise Exception.Create('Found PR_START_THREADINFO without PR_END_THREADINFO');
-end; { TResults.LoadThreadInformation }
-
+end; { TResults.LoadThreadInformationList }
 
 procedure TResults.EnterProcPkt(const pkt: TResPacket; const mempkt: TResMemPacket);
 var
