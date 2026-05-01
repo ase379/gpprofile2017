@@ -77,6 +77,7 @@ type
     pnlSymbolCommands: TPanel;
     pnlSymbolsDefine: TPanel;
     cbMemWorkingSetEnabled: TCheckBox;
+    cbShowDirStructure: TCheckBox;
     procedure FormKeyPress(Sender: TObject; var Key: Char);
     procedure FormCreate(Sender: TObject);
     procedure btnAddFromFolderClick(Sender: TObject);
@@ -126,7 +127,7 @@ type
     function  ExtractAllDefines: string;
 
     function ExecuteGlobalSettings(): boolean;
-    function ExecuteProjectSettings(const aShowAll: boolean): boolean;
+    function ExecuteProjectSettings(const aShowAllFolders, aShowDirStructure: boolean): boolean;
     property IsGlobalPreferenceDialog : boolean read fIsGlobalPreferenceDialog write fIsGlobalPreferenceDialog;
     property DefinesChanged : boolean read fDefinesChanged write fDefinesChanged;
   end;
@@ -555,6 +556,7 @@ begin
         else if TGlobalPreferences.SpeedSize > tbSpeedSize.Max then TGlobalPreferences.SpeedSize := tbSpeedSize.Max;
         tbSpeedSize.Position          := TGlobalPreferences.SpeedSize;
         cbShowAllFolders.Checked      := TGlobalPreferences.ShowAllFolders;
+        cbShowDirStructure.Checked    := TGlobalPreferences.ShowDirStructure;
         cbProfilingAutostart.Checked  := TGlobalPreferences.ProfilingAutostart;
         cbInstrumentAssembler.Checked := TGlobalPreferences.InstrumentAssembler;
         cbMakeBackupOfInstrumentedFile.Checked := TGlobalPreferences.MakeBackupOfInstrumentedFile;
@@ -607,6 +609,7 @@ begin
   if TGlobalPreferences.SpeedSize < tbSpeedSize.Min then TGlobalPreferences.SpeedSize := tbSpeedSize.Min
   else if TGlobalPreferences.SpeedSize > tbSpeedSize.Max then TGlobalPreferences.SpeedSize := tbSpeedSize.Max;
   cbShowAllFolders.Checked     := TGlobalPreferences.ShowAllFolders;
+  cbShowDirStructure.Checked   := TGlobalPreferences.ShowDirStructure;
   edtPerformanceOutputFilename.text := TGlobalPreferences.PrfFilenameMakro;
   cbStandardDefines.Checked    := TGlobalPreferences.StandardDefines;
   cbDisableUserDefines.Checked := TGlobalPreferences.DisableUserDefines;
@@ -639,6 +642,7 @@ begin
     TGlobalPreferences.ExcludedUnits      := memoExclUnits.Text;
     TGlobalPreferences.SpeedSize          := tbSpeedSize.Position;
     TGlobalPreferences.ShowAllFolders     := cbShowAllFolders.Checked;
+    TGlobalPreferences.ShowDirStructure   := cbShowDirStructure.Checked;
     TGlobalPreferences.PrfFilenameMakro   := edtPerformanceOutputFilename.text;
 
     TGlobalPreferences.StandardDefines    := cbStandardDefines.Checked;
@@ -654,7 +658,7 @@ begin
   end;
 end;
 
-function TfrmPreferences.ExecuteProjectSettings(const aShowAll: boolean): boolean;
+function TfrmPreferences.ExecuteProjectSettings(const aShowAllFolders, aShowDirStructure: boolean): boolean;
 var
   projMarker   : integer;
   projSpeedSize: integer;
@@ -673,10 +677,11 @@ begin
     else if projSpeedSize > tbSpeedSize.Max then projSpeedSize := tbSpeedSize.Max;
     tbSpeedSize.Position := projSpeedSize;
     ReselectCompilerVersion(TSessionData.selectedDelphi);
-    cbShowAllFolders.Checked           := aShowAll;
+    cbShowAllFolders.Checked           := aShowAllFolders;
+    cbShowDirStructure.Checked         := aShowDirStructure;
     edtPerformanceOutputFilename.text  := TGlobalPreferences.GetProjectPref('PrfFilenameMakro',TGlobalPreferences.PrfFilenameMakro);
     edtPerformanceOutputFilename.text := ResolvePrfProjectPlaceholders(edtPerformanceOutputFilename.text);
-  
+
     cbProfilingAutostart.Checked       := TGlobalPreferences.GetProjectPref('ProfilingAutostart',TGlobalPreferences.ProfilingAutostart);
     cbMemWorkingSetEnabled.Checked       := TGlobalPreferences.GetProjectPref('ProfilingMemSupport',TGlobalPreferences.ProfilingMemSupport);
     cbInstrumentAssembler.Checked      := TGlobalPreferences.GetProjectPref('InstrumentAssembler',TGlobalPreferences.InstrumentAssembler);
@@ -700,12 +705,13 @@ begin
     Left := frmMain.Left+((frmMain.Width-Width) div 2);
     Top := frmMain.Top+((frmMain.Height-Height) div 2);
     oldDefines := ExtractDefines;
-    result := ShowModal = mrOK; 
-    if result then 
+    result := ShowModal = mrOK;
+    if result then
     begin
       TGlobalPreferences.SetProjectPref('MarkerStyle',cbxMarker.ItemIndex);
       TGlobalPreferences.SetProjectPref('SpeedSize',tbSpeedSize.Position);
       TGlobalPreferences.SetProjectPref('ShowAllFolders',cbShowAllFolders.Checked);
+      TGlobalPreferences.SetProjectPref('ShowDirStructure',cbShowDirStructure.Checked);
       TGlobalPreferences.SetProjectPref('PrfFilenameMakro',edtPerformanceOutputFilename.text);
       TGlobalPreferences.SetProjectPref('StandardDefines',cbStandardDefines.Checked);
       TGlobalPreferences.SetProjectPref('DisableUserDefines',cbDisableUserDefines.Checked);
