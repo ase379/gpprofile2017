@@ -19,10 +19,7 @@ interface
 {$WARN SYMBOL_PLATFORM OFF}
 {$WARN SYMBOL_DEPRECATED OFF}
 
-{$IF CompilerVersion > 19}
-  {$DEFINE HAS_NAME_THREAD_FOR_DEBUGGING}
-  {$DEFINE HAS_THREAD_ID_TYPE}
-{$IFEND}
+{$INCLUDE GpProf.inc}
 
 (******************************************************************************)
 
@@ -242,11 +239,6 @@ begin
   Transmit(id, profProcSize);
 end;
 
-procedure WriteGuid(const guid: TGUID); inline;
-begin
-  Transmit(guid, SizeOf(TGUID));
-end;
-
 procedure WriteBool(bool: boolean); inline;
 begin
   Transmit(bool, 1);
@@ -401,44 +393,13 @@ begin
 end; { NameThreadForDebugging }
 {$ENDIF}
 
-{$IFNDEF HAS_NAME_THREAD_FOR_DEBUGGING}
-procedure SetCurrentThreadName(const AName: AnsiString; AThreadID: DWORD);
-type
-  {$A8}
-  TThreadNameInfo = record
-    dwType     : DWORD;   // must be 0x1000
-    szName     : LPCSTR;  // pointer to name (in user addr space)
-    dwThreadID : DWORD;   // thread ID (-1 indicates caller thread)
-    dwFlags    : DWORD;   // reserved for future use, must be zero
-  end;
-const
-  MS_VC_EXCEPTION: DWORD = $406D1388;
-var
-  LInfo: TThreadNameInfo;
-begin
-  // This code is extremely strange, but it's the documented way of doing it
-  // https://learn.microsoft.com/en-us/visualstudio/debugger/tips-for-debugging-threads
-
-  LInfo.dwType     := $1000;
-  LInfo.szName     := PAnsiChar(AName);
-  LInfo.dwThreadID := AThreadID;
-  LInfo.dwFlags    := 0;
-
-  try
-    RaiseException(MS_VC_EXCEPTION, 0, SizeOf(LInfo) div SizeOf(ULONG_PTR), @LInfo);
-  except
-    // do nothing
-  end;
-end;
-{$ENDIF}
-
 procedure NameThreadForDebugging(const AThreadName: string; AThreadID: TThreadID);
 var LEntry : TThreadInformation;
 begin
   {$IFDEF HAS_NAME_THREAD_FOR_DEBUGGING}
   TThread.NameThreadForDebugging(aThreadName, aThreadId);
   {$ELSE}
-  SetCurrentThreadName(AnsiString(aThreadName), aThreadId);
+  NameThreadForDebugging(aThreadName, aThreadId);
   {$ENDIF}
   if not prfDisabled then
   begin

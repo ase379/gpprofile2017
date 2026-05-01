@@ -2,11 +2,13 @@ unit GpProfCommon;
 
 interface
 
-{$IF CompilerVersion > 19}
-  {$DEFINE HAS_UINT_TO_STR}
-{$IFEND}
+{$INCLUDE GpProf.inc}
 
 function ResolvePrfRuntimePlaceholders(const aFilenameWithPh: string): string;
+
+{$IFNDEF HAS_NAME_THREAD_FOR_DEBUGGING}
+procedure NameThreadForDebugging(const AThreadName: string; AThreadID: Cardinal);
+{$ENDIF}
 
 implementation
 
@@ -91,6 +93,40 @@ begin
   if HasPrfPlaceholder(result,'$(ModulePath)') then
     ReplacePrfPlaceholders(result,'$(ModulePath)', ChangeFileExt(GetCurrentModulePath(),''));
 end;
+
+{$IFNDEF HAS_NAME_THREAD_FOR_DEBUGGING}
+procedure NameThreadForDebugging(const AThreadName: string; AThreadID: Cardinal);
+type
+  {$A8}
+  TThreadNameInfo = record
+    dwType     : DWORD;   // must be 0x1000
+    szName     : LPCSTR;  // pointer to name (in user addr space)
+    dwThreadID : DWORD;   // thread ID (-1 indicates caller thread)
+    dwFlags    : DWORD;   // reserved for future use, must be zero
+  end;
+const
+  MS_VC_EXCEPTION: DWORD = $406D1388;
+var
+  LName: AnsiString;
+  LInfo: TThreadNameInfo;
+begin
+  LName := AnsiString(AThreadName);
+
+  // This code is extremely strange, but it's the documented way of doing it
+  // https://learn.microsoft.com/en-us/visualstudio/debugger/tips-for-debugging-threads
+
+  LInfo.dwType     := $1000;
+  LInfo.szName     := PAnsiChar(LName);
+  LInfo.dwThreadID := AThreadID;
+  LInfo.dwFlags    := 0;
+
+  try
+    RaiseException(MS_VC_EXCEPTION, 0, SizeOf(LInfo) div SizeOf(ULONG_PTR), @LInfo);
+  except
+    // do nothing
+  end;
+end;
+{$ENDIF}
 
 end.
  
