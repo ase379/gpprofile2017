@@ -43,8 +43,8 @@ const
   CMD_MESSAGE = 'GPPROFILE_COMMAND';
   CMD_DONE    = 0;
 
-  PRF_VERSION   = 4;
-  PRF_VERSION_WITH_MEM   = 5;
+  PRF_VERSION            = 5;
+  PRF_VERSION_WITH_MEM   = PRF_VERSION + 1;
 
 implementation
 
