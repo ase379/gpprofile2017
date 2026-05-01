@@ -4,15 +4,26 @@ interface
 
 {$INCLUDE GpProf.inc}
 
+uses
+  GpProfCommonTypes;
+
 function ResolvePrfRuntimePlaceholders(const aFilenameWithPh: string): string;
 
 {$IFNDEF HAS_NAME_THREAD_FOR_DEBUGGING}
-procedure NameThreadForDebugging(const AThreadName: string; AThreadID: Cardinal);
+procedure NameThreadForDebugging(const AThreadName: string; AThreadID: TThreadID = TThreadID(-1));
+{$ENDIF}
+
+{$IFNDEF HAS_GROW_COLLECTION}
+function GrowCollection(OldCapacity, NewCount: NativeInt): NativeInt;
 {$ENDIF}
 
 implementation
 
-uses Windows, StrUtils, SysUtils, TlHelp32;
+uses
+  Windows,
+  StrUtils,
+  SysUtils,
+  TlHelp32;
 
 function HasPrfPlaceholder(var aText: string; const aKey: string): boolean;
 var
@@ -95,7 +106,7 @@ begin
 end;
 
 {$IFNDEF HAS_NAME_THREAD_FOR_DEBUGGING}
-procedure NameThreadForDebugging(const AThreadName: string; AThreadID: Cardinal);
+procedure NameThreadForDebugging(const AThreadName: string; AThreadID: TThreadID);
 type
   {$A8}
   TThreadNameInfo = record
@@ -125,6 +136,24 @@ begin
   except
     // do nothing
   end;
+end;
+{$ENDIF}
+
+{$IFNDEF HAS_GROW_COLLECTION}
+function GrowCollection(OldCapacity, NewCount: NativeInt): NativeInt;
+begin
+  Result := OldCapacity;
+  repeat
+    if Result > 64 then
+      Result := (Result * 3) div 2
+    else
+      if Result > 8 then
+        Result := Result + 16
+      else
+        Result := Result + 4;
+    if Result < 0 then
+      OutOfMemoryError;
+  until Result >= NewCount;
 end;
 {$ENDIF}
 

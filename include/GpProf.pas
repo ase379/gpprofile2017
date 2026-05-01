@@ -23,18 +23,8 @@ interface
 
 (******************************************************************************)
 
-{$IFNDEF HAS_THREAD_ID_TYPE}
-type
-  TThreadID = Cardinal;
-{$ENDIF}
-
-{$IF CompilerVersion < 19}
-type
-  // fix Delphi 2007 invalid type declarations
-  // https://blog.dummzeuch.de/2018/09/08/nativeint-nativeuint-type-in-various-delphi-versions/
-  NativeInt = Integer;
-  NativeUInt = Cardinal;
-{$IFEND}
+uses
+  GpProfCommonTypes;
 
 type
   /// <summary>
@@ -99,6 +89,7 @@ type
   private
     tlItems: PTLElements;
     tlCount: Cardinal;
+    tlCapacity: Integer;
     tlRemap: Cardinal;
     tlLast : Cardinal;
     tlLastR: Cardinal;
@@ -416,6 +407,7 @@ constructor TThreadIdList.Create;
 begin
   inherited Create;
   tlCount := 0;
+  tlCapacity := 0;
   tlRemap := 0;
   tlItems := nil;
   tlLast := 0;
@@ -432,12 +424,18 @@ function TThreadIdList.Remap(const aThreadId: Cardinal): integer;
 var
   LRemap : Cardinal;
   LInsert: Cardinal;
+  LNewCount: Integer;
 begin
   if aThreadId = tlLast then
     Result := tlLastR
   else if not Search(aThreadId, LRemap, LInsert) then begin
     // grow tlItems
-    ReallocMem(tlItems, SizeOf(TTLEl)*(tlCount+1));
+    LNewCount := tlCount + 1;
+    if LNewCount > tlCapacity then
+    begin
+      tlCapacity := GrowCollection(tlCapacity, LNewCount);
+      ReallocMem(tlItems, SizeOf(TTLEl)*tlCapacity);
+    end;
     // get new remap number
     Inc(tlRemap);
     if byte(tlRemap) = 0 then Inc(tlRemap);
