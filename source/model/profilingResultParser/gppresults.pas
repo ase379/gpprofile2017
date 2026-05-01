@@ -95,6 +95,7 @@ type
     procedure   LoadTables;
     procedure   LoadCalibration;
     procedure   LoadData(callback: TProgressCallback);
+    procedure   LoadThreadIdList;
     procedure   LoadThreadInformation();
     procedure   LoadDigest(callback: TProgressCallback);
     procedure   ReadString(var str: AnsiString);
@@ -202,6 +203,7 @@ begin
       LoadTables;
       if Version > 2 then LoadCalibration;
       LoadData(callback);
+      if (Version > 4) and resCompressThreads then LoadThreadIdList;
       LoadThreadInformation();
       RecalcTimes;
     end;
@@ -445,6 +447,52 @@ begin
       raise Exception.Create('gppResults.TResults.LoadData: Invalid tag ('+pkt.rpTag.ToString()+').');
   end;
 end; { TResults.LoadData }
+
+procedure TResults.LoadThreadIdList;
+var LTag : byte;
+    LPos : HugeInt;
+    LElementCount : Cardinal;
+    LThreadID : Cardinal;
+    LThreadIndex : Cardinal;
+    LThreadIdMap : TDictionary<integer, integer>;
+    i : cardinal;
+    id : integer;
+begin
+  LPos := resFile.FilePos;
+  if LPos = resFile.FileSize then
+    exit;
+  ReadTag(LTag);
+  if LTag <> PR_START_THREAD_ID_LIST then
+  begin
+    resFile.Seek(LPos);
+    exit;
+  end;
+  LThreadIdMap := TDictionary<integer, integer>.Create;
+  try
+    ReadCardinal(LElementCount);
+    if LElementCount > 0 then
+    begin
+      for i := 0 to LElementCount-1 do
+      begin
+        ReadCardinal(LThreadID);
+        ReadCardinal(LThreadIndex);
+        LThreadIdMap.AddOrSetValue(LThreadIndex,LThreadID);
+      end;
+    end;
+    ReadTag(LTag);
+    if LTag <> PR_END_THREAD_ID_LIST then
+      raise Exception.Create('Found PR_START_THREAD_ID_LIST without PR_END_THREAD_ID_LIST');
+
+    // remap indexes back to the ThreadIDs
+    for i := Low(resThreads) to High(resThreads) do
+    begin
+      if LThreadIdMap.TryGetValue(resThreads[i].teThread,id) then
+        resThreads[i].teThread := id;
+    end;
+  finally
+    LThreadIdMap.Free;
+  end;
+end; { TResults.LoadThreadIdList }
 
 procedure TResults.LoadThreadInformation;
 var LTag : byte;
