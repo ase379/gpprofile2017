@@ -676,6 +676,17 @@ begin
     FlushCounter;
     WriteTag(PR_ENDDATA);
 
+    // write thread names
+    WriteTag(PR_START_THREADINFO);
+    WriteCardinal(prfThreadsInfo.count);
+    for i := 0 to prfThreadsInfo.count-1 do
+    begin
+      LItem := TThreadInformation(prfThreadsInfo[i]);
+      WriteCardinal(LItem.ID);
+      WriteUtf8String(LItem.Name);
+    end;
+    WriteTag(PR_END_THREADINFO);
+
     // write compressed thread ids
     if profCompressThreads then
     begin
@@ -689,17 +700,6 @@ begin
       end;
       WriteTag(PR_END_THREAD_ID_LIST);
     end;
-
-    // write thread names
-    WriteTag(PR_START_THREADINFO);
-    WriteCardinal(prfThreadsInfo.count);
-    for i := 0 to prfThreadsInfo.count-1 do
-    begin
-      LItem := TThreadInformation(prfThreadsInfo[i]);
-      WriteCardinal(LItem.ID);
-      WriteUtf8String(LItem.Name);
-    end;
-    WriteTag(PR_END_THREADINFO);
 
     FlushFile;
   finally
