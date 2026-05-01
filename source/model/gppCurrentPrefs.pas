@@ -16,6 +16,7 @@ type
     HideNotExecuted       : boolean;
     SpeedSize             : integer;
     ShowAllFolders        : boolean;
+    ShowDirStructure      : boolean;
     StandardDefines       : boolean;
     ProjectDefines        : boolean;
     DisableUserDefines    : boolean;
@@ -89,6 +90,7 @@ begin
         CompilerVersion    := ReadInteger('CompilerVersion',-1);
         HideNotExecuted    := ReadBool   ('HideNotExecuted',true);
         ShowAllFolders     := ReadBool   ('ShowAllFolders',false);
+        ShowDirStructure   := ReadBool   ('ShowDirStructure',false);
         StandardDefines    := ReadBool   ('StandardDefines',true);
         ProjectDefines     := ReadBool   ('ProjectDefines',true);
         DisableUserDefines := ReadBool   ('DisableUserDefines',false);
@@ -117,6 +119,7 @@ begin
     WriteInteger('CompilerVersion',    CompilerVersion);
     WriteBool   ('HideNotExecuted',    HideNotExecuted);
     WriteBool   ('ShowAllFolders',     ShowAllFolders);
+    WriteBool   ('ShowDirStructure',   ShowDirStructure);
     WriteBool   ('StandardDefines',    StandardDefines);
     WriteBool   ('ProjectDefines',     ProjectDefines);
     WriteBool   ('DisableUserDefines', DisableUserDefines);

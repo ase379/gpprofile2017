@@ -161,7 +161,7 @@ object frmPreferences: TfrmPreferences
           Caption = 'Start &profiling on target startup'
           Checked = True
           State = cbChecked
-          TabOrder = 1
+          TabOrder = 2
         end
         object cbShowAllFolders: TCheckBox
           Left = 8
@@ -179,15 +179,23 @@ object frmPreferences: TfrmPreferences
           Height = 17
           Hint = 'Instrument pure asm functions.'
           Caption = '&Instrument pure assembler procedures'
-          TabOrder = 2
+          TabOrder = 4
         end
         object cbMakeBackupOfInstrumentedFile: TCheckBox
-          Left = 234
-          Top = 20
+          Left = 231
+          Top = 44
           Width = 220
           Height = 17
           Caption = 'Backup Instrumented Files'
           TabOrder = 3
+        end
+        object cbShowDirStructure: TCheckBox
+          Left = 231
+          Top = 21
+          Width = 220
+          Height = 17
+          Caption = 'Show Directory Structure'
+          TabOrder = 1
         end
       end
       object GroupBox3: TGroupBox

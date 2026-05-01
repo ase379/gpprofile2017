@@ -41,7 +41,6 @@ type
     procedure vstSelectClassesAddToSelection(Sender: TBaseVirtualTree; Node: PVirtualNode);
     procedure vstSelectClassesChecked(Sender: TBaseVirtualTree; Node: PVirtualNode);
     procedure vstSelectUnitsChecked(Sender: TBaseVirtualTree; Node: PVirtualNode);
-    procedure chkShowDirStructureClick(Sender: TObject);
     procedure vstSelectUnitsAddToSelection(Sender: TBaseVirtualTree; Node: PVirtualNode);
     procedure btnSelectAllClick(Sender: TObject);
     procedure sbUnitsInvokeSearch(Sender: TObject);
@@ -93,6 +92,8 @@ type
     procedure clbUnitsClickCheck(const aNode: PVirtualNode);
     procedure clbClassesClick(Sender: TObject);
     procedure clbClassesClickCheck(Sender: TObject; const aNode: PVirtualNode);
+
+    procedure ProcessShowDirStructureClick(Sender: TObject);
 
     procedure FillUnitTree(const aOnlyUnitsOfDPR: boolean;const aShowDirectories: boolean);
     procedure RescanProject(const aOnRescan : TOnParseProject);
@@ -469,7 +470,7 @@ begin
   end;
 end;
 
-procedure TfrmMainInstrumentation.chkShowDirStructureClick(Sender: TObject);
+procedure TfrmMainInstrumentation.ProcessShowDirStructureClick(Sender: TObject);
 begin
   fVstSelectUnitTools.FillUnitTree(not chkShowAll.Checked, chkShowDirStructure.Checked);
   btnUnitSelectionWizard.Enabled := false;

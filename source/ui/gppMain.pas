@@ -542,6 +542,7 @@ begin
     TSessionData.selectedDelphi := TGlobalPreferences.GetProjectPref('DelphiVersion',defaultDelphi);
     RebuildDelphiVer;
     FInstrumentationFrame.chkShowAll.Checked := TGlobalPreferences.GetProjectPref('ShowAllFolders',TGlobalPreferences.ShowAllFolders);
+    FInstrumentationFrame.chkShowDirStructure.Checked := TGlobalPreferences.GetProjectPref('ShowDirStructure',TGlobalPreferences.ShowDirStructure);
     PageControl1.ActivePage := tabInstrumentation;
     SetCaption;
     SetSource;
@@ -917,7 +918,8 @@ begin
   FInstrumentationFrame := TfrmMainInstrumentation.Create(self);
   FInstrumentationFrame.Parent := tabInstrumentation;
   FInstrumentationFrame.Align := alClient;
-  FInstrumentationFrame.chkShowAll.OnClick := cbProfileChange;;
+  FInstrumentationFrame.chkShowAll.OnClick := cbProfileChange;
+  FInstrumentationFrame.chkShowDirStructure.OnClick := cbProfileChange;
   FInstrumentationFrame.OnReloadSource := LoadSource;
   FInstrumentationFrame.OnShowStatusBarMessage := StatusPanel0;
   fPerformanceFrame := TfrmMainProfiling.Create(self);
@@ -1146,8 +1148,15 @@ end;
 
 procedure TfrmMain.cbProfileChange(Sender: TObject);
 begin
-  FInstrumentationFrame.FillUnitTree(not FInstrumentationFrame.chkShowAll.Checked, FInstrumentationFrame.chkShowDirStructure.Checked);
-  TGlobalPreferences.SetProjectPref('ShowAllFolders',FInstrumentationFrame.chkShowAll.Checked);
+  if Sender = FInstrumentationFrame.chkShowDirStructure then
+  begin
+    FInstrumentationFrame.ProcessShowDirStructureClick(Sender);
+    TGlobalPreferences.SetProjectPref('ShowDirStructure',FInstrumentationFrame.chkShowDirStructure.Checked);
+  end else
+  begin
+    FInstrumentationFrame.FillUnitTree(not FInstrumentationFrame.chkShowAll.Checked, FInstrumentationFrame.chkShowDirStructure.Checked);
+    TGlobalPreferences.SetProjectPref('ShowAllFolders',FInstrumentationFrame.chkShowAll.Checked);
+  end;
 end;
 
 
@@ -1650,9 +1659,10 @@ procedure TfrmMain.actProjectOptionsExecute(Sender: TObject);
 begin
   with frmPreferences do
   begin
-    if ExecuteProjectSettings(FInstrumentationFrame.chkShowAll.Checked) then
+    if ExecuteProjectSettings(FInstrumentationFrame.chkShowAll.Checked, FInstrumentationFrame.chkShowDirStructure.Checked) then
     begin
       FInstrumentationFrame.chkShowAll.Checked := cbShowAllFolders.Checked;
+      FInstrumentationFrame.chkShowDirStructure.Checked := cbShowDirStructure.Checked;
       RebuildDelphiVer;
       if DefinesChanged then
         actRescanProject.Execute;
