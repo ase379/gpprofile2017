@@ -83,6 +83,7 @@ type
 
     procedure DisablePC();
     procedure EnablePC;
+    procedure ClearAll;
     procedure ReloadSource;
     procedure ChangeClassSelectionWithoutEvent(const anIndex : integer);
     function  GetSelectedUnitNode(): pVirtualNode;
@@ -306,6 +307,13 @@ begin
     RecreateClasses(false, node);
     clbClassesClick(vstSelectClasses);
   end;
+end;
+
+procedure TfrmMainInstrumentation.ClearAll;
+begin
+  fVstSelectUnitTools.Clear;
+  fVstSelectClassTools.Clear;
+  fVstSelectProcTools.Clear;
 end;
 
 procedure TfrmMainInstrumentation.ClickProcs(index: integer; recreateCl: boolean);

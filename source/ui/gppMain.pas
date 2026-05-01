@@ -425,6 +425,7 @@ begin
   Enabled := False;
   DisablePC;
   lLastSelectionStream := nil;
+  ClearSource;
   if assigned(openProject) then
   begin
     lLastSelectionStream := TMemoryStream.Create();
@@ -437,7 +438,7 @@ begin
     FreeAndNil(openProject);
     InitProgressBar(self,self.ApplicationTaskbar, 'Parsing units...', true, false);
     SetProgressBarOverlayHint('Parsing units...');
-    FInstrumentationFrame.FillUnitTree(true, false); // clear all listboxes
+    FInstrumentationFrame.ClearAll; // clear all listboxes
     openProject := TProject.Create(aProject, TSessionData.selectedDelphi);
     TSessionData.CurrentProjectName := aProject;
     RebuildDefines;
@@ -1692,7 +1693,8 @@ begin
       if focusOn >= sourceCodeEdit.Lines.Count then focusOn := sourceCodeEdit.Lines.Count-1;
       sourceCodeEdit.TopLine := focusOn+1;
       StatusPanel0(fileName,false);
-    end;
+    end else
+      ClearSource;
   except
     sourceCodeEdit.Lines.Clear;
   end;
@@ -1702,7 +1704,7 @@ procedure TfrmMain.ClearSource;
 begin
   sourceCodeEdit.Lines.Clear;
   loadedSource := '';
-  StatusPanel0('',true);
+  StatusPanel0('',false);
 end; { TfrmMain.ClearSource }
 
 procedure TfrmMain.actExportProfileExecute(Sender: TObject);
@@ -1749,10 +1751,8 @@ end;
 
 procedure TfrmMain.StatusPanel0(const msg: string; const beep: boolean);
 begin
-  if (msg <> '') then begin
-    StatusBar.Panels[0].Text := msg;
-    if beep then MessageBeep($FFFFFFFF);
-  end;
+  StatusBar.Panels[0].Text := msg;
+  if beep then MessageBeep($FFFFFFFF);
 end;
 
 procedure TfrmMain.ShowError(const Msg : string);
