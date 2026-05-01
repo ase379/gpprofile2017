@@ -687,7 +687,7 @@ begin
         WriteCardinal(LThreadsIdItem.tleThread);
         WriteCardinal(LThreadsIdItem.tleRemap);
       end;
-      WriteInt(PR_END_THREAD_ID_LIST);
+      WriteTag(PR_END_THREAD_ID_LIST);
     end;
 
     // write thread names
@@ -699,7 +699,7 @@ begin
       WriteCardinal(LItem.ID);
       WriteUtf8String(LItem.Name);
     end;
-    WriteInt(PR_END_THREADINFO);
+    WriteTag(PR_END_THREADINFO);
 
     FlushFile;
   finally
