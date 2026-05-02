@@ -508,13 +508,13 @@ object frmMemProfiling: TfrmMemProfiling
           item
             MinWidth = 75
             Position = 2
-            Text = '% Time'
+            Text = '% Memory'
             Width = 75
           end
           item
             MinWidth = 75
             Position = 3
-            Text = 'Time'
+            Text = 'Memory'
             Width = 75
           end
           item

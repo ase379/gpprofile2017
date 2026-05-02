@@ -103,7 +103,7 @@ const
   COL_THREAD_ID = 0;
   COL_THREAD_NAME = 1;
   COL_THREAD_TOTAL_PERC = 2;
-  COL_THREAD_TOTAL_TIME = 3;
+  COL_THREAD_TOTAL_MEM = 3;
   COL_THREAD_TOTAL_CALLS = 4;
 
 
@@ -283,13 +283,13 @@ begin
     case aColumnIndex of
       COL_THREAD_TOTAL_PERC:
         result := TColumnInfoType.Percent;
-      COL_THREAD_TOTAL_TIME:
+      COL_THREAD_TOTAL_MEM:
         result := TColumnInfoType.Mem;
       COL_THREAD_TOTAL_CALLS:
         result := TColumnInfoType.Count;
     end;
   end;
-  
+
 end;
 
 function TSimpleMemStatsListTools.GetValue(const aData : PMemoryInfoRec;const aColumnIndex: integer;out aValue, aMax : double; out aColRenderType:TColumnInfoType): boolean;
@@ -421,7 +421,7 @@ begin
         aValue := fProfileResults.resThreads[aData.ThreadId].teTotalMem;
         aMax := LTotalMem;
       end;
-      COL_THREAD_TOTAL_TIME:
+      COL_THREAD_TOTAL_MEM:
       begin
         aValue := fProfileResults.resThreads[aData.ThreadId].teTotalMem;
         aMax := LTotalMem;
@@ -560,7 +560,7 @@ begin
         else
           CellText := FormatPerc(fProfileResults.resThreads[LData.ThreadId].teTotalMem/TotalMem);
       end;
-      COL_THREAD_TOTAL_TIME: CellText := FormatMem(fProfileResults.resThreads[LData.ThreadId].teTotalMem);
+      COL_THREAD_TOTAL_MEM: CellText := FormatMem(fProfileResults.resThreads[LData.ThreadId].teTotalMem);
       COL_THREAD_TOTAL_CALLS: CellText := FormatCnt(fProfileResults.resThreads[LData.ThreadId].teTotalCnt);
     end;
   end;
