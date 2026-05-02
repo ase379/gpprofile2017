@@ -26,7 +26,7 @@ type
     teTotalTime  : int64;
     teTotalCnt   : integer;
     teActiveProcs: TActiveProcList;
-    teTotalMem  : Cardinal;
+    teTotalMem   : int64;
 
     property Name : String read GetName;
   end;
@@ -40,7 +40,7 @@ type
     ueQual     : AnsiString;
     ueTotalTime: array {thread} of int64;   // 0 = sum
     ueTotalCnt : array {thread} of integer; // 0 = sum
-    ueTotalMem: array {thread} of Cardinal;   // 0 = sum
+    ueTotalMem: array {thread} of int64;   // 0 = sum
 
     property FilePath : String read GetPath;
     property Name : String read GetName;
@@ -55,7 +55,7 @@ type
     ceFirstLn  : integer;
     ceTotalTime: array {thread} of int64;   // 0 = sum
     ceTotalCnt : array {thread} of integer; // 0 = sum
-    ceTotalMem: array {thread} of Cardinal;   // 0 = sum
+    ceTotalMem: array {thread} of int64;   // 0 = sum
 
     property Name : String read GetName;
   end;
@@ -117,9 +117,9 @@ type
     procedure   ReadThread(var thread: integer);
     procedure   ReadTicks(var ticks: int64);
     procedure   ReadID(var id: integer);
+    procedure   ReadMem(var value: int64);
     procedure   WriteTag(tag: byte);
     procedure   WriteInt(int: integer);
-    procedure   WriteCardinal  (uint: Cardinal);
     procedure   WriteInt64(i64: int64);
     procedure   WriteString(str: ansistring);
     procedure   CheckTag(tag: byte);
@@ -233,6 +233,15 @@ end; { TResults.Destroy }
 procedure TResults.ReadInt  (var int: integer);  begin resFile.BlockReadUnsafe(int,SizeOf(integer)); end;
 procedure TResults.ReadCardinal(var value: Cardinal);  begin resFile.BlockReadUnsafe(value,SizeOf(Cardinal)); end;
 procedure TResults.ReadInt64(var i64: int64);    begin resFile.BlockReadUnsafe(i64,SizeOf(int64)); end;
+
+procedure TResults.ReadMem(var value: int64);
+var
+  tmp: Cardinal;
+begin
+  resFile.BlockReadUnsafe(tmp,SizeOf(Cardinal));
+  value := tmp;
+end;
+
 procedure TResults.ReadUInt64(var ui64: uint64);    begin resFile.BlockReadUnsafe(ui64,SizeOf(uint64)); end;
 procedure TResults.ReadTag  (var tag: byte);     begin resFile.BlockReadUnsafe(tag,SizeOf(byte)); end;
 procedure TResults.ReadID   (var id: integer);   begin id := 0; resFile.BlockReadUnsafe(id,resProcSize); end;
@@ -297,7 +306,6 @@ end; { TResults.ReadString }
 
 procedure TResults.WriteTag  (tag: byte);    begin resFile.BlockWriteUnsafe(tag,SizeOf(byte)); end;
 procedure TResults.WriteInt  (int: integer); begin resFile.BlockWriteUnsafe(int,SizeOf(integer)); end;
-procedure TResults.WriteCardinal  (uint: Cardinal); begin resFile.BlockWriteUnsafe(uint,SizeOf(Cardinal)); end;
 procedure TResults.WriteInt64(i64: int64);   begin resFile.BlockWriteUnsafe(i64,SizeOf(int64)); end;
 
 procedure TResults.WriteString(str: ansistring);
@@ -655,7 +663,7 @@ begin
       rpMeasurePointID := utf8ToString(lAnsiMeasurePointId);
       ReadTicks(rpMeasure1);
       if IsMemProfilingEnabled then
-        ReadCardinal(pktMem.rpMemWorkingSize);
+        ReadMem(pktMem.rpMemWorkingSize);
       ReadTicks(rpMeasure2);
       Result := true;
     end
@@ -666,7 +674,7 @@ begin
       ReadTicks(rpMeasure1);
       if IsMemProfilingEnabled then
         if (rpTag = PR_ENTERPROC) or (rpTag = PR_EXITPROC) then
-          ReadCardinal(pktMem.rpMemWorkingSize);
+          ReadMem(pktMem.rpMemWorkingSize);
       ReadTicks(rpMeasure2);
       Result := true;
     end;
@@ -1075,7 +1083,7 @@ begin
         WriteString(teName);
         WriteInt64(teTotalTime);
         WriteInt(teTotalCnt);
-        WriteCardinal(teTotalMem);
+        WriteInt64(teTotalMem);
       end;
     WriteTag(PR_DIGUNITS);
     WriteInt(lNumberOfUnits);
@@ -1092,7 +1100,7 @@ begin
           WriteInt(ueTotalCnt[j]);
         WriteInt(High(ueTotalMem)-Low(ueTotalMem)+1);
         for j := Low(ueTotalMem) to High(ueTotalMem) do
-          WriteCardinal(ueTotalMem[j]);
+          WriteInt64(ueTotalMem[j]);
       end;
     WriteTag(PR_DIGCLASSES);
 
@@ -1111,7 +1119,7 @@ begin
           WriteInt(ceTotalCnt[j]);
         WriteInt(High(ceTotalMem)-Low(ceTotalMem)+1);
         for j := Low(ceTotalMem) to High(ceTotalMem) do
-          WriteCardinal(ceTotalMem[j]);
+          WriteInt64(ceTotalMem[j]);
       end;
     WriteTag(PR_DIGPROCS);
     WriteInt(lNumberOfProcedures);
@@ -1143,7 +1151,7 @@ begin
           WriteInt64(peProcTimeAvg[j]);
         WriteInt(High(peProcMem)-Low(peProcMem)+1);
         for j := Low(peProcMem) to High(peProcMem) do
-          WriteCardinal(peProcMem[j]);
+          WriteInt64(peProcMem[j]);
       end;
     WriteTag(PR_DIGCALLG);
     for i := 0 to fCallGraphInfoMaxElementCount do
@@ -1233,7 +1241,7 @@ begin
             ReadString(teName);
             ReadInt64(teTotalTime);
             ReadInt(teTotalCnt);
-            ReadCardinal(teTotalMem);
+            ReadInt64(teTotalMem);
           end;
       end; // PR_DIGTHREADS;
       PR_DIGUNITS: begin
@@ -1252,7 +1260,7 @@ begin
             for j := Low(ueTotalCnt) to High(ueTotalCnt) do ReadInt(ueTotalCnt[j]);
             ReadInt(num);
             SetLength(ueTotalMem,num);
-            for j := Low(ueTotalMem) to High(ueTotalMem) do ReadCardinal(ueTotalMem[j]);
+            for j := Low(ueTotalMem) to High(ueTotalMem) do ReadInt64(ueTotalMem[j]);
           end;
       end; // PR_DIGUNITS
       PR_DIGCLASSES: begin
@@ -1272,7 +1280,7 @@ begin
             for j := Low(ceTotalCnt) to High(ceTotalCnt) do ReadInt(ceTotalCnt[j]);
             ReadInt(num);
             SetLength(ceTotalMem,num);
-            for j := Low(ceTotalMem) to High(ceTotalMem) do ReadCardinal(ceTotalMem[j]);
+            for j := Low(ceTotalMem) to High(ceTotalMem) do ReadInt64(ceTotalMem[j]);
           end;
       end; // PR_DIGCLASSES
       PR_DIGPROCS: begin
@@ -1308,7 +1316,7 @@ begin
             for j := Low(peProcTimeAvg) to High(peProcTimeAvg) do ReadUInt64(peProcTimeAvg[j]);
             ReadInt(num);
             SetLength(peProcMem,num);
-            for j := Low(peProcMem) to High(peProcMem) do ReadCardinal(peProcMem[j]);
+            for j := Low(peProcMem) to High(peProcMem) do ReadInt64(peProcMem[j]);
           end;
       end; // PR_DIGPROCS
       PR_DIGCALLG: begin
