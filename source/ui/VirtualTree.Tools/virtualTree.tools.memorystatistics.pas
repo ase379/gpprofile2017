@@ -454,7 +454,13 @@ begin
     TotalMem := fProfileResults.resUnits[0].ueTotalMem[fThreadIndex];
     case Column of
       COL_UNIT_NAME: CellText := fProfileResults.resUnits[LData.UnitId].Name;
-      COL_UNIT_TOTAL_PERC: CellText := FormatPerc(fProfileResults.resUnits[LData.UnitId].ueTotalMem[fThreadIndex]/TotalMem);
+      COL_UNIT_TOTAL_PERC:
+      begin
+        if TotalMem = 0  then
+          CellText := FormatPerc(0)
+        else
+          CellText := FormatPerc(fProfileResults.resUnits[LData.UnitId].ueTotalMem[fThreadIndex]/TotalMem);
+      end;
       COL_UNIT_TOTAL_MEM: CellText := FormatMem(fProfileResults.resUnits[LData.UnitId].ueTotalMem[fThreadIndex]);
       COL_UNIT_TOTAL_CALLS: CellText := FormatCnt(fProfileResults.resUnits[LData.UnitId].ueTotalCnt[fThreadIndex]);
     end;
