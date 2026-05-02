@@ -23,7 +23,7 @@ type
   public
     teThread     : integer;
     teName       : AnsiString;
-    teTotalTime  : int64;
+    teTotalTime  : uint64;
     teTotalCnt   : integer;
     teActiveProcs: TActiveProcList;
     teTotalMem   : int64;
@@ -38,7 +38,7 @@ type
   public
     ueName     : AnsiString;
     ueQual     : AnsiString;
-    ueTotalTime: array {thread} of int64;   // 0 = sum
+    ueTotalTime: array {thread} of uint64;   // 0 = sum
     ueTotalCnt : array {thread} of integer; // 0 = sum
     ueTotalMem: array {thread} of int64;   // 0 = sum
 
@@ -53,7 +53,7 @@ type
     ceName     : AnsiString;
     ceUID      : integer;
     ceFirstLn  : integer;
-    ceTotalTime: array {thread} of int64;   // 0 = sum
+    ceTotalTime: array {thread} of uint64;   // 0 = sum
     ceTotalCnt : array {thread} of integer; // 0 = sum
     ceTotalMem: array {thread} of int64;   // 0 = sum
 
@@ -121,6 +121,7 @@ type
     procedure   WriteTag(tag: byte);
     procedure   WriteInt(int: integer);
     procedure   WriteInt64(i64: int64);
+    procedure   WriteUInt64(u64: uint64);
     procedure   WriteString(str: ansistring);
     procedure   CheckTag(tag: byte);
     function    ReadPacket(var pkt: TResPacket; var pktMem: TResMemPacket): boolean;
@@ -307,6 +308,7 @@ end; { TResults.ReadString }
 procedure TResults.WriteTag  (tag: byte);    begin resFile.BlockWriteUnsafe(tag,SizeOf(byte)); end;
 procedure TResults.WriteInt  (int: integer); begin resFile.BlockWriteUnsafe(int,SizeOf(integer)); end;
 procedure TResults.WriteInt64(i64: int64);   begin resFile.BlockWriteUnsafe(i64,SizeOf(int64)); end;
+procedure TResults.WriteUInt64(u64: uint64);   begin resFile.BlockWriteUnsafe(u64,SizeOf(uint64)); end;
 
 procedure TResults.WriteString(str: ansistring);
 begin
@@ -1081,7 +1083,7 @@ begin
         incrementAndTriggerProgress();
         WriteInt(teThread);
         WriteString(teName);
-        WriteInt64(teTotalTime);
+        WriteUInt64(teTotalTime);
         WriteInt(teTotalCnt);
         WriteInt64(teTotalMem);
       end;
@@ -1094,7 +1096,7 @@ begin
         WriteString(ueQual);
         WriteInt(High(ueTotalTime)-Low(ueTotalTime)+1);
         for j := Low(ueTotalTime) to High(ueTotalTime) do
-          WriteInt64(ueTotalTime[j]);
+          WriteUInt64(ueTotalTime[j]);
         WriteInt(High(ueTotalCnt)-Low(ueTotalCnt)+1);
         for j := Low(ueTotalCnt) to High(ueTotalCnt) do
           WriteInt(ueTotalCnt[j]);
@@ -1113,7 +1115,7 @@ begin
         WriteInt(ceFirstLn);
         WriteInt(High(ceTotalTime)-Low(ceTotalTime)+1);
         for j := Low(ceTotalTime) to High(ceTotalTime) do
-          WriteInt64(ceTotalTime[j]);
+          WriteUInt64(ceTotalTime[j]);
         WriteInt(High(ceTotalCnt)-Low(ceTotalCnt)+1);
         for j := Low(ceTotalCnt) to High(ceTotalCnt) do
           WriteInt(ceTotalCnt[j]);
@@ -1133,22 +1135,22 @@ begin
         WriteInt(peFirstLn);
         WriteInt(High(peProcTime)-Low(peProcTime)+1);
         for j := Low(peProcTime) to High(peProcTime) do
-          WriteInt64(peProcTime[j]);
+          WriteUInt64(peProcTime[j]);
         WriteInt(High(peProcTimeMin)-Low(peProcTimeMin)+1);
         for j := Low(peProcTimeMin) to High(peProcTimeMin) do
-          WriteInt64(peProcTimeMin[j]);
+          WriteUInt64(peProcTimeMin[j]);
         WriteInt(High(peProcTimeMax)-Low(peProcTimeMax)+1);
         for j := Low(peProcTimeMax) to High(peProcTimeMax) do
-          WriteInt64(peProcTimeMax[j]);
+          WriteUInt64(peProcTimeMax[j]);
         WriteInt(High(peProcChildTime)-Low(peProcChildTime)+1);
         for j := Low(peProcChildTime) to High(peProcChildTime) do
-          WriteInt64(peProcChildTime[j]);
+          WriteUInt64(peProcChildTime[j]);
         WriteInt(High(peProcCnt)-Low(peProcCnt)+1);
         for j := Low(peProcCnt) to High(peProcCnt) do
           WriteInt(peProcCnt[j]);
         WriteInt(High(peProcTimeAvg)-Low(peProcTimeAvg)+1);
         for j := Low(peProcTimeAvg) to High(peProcTimeAvg) do
-          WriteInt64(peProcTimeAvg[j]);
+          WriteUInt64(peProcTimeAvg[j]);
         WriteInt(High(peProcMem)-Low(peProcMem)+1);
         for j := Low(peProcMem) to High(peProcMem) do
           WriteInt64(peProcMem[j]);
@@ -1165,17 +1167,17 @@ begin
           WriteInt(k);
           WriteInt(LInfo.ProcTime.Count); // number of threads
           for j := 0 to LInfo.ProcTime.Count-1 do
-            WriteInt64(LInfo.ProcTime[j]);
+            WriteUInt64(LInfo.ProcTime[j]);
           for j := 0 to LInfo.ProcTimeMin.Count-1 do
-            WriteInt64(LInfo.ProcTimeMin[j]);
+            WriteUInt64(LInfo.ProcTimeMin[j]);
           for j := 0 to LInfo.ProcTimeMax.Count-1 do
-            WriteInt64(LInfo.ProcTimeMax[j]);
+            WriteUInt64(LInfo.ProcTimeMax[j]);
           for j := 0 to LInfo.ProcChildTime.Count-1 do
-            WriteInt64(LInfo.ProcChildTime[j]);
+            WriteUInt64(LInfo.ProcChildTime[j]);
           for j := 0 to LInfo.ProcCnt.Count-1 do
             WriteInt(LInfo.ProcCnt[j]);
           for j := 0 to LInfo.ProcTimeAvg.Count-1 do
-            WriteInt64(LInfo.ProcTimeAvg[j]);
+            WriteUInt64(LInfo.ProcTimeAvg[j]);
         end;
       end;
     end;
@@ -1239,7 +1241,7 @@ begin
             UpdateStatus;
             ReadInt(teThread);
             ReadString(teName);
-            ReadInt64(teTotalTime);
+            ReadUInt64(teTotalTime);
             ReadInt(teTotalCnt);
             ReadInt64(teTotalMem);
           end;
@@ -1254,7 +1256,7 @@ begin
             ReadString(ueQual);
             ReadInt(num);
             SetLength(ueTotalTime,num);
-            for j := Low(ueTotalTime) to High(ueTotalTime) do ReadInt64(ueTotalTime[j]);
+            for j := Low(ueTotalTime) to High(ueTotalTime) do ReadUInt64(ueTotalTime[j]);
             ReadInt(num);
             SetLength(ueTotalCnt,num);
             for j := Low(ueTotalCnt) to High(ueTotalCnt) do ReadInt(ueTotalCnt[j]);
@@ -1274,7 +1276,7 @@ begin
             ReadInt(ceFirstLn);
             ReadInt(num);
             SetLength(ceTotalTime,num);
-            for j := Low(ceTotalTime) to High(ceTotalTime) do ReadInt64(ceTotalTime[j]);
+            for j := Low(ceTotalTime) to High(ceTotalTime) do ReadUInt64(ceTotalTime[j]);
             ReadInt(num);
             SetLength(ceTotalCnt,num);
             for j := Low(ceTotalCnt) to High(ceTotalCnt) do ReadInt(ceTotalCnt[j]);
