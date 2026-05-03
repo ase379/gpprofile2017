@@ -23,10 +23,10 @@ type
   public
     teThread     : integer;
     teName       : AnsiString;
-    teTotalTime  : int64;
+    teTotalTime  : uint64;
     teTotalCnt   : integer;
     teActiveProcs: TActiveProcList;
-    teTotalMem  : Cardinal;
+    teTotalMem   : int64;
 
     property Name : String read GetName;
   end;
@@ -38,9 +38,9 @@ type
   public
     ueName     : AnsiString;
     ueQual     : AnsiString;
-    ueTotalTime: array {thread} of int64;   // 0 = sum
+    ueTotalTime: array {thread} of uint64;   // 0 = sum
     ueTotalCnt : array {thread} of integer; // 0 = sum
-    ueTotalMem: array {thread} of Cardinal;   // 0 = sum
+    ueTotalMem: array {thread} of int64;   // 0 = sum
 
     property FilePath : String read GetPath;
     property Name : String read GetName;
@@ -53,9 +53,9 @@ type
     ceName     : AnsiString;
     ceUID      : integer;
     ceFirstLn  : integer;
-    ceTotalTime: array {thread} of int64;   // 0 = sum
+    ceTotalTime: array {thread} of uint64;   // 0 = sum
     ceTotalCnt : array {thread} of integer; // 0 = sum
-    ceTotalMem: array {thread} of Cardinal;   // 0 = sum
+    ceTotalMem: array {thread} of int64;   // 0 = sum
 
     property Name : String read GetName;
   end;
@@ -117,10 +117,11 @@ type
     procedure   ReadThread(var thread: integer);
     procedure   ReadTicks(var ticks: int64);
     procedure   ReadID(var id: integer);
+    procedure   ReadMem(var value: int64);
     procedure   WriteTag(tag: byte);
     procedure   WriteInt(int: integer);
-    procedure   WriteCardinal  (uint: Cardinal);
     procedure   WriteInt64(i64: int64);
+    procedure   WriteUInt64(u64: uint64);
     procedure   WriteString(str: ansistring);
     procedure   CheckTag(tag: byte);
     function    ReadPacket(var pkt: TResPacket; var pktMem: TResMemPacket): boolean;
@@ -233,6 +234,15 @@ end; { TResults.Destroy }
 procedure TResults.ReadInt  (var int: integer);  begin resFile.BlockReadUnsafe(int,SizeOf(integer)); end;
 procedure TResults.ReadCardinal(var value: Cardinal);  begin resFile.BlockReadUnsafe(value,SizeOf(Cardinal)); end;
 procedure TResults.ReadInt64(var i64: int64);    begin resFile.BlockReadUnsafe(i64,SizeOf(int64)); end;
+
+procedure TResults.ReadMem(var value: int64);
+var
+  tmp: Cardinal;
+begin
+  resFile.BlockReadUnsafe(tmp,SizeOf(Cardinal));
+  value := tmp;
+end;
+
 procedure TResults.ReadUInt64(var ui64: uint64);    begin resFile.BlockReadUnsafe(ui64,SizeOf(uint64)); end;
 procedure TResults.ReadTag  (var tag: byte);     begin resFile.BlockReadUnsafe(tag,SizeOf(byte)); end;
 procedure TResults.ReadID   (var id: integer);   begin id := 0; resFile.BlockReadUnsafe(id,resProcSize); end;
@@ -297,8 +307,8 @@ end; { TResults.ReadString }
 
 procedure TResults.WriteTag  (tag: byte);    begin resFile.BlockWriteUnsafe(tag,SizeOf(byte)); end;
 procedure TResults.WriteInt  (int: integer); begin resFile.BlockWriteUnsafe(int,SizeOf(integer)); end;
-procedure TResults.WriteCardinal  (uint: Cardinal); begin resFile.BlockWriteUnsafe(uint,SizeOf(Cardinal)); end;
 procedure TResults.WriteInt64(i64: int64);   begin resFile.BlockWriteUnsafe(i64,SizeOf(int64)); end;
+procedure TResults.WriteUInt64(u64: uint64);   begin resFile.BlockWriteUnsafe(u64,SizeOf(uint64)); end;
 
 procedure TResults.WriteString(str: ansistring);
 begin
@@ -655,7 +665,7 @@ begin
       rpMeasurePointID := utf8ToString(lAnsiMeasurePointId);
       ReadTicks(rpMeasure1);
       if IsMemProfilingEnabled then
-        ReadCardinal(pktMem.rpMemWorkingSize);
+        ReadMem(pktMem.rpMemWorkingSize);
       ReadTicks(rpMeasure2);
       Result := true;
     end
@@ -666,7 +676,7 @@ begin
       ReadTicks(rpMeasure1);
       if IsMemProfilingEnabled then
         if (rpTag = PR_ENTERPROC) or (rpTag = PR_EXITPROC) then
-          ReadCardinal(pktMem.rpMemWorkingSize);
+          ReadMem(pktMem.rpMemWorkingSize);
       ReadTicks(rpMeasure2);
       Result := true;
     end;
@@ -1073,9 +1083,9 @@ begin
         incrementAndTriggerProgress();
         WriteInt(teThread);
         WriteString(teName);
-        WriteInt64(teTotalTime);
+        WriteUInt64(teTotalTime);
         WriteInt(teTotalCnt);
-        WriteCardinal(teTotalMem);
+        WriteInt64(teTotalMem);
       end;
     WriteTag(PR_DIGUNITS);
     WriteInt(lNumberOfUnits);
@@ -1086,13 +1096,13 @@ begin
         WriteString(ueQual);
         WriteInt(High(ueTotalTime)-Low(ueTotalTime)+1);
         for j := Low(ueTotalTime) to High(ueTotalTime) do
-          WriteInt64(ueTotalTime[j]);
+          WriteUInt64(ueTotalTime[j]);
         WriteInt(High(ueTotalCnt)-Low(ueTotalCnt)+1);
         for j := Low(ueTotalCnt) to High(ueTotalCnt) do
           WriteInt(ueTotalCnt[j]);
         WriteInt(High(ueTotalMem)-Low(ueTotalMem)+1);
         for j := Low(ueTotalMem) to High(ueTotalMem) do
-          WriteCardinal(ueTotalMem[j]);
+          WriteInt64(ueTotalMem[j]);
       end;
     WriteTag(PR_DIGCLASSES);
 
@@ -1105,13 +1115,13 @@ begin
         WriteInt(ceFirstLn);
         WriteInt(High(ceTotalTime)-Low(ceTotalTime)+1);
         for j := Low(ceTotalTime) to High(ceTotalTime) do
-          WriteInt64(ceTotalTime[j]);
+          WriteUInt64(ceTotalTime[j]);
         WriteInt(High(ceTotalCnt)-Low(ceTotalCnt)+1);
         for j := Low(ceTotalCnt) to High(ceTotalCnt) do
           WriteInt(ceTotalCnt[j]);
         WriteInt(High(ceTotalMem)-Low(ceTotalMem)+1);
         for j := Low(ceTotalMem) to High(ceTotalMem) do
-          WriteCardinal(ceTotalMem[j]);
+          WriteInt64(ceTotalMem[j]);
       end;
     WriteTag(PR_DIGPROCS);
     WriteInt(lNumberOfProcedures);
@@ -1125,25 +1135,25 @@ begin
         WriteInt(peFirstLn);
         WriteInt(High(peProcTime)-Low(peProcTime)+1);
         for j := Low(peProcTime) to High(peProcTime) do
-          WriteInt64(peProcTime[j]);
+          WriteUInt64(peProcTime[j]);
         WriteInt(High(peProcTimeMin)-Low(peProcTimeMin)+1);
         for j := Low(peProcTimeMin) to High(peProcTimeMin) do
-          WriteInt64(peProcTimeMin[j]);
+          WriteUInt64(peProcTimeMin[j]);
         WriteInt(High(peProcTimeMax)-Low(peProcTimeMax)+1);
         for j := Low(peProcTimeMax) to High(peProcTimeMax) do
-          WriteInt64(peProcTimeMax[j]);
+          WriteUInt64(peProcTimeMax[j]);
         WriteInt(High(peProcChildTime)-Low(peProcChildTime)+1);
         for j := Low(peProcChildTime) to High(peProcChildTime) do
-          WriteInt64(peProcChildTime[j]);
+          WriteUInt64(peProcChildTime[j]);
         WriteInt(High(peProcCnt)-Low(peProcCnt)+1);
         for j := Low(peProcCnt) to High(peProcCnt) do
           WriteInt(peProcCnt[j]);
         WriteInt(High(peProcTimeAvg)-Low(peProcTimeAvg)+1);
         for j := Low(peProcTimeAvg) to High(peProcTimeAvg) do
-          WriteInt64(peProcTimeAvg[j]);
+          WriteUInt64(peProcTimeAvg[j]);
         WriteInt(High(peProcMem)-Low(peProcMem)+1);
         for j := Low(peProcMem) to High(peProcMem) do
-          WriteCardinal(peProcMem[j]);
+          WriteInt64(peProcMem[j]);
       end;
     WriteTag(PR_DIGCALLG);
     for i := 0 to fCallGraphInfoMaxElementCount do
@@ -1157,17 +1167,17 @@ begin
           WriteInt(k);
           WriteInt(LInfo.ProcTime.Count); // number of threads
           for j := 0 to LInfo.ProcTime.Count-1 do
-            WriteInt64(LInfo.ProcTime[j]);
+            WriteUInt64(LInfo.ProcTime[j]);
           for j := 0 to LInfo.ProcTimeMin.Count-1 do
-            WriteInt64(LInfo.ProcTimeMin[j]);
+            WriteUInt64(LInfo.ProcTimeMin[j]);
           for j := 0 to LInfo.ProcTimeMax.Count-1 do
-            WriteInt64(LInfo.ProcTimeMax[j]);
+            WriteUInt64(LInfo.ProcTimeMax[j]);
           for j := 0 to LInfo.ProcChildTime.Count-1 do
-            WriteInt64(LInfo.ProcChildTime[j]);
+            WriteUInt64(LInfo.ProcChildTime[j]);
           for j := 0 to LInfo.ProcCnt.Count-1 do
             WriteInt(LInfo.ProcCnt[j]);
           for j := 0 to LInfo.ProcTimeAvg.Count-1 do
-            WriteInt64(LInfo.ProcTimeAvg[j]);
+            WriteUInt64(LInfo.ProcTimeAvg[j]);
         end;
       end;
     end;
@@ -1231,9 +1241,9 @@ begin
             UpdateStatus;
             ReadInt(teThread);
             ReadString(teName);
-            ReadInt64(teTotalTime);
+            ReadUInt64(teTotalTime);
             ReadInt(teTotalCnt);
-            ReadCardinal(teTotalMem);
+            ReadInt64(teTotalMem);
           end;
       end; // PR_DIGTHREADS;
       PR_DIGUNITS: begin
@@ -1246,13 +1256,13 @@ begin
             ReadString(ueQual);
             ReadInt(num);
             SetLength(ueTotalTime,num);
-            for j := Low(ueTotalTime) to High(ueTotalTime) do ReadInt64(ueTotalTime[j]);
+            for j := Low(ueTotalTime) to High(ueTotalTime) do ReadUInt64(ueTotalTime[j]);
             ReadInt(num);
             SetLength(ueTotalCnt,num);
             for j := Low(ueTotalCnt) to High(ueTotalCnt) do ReadInt(ueTotalCnt[j]);
             ReadInt(num);
             SetLength(ueTotalMem,num);
-            for j := Low(ueTotalMem) to High(ueTotalMem) do ReadCardinal(ueTotalMem[j]);
+            for j := Low(ueTotalMem) to High(ueTotalMem) do ReadInt64(ueTotalMem[j]);
           end;
       end; // PR_DIGUNITS
       PR_DIGCLASSES: begin
@@ -1266,13 +1276,13 @@ begin
             ReadInt(ceFirstLn);
             ReadInt(num);
             SetLength(ceTotalTime,num);
-            for j := Low(ceTotalTime) to High(ceTotalTime) do ReadInt64(ceTotalTime[j]);
+            for j := Low(ceTotalTime) to High(ceTotalTime) do ReadUInt64(ceTotalTime[j]);
             ReadInt(num);
             SetLength(ceTotalCnt,num);
             for j := Low(ceTotalCnt) to High(ceTotalCnt) do ReadInt(ceTotalCnt[j]);
             ReadInt(num);
             SetLength(ceTotalMem,num);
-            for j := Low(ceTotalMem) to High(ceTotalMem) do ReadCardinal(ceTotalMem[j]);
+            for j := Low(ceTotalMem) to High(ceTotalMem) do ReadInt64(ceTotalMem[j]);
           end;
       end; // PR_DIGCLASSES
       PR_DIGPROCS: begin
@@ -1308,7 +1318,7 @@ begin
             for j := Low(peProcTimeAvg) to High(peProcTimeAvg) do ReadUInt64(peProcTimeAvg[j]);
             ReadInt(num);
             SetLength(peProcMem,num);
-            for j := Low(peProcMem) to High(peProcMem) do ReadCardinal(peProcMem[j]);
+            for j := Low(peProcMem) to High(peProcMem) do ReadInt64(peProcMem[j]);
           end;
       end; // PR_DIGPROCS
       PR_DIGCALLG: begin

@@ -150,22 +150,21 @@ end; { Transmit }
 
 function GetMemWorkingSize() : Cardinal;
 var
-  MemoryManagerState: TMemoryManagerState;
-  SmallBlockState: TSmallBlockTypeState;
   i: Integer;
+  LState: TMemoryManagerState;
+  LSmallBlocks: TSmallBlockTypeStates;
+  LSmallBlock: ^TSmallBlockTypeState;
 begin
-  GetMemoryManagerState( MemoryManagerState );
   Result := 0;
-  for i := low(MemoryManagerState.SmallBlockTypeStates) to
-        high(MemoryManagerState.SmallBlockTypeStates) do
-    begin
-    SmallBlockState := MemoryManagerState.SmallBlockTypeStates[i];
-    Inc(Result,
-    SmallBlockState.AllocatedBlockCount*SmallBlockState.UseableBlockSize);
-    end;
-
-  Inc(Result, MemoryManagerState.TotalAllocatedMediumBlockSize);
-  Inc(Result, MemoryManagerState.TotalAllocatedLargeBlockSize);
+  GetMemoryManagerState(LState);
+  LSmallBlocks := LState.SmallBlockTypeStates;
+  for i := Low(LSmallBlocks) to High(LSmallBlocks) do
+  begin
+    LSmallBlock := @LSmallBlocks[i];
+    Inc(Result,LSmallBlock.AllocatedBlockCount*LSmallBlock.UseableBlockSize);
+  end;
+  Inc(Result,LState.TotalAllocatedMediumBlockSize);
+  Inc(Result,LState.TotalAllocatedLargeBlockSize);
 end;
 
 procedure WriteMemWorkingSize();

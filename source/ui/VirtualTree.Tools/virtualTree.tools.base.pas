@@ -242,7 +242,8 @@ end;
 
 class function TVirtualTreeBaseTools.FormatMem(const value: double): string;
 begin
-  Result := Format('%.6n',[value]);
+  Result := Format('%.0n', [value]);
+  if value > 0 then Result := '+' + Result;
 end;
 
 
