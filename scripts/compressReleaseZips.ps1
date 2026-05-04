@@ -1,4 +1,4 @@
-$version = "1.6.0.9"
+$version = "1.6.0.10"
 $repoRoot = Resolve-Path "$PSScriptRoot\.."
 $srcBin32 = Join-Path $repoRoot "bin"
 $srcBin64 = Join-Path $repoRoot "bin64"
