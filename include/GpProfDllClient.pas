@@ -3,29 +3,29 @@
 (*
   GpProfile DLL client — dynamic accessor for GpProfDll.dll.
 
-  Drop-in replacement for GpProf.pas for modules that want to call into
-  GpProfDll.dll at run time instead of statically linking the profiling
-  instrumentation.  All public symbols mirror the GpProf.pas interface.
+  Provides an object-oriented interface to the shared profiling DLL.
+  Obtain a context via AcquireGpProfContext and use the returned
+  IGpProfContext interface to drive all profiling calls.
 
   Usage
   -----
-    Replace  "uses GpProf"  with  "uses GpProfDllClient".
-    Ensure GpProfDll.dll is present on the DLL search path at run time.
-    If the DLL is not found, every profiling call is a safe no-op.
+    Add GpProfDllClient to your uses clause.
+    Ensure GpProfDll32.dll / GpProfDll64.dll is present at run time.
+    If the DLL is not found, AcquireGpProfContext returns nil and every
+    method call is a safe no-op.
+
+    var Ctx: IGpProfContext;
+    Ctx := AcquireGpProfContext;
+    if Assigned(Ctx) then Ctx.Start;
+    ...
+    DisposeGpProfContext(Ctx);  // or simply: Ctx := nil
 
   Loading / unloading
   -------------------
     LoadLibrary   is called in the unit initialization section.
     FreeLibrary   is called in the unit finalization section.
-    Each wrapper procedure checks Assigned(fn) before calling, so the unit
-    is safe to use even when GpProfDll.dll is absent.
-
-  Scope adapter
-  -------------
-    CreateMeasurePointScope creates a TMeasurePointScopeClient object in
-    this module's heap.  ProfilerEnterMP / ProfilerExitMP are forwarded to
-    the DLL through function pointers, so no Delphi interface reference ever
-    crosses the DLL boundary.
+    All function pointers are checked for Assigned before use, so the
+    unit is safe when GpProfDll.dll is absent.
 *)
 
 unit GpProfDllClient;
@@ -54,26 +54,44 @@ type
     ['{9F2A8B7C-1D3E-4F5A-8C6B-7E9D0A2B4C5F}']
   end;
 
-procedure ProfilerStart;
-procedure ProfilerStop;
-procedure ProfilerStartThread;
-
-procedure ProfilerEnterProc(const aProcID: Cardinal);
-procedure ProfilerExitProc(const aProcID: Cardinal);
-
-procedure ProfilerEnterMP(const aMeasurePointId: UTF8String);
-procedure ProfilerExitMP(const aMeasurePointId: UTF8String);
-
-function  CreateMeasurePointScope(const aMeasurePointId: string): IMeasurePointScope;
-
-procedure ProfilerTerminate;
-
+  /// <summary>
+  /// Object-oriented handle to the shared profiling context exposed by the DLL.
+  /// Mirrors the old per-module state that every statically-linked GpProf unit
+  /// used to own.  Acquire one per module via AcquireGpProfContext; release it
+  /// by setting the variable to nil (reference-counted) or calling DisposeGpProfContext.
+  /// </summary>
+  IGpProfContext = interface
+    ['{B2C3D4E5-F6A7-8B9C-0D1E-2F3A4B5C6D7E}']
+    procedure Start;
+    procedure Stop;
+    procedure StartThread;
+    procedure EnterProc(const aProcID: Cardinal);
+    procedure ExitProc(const aProcID: Cardinal);
+    procedure EnterMP(const aMeasurePointId: UTF8String);
+    procedure ExitMP(const aMeasurePointId: UTF8String);
+    function  CreateMeasurePointScope(const aMeasurePointId: string): IMeasurePointScope;
+    procedure Terminate;
 {$IFDEF UNICODE}
-procedure NameThreadForDebugging(const AThreadName: AnsiString; AThreadID: TThreadID = TThreadID(-1)); overload; inline;
-procedure NameThreadForDebugging(const AThreadName: string;     AThreadID: TThreadID = TThreadID(-1)); overload;
+    procedure NameThread(const AThreadName: AnsiString; AThreadID: TThreadID); overload;
+    procedure NameThread(const AThreadName: string;     AThreadID: TThreadID); overload;
 {$ELSE}
-procedure NameThreadForDebugging(const AThreadName: string; AThreadID: TThreadID = TThreadID(-1));
+    procedure NameThread(const AThreadName: string; AThreadID: TThreadID);
 {$ENDIF}
+  end;
+
+/// <summary>
+/// Acquires a new IGpProfContext handle for the calling module.
+/// Notifies the DLL that a client session has been opened (DllAcquireSession).
+/// Release by setting the returned interface to nil, which calls DllReleaseSession.
+/// Returns nil when the DLL could not be loaded.
+/// </summary>
+function AcquireGpProfContext: IGpProfContext;
+
+/// <summary>
+/// Convenience wrapper: sets Ctx to nil, which triggers reference-counted
+/// destruction and calls DllReleaseSession in the DLL.
+/// </summary>
+procedure DisposeGpProfContext(var Ctx: IGpProfContext);
 
 implementation
 
@@ -98,6 +116,8 @@ type
 {$ELSE}
   TProcNameThreadW = procedure(const AThreadName: string; AThreadID: TThreadID);
 {$ENDIF}
+  TFnAcquireSession = function: Pointer;
+  TProcReleaseSession = procedure(session: Pointer);
 
 var
   GpProfDllHandle     : HMODULE = 0;
@@ -113,6 +133,8 @@ var
   _NameThreadForDebuggingA: TProcNameThreadA = nil;
 {$ENDIF}
   _NameThreadForDebuggingW: TProcNameThreadW = nil;
+  _DllAcquireSession  : TFnAcquireSession    = nil;
+  _DllReleaseSession  : TProcReleaseSession  = nil;
 
 // ---------------------------------------------------------------------------
 // Client-side scope adapter — no COM interface reference crosses the DLL boundary.
@@ -136,80 +158,136 @@ end;
 
 destructor TMeasurePointScopeClient.Destroy;
 begin
-  ProfilerExitMP(fMeasurePointId);
+  if Assigned(_ProfilerExitMP) then _ProfilerExitMP(fMeasurePointId);
   inherited;
 end;
 
 // ---------------------------------------------------------------------------
-// Public API — thin wrappers delegating to the loaded DLL function pointers.
-// Each wrapper is a safe no-op when the DLL was not loaded.
+// TGpProfContextClient — object-oriented wrapper around the DLL function
+// pointers. One instance per module (obtained via AcquireGpProfContext).
+// Holds an opaque session token returned by DllAcquireSession; releases it
+// in the destructor via DllReleaseSession, notifying the DLL.
 // ---------------------------------------------------------------------------
 
-procedure ProfilerStart;
+type
+  TGpProfContextClient = class(TInterfacedObject, IGpProfContext)
+  private
+    fSessionToken: Pointer;
+  public
+    constructor Create;
+    destructor  Destroy; override;
+    procedure Start;
+    procedure Stop;
+    procedure StartThread;
+    procedure EnterProc(const aProcID: Cardinal);
+    procedure ExitProc(const aProcID: Cardinal);
+    procedure EnterMP(const aMeasurePointId: UTF8String);
+    procedure ExitMP(const aMeasurePointId: UTF8String);
+    function  CreateMeasurePointScope(const aMeasurePointId: string): IMeasurePointScope;
+    procedure Terminate;
+{$IFDEF UNICODE}
+    procedure NameThread(const AThreadName: AnsiString; AThreadID: TThreadID); overload;
+    procedure NameThread(const AThreadName: string;     AThreadID: TThreadID); overload;
+{$ELSE}
+    procedure NameThread(const AThreadName: string; AThreadID: TThreadID);
+{$ENDIF}
+  end;
+
+constructor TGpProfContextClient.Create;
+begin
+  if Assigned(_DllAcquireSession) then
+    fSessionToken := _DllAcquireSession()
+  else
+    fSessionToken := nil;
+end;
+
+destructor TGpProfContextClient.Destroy;
+begin
+  if Assigned(_DllReleaseSession) and (fSessionToken <> nil) then
+    _DllReleaseSession(fSessionToken);
+  fSessionToken := nil;
+  inherited;
+end;
+
+procedure TGpProfContextClient.Start;
 begin
   if Assigned(_ProfilerStart) then _ProfilerStart;
 end;
 
-procedure ProfilerStop;
+procedure TGpProfContextClient.Stop;
 begin
   if Assigned(_ProfilerStop) then _ProfilerStop;
 end;
 
-procedure ProfilerStartThread;
+procedure TGpProfContextClient.StartThread;
 begin
   if Assigned(_ProfilerStartThread) then _ProfilerStartThread;
 end;
 
-procedure ProfilerEnterProc(const aProcID: Cardinal);
+procedure TGpProfContextClient.EnterProc(const aProcID: Cardinal);
 begin
   if Assigned(_ProfilerEnterProc) then _ProfilerEnterProc(aProcID);
 end;
 
-procedure ProfilerExitProc(const aProcID: Cardinal);
+procedure TGpProfContextClient.ExitProc(const aProcID: Cardinal);
 begin
   if Assigned(_ProfilerExitProc) then _ProfilerExitProc(aProcID);
 end;
 
-procedure ProfilerEnterMP(const aMeasurePointId: UTF8String);
+procedure TGpProfContextClient.EnterMP(const aMeasurePointId: UTF8String);
 begin
   if Assigned(_ProfilerEnterMP) then _ProfilerEnterMP(aMeasurePointId);
 end;
 
-procedure ProfilerExitMP(const aMeasurePointId: UTF8String);
+procedure TGpProfContextClient.ExitMP(const aMeasurePointId: UTF8String);
 begin
   if Assigned(_ProfilerExitMP) then _ProfilerExitMP(aMeasurePointId);
 end;
 
-function CreateMeasurePointScope(const aMeasurePointId: string): IMeasurePointScope;
+function TGpProfContextClient.CreateMeasurePointScope(const aMeasurePointId: string): IMeasurePointScope;
 begin
-  ProfilerEnterMP(UTF8String(aMeasurePointId));
+  if Assigned(_ProfilerEnterMP) then _ProfilerEnterMP(UTF8String(aMeasurePointId));
   Result := TMeasurePointScopeClient.Create(UTF8String(aMeasurePointId));
 end;
 
-procedure ProfilerTerminate;
+procedure TGpProfContextClient.Terminate;
 begin
   if Assigned(_ProfilerTerminate) then _ProfilerTerminate;
 end;
 
 {$IFDEF UNICODE}
-procedure NameThreadForDebugging(const AThreadName: AnsiString; AThreadID: TThreadID);
+procedure TGpProfContextClient.NameThread(const AThreadName: AnsiString; AThreadID: TThreadID);
 begin
-  if Assigned(_NameThreadForDebuggingA) then
-    _NameThreadForDebuggingA(AThreadName, AThreadID);
+  if Assigned(_NameThreadForDebuggingA) then _NameThreadForDebuggingA(AThreadName, AThreadID);
 end;
 
-procedure NameThreadForDebugging(const AThreadName: string; AThreadID: TThreadID);
+procedure TGpProfContextClient.NameThread(const AThreadName: string; AThreadID: TThreadID);
 begin
-  if Assigned(_NameThreadForDebuggingW) then
-    _NameThreadForDebuggingW(AThreadName, AThreadID);
+  if Assigned(_NameThreadForDebuggingW) then _NameThreadForDebuggingW(AThreadName, AThreadID);
 end;
 {$ELSE}
-procedure NameThreadForDebugging(const AThreadName: string; AThreadID: TThreadID);
+procedure TGpProfContextClient.NameThread(const AThreadName: string; AThreadID: TThreadID);
 begin
-  if Assigned(_NameThreadForDebuggingW) then
-    _NameThreadForDebuggingW(AThreadName, AThreadID);
+  if Assigned(_NameThreadForDebuggingW) then _NameThreadForDebuggingW(AThreadName, AThreadID);
 end;
 {$ENDIF}
+
+// ---------------------------------------------------------------------------
+// AcquireGpProfContext / DisposeGpProfContext
+// ---------------------------------------------------------------------------
+
+function AcquireGpProfContext: IGpProfContext;
+begin
+  if GpProfDllHandle = 0 then
+    Result := nil
+  else
+    Result := TGpProfContextClient.Create;
+end;
+
+procedure DisposeGpProfContext(var Ctx: IGpProfContext);
+begin
+  Ctx := nil;
+end;
 
 // ---------------------------------------------------------------------------
 // DLL lifecycle
@@ -239,6 +317,8 @@ begin
   _NameThreadForDebuggingA := GetProcAddress(GpProfDllHandle, 'NameThreadForDebuggingA');
 {$ENDIF}
   _NameThreadForDebuggingW := GetProcAddress(GpProfDllHandle, 'NameThreadForDebuggingW');
+  _DllAcquireSession       := GetProcAddress(GpProfDllHandle, 'DllAcquireSession');
+  _DllReleaseSession       := GetProcAddress(GpProfDllHandle, 'DllReleaseSession');
 end;
 
 procedure UnloadGpProfDll;
@@ -258,6 +338,8 @@ begin
   _NameThreadForDebuggingA := nil;
 {$ENDIF}
   _NameThreadForDebuggingW := nil;
+  _DllAcquireSession       := nil;
+  _DllReleaseSession       := nil;
 end;
 
 initialization
