@@ -1,4 +1,4 @@
-# Build gpprof for Win32 and Win64 and deploy to BIN/ and bin64/
+# Build gpprof for Win32 and Win64 and deploy to bin/
 #
 # Requirements:
 #   - Delphi RAD Studio (paid/professional edition) installed at
@@ -22,8 +22,7 @@ $ErrorActionPreference = "Stop"
 $repoRoot    = Resolve-Path "$PSScriptRoot\.."
 $projectFile = Join-Path $repoRoot "source\GpProf.UI\gpprof.dproj"
 $dllProject  = Join-Path $repoRoot "source\gpprof.dll\GpProfDll.dproj"
-$binDir      = Join-Path $repoRoot "BIN"
-$bin64Dir    = Join-Path $repoRoot "bin64"
+$binDir      = Join-Path $repoRoot "bin"
 
 if (-not (Test-Path $projectFile)) {
     Write-Error "Project file not found: $projectFile"
@@ -86,9 +85,8 @@ Write-Host "Config:      $Config" -ForegroundColor Cyan
 Write-Host ""
 Write-Warning "NOTE: Command-line compilation requires a paid RAD Studio edition (Professional/Enterprise/Architect). The Community Edition is NOT supported and will fail with 'This version does not support command line compiling'."
 
-# Ensure output directories exist
-New-Item -Path $binDir   -ItemType Directory -Force | Out-Null
-New-Item -Path $bin64Dir -ItemType Directory -Force | Out-Null
+# Ensure output directory exists
+New-Item -Path $binDir -ItemType Directory -Force | Out-Null
 
 ###########################################################################
 # BUILD GpProfDll (shared profiling DLL)
@@ -110,21 +108,11 @@ if ($LASTEXITCODE -ne 0) {
     Write-Error "GpProfDll Win64 build failed with exit code $LASTEXITCODE"
     exit $LASTEXITCODE
 }
-Write-Host "GpProfDll Win64 build succeeded. Output: $bin64Dir" -ForegroundColor Green
+Write-Host "GpProfDll Win64 build succeeded. Output: $binDir" -ForegroundColor Green
 
 ###########################################################################
 # BUILD MAIN UI APPLICATION
 ###########################################################################
-
-# Build Win32
-Write-Host ""
-Write-Host "Building Win32 ($Config)..." -ForegroundColor Green
-& $msbuild $projectFile /t:Build /p:Config=$Config /p:Platform=Win32 /nologo /v:minimal
-if ($LASTEXITCODE -ne 0) {
-    Write-Error "Win32 build failed with exit code $LASTEXITCODE"
-    exit $LASTEXITCODE
-}
-Write-Host "Win32 build succeeded. Output: $binDir" -ForegroundColor Green
 
 # Build Win64
 Write-Host ""
@@ -134,7 +122,25 @@ if ($LASTEXITCODE -ne 0) {
     Write-Error "Win64 build failed with exit code $LASTEXITCODE"
     exit $LASTEXITCODE
 }
-Write-Host "Win64 build succeeded. Output: $bin64Dir" -ForegroundColor Green
+Write-Host "Win64 build succeeded. Output: $binDir" -ForegroundColor Green
 
 Write-Host ""
 Write-Host "Build complete." -ForegroundColor Cyan
+
+Andreas Seehusen 
+Senior Principal, Software Architecture 
+Forterro | Windows & Doors
+andreas.seehusen@forterro.com
+ 
+www.forterro.com
+ 
+   
+
+ORGADATA Software-Dienstleistungen AG | Am Nesseufer 14 | 26789 Leer | Germany
+Co-Chairs of the Board / Vorstand: Marcus Pannier, Paul Smolinski
+Chair of the Supervisory Board / Aufsichtsratsvorsitzender: Dean Anthony Edward Forbes
+Registered Office / Sitz der Gesellschaft: Leer
+Commercial Register / Handelsregister: HRB 110929 Amtsgericht Aurich 
+
+Informationen zum Umgang mit Ihren personenbezogenen Daten nach den Art. 13 und 14 EU-DSGVO finden Sie unter  https://www.orgadata.com/global/de/data-privacy-statement.html.
+Further information according to Art. 13 and 14 GDPR about processing your personal data you can find here:  https://www.orgadata.com/global/en/data-privacy-statement.html. 
