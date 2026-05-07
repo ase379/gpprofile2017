@@ -25,7 +25,7 @@ New-item -Path $targetFolder32Include -ItemType Directory	-Force | Out-Null
 Write-Host "Copying bin32 artefacts from $srcBin32\* to $targetFolder32" -f Green
 Copy-Item -Path $srcBin32\* -Include *.exe, *.chm, *.eul -Destination $targetFolder32
 $includeDir = Join-Path $repoRoot "include"
-Copy-Item -Path (Join-Path $includeDir "*") -Include *.pas -Destination $targetFolder32Include
+Copy-Item -Path (Join-Path $includeDir "*") -Include *.pas, *.inc -Destination $targetFolder32Include
 Compress-Archive -LiteralPath $targetFolder32 -DestinationPath $targetZip32
 
 
@@ -36,7 +36,7 @@ New-item -Path $targetFolder64Include -ItemType Directory	-Force | Out-Null
 
 Write-Host "Copying bin64 artefacts from $srcBin64\* to $targetFolder64" -f Green
 Copy-Item -Path $srcBin64\* -Include *.exe, *.chm, *.eul -Destination $targetFolder64
-Copy-Item -Path (Join-Path $includeDir "*") -Include *.pas -Destination $targetFolder64Include
+Copy-Item -Path (Join-Path $includeDir "*") -Include *.pas, *.inc -Destination $targetFolder64Include
 
 Compress-Archive -LiteralPath $targetFolder64 -DestinationPath $targetZip64
 
