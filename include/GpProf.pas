@@ -94,12 +94,16 @@ var
   prfThreadsInfo : TThreadInformationList;
   prfThreadBytes : integer;
   prfMaxThreadNum: Cardinal;
+  prfMeasurePoint: TMeasurePointList;
+  prfMeasurePointBytes : integer;
+  prfMaxMeasurePointNum: Cardinal;
   prfInitialized : boolean;
   prfDisabled    : boolean;
 
   profProcSize          : integer;
   profCompressTicks     : boolean;
   profCompressThreads   : boolean;
+  profCompressMeasurePoint: boolean;
   profProfilingAutostart: boolean;
   profProfilingMemoryEnabled: boolean;
   profPrfOutputFile     : string;
@@ -249,6 +253,21 @@ begin
   end;
 end; { WriteThread }
 
+procedure WriteMeasurePoint(const aId: UTF8String; const aRemap, aCount: integer);
+const
+  marker: integer = 0;
+begin
+  if not profCompressMeasurePoint then WriteUtf8String(aId)
+  else begin
+    if Cardinal(aCount) >= prfMaxMeasurePointNum then begin
+      Transmit(marker, prfMeasurePointBytes);
+      prfMaxMeasurePointNum := 256 * prfMaxMeasurePointNum;
+      Inc(prfMeasurePointBytes);
+    end;
+    Transmit(aRemap, prfMeasurePointBytes);
+  end;
+end;
+
 procedure FlushCounter; inline;
 begin
   if prfCounter <> 0 then begin
@@ -394,6 +413,7 @@ begin
           profProcSize           := LIni.ReadInteger('Procedures','ProcSize',4);
           profCompressTicks      := LIni.ReadBool('Performance','CompressTicks',false);
           profCompressThreads    := LIni.ReadBool('Performance','CompressThreads',false);
+          profCompressMeasurePoint := LIni.ReadBool('Performance','CompressMeasurePoint',false);
           profProfilingAutostart := LIni.ReadBool('Performance','ProfilingAutostart',true);
           profProfilingMemoryEnabled := LIni.ReadBool('Performance','ProfilingMemSupport',false);
           profPrfOutputFile := LIni.ReadString('Output','PrfOutputFilename','$(ModulePath)');
@@ -447,6 +467,9 @@ begin
       prfThreadsInfo      := TThreadInformationList.Create;
       prfMaxThreadNum     := 256;
       prfThreadBytes      := 1;
+      prfMeasurePoint     := TMeasurePointList.Create;
+      prfMaxMeasurePointNum := 256;
+      prfMeasurePointBytes:= 1;
       prfLastTick         := -1;
       prfName             := CombineNames(prfModuleName, 'prf');
       if profPrfOutputFile <> '' then
@@ -485,6 +508,8 @@ begin
   WriteTicks(prfFreq);
   WriteTag(PR_PROCSIZE);
   WriteInt(profProcSize);
+  WriteTag(PR_COMPRESS_MEASURE_POINT);
+  WriteBool(profCompressMeasurePoint);
   WriteTag(PR_ENDHEADER);
 end; { WriteHeader }
 
@@ -540,6 +565,7 @@ begin
   FreeMem(prfBuf);
   prfThreads.Free;
   prfThreadsInfo.free;
+  prfMeasurePoint.free;
   DeleteCriticalSection(prfLock);
 end; { Finalize }
 
@@ -548,6 +574,7 @@ var
   i: integer;
   LItem: TThreadInformation;
   LThreadsIdItem: TTLEl;
+  LMeasurePointItem: TMPLEl;
 begin
   if not prfInitialized then Exit;
 
@@ -584,6 +611,25 @@ begin
       WriteTag(PR_END_THREAD_ID_LIST);
     end;
 
+    // write compressed measure point names
+    if profCompressMeasurePoint then
+    begin
+      prfMeasurePoint.Lock;
+      try
+        WriteTag(PR_START_MEASURE_POINT_LIST);
+        WriteCardinal(prfMeasurePoint.Count);
+        for i := 0 to prfMeasurePoint.Count-1 do
+        begin
+          LMeasurePointItem := prfMeasurePoint.Items[i];
+          WriteUtf8String(LMeasurePointItem.mpleId);
+          WriteCardinal(LMeasurePointItem.mpleRemap);
+        end;
+        WriteTag(PR_END_MEASURE_POINT_LIST);
+      finally
+        prfMeasurePoint.Unlock;
+      end;
+    end;
+
     if prfBufOffs > 0 then
       FlushFile;
   finally
@@ -593,11 +639,36 @@ begin
   Finalize;
 end; { ProfilerTerminate }
 
+procedure CompressMeasurePoint(const aMeasurePointId: UTF8String; out aRemap, aCount: integer);
+begin
+  if aMeasurePointId <> '' then
+  begin
+    if not profCompressMeasurePoint then
+    begin
+      aRemap := 0;
+      aCount := 0;
+    end else
+    begin
+      prfMeasurePoint.Lock;
+      try
+        aRemap := prfMeasurePoint.Remap(aMeasurePointId);
+        aCount := prfMeasurePoint.Count;
+      finally
+        prfMeasurePoint.Unlock;
+      end;
+    end;
+  end
+  else
+    raise Exception.Create('GpProf: Measure Point ID can''t be empty!');
+end;
+
 procedure ProfilerEnterMP(const aMeasurePointId: UTF8String);
 var
   ct : Cardinal;
   cnt: TLargeInteger;
+  remap, count: integer;
 begin
+  CompressMeasurePoint(aMeasurePointId,remap,count);
   QueryPerformanceCounter(cnt);
   ct := GetCurrentThreadID;
 {$B+}
@@ -608,12 +679,14 @@ begin
       FlushCounter;
       WriteTag(PR_ENTER_MP);
       WriteThread(ct);
-      WriteUtf8String(aMeasurePointId);
+      WriteMeasurePoint(aMeasurePointId,remap,count);
       WriteTicks(Cnt);
       if profProfilingMemoryEnabled then
         WriteMemWorkingSize();
       QueryPerformanceCounter(prfCounter);
-    finally LeaveCriticalSection(prfLock); end;
+    finally
+      LeaveCriticalSection(prfLock);
+    end;
   end;
 end;
 
@@ -621,9 +694,11 @@ procedure ProfilerExitMP(const aMeasurePointId: UTF8String);
 var
   ct : Cardinal;
   cnt: TLargeInteger;
+  remap, count: integer;
 begin
   QueryPerformanceCounter(Cnt);
   ct := GetCurrentThreadID;
+  CompressMeasurePoint(aMeasurePointId,remap,count);
 {$B+}
   if prfRunning and ((prfOnlyThread = 0) or (prfOnlyThread = ct)) then begin
 {$B-}
@@ -632,12 +707,14 @@ begin
       FlushCounter;
       WriteTag(PR_EXIT_MP);
       WriteThread(ct);
-      WriteUtf8String(aMeasurePointId);
+      WriteMeasurePoint(aMeasurePointId,remap,count);
       WriteTicks(Cnt);
       if profProfilingMemoryEnabled then
         WriteMemWorkingSize();
       QueryPerformanceCounter(prfCounter);
-    finally LeaveCriticalSection(prfLock); end;
+    finally
+      LeaveCriticalSection(prfLock);
+    end;
   end;
 end;
 
