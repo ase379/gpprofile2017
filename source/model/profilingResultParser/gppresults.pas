@@ -90,7 +90,7 @@ type
     resCalMax         : int64;
     resCalCounter     : integer;
     resMeasurePointBytes    : integer;
-    resCompressMeasurePoint : boolean;
+    resCompressMeasurePoints : boolean;
 
     fMeasurePointRegistry   : TMeasurePointRegistry;
 
@@ -187,12 +187,12 @@ begin
   SetLength(resThreads,1);
   resThreads[0].teThread      := 0; // impossible handle
   resThreads[0].teActiveProcs := nil;
-  resOldTicks          := -1;
-  resThreadBytes       := 1;
+  resOldTicks    := -1;
+  resThreadBytes := 1;
   resMeasurePointBytes := 1;
-  resCompressTicks        := false;
-  resCompressThreads      := false;
-  resCompressMeasurePoint := false;
+  resCompressTicks   := false;
+  resCompressThreads := false;
+  resCompressMeasurePoints := false;
   resPrfVersion      := 0;
   resPrfDigest       := false;
   resNullOverhead    := 0;
@@ -300,7 +300,7 @@ var
   s: AnsiString;
   index: Cardinal;
 begin
-  if not resCompressMeasurePoint then
+  if not resCompressMeasurePoints then
   begin
     ReadAnsiString(s);
     id := UTF8ToString(s);
@@ -603,13 +603,13 @@ var LTag : byte;
     LIndex : AnsiString;
     LMap : TDictionary<AnsiString,AnsiString>;
 begin
-  if not resCompressMeasurePoint then
+  if not resCompressMeasurePoints then
     exit;
   LPos := resFile.FilePos;
   if LPos = resFile.FileSize then
     exit;
   ReadTag(LTag);
-  if LTag <> PR_START_MEASURE_POINT_LIST then
+  if LTag <> PR_START_MEASURE_POINTS_LIST then
   begin
     resFile.Seek(LPos);
     exit;
@@ -637,8 +637,8 @@ begin
     end;
   end;
   ReadTag(LTag);
-  if lTag <> PR_END_MEASURE_POINT_LIST then
-    raise Exception.Create('Found PR_START_MEASURE_POINT_LIST without PR_END_MEASURE_POINT_LIST');
+  if lTag <> PR_END_MEASURE_POINTS_LIST then
+    raise Exception.Create('Found PR_START_MEASURE_POINTS_LIST without PR_END_MEASURE_POINTS_LIST');
 end;
 
 procedure TResults.EnterProcPkt(const pkt: TResPacket; const mempkt: TResMemPacket);
@@ -772,7 +772,7 @@ begin
       PR_COMPTHREADS: ReadBool(resCompressThreads);
       PR_DIGEST     : resPrfDigest := true;
       PR_DIGESTVER  : ReadInt(lDigestVersion);
-      PR_COMPRESS_MEASURE_POINT : ReadBool(resCompressMeasurePoint);
+      PR_COMPRESS_MEASURE_POINTS : ReadBool(resCompressMeasurePoints);
     end;
   until tag = PR_ENDHEADER;
 end; { TResults.LoadHeader }

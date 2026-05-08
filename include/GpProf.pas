@@ -94,7 +94,7 @@ var
   prfThreadsInfo : TThreadInformationList;
   prfThreadBytes : integer;
   prfMaxThreadNum: Cardinal;
-  prfMeasurePoint: TMeasurePointList;
+  prfMeasurePoints: TMeasurePointList;
   prfMeasurePointBytes : integer;
   prfMaxMeasurePointNum: Cardinal;
   prfInitialized : boolean;
@@ -103,7 +103,7 @@ var
   profProcSize          : integer;
   profCompressTicks     : boolean;
   profCompressThreads   : boolean;
-  profCompressMeasurePoint: boolean;
+  profCompressMeasurePoints: boolean;
   profProfilingAutostart: boolean;
   profProfilingMemoryEnabled: boolean;
   profPrfOutputFile     : string;
@@ -257,7 +257,7 @@ procedure WriteMeasurePoint(const aId: UTF8String; const aRemap, aCount: integer
 const
   marker: integer = 0;
 begin
-  if not profCompressMeasurePoint then WriteUtf8String(aId)
+  if not profCompressMeasurePoints then WriteUtf8String(aId)
   else begin
     if Cardinal(aCount) >= prfMaxMeasurePointNum then begin
       Transmit(marker, prfMeasurePointBytes);
@@ -413,7 +413,7 @@ begin
           profProcSize           := LIni.ReadInteger('Procedures','ProcSize',4);
           profCompressTicks      := LIni.ReadBool('Performance','CompressTicks',false);
           profCompressThreads    := LIni.ReadBool('Performance','CompressThreads',false);
-          profCompressMeasurePoint := LIni.ReadBool('Performance','CompressMeasurePoint',false);
+          profCompressMeasurePoints := LIni.ReadBool('Performance','CompressMeasurePoints',false);
           profProfilingAutostart := LIni.ReadBool('Performance','ProfilingAutostart',true);
           profProfilingMemoryEnabled := LIni.ReadBool('Performance','ProfilingMemSupport',false);
           profPrfOutputFile := LIni.ReadString('Output','PrfOutputFilename','$(ModulePath)');
@@ -467,7 +467,7 @@ begin
       prfThreadsInfo      := TThreadInformationList.Create;
       prfMaxThreadNum     := 256;
       prfThreadBytes      := 1;
-      prfMeasurePoint     := TMeasurePointList.Create;
+      prfMeasurePoints    := TMeasurePointList.Create;
       prfMaxMeasurePointNum := 256;
       prfMeasurePointBytes:= 1;
       prfLastTick         := -1;
@@ -508,8 +508,8 @@ begin
   WriteTicks(prfFreq);
   WriteTag(PR_PROCSIZE);
   WriteInt(profProcSize);
-  WriteTag(PR_COMPRESS_MEASURE_POINT);
-  WriteBool(profCompressMeasurePoint);
+  WriteTag(PR_COMPRESS_MEASURE_POINTS);
+  WriteBool(profCompressMeasurePoints);
   WriteTag(PR_ENDHEADER);
 end; { WriteHeader }
 
@@ -565,7 +565,7 @@ begin
   FreeMem(prfBuf);
   prfThreads.Free;
   prfThreadsInfo.free;
-  prfMeasurePoint.free;
+  prfMeasurePoints.free;
   DeleteCriticalSection(prfLock);
 end; { Finalize }
 
@@ -612,21 +612,21 @@ begin
     end;
 
     // write compressed measure point names
-    if profCompressMeasurePoint then
+    if profCompressMeasurePoints then
     begin
-      prfMeasurePoint.Lock;
+      prfMeasurePoints.Lock;
       try
-        WriteTag(PR_START_MEASURE_POINT_LIST);
-        WriteCardinal(prfMeasurePoint.Count);
-        for i := 0 to prfMeasurePoint.Count-1 do
+        WriteTag(PR_START_MEASURE_POINTS_LIST);
+        WriteCardinal(prfMeasurePoints.Count);
+        for i := 0 to prfMeasurePoints.Count-1 do
         begin
-          LMeasurePointItem := prfMeasurePoint.Items[i];
+          LMeasurePointItem := prfMeasurePoints.Items[i];
           WriteUtf8String(LMeasurePointItem.mpleId);
           WriteCardinal(LMeasurePointItem.mpleRemap);
         end;
-        WriteTag(PR_END_MEASURE_POINT_LIST);
+        WriteTag(PR_END_MEASURE_POINTS_LIST);
       finally
-        prfMeasurePoint.Unlock;
+        prfMeasurePoints.Unlock;
       end;
     end;
 
@@ -643,18 +643,18 @@ procedure CompressMeasurePoint(const aMeasurePointId: UTF8String; out aRemap, aC
 begin
   if aMeasurePointId <> '' then
   begin
-    if not profCompressMeasurePoint then
+    if not profCompressMeasurePoints then
     begin
       aRemap := 0;
       aCount := 0;
     end else
     begin
-      prfMeasurePoint.Lock;
+      prfMeasurePoints.Lock;
       try
-        aRemap := prfMeasurePoint.Remap(aMeasurePointId);
-        aCount := prfMeasurePoint.Count;
+        aRemap := prfMeasurePoints.Remap(aMeasurePointId);
+        aCount := prfMeasurePoints.Count;
       finally
-        prfMeasurePoint.Unlock;
+        prfMeasurePoints.Unlock;
       end;
     end;
   end
