@@ -89,7 +89,11 @@ type
     resCalTime2       : int64;
     resCalMax         : int64;
     resCalCounter     : integer;
-    fMeasurePointRegistry : TMeasurePointRegistry;
+    resMeasurePointBytes    : integer;
+    resCompressMeasurePoint : boolean;
+
+    fMeasurePointRegistry   : TMeasurePointRegistry;
+
     procedure   RaiseFileCorruptedException(const aContext : String);
 
     procedure   CalibrationStep(pkt1, pkt2: TResPacket);
@@ -104,6 +108,7 @@ type
     procedure   LoadThreads;
     function    LoadThreadIdList: TThreadIdMap;
     function    LoadThreadInformationList: TThreadInfoArray;
+    procedure   LoadMeasurePoints;
     procedure   LoadDigest(callback: TProgressCallback);
     procedure   ReadString(var str: AnsiString);
     procedure   ReadShortstring(var str: AnsiString);
@@ -114,6 +119,7 @@ type
     procedure   ReadUInt64(var ui64: uint64);
     procedure   ReadBool(var bool: boolean);
     procedure   ReadTag(var tag: byte);
+    procedure   ReadMeasurePoint(var id: String);
     procedure   ReadThread(var thread: integer);
     procedure   ReadTicks(var ticks: int64);
     procedure   ReadID(var id: integer);
@@ -181,10 +187,12 @@ begin
   SetLength(resThreads,1);
   resThreads[0].teThread      := 0; // impossible handle
   resThreads[0].teActiveProcs := nil;
-  resOldTicks        := -1;
-  resThreadBytes     := 1;
-  resCompressTicks   := false;
-  resCompressThreads := false;
+  resOldTicks          := -1;
+  resThreadBytes       := 1;
+  resMeasurePointBytes := 1;
+  resCompressTicks        := false;
+  resCompressThreads      := false;
+  resCompressMeasurePoint := false;
   resPrfVersion      := 0;
   resPrfDigest       := false;
   resNullOverhead    := 0;
@@ -212,6 +220,7 @@ begin
       if Version > 2 then LoadCalibration;
       LoadData(callback);
       LoadThreads;
+      LoadMeasurePoints;
       RecalcTimes;
     end;
   finally
@@ -285,6 +294,27 @@ begin
     end;
   end;
 end; { TResults.ReadThread }
+
+procedure TResults.ReadMeasurePoint(var id: String);
+var
+  s: AnsiString;
+  index: Cardinal;
+begin
+  if not resCompressMeasurePoint then
+  begin
+    ReadAnsiString(s);
+    id := UTF8ToString(s);
+  end else
+  begin
+    index := 0;
+    resFile.BlockReadUnsafe(index,resMeasurePointBytes);
+    if index = 0 then begin
+      Inc(resMeasurePointBytes);
+      resFile.BlockReadUnsafe(index,resMeasurePointBytes);
+    end;
+    id := Format('{%d}',[index]);
+  end;
+end;
 
 procedure TResults.ReadShortstring(var str: AnsiString);
 var
@@ -564,6 +594,53 @@ begin
     raise Exception.Create('Found PR_START_THREADINFO without PR_END_THREADINFO');
 end; { TResults.LoadThreadInformationList }
 
+procedure TResults.LoadMeasurePoints;
+var LTag : byte;
+    LPos : HugeInt;
+    LCount : Cardinal;
+    LName : AnsiString;
+    LRemap : Cardinal;
+    LIndex : AnsiString;
+    LMap : TDictionary<AnsiString,AnsiString>;
+begin
+  if not resCompressMeasurePoint then
+    exit;
+  LPos := resFile.FilePos;
+  if LPos = resFile.FileSize then
+    exit;
+  ReadTag(LTag);
+  if LTag <> PR_START_MEASURE_POINT_LIST then
+  begin
+    resFile.Seek(LPos);
+    exit;
+  end;
+  ReadCardinal(LCount);
+  if LCount > 0 then
+  begin
+    LMap := TDictionary<AnsiString,AnsiString>.Create(LCount);
+    try
+      for var i := 0 to LCount-1 do
+      begin
+        ReadAnsiString(LName);
+        ReadCardinal(LRemap);
+        LIndex := AnsiString(Format('{%d}',[LRemap]));
+        LMap.AddOrSetValue(LIndex,LName);
+      end;
+      // remap measure point indexes back to names
+      for var LProc in resProcedures do
+      begin
+        if LMap.TryGetValue(LProc.peName,LName) then
+          LProc.peName := LName;
+      end;
+    finally
+      LMap.Free;
+    end;
+  end;
+  ReadTag(LTag);
+  if lTag <> PR_END_MEASURE_POINT_LIST then
+    raise Exception.Create('Found PR_START_MEASURE_POINT_LIST without PR_END_MEASURE_POINT_LIST');
+end;
+
 procedure TResults.EnterProcPkt(const pkt: TResPacket; const mempkt: TResMemPacket);
 var
   proxy: TProcProxy;
@@ -650,8 +727,6 @@ begin
 end;
 
 function TResults.ReadPacket(var pkt: TResPacket; var pktMem: TResMemPacket): boolean;
-var
-  lAnsiMeasurePointId : ansistring;
 begin
   with pkt do begin
     ReadTag(rpTag);
@@ -661,8 +736,7 @@ begin
     begin
       rpProcID := -1;
       ReadThread(rpThread);
-      ReadAnsiString(lAnsiMeasurePointId);
-      rpMeasurePointID := utf8ToString(lAnsiMeasurePointId);
+      ReadMeasurePoint(rpMeasurePointID);
       ReadTicks(rpMeasure1);
       if IsMemProfilingEnabled then
         ReadMem(pktMem.rpMemWorkingSize);
@@ -698,6 +772,7 @@ begin
       PR_COMPTHREADS: ReadBool(resCompressThreads);
       PR_DIGEST     : resPrfDigest := true;
       PR_DIGESTVER  : ReadInt(lDigestVersion);
+      PR_COMPRESS_MEASURE_POINT : ReadBool(resCompressMeasurePoint);
     end;
   until tag = PR_ENDHEADER;
 end; { TResults.LoadHeader }
