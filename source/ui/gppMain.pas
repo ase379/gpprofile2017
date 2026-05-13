@@ -614,10 +614,7 @@ begin
   tabMemoryAnalysis.Font.Color             := clWindowText;
   StatusPanel0('',false);
   fPerformanceFrame.Enable();
-  if TGlobalPreferences.ProfilingMemSupport then
-    fMemoryFrame.Enable()
-  else
-    fMemoryFrame.Disable();
+  fMemoryFrame.Enable();
   if fPerformanceFrame.Enable then
   begin
     if PageControl1.ActivePage = tabPerformanceAnalysis then
@@ -690,7 +687,6 @@ begin
   else
   begin
     StatusPanel0('Loading of results finished, it took '+fNeededSeconds.ToString+' seconds.',true);
-
     LOpenResult := true;
   end;
   HideProgressBar;
@@ -712,15 +708,14 @@ begin
     SetCaption;
     SetSource;
     actHideNotExecuted.Checked := TGlobalPreferences.GetProfilePref('HideNotExecuted', TGlobalPreferences.HideNotExecuted);
+
     fPerformanceFrame.FillViews(1);
     fPerformanceFrame.ClearBreakdown;
-    fPerformanceFrame.mnuExportProfile.Enabled     := true;
-    if TGlobalPreferences.ProfilingMemSupport then
-    begin
-      fMemoryFrame.FillViews(1);
-      fMemoryFrame.ClearBreakdown;
-    end;
-    fMemoryFrame.mnuExportProfile.Enabled := TGlobalPreferences.ProfilingMemSupport;
+    fPerformanceFrame.mnuExportProfile.Enabled := true;
+
+    fMemoryFrame.FillViews(1);
+    fMemoryFrame.ClearBreakdown;
+    fMemoryFrame.mnuExportProfile.Enabled := true;
 
     actHideNotExecuted.Enabled   := true;
     actRescanProfile.Enabled     := true;
@@ -923,6 +918,7 @@ begin
   FInstrumentationFrame.chkShowDirStructure.OnClick := cbProfileChange;
   FInstrumentationFrame.OnReloadSource := LoadSource;
   FInstrumentationFrame.OnShowStatusBarMessage := StatusPanel0;
+
   fPerformanceFrame := TfrmMainProfiling.Create(self);
   fPerformanceFrame.Parent := tabPerformanceAnalysis;
   fPerformanceFrame.Align := alClient;
@@ -1655,7 +1651,7 @@ procedure TfrmMain.actHideNotExecutedExecute(Sender: TObject);
 begin
   actHideNotExecuted.Checked := not actHideNotExecuted.Checked;
   fPerformanceFrame.FillViews;
-  fMemoryFrame.FillViews();
+  fMemoryFrame.FillViews;
   TGlobalPreferences.SetProfilePref('HideNotExecuted', actHideNotExecuted.Checked);
 end;
 
