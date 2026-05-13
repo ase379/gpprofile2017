@@ -174,7 +174,7 @@ type
     procedure lvLayoutsSelectItem(Sender: TObject; Item: TListItem;
       Selected: Boolean);
     procedure actHelpContentsExecute(Sender: TObject);
-    procedure CMDialogKey( Var msg: TCMDialogKey ); message CM_DIALOGKEY;
+    procedure CMDialogKey(var msg: TCMDialogKey ); message CM_DIALOGKEY;
     procedure actHelpQuickStartExecute(Sender: TObject);
     procedure actShowHideSourcePreviewExecute(Sender: TObject);
     procedure actShowHideCallersExecute(Sender: TObject);
@@ -212,13 +212,13 @@ type
 
 	// MRU creation and events
     procedure CreateMRU;
-    procedure MRUClick(Sender: TObject; LatestFile: String);
-    procedure MRUPrfClick(Sender: TObject; LatestFile: String);
-    procedure MRUGisClick(Sender: TObject; LatestFile: string);
+    procedure MRUClick(Sender: TObject; const LatestFile: String);
+    procedure MRUPrfClick(Sender: TObject; const LatestFile: String);
+    procedure MRUGisClick(Sender: TObject; const LatestFile: string);
 
     procedure ExecuteAsync(const aProc: TAsyncExecuteProc;const aOnFinishedProc: TAsyncFinishedProc;const aActionName : string);
     procedure ParseProject(const aProject: string; const aJustRescan: boolean);
-    procedure LoadProject(fileName: string; defaultDelphi: string = '');
+    procedure LoadProject(const fileName: string; defaultDelphi: string = '');
     procedure NotifyParse(const aUnitName: string);
     procedure NotifyInstrument(const aFullName, aUnitName: string; aParse: Boolean);
 
@@ -229,10 +229,10 @@ type
     procedure EnablePC;
     procedure DisablePC2;
     procedure EnablePC2;
-    procedure LoadProfile(fileName: string);
+    procedure LoadProfile(const fileName: string);
     procedure SetCaption;
     procedure SetSource;
-    procedure ParseProfile(profile: string);
+    procedure ParseProfile(const profile: string);
     function  ParseProfileCallback(percent: integer): boolean;
     procedure ParseProfileDone;
     procedure FillDelphiVer;
@@ -247,8 +247,8 @@ type
     procedure NoProfile;
     procedure ResetProfile();
     procedure DoInstrument;
-    procedure LoadMetrics(layoutName: string);
-    procedure SaveMetrics(layoutName: string);
+    procedure LoadMetrics(const layoutName: string);
+    procedure SaveMetrics(const layoutName: string);
     procedure RebuildLayoutPopup(changeActive: boolean);
     function  IsLayout(layout: string): boolean;
     procedure SetChangeLayout(setRestore: boolean);
@@ -428,6 +428,7 @@ begin
     openProject.SaveInstrumentalizationSelection(lLastSelectionStream);
     lLastSelectionStream.Position := 0;
   end;
+
   if not aJustRescan then
   begin
     FInstrumentationFrame.openProject := nil;
@@ -526,7 +527,7 @@ begin
   frmPreferences.RebuildDefines(TGlobalPreferences.GetProjectPref('UserDefines',TGlobalPreferences.UserDefines));
 end;
 
-procedure TfrmMain.LoadProject(fileName: string; defaultDelphi: string = '');
+procedure TfrmMain.LoadProject(const fileName: string; defaultDelphi: string);
 begin
   try
     if not FileExists(fileName) then
@@ -594,8 +595,8 @@ end; { TfrmMain.RebuildDelphiVer }
 
 procedure TfrmMain.DisablePC2;
 begin
-  tabPerformanceAnalysis.Font.Color             := clBtnShadow;
-  tabMemoryAnalysis.Font.Color             := clBtnShadow;
+  tabPerformanceAnalysis.Font.Color := clBtnShadow;
+  tabMemoryAnalysis.Font.Color := clBtnShadow;
   fPerformanceFrame.Disable();
   fMemoryFrame.Disable();
   if PageControl1.ActivePage = tabPerformanceAnalysis then
@@ -606,8 +607,8 @@ end; { TfrmMain.DisablePC2 }
 
 procedure TfrmMain.EnablePC2;
 begin
-  tabPerformanceAnalysis.Font.Color             := clWindowText;
-  tabMemoryAnalysis.Font.Color             := clWindowText;
+  tabPerformanceAnalysis.Font.Color := clWindowText;
+  tabMemoryAnalysis.Font.Color := clWindowText;
   StatusPanel0('',false);
   fPerformanceFrame.Enable();
   fMemoryFrame.Enable();
@@ -621,8 +622,6 @@ begin
   end;
 end;
 
-
-
 { TfrmMain.EnablePC2 }
 
 function TfrmMain.ParseProfileCallback(percent: integer): boolean;
@@ -631,7 +630,7 @@ begin
   Result := true;
 end; { TfrmMain.ParseProfileCallback }
 
-procedure TfrmMain.ParseProfile(profile: string);
+procedure TfrmMain.ParseProfile(const profile: string);
 begin
   cancelLoading := false;
   Enabled := false;
@@ -725,10 +724,7 @@ begin
   end;
 end;
 
-
-
-
-procedure TfrmMain.LoadProfile(fileName: string);
+procedure TfrmMain.LoadProfile(const fileName: string);
 begin
   try
     if not FileExists(fileName) then
@@ -1000,7 +996,7 @@ begin
   end;
 end;
 
-procedure TfrmMain.MRUClick(Sender: TObject; LatestFile: String);
+procedure TfrmMain.MRUClick(Sender: TObject; const LatestFile: String);
 begin
   if (openProject = nil) or (openProject.Name <> LatestFile) then
   begin
@@ -1008,7 +1004,7 @@ begin
   end;
 end;
 
-procedure TfrmMain.MRUGisClick(Sender: TObject; LatestFile: string);
+procedure TfrmMain.MRUGisClick(Sender: TObject; const LatestFile: string);
 begin
   try
     var lFileStream := TFileStream.Create(LatestFile, fmOpenRead);
@@ -1037,7 +1033,7 @@ begin
 
 end;
 
-procedure TfrmMain.SaveMetrics(layoutName: string);
+procedure TfrmMain.SaveMetrics(const layoutName: string);
 
   procedure PutHeader(reg: TGpRegistry; aVST: TVirtualStringTree; prefix: string);
   var
@@ -1295,8 +1291,6 @@ begin
   ParseProject(openProject.Name, true);
 end;
 
-
-
 procedure TfrmMain.clbClassesKeyPress(Sender: TObject; var Key: Char);
 begin
   if Key = #32 then
@@ -1398,7 +1392,7 @@ begin
   end;
 end;
 
-procedure TfrmMain.MRUPrfClick(Sender: TObject; LatestFile: String);
+procedure TfrmMain.MRUPrfClick(Sender: TObject; const LatestFile: String);
 begin
   if not assigned(fCurrentProfile) or (fCurrentProfile.FileName <> LatestFile) then
     LoadProfile(LatestFile);
@@ -1414,7 +1408,7 @@ begin
   cancelLoading := true;
 end;
 
-procedure TfrmMain.LoadMetrics(layoutName: string);
+procedure TfrmMain.LoadMetrics(const layoutName: string);
 
   procedure GetHeaders(reg: TGpRegistry; aVST: TVirtualStringTree; prefix: string);
   var

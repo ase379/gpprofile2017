@@ -26,9 +26,9 @@ type
   public
     constructor Create(const aProjectName: string;const aSelectedDelphiVersion : string);
     destructor Destroy; override;
-    procedure Parse(aExclUnits: String;const aConditionals: String; aNotify: TNotifyProc;
+    procedure Parse(const aExclUnits: String;const aConditionals: String; aNotify: TNotifyProc;
       aCommentType: TCommentType; aParseAsm: boolean;const anErrorList : TStrings);
-    procedure Rescan(aExclUnits: String;const aConditionals: string;
+    procedure Rescan(const aExclUnits: String;const aConditionals: string;
       aCommentType: TCommentType; aParseAsm: boolean);
 
     function GetUnit(const aUnitName: string;const aProjectDirOnly: boolean): TUnit;
@@ -78,7 +78,7 @@ begin
   inherited;
 end;
 
-procedure TProject.Parse(aExclUnits: String;
+procedure TProject.Parse(const aExclUnits: String;
   const aConditionals: string; aNotify: TNotifyProc;
   aCommentType: TCommentType; aParseAsm: boolean; const anErrorList : TStrings);
 
@@ -462,7 +462,7 @@ begin
   aUnitSelections.ApplySelections(prUnits,aOnlyCheckUnitName);
 end;
 
-procedure TProject.Rescan(aExclUnits: String;
+procedure TProject.Rescan(const aExclUnits: String;
   const aConditionals: string;
   aCommentType: TCommentType; aParseAsm: boolean);
 var

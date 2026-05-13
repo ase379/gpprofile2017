@@ -11,7 +11,7 @@ uses
   Menus;
 
 type
-  TRecentFileEvent = procedure(Sender: TObject; LatestFile: string) of object;
+  TRecentFileEvent = procedure(Sender: TObject; const LatestFile: string) of object;
 
 type
   TGPMRUFiles = class(TComponent)
@@ -25,7 +25,7 @@ type
     FHKey       : String;
     FLatestFile : String;
     FOnClick    : TRecentFileEvent;
-    procedure SetLatestFile(value: string);
+    procedure SetLatestFile(const value: string);
     procedure SetMaxFiles(value: integer);
     procedure MenuOnClick(Sender: TObject);
     procedure SetAlone(value: boolean);
@@ -106,7 +106,7 @@ begin
   end;
 end;
 
-procedure TGPMRUFiles.SetLatestFile(value: string);
+procedure TGPMRUFiles.SetLatestFile(const value: string);
 var
   NewMenuItem: TMenuItem;
   n          : integer;

@@ -118,8 +118,6 @@ uses
 
 { TfrmMainInstrumentation }
 
-
-
 constructor TfrmMainInstrumentation.Create(AOwner: TComponent);
 begin
   inherited;
@@ -175,8 +173,6 @@ begin
   vstSelectProcs.Enabled             := true;
 end;
 
-
-
 procedure TfrmMainInstrumentation.FillUnitTree(const aOnlyUnitsOfDPR, aShowDirectories: boolean);
 begin
   fVstSelectUnitTools.FillUnitTree(aOnlyUnitsOfDPR, aShowDirectories);
@@ -186,7 +182,6 @@ function TfrmMainInstrumentation.GetClassSelectionInfoForNode(const aNode: PVirt
 begin
   result := TSelectionInfo.Create(fVstSelectClassTools.GetName(aNode));
 end;
-
 
 function TfrmMainInstrumentation.GetClassSelectionInfoForSelectedNode: ISelectionInfo;
 begin
@@ -202,7 +197,6 @@ function  TfrmMainInstrumentation.GetSelectedUnitNode(): pVirtualNode;
 begin
   result := fVstSelectUnitTools.GetSelectedNode;
 end;
-
 
 procedure TfrmMainInstrumentation.btnUnitSelectionWizardClick(Sender: TObject);
 var
@@ -536,7 +530,7 @@ var
 begin
   LAddToSelectionEvent := vstSelectClasses.OnAddToSelection;
   vstSelectClasses.OnAddToSelection := nil;
-  fVstSelectClassTools.setSelectedIndex(anIndex);
+  fVstSelectClassTools.SetSelectedByIndex(anIndex);
   vstSelectClasses.OnAddToSelection := LAddToSelectionEvent;
 end;
 
@@ -581,7 +575,6 @@ begin
     fVstSelectProcTools.EndUpdate;
   end;
 end;
-
 
 procedure TfrmMainInstrumentation.clbUnitsClickCheck(const aNode: PVirtualNode);
 begin
@@ -762,7 +755,7 @@ end;
 
 procedure TfrmMainInstrumentation.SetSelectedUnitIndex(const anIndex: integer);
 begin
-  fVstSelectUnitTools.setSelectedIndex(anIndex);
+  fVstSelectUnitTools.SetSelectedByIndex(anIndex);
 end;
 
 procedure TfrmMainInstrumentation.TriggerSelectionReload;

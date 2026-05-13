@@ -133,7 +133,6 @@ begin
         // second pass: add units
         for var lUnitInfo in lUnitInfoList do
         begin
-
           if aShowDirectories then
           begin
             lSplittedPath := SplitString(lUnitInfo.UnitPath, '\');
@@ -182,7 +181,6 @@ begin
   finally
     lUnitInfoList.free;
   end;
-  
 end; { TfrmMain.FillUnitTree }
 
 

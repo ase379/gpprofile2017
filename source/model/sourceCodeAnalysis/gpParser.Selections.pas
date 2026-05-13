@@ -18,11 +18,11 @@ type
     property Name : string read fUnitName;
     property SelectedProcedures : TStringList read FSelectedProcedures write FSelectedProcedures;
   end;
+
   TUnitSelectionList = class(TObjectList<TUnitSelection>)
   private
     procedure RaiseInvalidTagError(const anExpectedName,aFoundName : string);
     procedure RaiseMissingAttributeError(const anTagName, anAttributeName : string);
-
   public
     procedure LoadSelectionFromStream(const aStream: TStream);
     procedure ApplySelections(const aUnits : TUnitList; const aOnlyCheckUnitName : boolean);
@@ -42,7 +42,6 @@ type
     procedure AddProc(const aProcName: string);
     procedure Save();
   end;
-
 
 implementation
 
@@ -72,7 +71,6 @@ procedure TUnitSelectionList.ApplySelections(const aUnits : TUnitList; const aOn
   var
     LSelection : TUnitSelection;
     LUnitName : string;
-
   begin
     result := nil;
     LUnitName := aUnitName.ToUpper();
@@ -102,25 +100,22 @@ procedure TUnitSelectionList.ApplySelections(const aUnits : TUnitList; const aOn
     end;
   end;
 
-
 var
   LUnitSelection : TUnitSelection;
   LProcSelection : string;
-  un: TUnit;
-  LUnitEnumor: TNodeList<TUnit>.TEnumerator;
-  LProcEnumor: TNodeList<TProc>.TEnumerator;
+  LUnit: TUnit;
   LAllCnt : Cardinal;
   LNone : boolean;
 begin
   // update unit list selections
-  LUnitEnumor := aUnits.GetEnumerator();
+  var LUnitEnumor := aUnits.GetEnumerator;
   while LUnitEnumor.MoveNext do
   begin
-    un := LUnitEnumor.Current.Data;
-    LUnitSelection := GetSelectionOrNil(un.Name);
+    LUnit := LUnitEnumor.Current.Data;
+    LUnitSelection := GetSelectionOrNil(LUnit.Name);
     LAllCnt := 0;
     LNone := true;
-    LProcEnumor := un.unProcs.GetEnumerator();
+    var LProcEnumor := LUnit.unProcs.GetEnumerator();
     while LProcEnumor.MoveNext do
     begin
       LProcSelection := '';
@@ -133,8 +128,9 @@ begin
         LNone := false;
       end;
     end;
-    un.unAllInst := LAllCnt = un.unProcs.Count;
-    un.unNoneInst := LNone;
+    LProcEnumor.Free;
+    LUnit.unAllInst := LAllCnt = LUnit.unProcs.Count;
+    LUnit.unNoneInst := LNone;
   end;
   LUnitEnumor.Free;
 end; { TProject.ApplySelections }
@@ -148,7 +144,6 @@ procedure TUnitSelectionList.RaiseMissingAttributeError(const anTagName, anAttri
 begin
   raise EReadError.Create('Error: Expected attribute "'+anAttributeName+'" for tag "'+anTagName+'".');
 end;
-
 
 procedure TUnitSelectionList.LoadSelectionFromStream(const aStream: TStream);
 var
@@ -195,10 +190,7 @@ begin
   end;
 end;
 
-
-
 { TUnitSelectionSerializer }
-
 
 constructor TUnitSelectionSerializer.Create(const aStream : TStream);
 begin
@@ -211,12 +203,10 @@ begin
   fUnitsNode := fRootNode.AddChild('Units');
 end;
 
-
 destructor TUnitSelectionSerializer.Destroy;
 begin
   inherited;
 end;
-
 
 procedure TUnitSelectionSerializer.Save;
 begin
