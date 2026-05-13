@@ -97,7 +97,6 @@ type
     procedure ProcessShowDirStructureClick(Sender: TObject);
 
     procedure FillUnitTree(const aOnlyUnitsOfDPR: boolean;const aShowDirectories: boolean);
-    procedure RescanProject(const aOnRescan : TOnParseProject);
     procedure RemoveInstrumentation(const aOnDoInstrument : TOnDoInstrument);
 
     procedure TriggerSelectionReload();
@@ -711,33 +710,6 @@ begin
     chkShowAll.Checked := chk;
   finally
     fVstSelectUnitTools.EndUpdate;
-  end;
-end;
-
-procedure TfrmMainInstrumentation.RescanProject(const aOnRescan: TOnParseProject);
-var
-  iiu,iic,iip: integer;
-begin
-  iiu :=  fVstSelectUnitTools.GetSelectedNode.index;
-  iic := fVstSelectClassTools.GetSelectedIndex;
-  iip := fVstSelectProcTools.GetSelectedIndex;
-  aOnRescan(openProject.name, true);
-  if (iiu < fVstSelectUnitTools.GetCount) and
-    (fVstSelectUnitTools.GetCount > 0) then
-  begin
-    fVstSelectUnitTools.setSelectedIndex(iiu);
-    clbUnitsClick(fVstSelectUnitTools.GetSelectedNode);
-    if (iic < fVstSelectClassTools.GetCount) and (fVstSelectClassTools.GetCount > 0) then
-    begin
-      ChangeClassSelectionWithoutEvent(iic);
-      clbClassesClick(self);
-
-      if (iip < fVstSelectProcTools.GetCount()) and (fVstSelectProcTools.GetCount() > 0) then
-      begin
-        fVstSelectProcTools.setSelectedIndex(iip);
-        clbProcsClick(self);
-      end;
-    end;
   end;
 end;
 

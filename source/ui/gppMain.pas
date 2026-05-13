@@ -70,7 +70,6 @@ type
     tabPerformanceAnalysis: TTabSheet;
     pnlSourcePreview: TPanel;
     splitSourcePreview: TSplitter;
-    actRescanChanged: TAction;
     actChangeLayout: TAction;
     actAddLayout: TAction;
     actDelLayout: TAction;
@@ -155,7 +154,6 @@ type
     procedure actMakeCopyProfileExecute(Sender: TObject);
     procedure actDelUndelProfileExecute(Sender: TObject);
     procedure actRenameMoveProfileExecute(Sender: TObject);
-    procedure actRescanChangedExecute(Sender: TObject);
     procedure AppShortcut(var Msg: TWMKey; var Handled: boolean);
     procedure actChangeLayoutExecute(Sender: TObject);
     procedure actLayoutManagerExecute(Sender: TObject);
@@ -249,7 +247,6 @@ type
     procedure NoProfile;
     procedure ResetProfile();
     procedure DoInstrument;
-    procedure RescanProject;
     procedure LoadMetrics(layoutName: string);
     procedure SaveMetrics(layoutName: string);
     procedure RebuildLayoutPopup(changeActive: boolean);
@@ -403,7 +400,6 @@ begin
   Enabled := true;
 
   actRescanProject.Enabled         := true;
-  actRescanChanged.Enabled         := true;
   actInstrument.Enabled            := true;
   actRemoveInstrumentation.Enabled := true;
   actProjectOptions.Enabled        := true;
@@ -1913,11 +1909,6 @@ begin
   DisablePC2;
 end;
 
-procedure TfrmMain.actRescanChangedExecute(Sender: TObject);
-begin
-  RescanProject;
-end;
-
 procedure TfrmMain.AppShortcut(var Msg: TWMKey; var Handled: boolean);
 begin
   if msg.CharCode = 112 then
@@ -1932,18 +1923,6 @@ begin
     else if PageControl1.ActivePage = tabInstrumentation then Application.HelpContext(_Instrumentation3)
     else Application.HelpContext(_Analysis3);
 end; { TfrmMain.AppShortcut }
-
-procedure TfrmMain.RescanProject;
-begin
-  if openProject = nil then
-    Exit;
-
-  if openProject.AnyChange(false) then
-  begin
-    FInstrumentationFrame.RescanProject(ParseProject);
-    SetSource;
-  end;
-end;
 
 procedure TfrmMain.actChangeLayoutExecute(Sender: TObject);
 begin

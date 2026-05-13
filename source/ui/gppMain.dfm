@@ -521,13 +521,6 @@ object frmMain: TfrmMain
       ImageIndex = 14
       OnExecute = actDelUndelProfileExecute
     end
-    object actRescanChanged: TAction
-      Category = 'Project'
-      Caption = 'actRescanChanged'
-      Enabled = False
-      ImageIndex = 26
-      OnExecute = actRescanChangedExecute
-    end
     object actChangeLayout: TAction
       Category = 'Layout'
       Caption = 'Activate'
