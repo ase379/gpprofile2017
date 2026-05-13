@@ -258,7 +258,7 @@ type
     procedure SlidersMoved;
     function  IsProjectConsole: boolean;
     procedure ResetSourcePreview(reposition: boolean);
-    procedure RestoreUIAfterParseProject(const aLastSelectionStream: TStream);
+    procedure RestoreUIAfterParseProject(const aLastSelectionStream: TStream; const aJustRescan: boolean);
     procedure WMDropFiles (var aMsg: TMessage); message WM_DROPFILES;
     procedure ResetCallees;
  end;
@@ -392,7 +392,7 @@ begin
   SetSource;
 end; { TfrmMain.EnablePC }
 
-procedure TFrmMain.RestoreUIAfterParseProject(const aLastSelectionStream: TStream);
+procedure TFrmMain.RestoreUIAfterParseProject(const aLastSelectionStream: TStream; const aJustRescan: boolean);
 begin
   TSessionData.ProjectOutputDir := openProject.OutputDir;
   StatusPanel0('Parsed', True);
@@ -406,8 +406,12 @@ begin
 
   actLoadInstrumentationSelection.Enabled := true;
   actSaveInstrumentationSelection.Enabled := true;
-  FInstrumentationFrame.openProject := openProject;
-  FInstrumentationFrame.FillUnitTree(not FInstrumentationFrame.chkShowAll.Checked, FInstrumentationFrame.chkShowDirStructure.Checked);
+
+  if not aJustRescan then
+  begin
+    FInstrumentationFrame.openProject := openProject;
+    FInstrumentationFrame.FillUnitTree(not FInstrumentationFrame.chkShowAll.Checked, FInstrumentationFrame.chkShowDirStructure.Checked);
+  end;
   if assigned(aLastSelectionStream) then
     openProject.LoadInstrumentalizationSelection(aLastSelectionStream);
 end;
@@ -463,7 +467,7 @@ begin
           end;
           HideProgressBar;
           vErrList.Free;
-          RestoreUIAfterParseProject(lLastSelectionStream);
+          RestoreUIAfterParseProject(lLastSelectionStream,false);
           lLastSelectionStream.Free;
           StatusPanel0('Parsing finished, it took '+fNeededSeconds.ToString+' seconds.',false);
         end);
@@ -490,7 +494,7 @@ begin
         TThread.Synchronize(nil, procedure
         begin
           HideProgressBar;
-          RestoreUIAfterParseProject(lLastSelectionStream);
+          RestoreUIAfterParseProject(lLastSelectionStream,true);
           lLastSelectionStream.Free;
           StatusPanel0('Rescanning finished, it took '+fNeededSeconds.ToString+' seconds.',false);
         end);
