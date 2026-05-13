@@ -171,7 +171,7 @@ object frmMain: TfrmMain
             Top = 54
             Width = 1472
             Height = 407
-            ActivePage = tabMemoryAnalysis
+            ActivePage = tabPerformanceAnalysis
             Align = alClient
             TabOrder = 0
             object tabPerformanceAnalysis: TTabSheet

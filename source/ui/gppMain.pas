@@ -950,6 +950,7 @@ begin
   ClearSource;
   TGlobalPreferences.LoadPreferences;
   PageControl1.ActivePage := tabInstrumentation;
+  PageControl2.ActivePage := tabPerformanceAnalysis;
   DisablePC2;
   DisablePC;
   TSessionData.CurrentProjectName := '';
