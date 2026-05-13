@@ -78,6 +78,8 @@ type
     pnlSymbolsDefine: TPanel;
     cbMemWorkingSetEnabled: TCheckBox;
     cbShowDirStructure: TCheckBox;
+    cbbPrfBufSizeKB: TComboBox;
+    lblPrfBufSizeKB: TLabel;
     procedure FormKeyPress(Sender: TObject; var Key: Char);
     procedure FormCreate(Sender: TObject);
     procedure btnAddFromFolderClick(Sender: TObject);
@@ -109,18 +111,19 @@ type
     fIsGlobalPreferenceDialog : boolean;
     fDefinesChanged : boolean;
     procedure AddDefine(symbol: string; tag: integer);
-    procedure RemoveDefine(symbol: string);
+    procedure RemoveDefine(const symbol: string);
     procedure RemoveTag(tag: integer);
-    function  LocateDefine(symbol: string): integer;
+    function  LocateDefine(const symbol: string): integer;
     procedure ResetCheckboxes;
     procedure ChangeTags(oldTag, newTag: integer);
     function  HasTag(tag: integer): boolean;
     procedure ResetDefaults(tabIndex: integer);
 
-
+    function PrfBufSizeToText(const aSizeKB: integer): string;
+    function TextToPrfBufSize(const aTextUpper: string): integer;
   public
     procedure ReselectCompilerVersion(var selectedDelphi: string);
-    procedure RebuildDefines(userDefines: string);
+    procedure RebuildDefines(const userDefines: string);
     function  ExtractUserDefines: string;
     function  ExtractDefines: string;
     // extracts project and user defines
@@ -309,7 +312,7 @@ begin
   end;
 end;
 
-procedure TfrmPreferences.RemoveDefine(symbol: string);
+procedure TfrmPreferences.RemoveDefine(const symbol: string);
 var
   idx: integer;
 begin
@@ -354,7 +357,7 @@ begin
   actClearAllDefines.Enabled := (lvDefines.Items.Count > 0);
 end;
 
-function TfrmPreferences.LocateDefine(symbol: string): integer;
+function TfrmPreferences.LocateDefine(const symbol: string): integer;
 var
   i: integer;
 begin
@@ -430,7 +433,7 @@ begin
   ResetDefaults(TAB_INDEX_DEFINES);
 end;
 
-procedure TfrmPreferences.RebuildDefines(userDefines: string);
+procedure TfrmPreferences.RebuildDefines(const userDefines: string);
 var
   i: integer;
 begin
@@ -561,11 +564,12 @@ begin
         cbInstrumentAssembler.Checked := TGlobalPreferences.InstrumentAssembler;
         cbMakeBackupOfInstrumentedFile.Checked := TGlobalPreferences.MakeBackupOfInstrumentedFile;
         cbMemWorkingSetEnabled.Enabled := TGlobalPreferences.ProfilingMemSupport;
+        cbbPrfBufSizeKB.Text          := PrfBufSizeToText(TGlobalPreferences.PrfBufSizeKB);
       end; // Instrumentation
       TAB_INDEX_ANALYSIS:
       begin
         cbHideNotExecuted.Checked := TGlobalPreferences.HideNotExecuted;
-        edtPerformanceOutputFilename.text := TGlobalPreferences.PrfFilenameMakro;
+        edtPerformanceOutputFilename.text := TGlobalPreferences.PrfFilenameMacro;
         if not IsGlobalPreferenceDialog then
           edtPerformanceOutputFilename.text := ResolvePrfProjectPlaceholders(edtPerformanceOutputFilename.text);
 
@@ -590,8 +594,6 @@ begin
   end; // with
 end;
 
-
-
 function TfrmPreferences.ExecuteGlobalSettings: boolean;
 begin
   result := false;
@@ -610,7 +612,7 @@ begin
   else if TGlobalPreferences.SpeedSize > tbSpeedSize.Max then TGlobalPreferences.SpeedSize := tbSpeedSize.Max;
   cbShowAllFolders.Checked     := TGlobalPreferences.ShowAllFolders;
   cbShowDirStructure.Checked   := TGlobalPreferences.ShowDirStructure;
-  edtPerformanceOutputFilename.text := TGlobalPreferences.PrfFilenameMakro;
+  edtPerformanceOutputFilename.text := TGlobalPreferences.PrfFilenameMacro;
   cbStandardDefines.Checked    := TGlobalPreferences.StandardDefines;
   cbDisableUserDefines.Checked := TGlobalPreferences.DisableUserDefines;
   cbConsoleDefines.Enabled     := false;
@@ -618,6 +620,7 @@ begin
   RebuildDefines(TGlobalPreferences.UserDefines);
   cbProfilingAutostart.Checked  := TGlobalPreferences.ProfilingAutostart;
   cbMemWorkingSetEnabled.Checked := TGlobalPreferences.ProfilingMemSupport;
+  cbbPrfBufSizeKB.Text          := PrfBufSizeToText(TGlobalPreferences.PrfBufSizeKB);
   cbInstrumentAssembler.Checked := TGlobalPreferences.InstrumentAssembler;
   cbMakeBackupOfInstrumentedFile.Checked := TGlobalPreferences.MakeBackupOfInstrumentedFile;
   tbSpeedSize.Position := TGlobalPreferences.SpeedSize;
@@ -643,7 +646,7 @@ begin
     TGlobalPreferences.SpeedSize          := tbSpeedSize.Position;
     TGlobalPreferences.ShowAllFolders     := cbShowAllFolders.Checked;
     TGlobalPreferences.ShowDirStructure   := cbShowDirStructure.Checked;
-    TGlobalPreferences.PrfFilenameMakro   := edtPerformanceOutputFilename.text;
+    TGlobalPreferences.PrfFilenameMacro   := edtPerformanceOutputFilename.text;
 
     TGlobalPreferences.StandardDefines    := cbStandardDefines.Checked;
     TGlobalPreferences.DisableUserDefines := cbDisableUserDefines.Checked;
@@ -651,6 +654,7 @@ begin
     TGlobalPreferences.UserDefines        := ExtractUserDefines;
     TGlobalPreferences.ProfilingAutostart := cbProfilingAutostart.Checked;
     TGlobalPreferences.ProfilingMemSupport := cbMemWorkingSetEnabled.Checked;
+    TGlobalPreferences.PrfBufSizeKB       := TextToPrfBufSize(cbbPrfBufSizeKB.Text);
     TGlobalPreferences.InstrumentAssembler:= cbInstrumentAssembler.Checked;
     TGlobalPreferences.MakeBackupOfInstrumentedFile := cbMakeBackupOfInstrumentedFile.Checked;
     TGlobalPreferences.SavePreferences;
@@ -679,11 +683,12 @@ begin
     ReselectCompilerVersion(TSessionData.selectedDelphi);
     cbShowAllFolders.Checked           := aShowAllFolders;
     cbShowDirStructure.Checked         := aShowDirStructure;
-    edtPerformanceOutputFilename.text  := TGlobalPreferences.GetProjectPref('PrfFilenameMakro',TGlobalPreferences.PrfFilenameMakro);
+    edtPerformanceOutputFilename.text  := TGlobalPreferences.GetProjectPref('PrfFilenameMakro',TGlobalPreferences.PrfFilenameMacro);
     edtPerformanceOutputFilename.text := ResolvePrfProjectPlaceholders(edtPerformanceOutputFilename.text);
 
     cbProfilingAutostart.Checked       := TGlobalPreferences.GetProjectPref('ProfilingAutostart',TGlobalPreferences.ProfilingAutostart);
-    cbMemWorkingSetEnabled.Checked       := TGlobalPreferences.GetProjectPref('ProfilingMemSupport',TGlobalPreferences.ProfilingMemSupport);
+    cbMemWorkingSetEnabled.Checked     := TGlobalPreferences.GetProjectPref('ProfilingMemSupport',TGlobalPreferences.ProfilingMemSupport);
+    cbbPrfBufSizeKB.Text               := PrfBufSizeToText(TGlobalPreferences.GetProjectPref('PrfBufSizeKB',TGlobalPreferences.PrfBufSizeKB));
     cbInstrumentAssembler.Checked      := TGlobalPreferences.GetProjectPref('InstrumentAssembler',TGlobalPreferences.InstrumentAssembler);
     cbMakeBackupOfInstrumentedFile.Checked := TGlobalPreferences.GetProjectPref('MakeBackupOfInstrumentedFile',TGlobalPreferences.MakeBackupOfInstrumentedFile);
     cbConsoleDefines.Enabled           := true;
@@ -720,7 +725,7 @@ begin
       TGlobalPreferences.SetProjectPref('UserDefines',ExtractUserDefines);
       TGlobalPreferences.SetProjectPref('ProfilingAutostart',cbProfilingAutostart.Checked);
       TGlobalPreferences.SetProjectPref('ProfilingMemSupport',cbMemWorkingSetEnabled.Checked);
-
+      TGlobalPreferences.SetProjectPref('PrfBufSizeKB',TextToPrfBufSize(cbbPrfBufSizeKB.Text));
       TGlobalPreferences.SetProjectPref('InstrumentAssembler',cbInstrumentAssembler.Checked);
       TGlobalPreferences.SetProjectPref('MakeBackupOfInstrumentedFile',cbMakeBackupOfInstrumentedFile.Checked);
       TSessionData.selectedDelphi := RemoveHotkeyAndDelphiPrefix(cbxCompilerVersion.Items[cbxCompilerVersion.ItemIndex]);
@@ -731,6 +736,32 @@ begin
       fDefinesChanged := oldDefines <> ExtractDefines;
     end;
   end;
+end;
+
+function TfrmPreferences.PrfBufSizeToText(const aSizeKB: integer): string;
+begin
+  if aSizeKB >= 1024 then
+    Result := IntToStr(aSizeKB div 1024) + ' MB'
+  else
+    Result := IntToStr(aSizeKB) + ' KB';
+end;
+
+function TfrmPreferences.TextToPrfBufSize(const aTextUpper: string): integer;
+begin
+  try
+    if Pos('KB', aTextUpper) > 0 then
+      Result := StringReplace(aTextUpper,'KB','',[]).Trim.ToInteger
+    else
+    if Pos('MB', aTextUpper) > 0 then
+      Result := StringReplace(aTextUpper,'MB','',[]).Trim.ToInteger * 1024
+    else
+      Result := 0;
+  except
+    Result := 0;
+  end;
+
+  if (Result < TGlobalPreferences.PRF_BUF_SIZE_KB_DEFAULT) or (Result >= TGlobalPreferences.PRF_BUF_SIZE_KB_MAX) then
+    Result := TGlobalPreferences.PRF_BUF_SIZE_KB_DEFAULT;
 end;
 
 end.

@@ -1241,7 +1241,8 @@ begin
             WriteBool('Performance','CompressTicks',TGlobalPreferences.GetProjectPref('SpeedSize',TGlobalPreferences.SpeedSize)>1);
             WriteBool('Performance','CompressThreads',TGlobalPreferences.GetProjectPref('SpeedSize',TGlobalPreferences.SpeedSize)>2);
             WriteBool('Performance','CompressMeasurePoints',TGlobalPreferences.GetProjectPref('SpeedSize',TGlobalPreferences.SpeedSize)>3);
-            WriteString('Output','PrfOutputFilename',ResolvePrfProjectPlaceholders(TGlobalPreferences.GetProjectPref('PrfFilenameMakro',TGlobalPreferences.PrfFilenameMakro)));
+            WriteString('Output','PrfOutputFilename',ResolvePrfProjectPlaceholders(TGlobalPreferences.GetProjectPref('PrfFilenameMakro',TGlobalPreferences.PrfFilenameMacro)));
+            WriteInteger('Output','BufSizeKB',TGlobalPreferences.GetProjectPref('PrfBufSizeKB',TGlobalPreferences.PrfBufSizeKB));
           finally
             Free;
           end;
