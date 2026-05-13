@@ -107,8 +107,8 @@ var
   LUnitSelection : TUnitSelection;
   LProcSelection : string;
   un: TUnit;
-  LUnitEnumor: TRootNode<TUnit>.TEnumerator;
-  LProcEnumor: TRootNode<TProc>.TEnumerator;
+  LUnitEnumor: TNodeList<TUnit>.TEnumerator;
+  LProcEnumor: TNodeList<TProc>.TEnumerator;
   LAllCnt : Cardinal;
   LNone : boolean;
 begin

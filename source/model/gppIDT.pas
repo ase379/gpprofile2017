@@ -205,7 +205,7 @@ end; { WriteString }
 
 procedure TIDTableUnits.Dump(var f: TGpHugeFile);
 var
-  LEnumor: TRootNode<TIDTableUnitEntry>.TEnumerator;
+  LEnumor: TNodeList<TIDTableUnitEntry>.TEnumerator;
 begin
   CompareFunc := TIDTIDCompare;
   WriteTag(f,PR_UNITTABLE);
@@ -255,7 +255,7 @@ end;
 
 procedure TIDTableClasses.Dump(var f: TGpHugeFile);
 var
-  LEnumor: TRootNode<TIDTableClassEntry>.TEnumerator;
+  LEnumor: TNodeList<TIDTableClassEntry>.TEnumerator;
 begin
   CompareFunc := TIDTIDCompare;
   WriteTag(f,PR_CLASSTABLE);
@@ -305,7 +305,7 @@ end;
 
 procedure TIDTableProcedures.Dump(var f: TGpHugeFile);
 var
-  LEnumor: TRootNode<TIDTableProcEntry>.TEnumerator;
+  LEnumor: TNodeList<TIDTableProcEntry>.TEnumerator;
 begin
   CompareFunc := TIDTIDCompare;
   WriteTag(f,PR_PROCTABLE);

@@ -1690,7 +1690,7 @@ begin
         loadedSource := fileName;
       end;
       if focusOn < 0 then focusOn := 0;
-      if focusOn >= sourceCodeEdit.Lines.Count then focusOn := sourceCodeEdit.Lines.Count-1;
+      if focusOn >= sourceCodeEdit.Lines.CountNative then focusOn := sourceCodeEdit.Lines.CountNative-1;
       sourceCodeEdit.TopLine := focusOn+1;
       StatusPanel0(fileName,false);
     end else

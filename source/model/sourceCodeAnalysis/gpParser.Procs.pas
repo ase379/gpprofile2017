@@ -15,7 +15,7 @@ type
   end;
 
 
-  TProcSetThreadNameListEnumerator = TRootNode<TProcSetThreadName>.TEnumerator;
+  TProcSetThreadNameListEnumerator = TNodeList<TProcSetThreadName>.TEnumerator;
   /// <summary>
   /// A list with the SetThreadName snippets inside a proc.
   /// </summary>
@@ -149,7 +149,7 @@ end; { TProc.Destroy }
 
 function TProc.Clone: TProc;
 var
-  LNamesEnumor: TRootNode<TProcSetThreadName>.TEnumerator;
+  LNamesEnumor: TNodeList<TProcSetThreadName>.TEnumerator;
 begin
   result := TProc.Create(prName, fStartOffset, fStartLineNum, fHeaderLineNum);
   result.fInstrumented := fInstrumented;
@@ -180,7 +180,7 @@ end;
 
 function TProcList.Clone: TProcList;
 var
-  LProcEnumor: TRootNode<TProc>.TEnumerator;
+  LProcEnumor: TNodeList<TProc>.TEnumerator;
 begin
   Result := TProcList.Create();
   LProcEnumor := GetEnumerator();
@@ -191,7 +191,7 @@ end;
 
 procedure TProcList.ApplyProcSelectionIfExists(const aProcList: TProcList);
 var
-  LProcEnumor: TRootNode<TProc>.TEnumerator;
+  LProcEnumor: TNodeList<TProc>.TEnumerator;
   LFoundNode : INode<TProc>;
 begin
   LProcEnumor := aProcList.GetEnumerator();
@@ -219,7 +219,7 @@ end;
 
 procedure TProcList.SetAllInstrumented(const aValue: Boolean);
 var
-  LProcEnumor: TRootNode<TProc>.TEnumerator;
+  LProcEnumor: TNodeList<TProc>.TEnumerator;
 begin
   LProcEnumor := GetEnumerator();
   while LProcEnumor.MoveNext do

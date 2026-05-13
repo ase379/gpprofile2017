@@ -90,7 +90,7 @@ procedure TProject.Parse(aExclUnits: String;
 
   procedure DetermineNextUnitToBeParsed(var un: TUnit);
   var
-    LUnitEnumor: TRootNode<TUnit>.TEnumerator;
+    LUnitEnumor: TNodeList<TUnit>.TEnumerator;
     u1: TUnit;
   begin
     un := nil;
@@ -148,7 +148,7 @@ end;
 function TProject.GetUnit(const aUnitName: string;const aProjectDirOnly: boolean): TUnit;
 var
   un: TUnit;
-  LUnitEnumor: TRootNode<TUnit>.TEnumerator;
+  LUnitEnumor: TNodeList<TUnit>.TEnumerator;
 begin
   result := nil;
   with prUnits do
@@ -173,7 +173,7 @@ procedure TProject.GetUnitList(const aInfoList: TUnitInstrumentationInfoList;
   const aProjectDirOnly: boolean);
 var
   un: TUnit;
-  LUnitEnumor: TRootNode<TUnit>.TEnumerator;
+  LUnitEnumor: TNodeList<TUnit>.TEnumerator;
   lEntry : TUnitInstrumentationInfo;
 begin
   aInfoList.Clear;
@@ -218,7 +218,7 @@ procedure TProject.GetProcList(const aUnitName: string; const aProcInfoList : TP
 var
   un: TUnit;
   pr: TProc;
-  LProcEnumor: TRootNode<TProc>.TEnumerator;
+  LProcEnumor: TNodeList<TProc>.TEnumerator;
   lDotPosition : integer;
 begin
   un := prUnits.Locate(aUnitName);
@@ -258,7 +258,7 @@ end; { TProject.InstrumentTUnit }
 procedure TProject.InstrumentAll(Instrument, projectDirOnly: boolean);
 var
   un: TUnit;
-  LUnitEnumor: TRootNode<TUnit>.TEnumerator;
+  LUnitEnumor: TNodeList<TUnit>.TEnumerator;
 begin
   with prUnits do
   begin
@@ -330,7 +330,7 @@ var
   LIsAnyUnitInProjectInstrumented : Boolean;
   LIsAnyProcOfUnitInstrumented: boolean;
   LHasBeenReparsed : Boolean;
-  LUnitEnumor: TRootNode<TUnit>.TEnumerator;
+  LUnitEnumor: TNodeList<TUnit>.TEnumerator;
   LOldProcs : TProcList;
 begin
   PrepareComments(aCommentType);
@@ -467,7 +467,7 @@ procedure TProject.Rescan(aExclUnits: String;
   aCommentType: TCommentType; aParseAsm: boolean);
 var
   un: TUnit;
-  LUnitEnumor: TRootNode<TUnit>.TEnumerator;
+  LUnitEnumor: TNodeList<TUnit>.TEnumerator;
   vOldCurDir: string;
 begin
   PrepareComments(aCommentType);

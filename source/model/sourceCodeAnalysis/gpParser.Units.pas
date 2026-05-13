@@ -157,7 +157,7 @@ end; { TUnitList.Add }
 function TGlbUnitList.AreAllUnitsInstrumented(const aCheckProjectDirOnly: Boolean): Boolean;
 var
   un: TUnit;
-  LUnitEnumor: TRootNode<TUnit>.TEnumerator;
+  LUnitEnumor: TNodeList<TUnit>.TEnumerator;
 begin
   Result := true;
   LUnitEnumor := GetEnumerator();
@@ -177,7 +177,7 @@ end;
 function TGlbUnitList.IsNoUnitInstrumented(const aCheckProjectDirOnly: Boolean): Boolean;
 var
   un: TUnit;
-  LUnitEnumor: TRootNode<TUnit>.TEnumerator;
+  LUnitEnumor: TNodeList<TUnit>.TEnumerator;
 begin
   Result := false;
   LUnitEnumor := GetEnumerator();
@@ -208,7 +208,7 @@ end;
 function TGlbUnitList.DidAnyTimestampChange(const aCheckProjectDirOnly: Boolean): boolean;
 var
   un: TUnit;
-  LUnitEnumor: TRootNode<TUnit>.TEnumerator;
+  LUnitEnumor: TNodeList<TUnit>.TEnumerator;
 begin
   Result := true;
   LUnitEnumor := GetEnumerator();
@@ -229,7 +229,7 @@ end;
 function TGlbUnitList.IsAnyUnitInstrumented(const aCheckProjectDirOnly: boolean): boolean;
 var
   un: TUnit;
-  LUnitEnumor: TRootNode<TUnit>.TEnumerator;
+  LUnitEnumor: TNodeList<TUnit>.TEnumerator;
 begin
   Result := true;
   LUnitEnumor := GetEnumerator();
@@ -1198,7 +1198,7 @@ end;
 
 procedure TUnit.CheckInstrumentedProcs;
 var
-  LEnumor: TRootNode<TProc>.TEnumerator;
+  LEnumor: TNodeList<TProc>.TEnumerator;
 begin
   unAllInst := true;
   unNoneInst := true;
@@ -1238,7 +1238,7 @@ end; { TUnit.LocateProc }
 
 procedure TUnit.RegisterProcs(const idt: TIDTable);
 var
-  LEnumor: TRootNode<TProc>.TEnumerator;
+  LEnumor: TNodeList<TProc>.TEnumerator;
 begin
   LEnumor := unProcs.GetEnumerator;
   while LEnumor.MoveNext do
@@ -1332,8 +1332,8 @@ var
   LFileEdit: TFileEdit;
   nameId: Integer;
   api: TAPI;
-  LApiEnumor: TRootNode<TAPI>.TEnumerator;
-  LProcEnumor: TRootNode<TProc>.TEnumerator;
+  LApiEnumor: TNodeList<TAPI>.TEnumerator;
+  LProcEnumor: TNodeList<TProc>.TEnumerator;
   i: Integer;
   lGpParserTextReplacer : TGpParserTextReplacer;
 begin { TUnit.Instrument }
@@ -1437,7 +1437,7 @@ end; { TUnit.Instrument }
 
 function TUnit.AnyInstrumented: boolean;
 var
-  LProcEnumerator: TRootNode<TProc>.TEnumerator;
+  LProcEnumerator: TNodeList<TProc>.TEnumerator;
 begin
   Result := False;
   with unProcs do
@@ -1468,7 +1468,7 @@ end; { TUnit.AddToIntArray }
 function TUnit.AnyChange: boolean;
 var
   pr: TProc;
-  LProcEnumerator: TRootNode<TProc>.TEnumerator;
+  LProcEnumerator: TNodeList<TProc>.TEnumerator;
 begin
   Result := False;
   with unProcs do
