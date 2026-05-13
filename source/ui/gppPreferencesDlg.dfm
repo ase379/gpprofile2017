@@ -246,7 +246,7 @@ object frmPreferences: TfrmPreferences
             Width = 25
             Height = 69
             Align = alLeft
-            Max = 3
+            Max = 4
             Min = 1
             Orientation = trVertical
             PageSize = 1
