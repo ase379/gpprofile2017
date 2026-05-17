@@ -40,7 +40,7 @@ begin
   lPosition := PosEx(aKey, aText);
   while lPosition > 0 do
   begin
-    aText := ReplaceText(aText,aKey,aNewValue);
+    aText := StringReplace(aText,aKey,aNewValue,[rfReplaceAll,rfIgnoreCase]);
     lPosition := PosEx(aKey, aText);
   end;
 end;
