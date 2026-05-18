@@ -735,9 +735,13 @@ begin
       raise EFileNotFoundException.Create('File '+fileName+ ' not found.');
     MRUPrf.LatestFile := fileName;
     currentProfile := ExtractFileName(fileName);
-    PageControl1.ActivePage := tabPerformanceAnalysis;
     ClearSource;
     ParseProfile(fileName);
+    if PageControl1.ActivePage <> tabPerformanceResults then
+    begin
+      PageControl1.ActivePage := tabPerformanceResults;
+      PageControl1Change(self);
+    end;
   except on e:Exception do
     begin
       if Assigned(MRUPrf.FindItem(fileName)) then
