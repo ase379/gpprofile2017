@@ -61,8 +61,8 @@ type
     constructor Create;
     destructor Destroy; override;
     function Remap(const aMeasurePointId: UTF8String): integer;
-    procedure Lock; inline;
-    procedure Unlock; inline;
+    procedure Lock; {$IFDEF HAS_INLINE}inline;{$ENDIF}
+    procedure Unlock; {$IFDEF HAS_INLINE}inline;{$ENDIF}
     property Count: integer read mplCount;
     property Items[aIndex: Integer]: TMPLEl read GetItem;
   end;

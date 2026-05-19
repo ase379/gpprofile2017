@@ -1,17 +1,5 @@
 {$R-,C-,Q-,O+,H+}
 
-(*
-  1.11: 1999-08-12
-    - Added support for Delphi 5.
-  1.1: 1999-08-10
-    - Fixed long-standing bug that caused corrupted profile file when profiling
-      large projects.
-  1.0.1: 1999-05-12
-    - Support for DLL and package profiling (GetModuleName is used instead of
-      ParamStr(0)).
-    - Error is reported if <module>.gpi or <module>.gpd file is not found.
-*)
-
 unit GpProf;
 
 interface
@@ -110,7 +98,7 @@ var
   profTableName         : string;
   profBufSize           : integer = BUF_SIZE_DEFAULT;
 
-procedure FlushFile; inline;
+procedure FlushFile; {$IFDEF HAS_INLINE}inline;{$ENDIF}
 var
   written: DWORD;
 begin
@@ -120,7 +108,7 @@ begin
     RaiseLastWin32Error;
 end; { FlushFile }
 
-function OffsetPtr(ptr: Pointer; offset: NativeUInt): Pointer; inline;
+function OffsetPtr(ptr: Pointer; offset: NativeUInt): Pointer; {$IFDEF HAS_INLINE}inline;{$ENDIF}
 begin
   Result := Pointer(NativeUInt(ptr) + offset);
 end; { OffsetPtr }
@@ -152,6 +140,7 @@ begin
   end;
 end; { Transmit }
 
+{$IFDEF HAS_MEMORY_MANAGER_STATE}
 function GetMemWorkingSize() : Cardinal;
 var
   i: Integer;
@@ -170,8 +159,16 @@ begin
   Inc(Result,LState.TotalAllocatedMediumBlockSize);
   Inc(Result,LState.TotalAllocatedLargeBlockSize);
 end;
+{$ELSE}
+function GetMemWorkingSize() : Cardinal;
+begin
+  // AllocMemSize is updated by the heap lock on every GetMem/FreeMem call
+  // Reading an aligned 32-bit Cardinal is atomic on x86, so no torn reads occur
+  Result := System.AllocMemSize;
+end;
+{$ENDIF}
 
-procedure WriteMemWorkingSize();
+procedure WriteMemWorkingSize(); {$IFDEF HAS_INLINE}inline;{$ENDIF}
 var
   lMemUsed : Cardinal;
 begin
@@ -179,32 +176,32 @@ begin
   Transmit(lMemUsed, sizeof(Cardinal));
 end;
 
-procedure WriteInt(int: integer); inline;
+procedure WriteInt(int: integer); {$IFDEF HAS_INLINE}inline;{$ENDIF}
 begin
   Transmit(int, SizeOf(integer));
 end;
 
-procedure WriteCardinal(value: Cardinal); inline;
+procedure WriteCardinal(value: Cardinal); {$IFDEF HAS_INLINE}inline;{$ENDIF}
 begin
   Transmit(value, SizeOf(Cardinal));
 end;
 
-procedure WriteTag(tag: byte); inline;
+procedure WriteTag(tag: byte); {$IFDEF HAS_INLINE}inline;{$ENDIF}
 begin
   Transmit(tag, SizeOf(byte));
 end;
 
-procedure WriteProcID(id: integer); inline;
+procedure WriteProcID(id: integer); {$IFDEF HAS_INLINE}inline;{$ENDIF}
 begin
   Transmit(id, profProcSize);
 end;
 
-procedure WriteBool(bool: boolean); inline;
+procedure WriteBool(bool: boolean); {$IFDEF HAS_INLINE}inline;{$ENDIF}
 begin
   Transmit(bool, 1);
 end;
 
-procedure WriteUtf8String(const aValue: UTF8String); inline;
+procedure WriteUtf8String(const aValue: UTF8String); {$IFDEF HAS_INLINE}inline;{$ENDIF}
 var
   len: integer;
 begin
@@ -268,7 +265,7 @@ begin
   end;
 end;
 
-procedure FlushCounter; inline;
+procedure FlushCounter; {$IFDEF HAS_INLINE}inline;{$ENDIF}
 begin
   if prfCounter <> 0 then begin
     WriteTicks(prfCounter);
