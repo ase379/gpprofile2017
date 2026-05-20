@@ -103,7 +103,7 @@ type
     procedure ClearBrowser(popBrowser: TPopupMenu);
     procedure Restack(fromPop, toPop: TPopupMenu; menuItem: TMenuItem);
     procedure RestackOne(fromPop, toPop: TPopupMenu);
-    procedure PushBrowser(popBrowser: TPopupMenu; description: string; procID: integer);
+    procedure PushBrowser(popBrowser: TPopupMenu; const description: string; procID: integer);
     procedure InvokeFilter(const aSearchTerm: string; const aTreeTool: TSimpleMemStatsListTools;const column : integer = 0);
   public
 
@@ -149,7 +149,6 @@ begin
   fvstProcsCalleesTools := TSimpleMemStatsListTools.Create(vstCallees,TMemoryInfoTypeEnum.pit_proc_callees);
   fvstThreadsTools := TSimpleMemStatsListTools.Create(vstThreads,TMemoryInfoTypeEnum.pit_thread);
   PageControl2.ActivePage := tabProcedures;
-
 end;
 
 destructor TfrmMemProfiling.Destroy;
@@ -208,7 +207,7 @@ begin
     Items.BeginUpdate;
     try
       Items.Clear;
-      if assigned(fCurrentProfile) then begin
+      if assigned(fCurrentProfile) and fCurrentProfile.IsMemProfilingEnabled then begin
         Items.Add('All threads');
         with fCurrentProfile do begin
           for i := Low(resThreads)+1 to High(resThreads) do
@@ -240,13 +239,13 @@ begin
 end; { TfrmMainProfiling.FillThreadCombos }
 
 
-procedure TfrmMemProfiling.FillViews(resortOn: integer = -1);
+procedure TfrmMemProfiling.FillViews(resortOn: integer);
 begin
   FillProcView(resortOn);
   FillClassView(resortOn);
   FillUnitView(resortOn);
   FillThreadView(resortOn);
-  mnuExportProfile.Enabled     := true;
+  mnuExportProfile.Enabled := assigned(fCurrentProfile) and fCurrentProfile.IsMemProfilingEnabled;
   SlidersMoved();
 end;
 
@@ -278,7 +277,7 @@ begin
   LProcId := -1;
   LGraphId := -1;
   LProfilingType := TMemoryInfoTypeEnum.pit_proc; // unused here..
-  if assigned(fCurrentProfile) and (Sender is TVirtualStringTree) and ((Sender as TVirtualStringTree).SelectedCount>0) then
+  if assigned(fCurrentProfile) and fCurrentProfile.IsMemProfilingEnabled and (Sender is TVirtualStringTree) and ((Sender as TVirtualStringTree).SelectedCount>0) then
   begin
     LEnum := (Sender as TVirtualStringTree).SelectedNodes(false).GetEnumerator();
     while(LEnum.MoveNext) do
@@ -346,20 +345,17 @@ end;
 
 { TfrmMainProfiling.FillViews }
 
-
-procedure TfrmMemProfiling.FillThreadView(resortOn: integer = -1);
-var
-  i        : integer;
+procedure TfrmMemProfiling.FillThreadView(resortOn: integer);
 begin
   fvstThreadsTools.BeginUpdate;
-  fvstThreadsTools.Clear();
-  fvstThreadsTools.ThreadIndex := 0; // not needed
+  try
+    fvstThreadsTools.Clear();
+    fvstThreadsTools.ThreadIndex := 0; // not needed
+    fvstThreadsTools.ProfileResults := fCurrentProfile;
 
-  fvstThreadsTools.ProfileResults := fCurrentProfile;
-  with fCurrentProfile do begin
-    try
-      if assigned(fCurrentProfile) then begin
-        for i := Low(resThreads)+1 to High(resThreads) do begin
+    if assigned(fCurrentProfile) and fCurrentProfile.IsMemProfilingEnabled then begin
+      with fCurrentProfile do begin
+        for var i := Low(resThreads) + 1 to High(resThreads) do begin
           with resThreads[i] do begin
             if (not actHideNotExecuted.Checked) or (teTotalCnt > 0) then begin
               fvstThreadsTools.AddEntry(i);
@@ -367,93 +363,94 @@ begin
           end;
         end;
       end;
-    finally
-      fvstThreadsTools.EndUpdate;
     end;
+  finally
+    fvstThreadsTools.EndUpdate;
   end;
 end; { TfrmMainProfiling.FillThreadView }
 
-
-
-procedure TfrmMemProfiling.FillUnitView(resortOn: integer = -1);
-var
-  i        : integer;
+procedure TfrmMemProfiling.FillUnitView(resortOn: integer);
 begin
   fvstUnitsTools.BeginUpdate;
-  fvstUnitsTools.Clear();
-  fvstUnitsTools.ThreadIndex := cbxSelectThreadUnit.ItemIndex;
-  fvstUnitsTools.ProfileResults := fCurrentProfile;
-  with fCurrentProfile do begin
-    try
-      if cbxSelectThreadUnit.ItemIndex >= 0 then
-	  begin
-        for i := Low(resUnits)+1 to High(resUnits) do begin
-          with resUnits[i] do begin
-            if (not actHideNotExecuted.Checked) or (ueTotalCnt[cbxSelectThreadUnit.ItemIndex] > 0) then begin
-              fvstUnitsTools.AddEntry(i);
+  try
+    fvstUnitsTools.Clear();
+    fvstUnitsTools.ThreadIndex := cbxSelectThreadUnit.ItemIndex;
+    fvstUnitsTools.ProfileResults := fCurrentProfile;
+
+    if assigned(fCurrentProfile) and fCurrentProfile.IsMemProfilingEnabled then
+    begin
+      with fCurrentProfile do begin
+        if cbxSelectThreadUnit.ItemIndex >= 0 then
+        begin
+          for var i := Low(resUnits) + 1 to High(resUnits) do begin
+            with resUnits[i] do begin
+              if (not actHideNotExecuted.Checked) or (ueTotalCnt[cbxSelectThreadUnit.ItemIndex] > 0) then begin
+                fvstUnitsTools.AddEntry(i);
+              end;
             end;
           end;
         end;
       end;
-    finally
-      fvstUnitsTools.EndUpdate;
     end;
+  finally
+    fvstUnitsTools.EndUpdate;
   end;
 end; { TfrmMainProfiling.FillUnitView }
 
-
-
-procedure TfrmMemProfiling.FillClassView(resortOn: integer = -1);
-var
-  i        : integer;
+procedure TfrmMemProfiling.FillClassView(resortOn: integer);
 begin
   fvstClassesTools.BeginUpdate;
-  fvstClassesTools.Clear();
-  fvstClassesTools.ThreadIndex := cbxSelectThreadClass.ItemIndex;
-  fvstClassesTools.ProfileResults := fCurrentProfile;
-  with fCurrentProfile do begin
-    try
-      if cbxSelectThreadClass.ItemIndex >= 0 then
-      begin
-        for i := Low(resClasses)+1 to High(resClasses) do begin
-          with resClasses[i] do begin
-            if (not actHideNotExecuted.Checked) or (ceTotalCnt[cbxSelectThreadClass.ItemIndex] > 0) then
-            begin
-              fvstClassesTools.AddEntry(i);
+  try
+    fvstClassesTools.Clear();
+    fvstClassesTools.ThreadIndex := cbxSelectThreadClass.ItemIndex;
+    fvstClassesTools.ProfileResults := fCurrentProfile;
+
+    if assigned(fCurrentProfile) and fCurrentProfile.IsMemProfilingEnabled then
+    begin
+      with fCurrentProfile do begin
+        if cbxSelectThreadClass.ItemIndex >= 0 then
+        begin
+          for var i := Low(resClasses) + 1 to High(resClasses) do begin
+            with resClasses[i] do begin
+              if (not actHideNotExecuted.Checked) or (ceTotalCnt[cbxSelectThreadClass.ItemIndex] > 0) then
+              begin
+                fvstClassesTools.AddEntry(i);
+              end;
             end;
           end;
         end;
       end;
-    finally
-      fvstClassesTools.EndUpdate;
     end;
+  finally
+    fvstClassesTools.EndUpdate;
   end;
 end; { TfrmMainProfiling.FillClassView }
 
-
-procedure TfrmMemProfiling.FillProcView(resortOn: integer = -1);
-var
-  i        : integer;
+procedure TfrmMemProfiling.FillProcView(resortOn: integer);
 begin
   fvstProcsTools.BeginUpdate;
-  fvstProcsTools.Clear();
-  fvstProcsTools.ThreadIndex := cbxSelectThreadProc.ItemIndex;
-  fvstProcsTools.ProfileResults := fCurrentProfile;
-  with fCurrentProfile do begin
-    try
-      if cbxSelectThreadProc.ItemIndex >= 0 then
-      begin
-        for i := 1 to resProcedures.Count-1 do begin
-          with resProcedures[i] do begin
-            if (not actHideNotExecuted.Checked) or (peProcCnt[cbxSelectThreadProc.ItemIndex] > 0) then begin
-              fvstProcsTools.AddEntry(i);
+  try
+    fvstProcsTools.Clear();
+    fvstProcsTools.ThreadIndex := cbxSelectThreadProc.ItemIndex;
+    fvstProcsTools.ProfileResults := fCurrentProfile;
+
+    if assigned(fCurrentProfile) and fCurrentProfile.IsMemProfilingEnabled then
+    begin
+      with fCurrentProfile do begin
+        if cbxSelectThreadProc.ItemIndex >= 0 then
+        begin
+          for var i := 1 to resProcedures.Count - 1 do begin
+            with resProcedures[i] do begin
+              if (not actHideNotExecuted.Checked) or (peProcCnt[cbxSelectThreadProc.ItemIndex] > 0) then begin
+                fvstProcsTools.AddEntry(i);
+              end;
             end;
           end;
         end;
       end;
-    finally
-      fvstProcsTools.EndUpdate;
     end;
+  finally
+    fvstProcsTools.EndUpdate;
   end;
 end; { TfrmMainProfiling.FillProcView }
 
@@ -861,8 +858,7 @@ begin
     actBrowsePrevious.Hint := Description;
 end;
 
-procedure TfrmMemProfiling.PushBrowser(popBrowser: TPopupMenu; description: string;
-  procID: integer);
+procedure TfrmMemProfiling.PushBrowser(popBrowser: TPopupMenu; const description: string; procID: integer);
 var
   mn: TMenuItem;
 begin

@@ -219,14 +219,14 @@ object frmMemProfiling: TfrmMemProfiling
                 MinWidth = 75
                 Options = [coAllowClick, coDraggable, coEnabled, coParentBidiMode, coParentColor, coResizable, coShowDropMark, coVisible, coSmartResize, coAllowFocus, coEditable]
                 Position = 1
-                Text = '% Memory'
+                Text = '% Memory w/Child'
                 Width = 75
               end
               item
                 MinWidth = 75
                 Options = [coAllowClick, coDraggable, coEnabled, coParentBidiMode, coParentColor, coResizable, coShowDropMark, coVisible, coSmartResize, coAllowFocus, coEditable]
                 Position = 2
-                Text = 'Memory'
+                Text = 'Memory w/Child'
                 Width = 75
               end
               item

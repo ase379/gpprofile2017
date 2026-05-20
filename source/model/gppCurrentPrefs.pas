@@ -8,6 +8,9 @@ type
   private
     class function GetRegPathToProject(): string;
     class function GetRegPathToProfile(): string;
+  public const
+    PRF_BUF_SIZE_KB_DEFAULT = 64; // 64 KB
+    PRF_BUF_SIZE_KB_MAX     = 1024 * 1024; // 1 GB
   public
   class var
     ExcludedUnits         : string;
@@ -21,17 +24,18 @@ type
     ProjectDefines        : boolean;
     DisableUserDefines    : boolean;
     UserDefines           : string;
-    PrfFilenameMakro      : string;
+    PrfFilenameMacro      : string;
+    PrfBufSizeKB          : integer;
     ProfilingAutostart    : boolean;
     ProfilingMemSupport   : boolean;
     InstrumentAssembler   : boolean;
     MakeBackupOfInstrumentedFile : boolean;
 
-    class procedure SetProjectPref(name: string; value: variant); overload; static;
-    class function  GetProjectPref(name: string; defval: variant): variant; overload; static;
-    class procedure DelProjectPref(name: string); static;
-    class procedure SetProfilePref(name: string; value: variant); overload; static;
-    class function  GetProfilePref(name: string; defval: variant): variant; overload; static;
+    class procedure SetProjectPref(const name: string; const value: variant); overload; static;
+    class function  GetProjectPref(const name: string; const defval: variant): variant; overload; static;
+    class procedure DelProjectPref(const name: string); static;
+    class procedure SetProfilePref(const name: string; const value: variant); overload; static;
+    class function  GetProfilePref(const name: string; const defval: variant): variant; overload; static;
 
     class procedure LoadPreferences;
 
@@ -73,7 +77,7 @@ uses
   gppCommon,
   gpiff,
   gpregistry,
-  gpPrfPlaceholders, 
+  gpPrfPlaceholders,
   GpString,
   gppmain.types;
 
@@ -96,10 +100,13 @@ begin
         DisableUserDefines := ReadBool   ('DisableUserDefines',false);
         UserDefines        := ReadString ('UserDefines','');
         ProfilingAutostart := ReadBool   ('ProfilingAutostart',true);
-        ProfilingMemSupport := ReadBool ('ProfilingMemSupport', false);
+        ProfilingMemSupport := ReadBool  ('ProfilingMemSupport',false);
         InstrumentAssembler:= ReadBool   ('InstrumentAssembler',false);
         MakeBackupOfInstrumentedFile := ReadBool('MakeBackupOfInstrumentedFile', true);
-        PrfFilenameMakro   := ReadString ('PrfFilenameMakro',TPrfPlaceholder.PrfPlaceholderToMacro(TPrfPlaceholderType.ModulePath));
+        PrfFilenameMacro   := ReadString ('PrfFilenameMakro',TPrfPlaceholder.PrfPlaceholderToMacro(TPrfPlaceholderType.ModulePath));
+        PrfBufSizeKB       := ReadInteger('PrfBufSizeKB',PRF_BUF_SIZE_KB_DEFAULT);
+        if (PrfBufSizeKB < PRF_BUF_SIZE_KB_DEFAULT) or (PrfBufSizeKB >= PRF_BUF_SIZE_KB_MAX) then
+          PrfBufSizeKB := PRF_BUF_SIZE_KB_DEFAULT;
       finally
         CloseKey;
       end;
@@ -127,18 +134,19 @@ begin
     WriteBool   ('ProfilingAutostart', ProfilingAutostart);
     WriteBool   ('InstrumentAssembler',InstrumentAssembler);
     WriteBool   ('MakeBackupOfInstrumentedFile', MakeBackupOfInstrumentedFile);
-    WriteString ('PrfFilenameMakro',   PrfFilenameMakro);
-    WriteBool('ProfilingMemSupport', ProfilingMemSupport);
+    WriteString ('PrfFilenameMakro',   PrfFilenameMacro);
+    WriteInteger('PrfBufSizeKB',       PrfBufSizeKB);
+    WriteBool   ('ProfilingMemSupport',ProfilingMemSupport);
     Free;
   end;
 end; { SavePreferences }
 
-class procedure TGlobalPreferences.SetProjectPref(name: string; value: variant);
+class procedure TGlobalPreferences.SetProjectPref(const name: string; const value: variant);
 begin
   TGpRegistryTools.SetPref(GetRegPathToProject(),name,value);
 end; { SetProjectPref }
 
-class function TGlobalPreferences.GetProjectPref(name: string; defval: variant): variant;
+class function TGlobalPreferences.GetProjectPref(const name: string; const defval: variant): variant;
 begin
   if not TSessionData.HasOpenProject then
     Result := defval
@@ -158,18 +166,18 @@ end;
 
 { GetProjectPref }
 
-class procedure TGlobalPreferences.DelProjectPref(name: string);
+class procedure TGlobalPreferences.DelProjectPref(const name: string);
 begin
   if TSessionData.HasOpenProject then
     TGpRegistryTools.DelPref(GetRegPathToProject(),name);
 end; { DelProjectPref }
 
-class procedure TGlobalPreferences.SetProfilePref(name: string; value: variant);
+class procedure TGlobalPreferences.SetProfilePref(const name: string; const value: variant);
 begin
   TGpRegistryTools.SetPref(GetRegPathToProfile(),name,value);
 end; { SetProfilePref }
 
-class function TGlobalPreferences.GetProfilePref(name: string; defval: variant): variant;
+class function TGlobalPreferences.GetProfilePref(const name: string; const defval: variant): variant;
 begin
   if not TSessionData.HasOpenProject then
     Result := defval

@@ -80,6 +80,7 @@ type
     resNullError      : integer;
     resNullErrorAcc   : integer;
     resPrfDigest      : boolean;
+    resPrfDigestMem   : boolean;
     resCalibrCnt      : integer;
     resCurCalibr      : integer;
     resCalibration    : boolean;
@@ -124,6 +125,7 @@ type
     procedure   ReadTicks(var ticks: int64);
     procedure   ReadID(var id: integer);
     procedure   ReadMem(var value: int64);
+    procedure   WriteBool(bool: boolean);
     procedure   WriteTag(tag: byte);
     procedure   WriteInt(int: integer);
     procedure   WriteInt64(i64: int64);
@@ -195,6 +197,7 @@ begin
   resCompressMeasurePoints := false;
   resPrfVersion      := 0;
   resPrfDigest       := false;
+  resPrfDigestMem    := false;
   resNullOverhead    := 0;
   resNullError       := 0;
   resNullErrorAcc    := 0;
@@ -335,10 +338,11 @@ begin
     resFile.BlockReadUnsafe(str[1],len+1); // read zero-termination char too
 end; { TResults.ReadString }
 
+procedure TResults.WriteBool (bool: boolean);begin resFile.BlockWriteUnsafe(bool,1); end;
 procedure TResults.WriteTag  (tag: byte);    begin resFile.BlockWriteUnsafe(tag,SizeOf(byte)); end;
 procedure TResults.WriteInt  (int: integer); begin resFile.BlockWriteUnsafe(int,SizeOf(integer)); end;
 procedure TResults.WriteInt64(i64: int64);   begin resFile.BlockWriteUnsafe(i64,SizeOf(int64)); end;
-procedure TResults.WriteUInt64(u64: uint64);   begin resFile.BlockWriteUnsafe(u64,SizeOf(uint64)); end;
+procedure TResults.WriteUInt64(u64: uint64); begin resFile.BlockWriteUnsafe(u64,SizeOf(uint64)); end;
 
 procedure TResults.WriteString(str: ansistring);
 begin
@@ -723,7 +727,7 @@ end; { TResults.AddExitProc }
 
 function TResults.IsMemProfilingEnabled: boolean;
 begin
-  result := resPrfVersion = PRF_VERSION_WITH_MEM;
+  result := (resPrfVersion = PRF_VERSION_WITH_MEM) or (resPrfDigest and resPrfDigestMem);
 end;
 
 function TResults.ReadPacket(var pkt: TResPacket; var pktMem: TResMemPacket): boolean;
@@ -772,6 +776,7 @@ begin
       PR_COMPTHREADS: ReadBool(resCompressThreads);
       PR_DIGEST     : resPrfDigest := true;
       PR_DIGESTVER  : ReadInt(lDigestVersion);
+      PR_DIGEST_MEM_PROFILING_ENABLED : ReadBool(resPrfDigestMem);
       PR_COMPRESS_MEASURE_POINTS : ReadBool(resCompressMeasurePoints);
     end;
   until tag = PR_ENDHEADER;
@@ -1148,6 +1153,8 @@ begin
     WriteTag(PR_DIGEST);
     WriteTag(PR_DIGESTVER);
     WriteInt(LAST_VALID_DIGESTVERSION);
+    WriteTag(PR_DIGEST_MEM_PROFILING_ENABLED);
+    WriteBool(Self.IsMemProfilingEnabled);
     WriteTag(PR_ENDHEADER);
     WriteTag(PR_DIGFREQ);
     WriteInt64(resFrequency);
