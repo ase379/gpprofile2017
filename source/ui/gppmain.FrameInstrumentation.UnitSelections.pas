@@ -1,4 +1,4 @@
-﻿unit gppmain.FrameInstrumentation.UnitSelections;
+unit gppmain.FrameInstrumentation.UnitSelections;
 
 interface
 

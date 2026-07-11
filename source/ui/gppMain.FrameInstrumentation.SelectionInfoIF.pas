@@ -1,4 +1,4 @@
-﻿unit gppMain.FrameInstrumentation.SelectionInfoIF;
+unit gppMain.FrameInstrumentation.SelectionInfoIF;
 
 interface
 
