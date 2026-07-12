@@ -1,4 +1,4 @@
-﻿unit testThreads;
+unit testThreads;
 
 interface
 

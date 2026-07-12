@@ -62,9 +62,9 @@
         <Base>true</Base>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Base)'!=''">
-        <DCC_DcuOutput>..\DCU</DCC_DcuOutput>
+        <DCC_DcuOutput>..\dcu\$(Platform)-$(Config)</DCC_DcuOutput>
         <DCC_ExeOutput>..\bin</DCC_ExeOutput>
-        <DCC_UnitSearchPath>..\include;..\lib\SynEdit\Source;..\lib\SynEdit\Source\Highlighters;..\GPComponents\GPNative\source;..\lib\VirtualTreeView\Source;ui;ui\VirtualTree.Tools;model;model\profilingResultParser;model\sourceCodeAnalysis;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
+        <DCC_UnitSearchPath>..\include;..\lib\SynEdit\Source;..\lib\SynEdit\Source\Highlighters;..\lib\VirtualTreeView\Source;..\GPComponents\GPNative\source;.\model\sourceCodeAnalysis\Castalia;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
         <DCC_Namespace>Vcl;Vcl.Imaging;Vcl.Touch;Vcl.Samples;Vcl.Shell;System;Xml;Data;Datasnap;Web;Soap;Winapi;System.Win;$(DCC_Namespace)</DCC_Namespace>
         <VerInfo_Locale>1033</VerInfo_Locale>
         <VerInfo_MinorVer>6</VerInfo_MinorVer>
@@ -194,7 +194,93 @@
         <DelphiCompile Include="$(MainSource)">
             <MainSource>MainSource</MainSource>
         </DelphiCompile>
+        <DCCReference Include="model\gpFileEdit.pas"/>
+        <DCCReference Include="model\GpHugeF.pas"/>
+        <DCCReference Include="model\gpiff.pas"/>
+        <DCCReference Include="model\gppcommon.pas"/>
+        <DCCReference Include="model\gppCurrentPrefs.pas"/>
+        <DCCReference Include="model\gppIDT.pas"/>
+        <DCCReference Include="model\gppTree.pas"/>
+        <DCCReference Include="model\GpRegistry.pas"/>
+        <DCCReference Include="model\GpVersion.pas"/>
+        <DCCReference Include="model\profilingResultParser\gppResult.measurePointRegistry.pas"/>
+        <DCCReference Include="model\profilingResultParser\gppResults.callGraph.pas"/>
+        <DCCReference Include="model\profilingResultParser\gppresults.pas"/>
+        <DCCReference Include="model\profilingResultParser\gppResults.procs.pas"/>
+        <DCCReference Include="model\profilingResultParser\gppResults.types.pas"/>
+        <DCCReference Include="model\sourceCodeAnalysis\gpParser.API.pas"/>
+        <DCCReference Include="model\sourceCodeAnalysis\gpParser.BaseProject.pas"/>
+        <DCCReference Include="model\sourceCodeAnalysis\gpParser.Defines.pas"/>
+        <DCCReference Include="model\sourceCodeAnalysis\gpParser.pas"/>
+        <DCCReference Include="model\sourceCodeAnalysis\gpParser.Procs.pas"/>
+        <DCCReference Include="model\sourceCodeAnalysis\gpParser.Selections.pas"/>
         <DCCReference Include="model\sourceCodeAnalysis\gpParser.TextReplacer.pas"/>
+        <DCCReference Include="model\sourceCodeAnalysis\gpParser.Types.pas"/>
+        <DCCReference Include="model\sourceCodeAnalysis\gpParser.Units.ParserStack.pas"/>
+        <DCCReference Include="model\sourceCodeAnalysis\gpParser.Units.pas"/>
+        <DCCReference Include="model\sourceCodeAnalysis\gpProf.BdsProjReader.pas"/>
+        <DCCReference Include="model\sourceCodeAnalysis\gpProf.bdsVersions.pas"/>
+        <DCCReference Include="model\sourceCodeAnalysis\gpProf.Delphi.RegistryAccessor.pas"/>
+        <DCCReference Include="model\sourceCodeAnalysis\gpProf.DofReader.pas"/>
+        <DCCReference Include="model\sourceCodeAnalysis\gpProf.DProjReader.pas"/>
+        <DCCReference Include="model\sourceCodeAnalysis\gpProf.ProjectAccessor.pas"/>
+        <DCCReference Include="ui\gpDialogs.Tools.pas"/>
+        <DCCReference Include="ui\gppAbout.pas">
+            <Form>frmAbout</Form>
+            <FormType>dfm</FormType>
+        </DCCReference>
+        <DCCReference Include="ui\gppExport.pas">
+            <Form>frmExport</Form>
+            <FormType>dfm</FormType>
+        </DCCReference>
+        <DCCReference Include="ui\gppLoadProgress.pas">
+            <Form>frmLoadProgress</Form>
+            <FormType>dfm</FormType>
+        </DCCReference>
+        <DCCReference Include="ui\gppmain.dragNdrop.pas"/>
+        <DCCReference Include="ui\gppmain.FrameInstrumentation.pas">
+            <Form>frmMainInstrumentation</Form>
+            <FormType>dfm</FormType>
+            <DesignClass>TFrame</DesignClass>
+        </DCCReference>
+        <DCCReference Include="ui\gppMain.FrameInstrumentation.SelectionInfo.pas"/>
+        <DCCReference Include="ui\gppMain.FrameInstrumentation.SelectionInfoIF.pas"/>
+        <DCCReference Include="ui\gppmain.FrameInstrumentation.UnitSelections.pas"/>
+        <DCCReference Include="ui\gppmain.FrameMemoryAnalysis.pas">
+            <Form>frmMemProfiling</Form>
+            <FormType>dfm</FormType>
+            <DesignClass>TFrame</DesignClass>
+        </DCCReference>
+        <DCCReference Include="ui\gppmain.FramePerformanceAnalysis.pas">
+            <Form>frmMainProfiling</Form>
+            <FormType>dfm</FormType>
+            <DesignClass>TFrame</DesignClass>
+        </DCCReference>
+        <DCCReference Include="ui\gppMain.pas">
+            <Form>frmMain</Form>
+            <FormType>dfm</FormType>
+        </DCCReference>
+        <DCCReference Include="ui\gppmain.types.pas"/>
+        <DCCReference Include="ui\gppPreferencesDlg.pas">
+            <Form>frmPreferences</Form>
+            <FormType>dfm</FormType>
+        </DCCReference>
+        <DCCReference Include="ui\gppPrfPlaceholderDlg.pas">
+            <Form>frmPreferenceMacros</Form>
+            <FormType>dfm</FormType>
+        </DCCReference>
+        <DCCReference Include="ui\SimpleReportUnit.pas">
+            <Form>fmSimpleReport</Form>
+            <FormType>dfm</FormType>
+        </DCCReference>
+        <DCCReference Include="ui\gpPrfPlaceholders.pas"/>
+        <DCCReference Include="ui\gppUnitWizard.pas">
+            <Form>fmUnitWizard</Form>
+        </DCCReference>
+        <DCCReference Include="ui\VirtualTree.Tools\virtualTree.tools.base.pas"/>
+        <DCCReference Include="ui\VirtualTree.Tools\virtualTree.tools.checkable.pas"/>
+        <DCCReference Include="ui\VirtualTree.Tools\virtualTree.tools.memorystatistics.pas"/>
+        <DCCReference Include="ui\VirtualTree.Tools\virtualTree.tools.timestatistics.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>

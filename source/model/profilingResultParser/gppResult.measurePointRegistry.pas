@@ -1,4 +1,4 @@
-﻿unit gppResult.measurePointRegistry;
+unit gppResult.measurePointRegistry;
 
 interface
 
