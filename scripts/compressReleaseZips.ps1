@@ -1,40 +1,58 @@
-$version = "1.6.0.9"
-$srcBin32 = "..\bin"
-$srcBin64 = "..\bin64"
-$targetFolder32 = "..\gpprof_2017_v"+$version
-$targetFolder32Include = $targetFolder32+"\include"	
-$targetFolder64 = "..\gpprof_2017x64_v"+$version
-$targetFolder64Include = $targetFolder64+"\include"	
-$targetZip32 = "..\gpprof_2017_v"+$version+".zip"
-$targetZip64 = "..\gpprof_2017x64_v"+$version+".zip"
+$version = "1.6.0.10"
+
+$scriptDir   = if ($PSScriptRoot) { $PSScriptRoot } else { $PWD.Path }
+$repoRoot    = (Resolve-Path (Join-Path $scriptDir "..")).Path
+$includeDir  = Join-Path $repoRoot "include"
+
+$buildConfigs = @(
+    @{
+        Name      = "32-bit"
+        SrcBin    = Join-Path $repoRoot "bin"
+        TargetDir = Join-Path $repoRoot "gpprof_2017_v$version"
+    },
+    @{
+        Name      = "64-bit"
+        SrcBin    = Join-Path $repoRoot "bin64"
+        TargetDir = Join-Path $repoRoot "gpprof_2017x64_v$version"
+    }
+)
+
+foreach ($config in $buildConfigs) {
+    Write-Host "Creating $($config.Name) release zip" -ForegroundColor Cyan
     
-if (Test-Path -Path $targetFolder32) {
-    Write-Host "$targetFolder32 already exists, recreating it"
-    Remove-Item $targetFolder32 -Recurse
+    $zipFile = $config.TargetDir + ".zip"
+    
+    # Clean up existing temporary folders and old archives
+    if (Test-Path $config.TargetDir) {
+        Write-Host "Removing existing temporary folder: $($config.TargetDir)" -ForegroundColor DarkGray
+        Remove-Item $config.TargetDir -Recurse -Force
+    }
+    if (Test-Path $zipFile) {
+        Write-Host "Removing old archive: $zipFile" -ForegroundColor DarkGray
+        Remove-Item $zipFile -Force
+    }
+
+    # Create directory structure
+    Write-Host "Creating folder structure..." -ForegroundColor Green
+    $targetInclude = Join-Path $config.TargetDir "include"
+    New-Item -Path $targetInclude -ItemType Directory -Force | Out-Null
+
+    # Copy binary artifacts (.exe, .chm, .eul)
+    Write-Host "Copying binaries from $($config.SrcBin)..." -ForegroundColor Gray
+    Copy-Item -Path "$($config.SrcBin)\*" -Include "*.exe", "*.chm", "*.eul" -Destination $config.TargetDir
+
+    # Copy include files (.pas, .inc)
+    Write-Host "Copying include files..." -ForegroundColor Gray
+    Copy-Item -Path "$includeDir\*" -Include "*.pas", "*.inc" -Destination $targetInclude
+
+    # Create new archive
+    Write-Host "Creating archive: $zipFile" -ForegroundColor Yellow
+    Compress-Archive -LiteralPath $config.TargetDir -DestinationPath $zipFile
+
+    # Final cleanup of the temporary folder
+    Write-Host "Cleaning up temporary folder..." -ForegroundColor DarkGray
+    Remove-Item $config.TargetDir -Recurse -Force
 }
-if (Test-Path -Path $targetFolder64) {
-    Write-Host "$targetFolder64 already exists, recreating it"
-    Remove-Item $targetFolder64 -Recurse
-}
 
-Write-Host "Creating 32 bit folder structure" -f Green
-New-item -Path $targetFolder32 -ItemType Directory -Force	 | Out-Null
-New-item -Path $targetFolder32Include -ItemType Directory	-Force | Out-Null
-
-Write-Host "Copying bin32 artefacts from $srcBin32\* to $targetFolder32" -f Green
-Copy-Item -Path $srcBin32\* -Include *.exe,*.chm,*.eul -Destination $targetFolder32
-Copy-Item -Path ..\include\* -Include *.pas -Destination $targetFolder32Include
-Compress-Archive -LiteralPath $targetFolder32 -DestinationPath $targetZip32
-
-
-Write-Host "Creating 64 bit folder structure" -f Green
-New-item -Path $targetFolder64 -ItemType Directory -Force	 | Out-Null
-New-item -Path $targetFolder64Include -ItemType Directory	-Force | Out-Null
-
-
-Write-Host "Copying bin64 artefacts from $srcBin64\* to $targetFolder64" -f Green
-Copy-Item -Path $srcBin64\* -Include *.exe,*.chm,*.eul -Destination $targetFolder64
-Copy-Item -Path ..\include\* -Include *.pas -Destination $targetFolder64Include
-
-Compress-Archive -LiteralPath $targetFolder64 -DestinationPath $targetZip64
+Write-Host "Done" -ForegroundColor Green
 

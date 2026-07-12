@@ -13,7 +13,7 @@ object frmPreferences: TfrmPreferences
   OnCreate = FormCreate
   OnKeyPress = FormKeyPress
   PixelsPerInch = 96
-  TextHeight = 13
+  TextHeight = 15
   object Panel1: TPanel
     Left = 0
     Top = 361
@@ -71,9 +71,9 @@ object frmPreferences: TfrmPreferences
         TabOrder = 0
         object pnlMarkerStyle: TPanel
           Left = 2
-          Top = 15
+          Top = 17
           Width = 465
-          Height = 27
+          Height = 29
           Align = alTop
           AutoSize = True
           BevelOuter = bvNone
@@ -82,21 +82,20 @@ object frmPreferences: TfrmPreferences
             AlignWithMargins = True
             Left = 8
             Top = 6
-            Width = 143
-            Height = 18
+            Width = 157
+            Height = 20
             Margins.Left = 8
             Margins.Top = 6
             Align = alLeft
             Caption = 'Template for instrumentation:'
             FocusControl = cbxMarker
-            ExplicitHeight = 13
           end
           object cbxMarker: TComboBox
             AlignWithMargins = True
             Left = 168
             Top = 3
             Width = 281
-            Height = 21
+            Height = 23
             Margins.Right = 16
             Align = alRight
             Style = csDropDownList
@@ -108,9 +107,9 @@ object frmPreferences: TfrmPreferences
         end
         object pnlCompilerVersion: TPanel
           Left = 2
-          Top = 42
+          Top = 46
           Width = 465
-          Height = 27
+          Height = 29
           Align = alTop
           AutoSize = True
           BevelOuter = bvNone
@@ -119,21 +118,20 @@ object frmPreferences: TfrmPreferences
             AlignWithMargins = True
             Left = 8
             Top = 6
-            Width = 83
-            Height = 18
+            Width = 93
+            Height = 20
             Margins.Left = 8
             Margins.Top = 6
             Align = alLeft
             Caption = '&Compiler version:'
             FocusControl = cbxCompilerVersion
-            ExplicitHeight = 13
           end
           object cbxCompilerVersion: TComboBox
             AlignWithMargins = True
             Left = 168
             Top = 3
             Width = 281
-            Height = 21
+            Height = 23
             Margins.Right = 16
             Align = alRight
             Style = csDropDownList
@@ -161,7 +159,7 @@ object frmPreferences: TfrmPreferences
           Caption = 'Start &profiling on target startup'
           Checked = True
           State = cbChecked
-          TabOrder = 1
+          TabOrder = 2
         end
         object cbShowAllFolders: TCheckBox
           Left = 8
@@ -179,15 +177,23 @@ object frmPreferences: TfrmPreferences
           Height = 17
           Hint = 'Instrument pure asm functions.'
           Caption = '&Instrument pure assembler procedures'
-          TabOrder = 2
+          TabOrder = 4
         end
         object cbMakeBackupOfInstrumentedFile: TCheckBox
-          Left = 234
-          Top = 20
+          Left = 231
+          Top = 44
           Width = 220
           Height = 17
           Caption = 'Backup Instrumented Files'
           TabOrder = 3
+        end
+        object cbShowDirStructure: TCheckBox
+          Left = 231
+          Top = 21
+          Width = 220
+          Height = 17
+          Caption = 'Show Directory Structure'
+          TabOrder = 1
         end
       end
       object GroupBox3: TGroupBox
@@ -202,21 +208,20 @@ object frmPreferences: TfrmPreferences
         object Label3: TLabel
           AlignWithMargins = True
           Left = 10
-          Top = 18
+          Top = 20
           Width = 454
-          Height = 13
+          Height = 15
           Margins.Left = 8
           Align = alTop
           Caption = 
             'Choose the compression level here to get a faster target executi' +
             'on or a smaller prf.'
-          ExplicitWidth = 402
         end
         object Panel3: TPanel
           Left = 2
-          Top = 34
+          Top = 38
           Width = 465
-          Height = 69
+          Height = 65
           Align = alClient
           BevelOuter = bvNone
           TabOrder = 0
@@ -224,21 +229,20 @@ object frmPreferences: TfrmPreferences
             AlignWithMargins = True
             Left = 8
             Top = 3
-            Width = 57
-            Height = 63
+            Width = 60
+            Height = 59
             Margins.Left = 8
             Align = alLeft
             Caption = '&Speed/Size:'
             FocusControl = tbSpeedSize
-            ExplicitHeight = 13
           end
           object tbSpeedSize: TTrackBar
-            Left = 68
+            Left = 71
             Top = 0
             Width = 25
-            Height = 69
+            Height = 65
             Align = alLeft
-            Max = 3
+            Max = 4
             Min = 1
             Orientation = trVertical
             PageSize = 1
@@ -247,10 +251,10 @@ object frmPreferences: TfrmPreferences
             ThumbLength = 15
           end
           object pnSpeedSizeLabels: TPanel
-            Left = 93
+            Left = 96
             Top = 0
-            Width = 372
-            Height = 69
+            Width = 369
+            Height = 65
             Align = alClient
             BevelOuter = bvNone
             TabOrder = 1
@@ -258,48 +262,81 @@ object frmPreferences: TfrmPreferences
               AlignWithMargins = True
               Left = 3
               Top = 3
-              Width = 366
-              Height = 13
+              Width = 363
+              Height = 15
               Align = alTop
               Caption = 'faster target'
               OnClick = lblFasterTargetClick
               OnDblClick = lblFasterTargetClick
-              ExplicitWidth = 62
             end
             object lblSmallerFile: TLabel
               AlignWithMargins = True
               Left = 3
-              Top = 53
-              Width = 366
-              Height = 13
+              Top = 47
+              Width = 363
+              Height = 15
               Align = alBottom
               Caption = 'smaller profiling file'
               OnClick = lblSmallerFileClick
               OnDblClick = lblSmallerFileClick
-              ExplicitWidth = 91
+            end
+            object lblPrfBufSizeKB: TLabel
+              Left = 152
+              Top = 38
+              Width = 93
+              Height = 15
+              Align = alCustom
+              Anchors = [akTop, akRight]
+              Caption = 'Write Bufffer Size:'
             end
             object cbMemWorkingSetEnabled: TCheckBox
-              Left = 176
+              Left = 152
               Top = 3
               Width = 177
               Height = 17
+              Align = alCustom
+              Anchors = [akTop, akRight]
               Caption = 'Analyse Memory Working Set'
               Checked = True
               State = cbChecked
               TabOrder = 0
+            end
+            object cbbPrfBufSizeKB: TComboBox
+              Left = 251
+              Top = 35
+              Width = 102
+              Height = 23
+              Align = alCustom
+              Anchors = [akTop, akRight]
+              CharCase = ecUpperCase
+              ItemIndex = 0
+              TabOrder = 1
+              Text = '64 KB'
+              Items.Strings = (
+                '64 KB'
+                '256 KB'
+                '512 KB'
+                '1 MB'
+                '10 MB'
+                '100 MB'
+                '256 MB'
+                '512 MB')
             end
           end
         end
       end
       object btnInstrumentationDefaults: TButton
         AlignWithMargins = True
-        Left = 397
+        Left = 395
         Top = 302
-        Width = 75
-        Height = 28
+        Width = 77
+        Height = 23
         Align = alRight
         Caption = 'D&efaults'
-        Constraints.MaxHeight = 28
+        Constraints.MaxHeight = 23
+        Constraints.MaxWidth = 77
+        Constraints.MinHeight = 17
+        Constraints.MinWidth = 77
         TabOrder = 3
         OnClick = btnInstrumentationDefaultsClick
       end
@@ -327,19 +364,6 @@ object frmPreferences: TfrmPreferences
           TabOrder = 0
         end
       end
-      object btnAnalysisDefaults: TButton
-        Left = 400
-        Top = 132
-        Width = 75
-        Height = 201
-        Align = alRight
-        Caption = 'D&efaults'
-        Constraints.MaxHeight = 202
-        TabOrder = 1
-        OnClick = btnAnalysisDefaultsClick
-        ExplicitTop = 131
-        ExplicitHeight = 202
-      end
       object GroupBox7: TGroupBox
         AlignWithMargins = True
         Left = 3
@@ -348,13 +372,13 @@ object frmPreferences: TfrmPreferences
         Height = 70
         Align = alTop
         Caption = ' Settings '
-        TabOrder = 2
+        TabOrder = 1
         object Label6: TLabel
           AlignWithMargins = True
           Left = 10
-          Top = 23
-          Width = 243
-          Height = 13
+          Top = 25
+          Width = 449
+          Height = 15
           Margins.Left = 8
           Margins.Top = 8
           Margins.Right = 8
@@ -401,6 +425,21 @@ object frmPreferences: TfrmPreferences
           end
         end
       end
+      object btnAnalysisDefaults: TButton
+        AlignWithMargins = True
+        Left = 395
+        Top = 135
+        Width = 77
+        Height = 23
+        Align = alRight
+        Caption = 'D&efaults'
+        Constraints.MaxHeight = 23
+        Constraints.MaxWidth = 77
+        Constraints.MinHeight = 17
+        Constraints.MinWidth = 77
+        TabOrder = 2
+        OnClick = btnAnalysisDefaultsClick
+      end
     end
     object tabExcluded: TTabSheet
       Caption = 'Excluded units'
@@ -417,9 +456,9 @@ object frmPreferences: TfrmPreferences
         object memoExclUnits: TMemo
           AlignWithMargins = True
           Left = 10
-          Top = 23
+          Top = 25
           Width = 311
-          Height = 200
+          Height = 198
           Margins.Left = 8
           Margins.Top = 8
           Margins.Right = 8
@@ -431,9 +470,9 @@ object frmPreferences: TfrmPreferences
         object pnlUnitCommands: TPanel
           AlignWithMargins = True
           Left = 329
-          Top = 23
+          Top = 25
           Width = 130
-          Height = 200
+          Height = 198
           Margins.Left = 0
           Margins.Top = 8
           Margins.Right = 8
@@ -443,19 +482,19 @@ object frmPreferences: TfrmPreferences
           TabOrder = 1
           object btnAddFromFolder: TButton
             Left = 0
-            Top = 166
+            Top = 164
             Width = 130
             Height = 17
             Align = alBottom
             Caption = '&Add from folder'
             Constraints.MaxHeight = 25
-            Constraints.MaxWidth = 125
+            Constraints.MaxWidth = 130
             TabOrder = 0
             OnClick = btnAddFromFolderClick
           end
           object btnClear: TButton
             Left = 0
-            Top = 183
+            Top = 181
             Width = 130
             Height = 17
             Align = alBottom
@@ -469,13 +508,16 @@ object frmPreferences: TfrmPreferences
       end
       object btnUnitsDefaults: TButton
         AlignWithMargins = True
-        Left = 397
+        Left = 395
         Top = 242
-        Width = 75
-        Height = 88
+        Width = 77
+        Height = 23
         Align = alRight
         Caption = 'D&efaults'
-        Constraints.MaxHeight = 88
+        Constraints.MaxHeight = 23
+        Constraints.MaxWidth = 77
+        Constraints.MinHeight = 17
+        Constraints.MinWidth = 77
         TabOrder = 1
         OnClick = btnExcludedUnitsDefaultsClick
       end
@@ -494,9 +536,9 @@ object frmPreferences: TfrmPreferences
         TabOrder = 0
         object pnlSymbolCommands: TPanel
           Left = 264
-          Top = 15
+          Top = 17
           Width = 203
-          Height = 277
+          Height = 275
           Margins.Bottom = 8
           Align = alRight
           BevelOuter = bvNone
@@ -504,7 +546,7 @@ object frmPreferences: TfrmPreferences
           object btnAddDefine: TButton
             AlignWithMargins = True
             Left = 3
-            Top = 172
+            Top = 170
             Width = 197
             Height = 17
             Margins.Bottom = 0
@@ -515,7 +557,7 @@ object frmPreferences: TfrmPreferences
           object btnClearAllDefines: TButton
             AlignWithMargins = True
             Left = 3
-            Top = 252
+            Top = 250
             Width = 197
             Height = 17
             Margins.Bottom = 8
@@ -526,7 +568,7 @@ object frmPreferences: TfrmPreferences
           object btnClearUserDefines: TButton
             AlignWithMargins = True
             Left = 3
-            Top = 232
+            Top = 230
             Width = 197
             Height = 17
             Margins.Bottom = 0
@@ -538,7 +580,7 @@ object frmPreferences: TfrmPreferences
           object btnDeleteDefine: TButton
             AlignWithMargins = True
             Left = 3
-            Top = 212
+            Top = 210
             Width = 197
             Height = 17
             Margins.Bottom = 0
@@ -549,7 +591,7 @@ object frmPreferences: TfrmPreferences
           object btnRenameDefine: TButton
             AlignWithMargins = True
             Left = 3
-            Top = 192
+            Top = 190
             Width = 197
             Height = 17
             Margins.Bottom = 0
@@ -560,7 +602,7 @@ object frmPreferences: TfrmPreferences
           object cbConsoleDefines: TCheckBox
             AlignWithMargins = True
             Left = 3
-            Top = 50
+            Top = 52
             Width = 197
             Height = 17
             Margins.Bottom = 0
@@ -572,7 +614,7 @@ object frmPreferences: TfrmPreferences
           object cbDisableUserDefines: TCheckBox
             AlignWithMargins = True
             Left = 3
-            Top = 90
+            Top = 92
             Width = 197
             Height = 17
             Margins.Bottom = 0
@@ -584,7 +626,7 @@ object frmPreferences: TfrmPreferences
           object cbProjectDefines: TCheckBox
             AlignWithMargins = True
             Left = 3
-            Top = 70
+            Top = 72
             Width = 197
             Height = 17
             Margins.Bottom = 0
@@ -596,7 +638,7 @@ object frmPreferences: TfrmPreferences
           object cbStandardDefines: TCheckBox
             AlignWithMargins = True
             Left = 3
-            Top = 30
+            Top = 32
             Width = 197
             Height = 17
             Margins.Bottom = 0
@@ -610,7 +652,7 @@ object frmPreferences: TfrmPreferences
             Left = 3
             Top = 3
             Width = 197
-            Height = 21
+            Height = 23
             Align = alTop
             Style = csDropDownList
             TabOrder = 9
@@ -620,9 +662,9 @@ object frmPreferences: TfrmPreferences
         object pnlSymbolsDefine: TPanel
           AlignWithMargins = True
           Left = 5
-          Top = 15
+          Top = 17
           Width = 256
-          Height = 277
+          Height = 275
           Margins.Top = 0
           Margins.Bottom = 0
           Align = alClient
@@ -631,9 +673,9 @@ object frmPreferences: TfrmPreferences
           object inpDefine: TEdit
             AlignWithMargins = True
             Left = 3
-            Top = 248
+            Top = 244
             Width = 250
-            Height = 21
+            Height = 23
             Margins.Bottom = 8
             Align = alBottom
             TabOrder = 0
@@ -643,7 +685,7 @@ object frmPreferences: TfrmPreferences
             Left = 3
             Top = 3
             Width = 250
-            Height = 239
+            Height = 235
             Align = alClient
             Columns = <
               item
@@ -664,14 +706,16 @@ object frmPreferences: TfrmPreferences
       end
       object btnDefinesDefaults: TButton
         AlignWithMargins = True
-        Left = 397
+        Left = 395
         Top = 303
-        Width = 75
-        Height = 27
+        Width = 77
+        Height = 23
         Align = alRight
         Caption = 'D&efaults'
-        Constraints.MaxHeight = 27
-        Constraints.MaxWidth = 75
+        Constraints.MaxHeight = 23
+        Constraints.MaxWidth = 77
+        Constraints.MinHeight = 17
+        Constraints.MinWidth = 77
         TabOrder = 1
         OnClick = btnDefinesDefaultsClick
       end

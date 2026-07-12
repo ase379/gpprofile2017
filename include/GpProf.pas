@@ -1,17 +1,5 @@
 {$R-,C-,Q-,O+,H+}
 
-(*
-  1.11: 1999-08-12
-    - Added support for Delphi 5.
-  1.1: 1999-08-10
-    - Fixed long-standing bug that caused corrupted profile file when profiling
-      large projects.
-  1.0.1: 1999-05-12
-    - Support for DLL and package profiling (GetModuleName is used instead of
-      ParamStr(0)).
-    - Error is reported if <module>.gpi or <module>.gpd file is not found.
-*)
-
 unit GpProf;
 
 interface
@@ -19,25 +7,12 @@ interface
 {$WARN SYMBOL_PLATFORM OFF}
 {$WARN SYMBOL_DEPRECATED OFF}
 
-{$IF CompilerVersion > 19}
-  {$DEFINE HAS_NAME_THREAD_FOR_DEBUGGING}
-  {$DEFINE HAS_THREAD_ID_TYPE}
-{$IFEND}
+{$INCLUDE GpProf.inc}
 
 (******************************************************************************)
 
-{$IFNDEF HAS_THREAD_ID_TYPE}
-type
-  TThreadID = Cardinal;
-{$ENDIF}
-
-{$IF CompilerVersion < 19}
-type
-  // fix Delphi 2007 invalid type declarations
-  // https://blog.dummzeuch.de/2018/09/08/nativeint-nativeuint-type-in-various-delphi-versions/
-  NativeInt = Integer;
-  NativeUInt = Cardinal;
-{$IFEND}
+uses
+  GpProfCommonTypes;
 
 type
   /// <summary>
@@ -76,10 +51,11 @@ uses
   SysUtils,
   IniFiles,
   GpProfH,
+  GpProfLists,
   GpProfCommon;
 
 const
-  BUF_SIZE = 64 * 1024; //64*1024;
+  BUF_SIZE_DEFAULT = 64 * 1024; // 64 KB
 
 type
   TMeasurePointScope = class(TInterfacedObject, IMeasurePointScope)
@@ -89,36 +65,6 @@ type
     constructor Create(const aMeasurePointId : UTF8String);
     destructor Destroy; override;
   end;
-
-  TTLEl = record
-    tleThread: integer;
-    tleRemap : integer;
-  end;
-
-  PTLElements = ^TTLElements;
-  TTLElements = array [0..0] of TTLEl;
-
-  TThreadList = class
-  private
-    tlItems: PTLElements;
-    tlCount: Cardinal;
-    tlRemap: Cardinal;
-    tlLast : Cardinal;
-    tlLastR: Cardinal;
-    function Search(const aThreadId: Cardinal; var remap, insertIdx: Cardinal): boolean;
-  public
-    constructor Create;
-    destructor  Destroy; override;
-    function    Remap(const aThreadId: Cardinal): integer;
-    property    Count: Cardinal read tlCount;
-  end;
-
-  TThreadInformation = class
-    ID : cardinal;
-    Name : UTF8String;
-  end;
-
-  TThreadInformationList = TObjectList;
 
 var
   prfFile        : THandle;
@@ -132,85 +78,97 @@ var
   prfRunning     : boolean;
   prfLastTick    : TLargeInteger;
   prfOnlyThread  : Cardinal;
-  prfThreads     : TThreadList;
+  prfThreads     : TThreadIdList;
   prfThreadsInfo : TThreadInformationList;
   prfThreadBytes : integer;
   prfMaxThreadNum: Cardinal;
+  prfMeasurePoints: TMeasurePointList;
+  prfMeasurePointBytes : integer;
+  prfMaxMeasurePointNum: Cardinal;
   prfInitialized : boolean;
   prfDisabled    : boolean;
 
   profProcSize          : integer;
   profCompressTicks     : boolean;
   profCompressThreads   : boolean;
+  profCompressMeasurePoints: boolean;
   profProfilingAutostart: boolean;
   profProfilingMemoryEnabled: boolean;
   profPrfOutputFile     : string;
   profTableName         : string;
+  profBufSize           : integer = BUF_SIZE_DEFAULT;
 
-procedure FlushFile;
+procedure FlushFile; {$IFDEF HAS_INLINE}inline;{$ENDIF}
 var
   written: DWORD;
 begin
-  Win32Check(WriteFile(prfFile, prfBuf^, BUF_SIZE, written, nil));
-  prfBufOffs := 0;
-  FillChar(prfBuf^, BUF_SIZE, 0);
+  if WriteFile(prfFile, prfBuf^, prfBufOffs, written, nil) then begin
+    prfBufOffs := 0;
+  end else
+    RaiseLastWin32Error;
 end; { FlushFile }
 
-function OffsetPtr(ptr: Pointer; offset: NativeUInt): Pointer; inline;
+function OffsetPtr(ptr: Pointer; offset: NativeUInt): Pointer; {$IFDEF HAS_INLINE}inline;{$ENDIF}
 begin
   Result := Pointer(NativeUInt(ptr) + offset);
 end; { OffsetPtr }
 
-procedure Transmit(const buf; count: DWORD);
+procedure Transmit(const buf; count: integer);
 var
-  res    : boolean;
-  place  : DWORD;
   bufp   : pointer;
+  place  : integer;
   written: DWORD;
 begin
-  place := BUF_SIZE-prfBufOffs;
+  place := profBufSize - prfBufOffs;
   if place <= count then begin
     Move(buf,OffsetPtr(prfBuf,prfBufOffs)^,place); // fill the buffer
-    prfBufOffs := BUF_SIZE;
+    prfBufOffs := profBufSize;
     FlushFile;
     Dec(count,place);
     bufp := OffsetPtr(@buf,place);
-    while count >= BUF_SIZE do begin
-      Move(bufp^,prfBuf^,BUF_SIZE);
-      res := WriteFile(prfFile,prfBuf^,BUF_SIZE,written,nil);
-      if not res then RaiseLastWin32Error;
-      Dec(count,BUF_SIZE);
-      bufp := OffsetPtr(bufp,BUF_SIZE);
-    end; //while
-  end
-  else bufp := @buf;
+    if count >= profBufSize then begin
+      if WriteFile(prfFile, bufp^, count, written, nil) then begin
+        count := 0;
+      end else
+        RaiseLastWin32Error;
+    end;
+  end else
+    bufp := @buf;
   if count > 0 then begin // store leftovers
     Move(bufp^,OffsetPtr(prfBuf,prfBufOffs)^,count);
     Inc(prfBufOffs,count);
   end;
 end; { Transmit }
 
+{$IFDEF HAS_MEMORY_MANAGER_STATE}
 function GetMemWorkingSize() : Cardinal;
 var
-  MemoryManagerState: TMemoryManagerState;
-  SmallBlockState: TSmallBlockTypeState;
   i: Integer;
+  LState: TMemoryManagerState;
+  LSmallBlocks: TSmallBlockTypeStates;
+  LSmallBlock: ^TSmallBlockTypeState;
 begin
-  GetMemoryManagerState( MemoryManagerState );
   Result := 0;
-  for i := low(MemoryManagerState.SmallBlockTypeStates) to
-        high(MemoryManagerState.SmallBlockTypeStates) do
-    begin
-    SmallBlockState := MemoryManagerState.SmallBlockTypeStates[i];
-    Inc(Result,
-    SmallBlockState.AllocatedBlockCount*SmallBlockState.UseableBlockSize);
-    end;
-
-  Inc(Result, MemoryManagerState.TotalAllocatedMediumBlockSize);
-  Inc(Result, MemoryManagerState.TotalAllocatedLargeBlockSize);
+  GetMemoryManagerState(LState);
+  LSmallBlocks := LState.SmallBlockTypeStates;
+  for i := Low(LSmallBlocks) to High(LSmallBlocks) do
+  begin
+    LSmallBlock := @LSmallBlocks[i];
+    Inc(Result,LSmallBlock.AllocatedBlockCount*LSmallBlock.UseableBlockSize);
+  end;
+  Inc(Result,LState.TotalAllocatedMediumBlockSize);
+  Inc(Result,LState.TotalAllocatedLargeBlockSize);
 end;
+{$ELSE}
+function GetMemWorkingSize() : Cardinal;
+begin
+  // AllocMemSize is updated by the heap lock on every GetMem/FreeMem call
+  // Reading an aligned 32-bit Cardinal is atomic on x86, so no torn reads occur
+  Result := System.AllocMemSize;
+end;
+{$ENDIF}
 
-procedure WriteMemWorkingSize();
+procedure WriteMemWorkingSize(); {$IFDEF HAS_INLINE}inline;{$ENDIF}
 var
   lMemUsed : Cardinal;
 begin
@@ -218,41 +176,39 @@ begin
   Transmit(lMemUsed, sizeof(Cardinal));
 end;
 
-procedure WriteInt(int: integer); inline;
+procedure WriteInt(int: integer); {$IFDEF HAS_INLINE}inline;{$ENDIF}
 begin
   Transmit(int, SizeOf(integer));
 end;
 
-procedure WriteCardinal(value: Cardinal); inline;
+procedure WriteCardinal(value: Cardinal); {$IFDEF HAS_INLINE}inline;{$ENDIF}
 begin
   Transmit(value, SizeOf(Cardinal));
 end;
 
-procedure WriteTag(tag: byte); inline;
+procedure WriteTag(tag: byte); {$IFDEF HAS_INLINE}inline;{$ENDIF}
 begin
   Transmit(tag, SizeOf(byte));
 end;
 
-procedure WriteProcID(id: integer); inline;
+procedure WriteProcID(id: integer); {$IFDEF HAS_INLINE}inline;{$ENDIF}
 begin
   Transmit(id, profProcSize);
 end;
 
-procedure WriteGuid(const guid: TGUID); inline;
-begin
-  Transmit(guid, SizeOf(TGUID));
-end;
-
-procedure WriteBool(bool: boolean); inline;
+procedure WriteBool(bool: boolean); {$IFDEF HAS_INLINE}inline;{$ENDIF}
 begin
   Transmit(bool, 1);
 end;
 
-procedure WriteUtf8String(const aValue: UTF8String); inline;
+procedure WriteUtf8String(const aValue: UTF8String); {$IFDEF HAS_INLINE}inline;{$ENDIF}
+var
+  len: integer;
 begin
-  WriteCardinal(Length(aValue));
-  if Length(aValue)>0 then
-    Transmit(aValue[1], Length(aValue));
+  len := Length(aValue);
+  WriteCardinal(len);
+  if len > 0 then
+    Transmit(aValue[1], len);
 end;
 
 procedure WriteTicks(ticks: TLargeInteger);
@@ -294,7 +250,22 @@ begin
   end;
 end; { WriteThread }
 
-procedure FlushCounter; inline;
+procedure WriteMeasurePoint(const aId: UTF8String; const aRemap, aCount: integer);
+const
+  marker: integer = 0;
+begin
+  if not profCompressMeasurePoints then WriteUtf8String(aId)
+  else begin
+    if Cardinal(aCount) >= prfMaxMeasurePointNum then begin
+      Transmit(marker, prfMeasurePointBytes);
+      prfMaxMeasurePointNum := 256 * prfMaxMeasurePointNum;
+      Inc(prfMeasurePointBytes);
+    end;
+    Transmit(aRemap, prfMeasurePointBytes);
+  end;
+end;
+
+procedure FlushCounter; {$IFDEF HAS_INLINE}inline;{$ENDIF}
 begin
   if prfCounter <> 0 then begin
     WriteTicks(prfCounter);
@@ -394,44 +365,13 @@ begin
 end; { NameThreadForDebugging }
 {$ENDIF}
 
-{$IFNDEF HAS_NAME_THREAD_FOR_DEBUGGING}
-procedure SetCurrentThreadName(const AName: AnsiString; AThreadID: DWORD);
-type
-  {$A8}
-  TThreadNameInfo = record
-    dwType     : DWORD;   // must be 0x1000
-    szName     : LPCSTR;  // pointer to name (in user addr space)
-    dwThreadID : DWORD;   // thread ID (-1 indicates caller thread)
-    dwFlags    : DWORD;   // reserved for future use, must be zero
-  end;
-const
-  MS_VC_EXCEPTION: DWORD = $406D1388;
-var
-  LInfo: TThreadNameInfo;
-begin
-  // This code is extremely strange, but it's the documented way of doing it
-  // https://learn.microsoft.com/en-us/visualstudio/debugger/tips-for-debugging-threads
-
-  LInfo.dwType     := $1000;
-  LInfo.szName     := PAnsiChar(AName);
-  LInfo.dwThreadID := AThreadID;
-  LInfo.dwFlags    := 0;
-
-  try
-    RaiseException(MS_VC_EXCEPTION, 0, SizeOf(LInfo) div SizeOf(ULONG_PTR), @LInfo);
-  except
-    // do nothing
-  end;
-end;
-{$ENDIF}
-
 procedure NameThreadForDebugging(const AThreadName: string; AThreadID: TThreadID);
 var LEntry : TThreadInformation;
 begin
   {$IFDEF HAS_NAME_THREAD_FOR_DEBUGGING}
   TThread.NameThreadForDebugging(aThreadName, aThreadId);
   {$ELSE}
-  SetCurrentThreadName(AnsiString(aThreadName), aThreadId);
+  GpProfCommon.NameThreadForDebugging(aThreadName, aThreadId);
   {$ENDIF}
   if not prfDisabled then
   begin
@@ -442,95 +382,12 @@ begin
   end;
 end; { NameThreadForDebugging }
 
-{ TThreadList }
-
-constructor TThreadList.Create;
-begin
-  inherited Create;
-  tlCount := 0;
-  tlRemap := 0;
-  tlItems := nil;
-  tlLast := 0;
-  tlLastR := 0;
-end; { TThreadList.Create }
-
-destructor TThreadList.Destroy;
-begin
-  if tlItems <> nil then Dispose(tlItems);
-  inherited Destroy;
-end; { TThreadList.Destroy }
-
-function TThreadList.Remap(const aThreadId: Cardinal): integer;
-var
-  LRemap   : Cardinal;
-  LInsert  : Cardinal;
-  LTmpItems: PTLElements;
-begin
-  if aThreadId = tlLast then
-    Result := tlLastR
-  else if not Search(aThreadId, LRemap, LInsert) then begin
-    // reallocate tlItems
-    GetMem(LTmpItems, SizeOf(TTLEl)*(tlCount+1));
-    if tlItems <> nil then begin
-      Move(tlItems^, LTmpItems^, Sizeof(TTLEl)*tlCount);
-      FreeMem(tlItems);
-    end;
-    tlItems := LTmpItems;
-    // get new remap number
-    Inc(tlRemap);
-    if byte(tlRemap) = 0 then Inc(tlRemap);
-    // insert new element
-    if LInsert < tlCount then
-      Move(tlItems^[LInsert], tlItems^[LInsert + 1], (tlCount-LInsert)*SizeOf(TTLEl));
-    with tlItems^[LInsert] do begin
-      tleThread := aThreadId;
-      tleRemap  := tlRemap;
-    end;
-    Inc(tlCount);
-    tlLast  := aThreadId;
-    tlLastR := tlRemap;
-    Result  := tlRemap;
-  end
-  else begin
-    tlLast  := aThreadId;
-    tlLastR := LRemap;
-    Result  := LRemap;
-  end;
-end; { TThreadList.Remap }
-
-function TThreadList.Search(const aThreadId: Cardinal; var remap, insertIdx: Cardinal): boolean;
-var
-  l, m, h: Cardinal;
-  mid    : Cardinal;
-begin
-  if tlCount = 0 then begin
-    insertIdx := 0;
-    Result := False;
-  end
-  else begin
-    L := 0;
-    H := tlCount - 1;
-    repeat
-      m := L + (H - L) div 2;
-      mid := tlItems^[m].tleThread;
-      if aThreadId = mid then begin
-        remap := tlItems^[m].tleRemap;
-        Result := True;
-        Exit;
-      end else if aThreadId < mid then H := m - 1
-      else L := m + 1;
-    until L > H;
-    Result := False;
-    if aThreadId > mid then insertIdx := m + 1
-                    else insertIdx := m;
-  end;
-end; { TThreadList.Search }
-
 procedure ReadIncSettings;
 var
   LBuf: array [0..256] of char;
   LIniFileName: string;
   LIni: TMemIniFile;
+  LBufSizeKB: Integer;
 begin
   GetModuleFileName(HInstance,LBuf,256);
   prfModuleName := string(LBuf);
@@ -553,11 +410,25 @@ begin
           profProcSize           := LIni.ReadInteger('Procedures','ProcSize',4);
           profCompressTicks      := LIni.ReadBool('Performance','CompressTicks',false);
           profCompressThreads    := LIni.ReadBool('Performance','CompressThreads',false);
+          profCompressMeasurePoints := LIni.ReadBool('Performance','CompressMeasurePoints',false);
           profProfilingAutostart := LIni.ReadBool('Performance','ProfilingAutostart',true);
           profProfilingMemoryEnabled := LIni.ReadBool('Performance','ProfilingMemSupport',false);
           profPrfOutputFile := LIni.ReadString('Output','PrfOutputFilename','$(ModulePath)');
           profPrfOutputFile := ResolvePrfRuntimePlaceholders(profPrfOutputFile);
-          prfDisabled            := false;
+
+          LBufSizeKB := BUF_SIZE_DEFAULT div 1024;
+          profBufSize := LIni.ReadInteger('Output','BufSizeKB',LBufSizeKB);
+          if (profBufSize >= LBufSizeKB) and (profBufSize < 1024 * 1024 {1 GB}) then
+          begin
+            profBufSize := profBufSize * 1024;
+          end else
+          begin
+            MessageBox(0, PChar(Format('Invalid BufSizeKB value: %d, fallback to the default size %d KB',
+              [profBufSize, LBufSizeKB])), 'GpProfile', MB_OK + MB_ICONERROR);
+            profBufSize := BUF_SIZE_DEFAULT;
+          end;
+
+          prfDisabled := false;
         end;
       end;
     finally
@@ -589,22 +460,23 @@ begin
       prfRunning          := profProfilingAutostart;
       prfCounter          := 0;
       prfOnlyThread       := 0;
-      prfThreads          := TThreadList.Create;
+      prfThreads          := TThreadIdList.Create;
       prfThreadsInfo      := TThreadInformationList.Create;
       prfMaxThreadNum     := 256;
       prfThreadBytes      := 1;
+      prfMeasurePoints    := TMeasurePointList.Create;
+      prfMaxMeasurePointNum := 256;
+      prfMeasurePointBytes:= 1;
       prfLastTick         := -1;
       prfName             := CombineNames(prfModuleName, 'prf');
       if profPrfOutputFile <> '' then
         prfName := profPrfOutputFile + '.prf';
-      GetMem(prfBuf,BUF_SIZE);
+      GetMem(prfBuf,profBufSize);
       Win32Check(prfBuf <> nil);
       prfBufOffs          := 0;
-      FillChar(prfBuf^, BUF_SIZE, 0);
       InitializeCriticalSection(prfLock);
       prfFile := CreateFile(PChar(prfName), GENERIC_WRITE, 0, nil, CREATE_ALWAYS,
-                            FILE_ATTRIBUTE_NORMAL + FILE_FLAG_WRITE_THROUGH +
-                            FILE_FLAG_NO_BUFFERING, 0);
+                            FILE_ATTRIBUTE_NORMAL or FILE_FLAG_SEQUENTIAL_SCAN, 0);
       Win32Check(prfFile <> INVALID_HANDLE_VALUE);
       QueryPerformanceFrequency(prfFreq);
     end;
@@ -633,6 +505,8 @@ begin
   WriteTicks(prfFreq);
   WriteTag(PR_PROCSIZE);
   WriteInt(profProcSize);
+  WriteTag(PR_COMPRESS_MEASURE_POINTS);
+  WriteBool(profCompressMeasurePoints);
   WriteTag(PR_ENDHEADER);
 end; { WriteHeader }
 
@@ -640,18 +514,27 @@ procedure CopyTables;
 var
   p: pointer;
   f: file;
+  fs: integer;
 begin
   if not FileExists(profTableName) then prfDisabled := true
   else begin
     Assign(f,profTableName);
     Reset(f,1);
     try
-      GetMem(p,FileSize(f));
-      try
-        BlockRead(f,p^,FileSize(f));
-        Transmit(p^,FileSize(f));
-      finally FreeMem(p); end;
-    finally Close(f); end;
+      fs := FileSize(f);
+      if fs > 0 then
+      begin
+        GetMem(p,fs);
+        try
+          BlockRead(f,p^,fs);
+          Transmit(p^,fs);
+        finally
+          FreeMem(p);
+        end;
+      end;
+    finally
+      Close(f);
+    end;
   end;
 end; { CopyTables }
 
@@ -675,11 +558,11 @@ end; { WriteCalibration }
 
 procedure Finalize;
 begin
-  FlushFile;
   Win32Check(CloseHandle(prfFile));
-  FreeMem(prfBuf, BUF_SIZE);
+  FreeMem(prfBuf);
   prfThreads.Free;
   prfThreadsInfo.free;
+  prfMeasurePoints.free;
   DeleteCriticalSection(prfLock);
 end; { Finalize }
 
@@ -687,31 +570,102 @@ procedure ProfilerTerminate;
 var
   i: integer;
   LItem: TThreadInformation;
+  LThreadsIdItem: TTLEl;
+  LMeasurePointItem: TMPLEl;
 begin
   if not prfInitialized then Exit;
+
   ProfilerStop;
   prfInitialized := False;
-  FlushCounter;
-  WriteTag(PR_ENDDATA);
 
-  WriteTag(PR_START_THREADINFO);
-  WriteCardinal(prfThreadsInfo.count);
-  for i := 0 to prfThreadsInfo.count-1 do
-  begin
-    LItem := TThreadInformation(prfThreadsInfo[i]);
-    WriteCardinal(LItem.ID);
-    WriteUtf8String(LItem.Name);
+  EnterCriticalSection(prfLock);
+  try
+    FlushCounter;
+    WriteTag(PR_ENDDATA);
+
+    // write thread names
+    WriteTag(PR_START_THREADINFO);
+    WriteCardinal(prfThreadsInfo.count);
+    for i := 0 to prfThreadsInfo.count-1 do
+    begin
+      LItem := TThreadInformation(prfThreadsInfo[i]);
+      WriteCardinal(LItem.ID);
+      WriteUtf8String(LItem.Name);
+    end;
+    WriteTag(PR_END_THREADINFO);
+
+    // write compressed thread ids
+    if profCompressThreads then
+    begin
+      WriteTag(PR_START_THREAD_ID_LIST);
+      WriteCardinal(prfThreads.Count);
+      for i := 0 to prfThreads.Count-1 do
+      begin
+        LThreadsIdItem := prfThreads.Items[i];
+        WriteCardinal(LThreadsIdItem.tleThread);
+        WriteCardinal(LThreadsIdItem.tleRemap);
+      end;
+      WriteTag(PR_END_THREAD_ID_LIST);
+    end;
+
+    // write compressed measure point names
+    if profCompressMeasurePoints then
+    begin
+      prfMeasurePoints.Lock;
+      try
+        WriteTag(PR_START_MEASURE_POINTS_LIST);
+        WriteCardinal(prfMeasurePoints.Count);
+        for i := 0 to prfMeasurePoints.Count-1 do
+        begin
+          LMeasurePointItem := prfMeasurePoints.Items[i];
+          WriteUtf8String(LMeasurePointItem.mpleId);
+          WriteCardinal(LMeasurePointItem.mpleRemap);
+        end;
+        WriteTag(PR_END_MEASURE_POINTS_LIST);
+      finally
+        prfMeasurePoints.Unlock;
+      end;
+    end;
+
+    if prfBufOffs > 0 then
+      FlushFile;
+  finally
+    LeaveCriticalSection(prfLock);
   end;
-  WriteInt(PR_END_THREADINFO);
 
   Finalize;
 end; { ProfilerTerminate }
+
+procedure CompressMeasurePoint(const aMeasurePointId: UTF8String; out aRemap, aCount: integer);
+begin
+  if aMeasurePointId <> '' then
+  begin
+    if not profCompressMeasurePoints then
+    begin
+      aRemap := 0;
+      aCount := 0;
+    end else
+    begin
+      prfMeasurePoints.Lock;
+      try
+        aRemap := prfMeasurePoints.Remap(aMeasurePointId);
+        aCount := prfMeasurePoints.Count;
+      finally
+        prfMeasurePoints.Unlock;
+      end;
+    end;
+  end
+  else
+    raise Exception.Create('GpProf: Measure Point ID can''t be empty!');
+end;
 
 procedure ProfilerEnterMP(const aMeasurePointId: UTF8String);
 var
   ct : Cardinal;
   cnt: TLargeInteger;
+  remap, count: integer;
 begin
+  CompressMeasurePoint(aMeasurePointId,remap,count);
   QueryPerformanceCounter(cnt);
   ct := GetCurrentThreadID;
 {$B+}
@@ -722,12 +676,14 @@ begin
       FlushCounter;
       WriteTag(PR_ENTER_MP);
       WriteThread(ct);
-      WriteUtf8String(aMeasurePointId);
+      WriteMeasurePoint(aMeasurePointId,remap,count);
       WriteTicks(Cnt);
       if profProfilingMemoryEnabled then
         WriteMemWorkingSize();
       QueryPerformanceCounter(prfCounter);
-    finally LeaveCriticalSection(prfLock); end;
+    finally
+      LeaveCriticalSection(prfLock);
+    end;
   end;
 end;
 
@@ -735,9 +691,11 @@ procedure ProfilerExitMP(const aMeasurePointId: UTF8String);
 var
   ct : Cardinal;
   cnt: TLargeInteger;
+  remap, count: integer;
 begin
   QueryPerformanceCounter(Cnt);
   ct := GetCurrentThreadID;
+  CompressMeasurePoint(aMeasurePointId,remap,count);
 {$B+}
   if prfRunning and ((prfOnlyThread = 0) or (prfOnlyThread = ct)) then begin
 {$B-}
@@ -746,12 +704,14 @@ begin
       FlushCounter;
       WriteTag(PR_EXIT_MP);
       WriteThread(ct);
-      WriteUtf8String(aMeasurePointId);
+      WriteMeasurePoint(aMeasurePointId,remap,count);
       WriteTicks(Cnt);
       if profProfilingMemoryEnabled then
         WriteMemWorkingSize();
       QueryPerformanceCounter(prfCounter);
-    finally LeaveCriticalSection(prfLock); end;
+    finally
+      LeaveCriticalSection(prfLock);
+    end;
   end;
 end;
 

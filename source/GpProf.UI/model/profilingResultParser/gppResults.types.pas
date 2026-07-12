@@ -21,7 +21,7 @@ type
     peProcTimeMax  : array {thread} of uint64;   // 0 = unused
     peProcTimeAvg  : array {thread} of uint64;   // 0 = unused
     peProcChildTime: array {thread} of uint64;   // 0 = sum
-    peProcMem      : array of Cardinal;
+    peProcMem      : array of int64;
     peProcCnt      : array {thread} of Cardinal; // 0 = sum
     peCurrentCallDepth : array {thread} of integer; // 0 = unused
 
@@ -56,7 +56,7 @@ type
   end;
 
   TResMemPacket = record
-    rpMemWorkingSize : Cardinal;
+    rpMemWorkingSize : int64;
   end;
 
 const

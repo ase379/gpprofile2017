@@ -23,10 +23,10 @@ type
   public
     teThread     : integer;
     teName       : AnsiString;
-    teTotalTime  : int64;
+    teTotalTime  : uint64;
     teTotalCnt   : integer;
     teActiveProcs: TActiveProcList;
-    teTotalMem  : Cardinal;
+    teTotalMem   : int64;
 
     property Name : String read GetName;
   end;
@@ -38,9 +38,9 @@ type
   public
     ueName     : AnsiString;
     ueQual     : AnsiString;
-    ueTotalTime: array {thread} of int64;   // 0 = sum
+    ueTotalTime: array {thread} of uint64;   // 0 = sum
     ueTotalCnt : array {thread} of integer; // 0 = sum
-    ueTotalMem: array {thread} of Cardinal;   // 0 = sum
+    ueTotalMem: array {thread} of int64;   // 0 = sum
 
     property FilePath : String read GetPath;
     property Name : String read GetName;
@@ -53,14 +53,20 @@ type
     ceName     : AnsiString;
     ceUID      : integer;
     ceFirstLn  : integer;
-    ceTotalTime: array {thread} of int64;   // 0 = sum
+    ceTotalTime: array {thread} of uint64;   // 0 = sum
     ceTotalCnt : array {thread} of integer; // 0 = sum
-    ceTotalMem: array {thread} of Cardinal;   // 0 = sum
+    ceTotalMem: array {thread} of int64;   // 0 = sum
 
     property Name : String read GetName;
   end;
 
   TResults = class
+  private type
+    TThreadInfoArray = array of record
+      tiThreadId : Cardinal;
+      tiName     : AnsiString;
+    end;
+    TThreadIdMap = TDictionary<integer, integer>;
   private
     resFile           : TGpHugeFile;
     resName           : String;
@@ -74,6 +80,7 @@ type
     resNullError      : integer;
     resNullErrorAcc   : integer;
     resPrfDigest      : boolean;
+    resPrfDigestMem   : boolean;
     resCalibrCnt      : integer;
     resCurCalibr      : integer;
     resCalibration    : boolean;
@@ -83,7 +90,11 @@ type
     resCalTime2       : int64;
     resCalMax         : int64;
     resCalCounter     : integer;
-    fMeasurePointRegistry : TMeasurePointRegistry;
+    resMeasurePointBytes    : integer;
+    resCompressMeasurePoints : boolean;
+
+    fMeasurePointRegistry   : TMeasurePointRegistry;
+
     procedure   RaiseFileCorruptedException(const aContext : String);
 
     procedure   CalibrationStep(pkt1, pkt2: TResPacket);
@@ -95,7 +106,10 @@ type
     procedure   LoadTables;
     procedure   LoadCalibration;
     procedure   LoadData(callback: TProgressCallback);
-    procedure   LoadThreadInformation();
+    procedure   LoadThreads;
+    function    LoadThreadIdList: TThreadIdMap;
+    function    LoadThreadInformationList: TThreadInfoArray;
+    procedure   LoadMeasurePoints;
     procedure   LoadDigest(callback: TProgressCallback);
     procedure   ReadString(var str: AnsiString);
     procedure   ReadShortstring(var str: AnsiString);
@@ -106,13 +120,16 @@ type
     procedure   ReadUInt64(var ui64: uint64);
     procedure   ReadBool(var bool: boolean);
     procedure   ReadTag(var tag: byte);
+    procedure   ReadMeasurePoint(var id: String);
     procedure   ReadThread(var thread: integer);
     procedure   ReadTicks(var ticks: int64);
     procedure   ReadID(var id: integer);
+    procedure   ReadMem(var value: int64);
+    procedure   WriteBool(bool: boolean);
     procedure   WriteTag(tag: byte);
     procedure   WriteInt(int: integer);
-    procedure   WriteCardinal  (uint: Cardinal);
     procedure   WriteInt64(i64: int64);
+    procedure   WriteUInt64(u64: uint64);
     procedure   WriteString(str: ansistring);
     procedure   CheckTag(tag: byte);
     function    ReadPacket(var pkt: TResPacket; var pktMem: TResMemPacket): boolean;
@@ -172,12 +189,15 @@ begin
   SetLength(resThreads,1);
   resThreads[0].teThread      := 0; // impossible handle
   resThreads[0].teActiveProcs := nil;
-  resOldTicks        := -1;
-  resThreadBytes     := 1;
+  resOldTicks    := -1;
+  resThreadBytes := 1;
+  resMeasurePointBytes := 1;
   resCompressTicks   := false;
   resCompressThreads := false;
+  resCompressMeasurePoints := false;
   resPrfVersion      := 0;
   resPrfDigest       := false;
+  resPrfDigestMem    := false;
   resNullOverhead    := 0;
   resNullError       := 0;
   resNullErrorAcc    := 0;
@@ -202,7 +222,8 @@ begin
       LoadTables;
       if Version > 2 then LoadCalibration;
       LoadData(callback);
-      LoadThreadInformation();
+      LoadThreads;
+      LoadMeasurePoints;
       RecalcTimes;
     end;
   finally
@@ -225,6 +246,15 @@ end; { TResults.Destroy }
 procedure TResults.ReadInt  (var int: integer);  begin resFile.BlockReadUnsafe(int,SizeOf(integer)); end;
 procedure TResults.ReadCardinal(var value: Cardinal);  begin resFile.BlockReadUnsafe(value,SizeOf(Cardinal)); end;
 procedure TResults.ReadInt64(var i64: int64);    begin resFile.BlockReadUnsafe(i64,SizeOf(int64)); end;
+
+procedure TResults.ReadMem(var value: int64);
+var
+  tmp: Cardinal;
+begin
+  resFile.BlockReadUnsafe(tmp,SizeOf(Cardinal));
+  value := tmp;
+end;
+
 procedure TResults.ReadUInt64(var ui64: uint64);    begin resFile.BlockReadUnsafe(ui64,SizeOf(uint64)); end;
 procedure TResults.ReadTag  (var tag: byte);     begin resFile.BlockReadUnsafe(tag,SizeOf(byte)); end;
 procedure TResults.ReadID   (var id: integer);   begin id := 0; resFile.BlockReadUnsafe(id,resProcSize); end;
@@ -268,6 +298,27 @@ begin
   end;
 end; { TResults.ReadThread }
 
+procedure TResults.ReadMeasurePoint(var id: String);
+var
+  s: AnsiString;
+  index: Cardinal;
+begin
+  if not resCompressMeasurePoints then
+  begin
+    ReadAnsiString(s);
+    id := UTF8ToString(s);
+  end else
+  begin
+    index := 0;
+    resFile.BlockReadUnsafe(index,resMeasurePointBytes);
+    if index = 0 then begin
+      Inc(resMeasurePointBytes);
+      resFile.BlockReadUnsafe(index,resMeasurePointBytes);
+    end;
+    id := Format('{%d}',[index]);
+  end;
+end;
+
 procedure TResults.ReadShortstring(var str: AnsiString);
 var
   s: shortstring;
@@ -287,10 +338,11 @@ begin
     resFile.BlockReadUnsafe(str[1],len+1); // read zero-termination char too
 end; { TResults.ReadString }
 
+procedure TResults.WriteBool (bool: boolean);begin resFile.BlockWriteUnsafe(bool,1); end;
 procedure TResults.WriteTag  (tag: byte);    begin resFile.BlockWriteUnsafe(tag,SizeOf(byte)); end;
 procedure TResults.WriteInt  (int: integer); begin resFile.BlockWriteUnsafe(int,SizeOf(integer)); end;
-procedure TResults.WriteCardinal  (uint: Cardinal); begin resFile.BlockWriteUnsafe(uint,SizeOf(Cardinal)); end;
 procedure TResults.WriteInt64(i64: int64);   begin resFile.BlockWriteUnsafe(i64,SizeOf(int64)); end;
+procedure TResults.WriteUInt64(u64: uint64); begin resFile.BlockWriteUnsafe(u64,SizeOf(uint64)); end;
 
 procedure TResults.WriteString(str: ansistring);
 begin
@@ -441,20 +493,87 @@ begin
       // destroy proxy object
       ExitMeasurePointPkt(pkt, mempkt);
     end
-    else 
+    else
       raise Exception.Create('gppResults.TResults.LoadData: Invalid tag ('+pkt.rpTag.ToString()+').');
   end;
 end; { TResults.LoadData }
 
-procedure TResults.LoadThreadInformation;
+procedure TResults.LoadThreads;
+var
+  i, id: integer;
+begin
+  var LThreadInfo := LoadThreadInformationList;
+
+  if resCompressThreads then
+  begin
+    var LRemap := LoadThreadIdList;
+    if LRemap <> nil then
+    try
+      // remap indexes back to the ThreadIDs
+      for i := Low(resThreads) to High(resThreads) do
+      begin
+        if LRemap.TryGetValue(resThreads[i].teThread,id) then
+          resThreads[i].teThread := id;
+      end;
+    finally
+      LRemap.Free;
+    end;
+  end;
+
+  for var LInfo in LThreadInfo do
+  begin
+    i := ThLocate(LInfo.tiThreadId);
+    if i <> -1 then
+    begin
+      if Length(resThreads[i].teName) > 0 then
+        resThreads[i].teName := resThreads[i].teName + '; ';
+      resThreads[i].teName := resThreads[i].teName + LInfo.tiName;
+    end;
+  end;
+end;
+
+function TResults.LoadThreadIdList: TThreadIdMap;
+var
+  LTag : byte;
+  LPos : HugeInt;
+  LElementCount : Cardinal;
+  LThreadID : Cardinal;
+  LThreadIndex : Cardinal;
+  i : cardinal;
+begin
+  Result := nil;
+  LPos := resFile.FilePos;
+  if LPos = resFile.FileSize then
+    exit;
+  ReadTag(LTag);
+  if LTag <> PR_START_THREAD_ID_LIST then
+  begin
+    resFile.Seek(LPos);
+    exit;
+  end;
+  Result := TThreadIdMap.Create;
+  ReadCardinal(LElementCount);
+  if LElementCount > 0 then
+  begin
+    for i := 0 to LElementCount-1 do
+    begin
+      ReadCardinal(LThreadID);
+      ReadCardinal(LThreadIndex);
+      Result.AddOrSetValue(LThreadIndex,LThreadID);
+    end;
+  end;
+  ReadTag(LTag);
+  if LTag <> PR_END_THREAD_ID_LIST then
+    raise Exception.Create('Found PR_START_THREAD_ID_LIST without PR_END_THREAD_ID_LIST');
+end; { TResults.LoadThreadIdList }
+
+function TResults.LoadThreadInformationList: TThreadInfoArray;
 var LTag : byte;
     LPos : HugeInt;
     LElementCount : Cardinal;
-    LThreadID : Cardinal;
-    LThreadName : AnsiString;
     i : cardinal;
-    k : integer;
 begin
+  Result := nil;
   LPos := resFile.FilePos;
   if LPos = resFile.FileSize then
     exit;
@@ -467,24 +586,64 @@ begin
   ReadCardinal(LElementCount);
   if LElementCount > 0 then
   begin
+    SetLength(Result,LElementCount);
     for i := 0 to LElementCount-1 do
     begin
-      ReadCardinal(LThreadID);
-      ReadAnsiString(LThreadName);
-      k := ThLocate(LThreadID);
-      if k <> -1 then
-      begin
-        if Length(resThreads[k].teName) > 0 then
-          resThreads[k].teName := resThreads[k].teName + '; ';
-        resThreads[k].teName := resThreads[k].teName + LThreadName;
-      end;
+      ReadCardinal(Result[I].tiThreadId);
+      ReadAnsiString(Result[I].tiName);
     end;
   end;
   ReadTag(LTag);
   if lTag <> PR_END_THREADINFO then
     raise Exception.Create('Found PR_START_THREADINFO without PR_END_THREADINFO');
-end; { TResults.LoadThreadInformation }
+end; { TResults.LoadThreadInformationList }
 
+procedure TResults.LoadMeasurePoints;
+var LTag : byte;
+    LPos : HugeInt;
+    LCount : Cardinal;
+    LName : AnsiString;
+    LRemap : Cardinal;
+    LIndex : AnsiString;
+    LMap : TDictionary<AnsiString,AnsiString>;
+begin
+  if not resCompressMeasurePoints then
+    exit;
+  LPos := resFile.FilePos;
+  if LPos = resFile.FileSize then
+    exit;
+  ReadTag(LTag);
+  if LTag <> PR_START_MEASURE_POINTS_LIST then
+  begin
+    resFile.Seek(LPos);
+    exit;
+  end;
+  ReadCardinal(LCount);
+  if LCount > 0 then
+  begin
+    LMap := TDictionary<AnsiString,AnsiString>.Create(LCount);
+    try
+      for var i := 0 to LCount-1 do
+      begin
+        ReadAnsiString(LName);
+        ReadCardinal(LRemap);
+        LIndex := AnsiString(Format('{%d}',[LRemap]));
+        LMap.AddOrSetValue(LIndex,LName);
+      end;
+      // remap measure point indexes back to names
+      for var LProc in resProcedures do
+      begin
+        if LMap.TryGetValue(LProc.peName,LName) then
+          LProc.peName := LName;
+      end;
+    finally
+      LMap.Free;
+    end;
+  end;
+  ReadTag(LTag);
+  if lTag <> PR_END_MEASURE_POINTS_LIST then
+    raise Exception.Create('Found PR_START_MEASURE_POINTS_LIST without PR_END_MEASURE_POINTS_LIST');
+end;
 
 procedure TResults.EnterProcPkt(const pkt: TResPacket; const mempkt: TResMemPacket);
 var
@@ -568,12 +727,10 @@ end; { TResults.AddExitProc }
 
 function TResults.IsMemProfilingEnabled: boolean;
 begin
-  result := resPrfVersion = PRF_VERSION_WITH_MEM;
+  result := (resPrfVersion = PRF_VERSION_WITH_MEM) or (resPrfDigest and resPrfDigestMem);
 end;
 
 function TResults.ReadPacket(var pkt: TResPacket; var pktMem: TResMemPacket): boolean;
-var
-  lAnsiMeasurePointId : ansistring;
 begin
   with pkt do begin
     ReadTag(rpTag);
@@ -583,11 +740,10 @@ begin
     begin
       rpProcID := -1;
       ReadThread(rpThread);
-      ReadAnsiString(lAnsiMeasurePointId);
-      rpMeasurePointID := utf8ToString(lAnsiMeasurePointId);
+      ReadMeasurePoint(rpMeasurePointID);
       ReadTicks(rpMeasure1);
       if IsMemProfilingEnabled then
-        ReadCardinal(pktMem.rpMemWorkingSize);
+        ReadMem(pktMem.rpMemWorkingSize);
       ReadTicks(rpMeasure2);
       Result := true;
     end
@@ -598,7 +754,7 @@ begin
       ReadTicks(rpMeasure1);
       if IsMemProfilingEnabled then
         if (rpTag = PR_ENTERPROC) or (rpTag = PR_EXITPROC) then
-          ReadCardinal(pktMem.rpMemWorkingSize);
+          ReadMem(pktMem.rpMemWorkingSize);
       ReadTicks(rpMeasure2);
       Result := true;
     end;
@@ -620,6 +776,8 @@ begin
       PR_COMPTHREADS: ReadBool(resCompressThreads);
       PR_DIGEST     : resPrfDigest := true;
       PR_DIGESTVER  : ReadInt(lDigestVersion);
+      PR_DIGEST_MEM_PROFILING_ENABLED : ReadBool(resPrfDigestMem);
+      PR_COMPRESS_MEASURE_POINTS : ReadBool(resCompressMeasurePoints);
     end;
   until tag = PR_ENDHEADER;
 end; { TResults.LoadHeader }
@@ -995,6 +1153,8 @@ begin
     WriteTag(PR_DIGEST);
     WriteTag(PR_DIGESTVER);
     WriteInt(LAST_VALID_DIGESTVERSION);
+    WriteTag(PR_DIGEST_MEM_PROFILING_ENABLED);
+    WriteBool(Self.IsMemProfilingEnabled);
     WriteTag(PR_ENDHEADER);
     WriteTag(PR_DIGFREQ);
     WriteInt64(resFrequency);
@@ -1005,9 +1165,9 @@ begin
         incrementAndTriggerProgress();
         WriteInt(teThread);
         WriteString(teName);
-        WriteInt64(teTotalTime);
+        WriteUInt64(teTotalTime);
         WriteInt(teTotalCnt);
-        WriteCardinal(teTotalMem);
+        WriteInt64(teTotalMem);
       end;
     WriteTag(PR_DIGUNITS);
     WriteInt(lNumberOfUnits);
@@ -1018,13 +1178,13 @@ begin
         WriteString(ueQual);
         WriteInt(High(ueTotalTime)-Low(ueTotalTime)+1);
         for j := Low(ueTotalTime) to High(ueTotalTime) do
-          WriteInt64(ueTotalTime[j]);
+          WriteUInt64(ueTotalTime[j]);
         WriteInt(High(ueTotalCnt)-Low(ueTotalCnt)+1);
         for j := Low(ueTotalCnt) to High(ueTotalCnt) do
           WriteInt(ueTotalCnt[j]);
         WriteInt(High(ueTotalMem)-Low(ueTotalMem)+1);
         for j := Low(ueTotalMem) to High(ueTotalMem) do
-          WriteCardinal(ueTotalMem[j]);
+          WriteInt64(ueTotalMem[j]);
       end;
     WriteTag(PR_DIGCLASSES);
 
@@ -1037,13 +1197,13 @@ begin
         WriteInt(ceFirstLn);
         WriteInt(High(ceTotalTime)-Low(ceTotalTime)+1);
         for j := Low(ceTotalTime) to High(ceTotalTime) do
-          WriteInt64(ceTotalTime[j]);
+          WriteUInt64(ceTotalTime[j]);
         WriteInt(High(ceTotalCnt)-Low(ceTotalCnt)+1);
         for j := Low(ceTotalCnt) to High(ceTotalCnt) do
           WriteInt(ceTotalCnt[j]);
         WriteInt(High(ceTotalMem)-Low(ceTotalMem)+1);
         for j := Low(ceTotalMem) to High(ceTotalMem) do
-          WriteCardinal(ceTotalMem[j]);
+          WriteInt64(ceTotalMem[j]);
       end;
     WriteTag(PR_DIGPROCS);
     WriteInt(lNumberOfProcedures);
@@ -1057,25 +1217,25 @@ begin
         WriteInt(peFirstLn);
         WriteInt(High(peProcTime)-Low(peProcTime)+1);
         for j := Low(peProcTime) to High(peProcTime) do
-          WriteInt64(peProcTime[j]);
+          WriteUInt64(peProcTime[j]);
         WriteInt(High(peProcTimeMin)-Low(peProcTimeMin)+1);
         for j := Low(peProcTimeMin) to High(peProcTimeMin) do
-          WriteInt64(peProcTimeMin[j]);
+          WriteUInt64(peProcTimeMin[j]);
         WriteInt(High(peProcTimeMax)-Low(peProcTimeMax)+1);
         for j := Low(peProcTimeMax) to High(peProcTimeMax) do
-          WriteInt64(peProcTimeMax[j]);
+          WriteUInt64(peProcTimeMax[j]);
         WriteInt(High(peProcChildTime)-Low(peProcChildTime)+1);
         for j := Low(peProcChildTime) to High(peProcChildTime) do
-          WriteInt64(peProcChildTime[j]);
+          WriteUInt64(peProcChildTime[j]);
         WriteInt(High(peProcCnt)-Low(peProcCnt)+1);
         for j := Low(peProcCnt) to High(peProcCnt) do
           WriteInt(peProcCnt[j]);
         WriteInt(High(peProcTimeAvg)-Low(peProcTimeAvg)+1);
         for j := Low(peProcTimeAvg) to High(peProcTimeAvg) do
-          WriteInt64(peProcTimeAvg[j]);
+          WriteUInt64(peProcTimeAvg[j]);
         WriteInt(High(peProcMem)-Low(peProcMem)+1);
         for j := Low(peProcMem) to High(peProcMem) do
-          WriteCardinal(peProcMem[j]);
+          WriteInt64(peProcMem[j]);
       end;
     WriteTag(PR_DIGCALLG);
     for i := 0 to fCallGraphInfoMaxElementCount do
@@ -1089,17 +1249,17 @@ begin
           WriteInt(k);
           WriteInt(LInfo.ProcTime.Count); // number of threads
           for j := 0 to LInfo.ProcTime.Count-1 do
-            WriteInt64(LInfo.ProcTime[j]);
+            WriteUInt64(LInfo.ProcTime[j]);
           for j := 0 to LInfo.ProcTimeMin.Count-1 do
-            WriteInt64(LInfo.ProcTimeMin[j]);
+            WriteUInt64(LInfo.ProcTimeMin[j]);
           for j := 0 to LInfo.ProcTimeMax.Count-1 do
-            WriteInt64(LInfo.ProcTimeMax[j]);
+            WriteUInt64(LInfo.ProcTimeMax[j]);
           for j := 0 to LInfo.ProcChildTime.Count-1 do
-            WriteInt64(LInfo.ProcChildTime[j]);
+            WriteUInt64(LInfo.ProcChildTime[j]);
           for j := 0 to LInfo.ProcCnt.Count-1 do
             WriteInt(LInfo.ProcCnt[j]);
           for j := 0 to LInfo.ProcTimeAvg.Count-1 do
-            WriteInt64(LInfo.ProcTimeAvg[j]);
+            WriteUInt64(LInfo.ProcTimeAvg[j]);
         end;
       end;
     end;
@@ -1163,9 +1323,9 @@ begin
             UpdateStatus;
             ReadInt(teThread);
             ReadString(teName);
-            ReadInt64(teTotalTime);
+            ReadUInt64(teTotalTime);
             ReadInt(teTotalCnt);
-            ReadCardinal(teTotalMem);
+            ReadInt64(teTotalMem);
           end;
       end; // PR_DIGTHREADS;
       PR_DIGUNITS: begin
@@ -1178,13 +1338,13 @@ begin
             ReadString(ueQual);
             ReadInt(num);
             SetLength(ueTotalTime,num);
-            for j := Low(ueTotalTime) to High(ueTotalTime) do ReadInt64(ueTotalTime[j]);
+            for j := Low(ueTotalTime) to High(ueTotalTime) do ReadUInt64(ueTotalTime[j]);
             ReadInt(num);
             SetLength(ueTotalCnt,num);
             for j := Low(ueTotalCnt) to High(ueTotalCnt) do ReadInt(ueTotalCnt[j]);
             ReadInt(num);
             SetLength(ueTotalMem,num);
-            for j := Low(ueTotalMem) to High(ueTotalMem) do ReadCardinal(ueTotalMem[j]);
+            for j := Low(ueTotalMem) to High(ueTotalMem) do ReadInt64(ueTotalMem[j]);
           end;
       end; // PR_DIGUNITS
       PR_DIGCLASSES: begin
@@ -1198,13 +1358,13 @@ begin
             ReadInt(ceFirstLn);
             ReadInt(num);
             SetLength(ceTotalTime,num);
-            for j := Low(ceTotalTime) to High(ceTotalTime) do ReadInt64(ceTotalTime[j]);
+            for j := Low(ceTotalTime) to High(ceTotalTime) do ReadUInt64(ceTotalTime[j]);
             ReadInt(num);
             SetLength(ceTotalCnt,num);
             for j := Low(ceTotalCnt) to High(ceTotalCnt) do ReadInt(ceTotalCnt[j]);
             ReadInt(num);
             SetLength(ceTotalMem,num);
-            for j := Low(ceTotalMem) to High(ceTotalMem) do ReadCardinal(ceTotalMem[j]);
+            for j := Low(ceTotalMem) to High(ceTotalMem) do ReadInt64(ceTotalMem[j]);
           end;
       end; // PR_DIGCLASSES
       PR_DIGPROCS: begin
@@ -1240,7 +1400,7 @@ begin
             for j := Low(peProcTimeAvg) to High(peProcTimeAvg) do ReadUInt64(peProcTimeAvg[j]);
             ReadInt(num);
             SetLength(peProcMem,num);
-            for j := Low(peProcMem) to High(peProcMem) do ReadCardinal(peProcMem[j]);
+            for j := Low(peProcMem) to High(peProcMem) do ReadInt64(peProcMem[j]);
           end;
       end; // PR_DIGPROCS
       PR_DIGCALLG: begin

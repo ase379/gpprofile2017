@@ -1,9 +1,7 @@
-# Build gpprof for Win32 and Win64 and deploy to bin/
+# Build gpprof for Win32 and Win64
 #
 # Requirements:
-#   - Delphi RAD Studio (paid/professional edition) installed at
-#     %ProgramFiles(x86)%\Embarcadero\Studio\<version>
-#     (auto-detects the latest installed version from 99.0 down to 21.0)
+#   - Delphi RAD Studio (paid/professional edition) installed
 #     NOTE: The Community Edition does NOT support command-line compilation.
 #           You need a Professional, Enterprise, or Architect edition.
 #   - Windows PowerShell 5.1 or later
@@ -12,59 +10,93 @@
 #   .\scripts\build.ps1
 #   .\scripts\build.ps1 -Config Release
 #   .\scripts\build.ps1 -Config Debug
+#   .\scripts\build.ps1 -BDS 23
 
 param(
-    [string]$Config = "Release"
+    [string]$Config  = "Release",
+    
+    # Specific RAD Studio version (e.g., "21" or "21.0")
+    [string]$BDS     = ""
 )
 
 $ErrorActionPreference = "Stop"
 
-$repoRoot    = Resolve-Path "$PSScriptRoot\.."
-$projectFile = Join-Path $repoRoot "source\GpProf.UI\gpprof.dproj"
-$dllProject  = Join-Path $repoRoot "source\gpprof.dll\GpProfDll.dproj"
+$scriptDir   = if ($PSScriptRoot) { $PSScriptRoot } else { $PWD.Path }
+$repoRoot    = (Resolve-Path (Join-Path $scriptDir "..")).Path
+$projectFile = Join-Path $repoRoot "source\gpprof.dproj"
 $binDir      = Join-Path $repoRoot "bin"
+$bin64Dir    = Join-Path $repoRoot "bin64"
 
 if (-not (Test-Path $projectFile)) {
     Write-Error "Project file not found: $projectFile"
     exit 1
 }
 
-if (-not (Test-Path $dllProject)) {
-    Write-Error "DLL project file not found: $dllProject"
-    exit 1
+# Normalize version string (e.g., "21" -> "21.0")
+if ($BDS -and ($BDS -notmatch '\.')) {
+    $BDS = "$BDS.0"
 }
 
 ###########################################################################
-# SET BDS AND LOAD FULL DELPHI BUILD ENVIRONMENT VIA rsvars.bat
+# LOCATE RAD STUDIO AND LOAD ITS BUILD ENVIRONMENT VIA rsvars.bat
 ###########################################################################
 
-# Auto-detect the latest installed RAD Studio version (99.0 down to 21.0)
+# Detect RAD Studio version
 $DelphiInstallLocation = $null
-$studioBase = "${Env:ProgramFiles(x86)}\Embarcadero\Studio"
-for ($v = 99; $v -ge 21; $v--) {
-    $candidate = "$studioBase\$v.0"
-    if (Test-Path $candidate) {
-        $DelphiInstallLocation = $candidate
-        break
+
+$registryRoots = @(
+    'HKLM:\SOFTWARE\WOW6432Node\Embarcadero\BDS',
+    'HKLM:\SOFTWARE\Embarcadero\BDS',
+    'HKCU:\Software\Embarcadero\BDS'
+)
+
+foreach ($regRoot in $registryRoots) {
+    if (Test-Path $regRoot) {
+        if ($BDS) {
+            # Search for specific version
+            $verPath = Join-Path $regRoot $BDS
+            if (Test-Path $verPath) {
+                $rootDir = (Get-ItemProperty -Path $verPath -Name 'RootDir' -ErrorAction SilentlyContinue).RootDir
+                if ($rootDir -and (Test-Path $rootDir)) {
+                    $DelphiInstallLocation = $rootDir.TrimEnd('\')
+                    break
+                }
+            }
+        } else {
+            # Auto-detect the latest version
+            $versions = Get-ChildItem $regRoot -ErrorAction SilentlyContinue |
+                Where-Object { $_.PSChildName -match '^\d+\.\d+$' } |
+                Sort-Object { [double]$_.PSChildName } -Descending
+
+            foreach ($ver in $versions) {
+                $rootDir = (Get-ItemProperty -Path $ver.PSPath -Name 'RootDir' -ErrorAction SilentlyContinue).RootDir
+                if ($rootDir -and (Test-Path $rootDir)) {
+                    $DelphiInstallLocation = $rootDir.TrimEnd('\')
+                    break
+                }
+            }
+        }
     }
+    if ($DelphiInstallLocation) { break }
 }
 
 if (-not $DelphiInstallLocation) {
-    Write-Error "Couldn't find Delphi Install in $studioBase (searched 99.0 down to 21.0)"
+    $errorMsg = if ($BDS) { "Couldn't find RAD Studio version $BDS" } else { "Couldn't find any RAD Studio installation" }
+    Write-Error $errorMsg
     exit 1
 } else {
-    Write-Host "Found Delphi Install at $DelphiInstallLocation"
+    Write-Host "Found RAD Studio at: $DelphiInstallLocation"
     $env:BDS = $DelphiInstallLocation
 }
 
-# rsvars.bat sets BDS, BDSPLATFORMSDKSDIR, FrameworkDir, FrameworkVersion,
-# MSBUILD_VERSION and adds the correct MSBuild.exe to PATH.
+# Load environment variables via rsvars.bat
 $rsVars = Join-Path $DelphiInstallLocation "bin\rsvars.bat"
 if (-not (Test-Path $rsVars)) {
     Write-Error "rsvars.bat not found at: $rsVars"
     exit 1
 }
-Write-Host "Loading Delphi environment from $rsVars"
+
+Write-Host "Loading RAD Studio environment from: $rsVars"
 cmd /c "`"$rsVars`" && set" | ForEach-Object {
     if ($_ -match '^([^=]+)=(.*)$') {
         [Environment]::SetEnvironmentVariable($Matches[1], $Matches[2], 'Process')
@@ -78,69 +110,38 @@ if (-not $msbuild) {
     exit 1
 }
 
-Write-Host "Using MSBuild: $msbuild" -ForegroundColor Cyan
-Write-Host "UI project:  $projectFile" -ForegroundColor Cyan
-Write-Host "DLL project: $dllProject" -ForegroundColor Cyan
-Write-Host "Config:      $Config" -ForegroundColor Cyan
+Write-Host "Using MSBuild : $msbuild" -ForegroundColor Cyan
+Write-Host "Project       : $projectFile" -ForegroundColor Cyan
+Write-Host "Config        : $Config" -ForegroundColor Cyan
 Write-Host ""
 Write-Warning "NOTE: Command-line compilation requires a paid RAD Studio edition (Professional/Enterprise/Architect). The Community Edition is NOT supported and will fail with 'This version does not support command line compiling'."
 
-# Ensure output directory exists
-New-Item -Path $binDir -ItemType Directory -Force | Out-Null
+# Ensure output directories exist before MSBuild runs
+New-Item -Path $binDir   -ItemType Directory -Force | Out-Null
+New-Item -Path $bin64Dir -ItemType Directory -Force | Out-Null
 
 ###########################################################################
-# BUILD GpProfDll (shared profiling DLL)
+# BUILD
 ###########################################################################
 
-Write-Host ""
-Write-Host "Building GpProfDll Win32 ($Config)..." -ForegroundColor Green
-& $msbuild $dllProject /t:Build /p:Config=$Config /p:Platform=Win32 /nologo /v:minimal
-if ($LASTEXITCODE -ne 0) {
-    Write-Error "GpProfDll Win32 build failed with exit code $LASTEXITCODE"
-    exit $LASTEXITCODE
+$platforms = @(
+    @{ Name = "Win32"; OutDir = $binDir }
+    @{ Name = "Win64"; OutDir = $bin64Dir }
+)
+
+foreach ($p in $platforms) {
+    Write-Host ""
+    Write-Host "Building $($p.Name) ($Config)..." -ForegroundColor Green
+    
+    & $msbuild $projectFile /t:Build /p:Config=$Config /p:Platform=$($p.Name) /nologo /v:minimal
+    
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error "$($p.Name) build failed with exit code $LASTEXITCODE"
+        exit $LASTEXITCODE
+    }
+    
+    Write-Host "$($p.Name) build succeeded. Output: $($p.OutDir)" -ForegroundColor Green
 }
-Write-Host "GpProfDll Win32 build succeeded. Output: $binDir" -ForegroundColor Green
-
-Write-Host ""
-Write-Host "Building GpProfDll Win64 ($Config)..." -ForegroundColor Green
-& $msbuild $dllProject /t:Build /p:Config=$Config /p:Platform=Win64 /nologo /v:minimal
-if ($LASTEXITCODE -ne 0) {
-    Write-Error "GpProfDll Win64 build failed with exit code $LASTEXITCODE"
-    exit $LASTEXITCODE
-}
-Write-Host "GpProfDll Win64 build succeeded. Output: $binDir" -ForegroundColor Green
-
-###########################################################################
-# BUILD MAIN UI APPLICATION
-###########################################################################
-
-# Build Win64
-Write-Host ""
-Write-Host "Building Win64 ($Config)..." -ForegroundColor Green
-& $msbuild $projectFile /t:Build /p:Config=$Config /p:Platform=Win64 /nologo /v:minimal
-if ($LASTEXITCODE -ne 0) {
-    Write-Error "Win64 build failed with exit code $LASTEXITCODE"
-    exit $LASTEXITCODE
-}
-Write-Host "Win64 build succeeded. Output: $binDir" -ForegroundColor Green
 
 Write-Host ""
 Write-Host "Build complete." -ForegroundColor Cyan
-
-Andreas Seehusen 
-Senior Principal, Software Architecture 
-Forterro | Windows & Doors
-andreas.seehusen@forterro.com
- 
-www.forterro.com
- 
-   
-
-ORGADATA Software-Dienstleistungen AG | Am Nesseufer 14 | 26789 Leer | Germany
-Co-Chairs of the Board / Vorstand: Marcus Pannier, Paul Smolinski
-Chair of the Supervisory Board / Aufsichtsratsvorsitzender: Dean Anthony Edward Forbes
-Registered Office / Sitz der Gesellschaft: Leer
-Commercial Register / Handelsregister: HRB 110929 Amtsgericht Aurich 
-
-Informationen zum Umgang mit Ihren personenbezogenen Daten nach den Art. 13 und 14 EU-DSGVO finden Sie unter  https://www.orgadata.com/global/de/data-privacy-statement.html.
-Further information according to Art. 13 and 14 GDPR about processing your personal data you can find here:  https://www.orgadata.com/global/en/data-privacy-statement.html. 

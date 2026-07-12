@@ -171,7 +171,7 @@ object frmMain: TfrmMain
             Top = 54
             Width = 1472
             Height = 407
-            ActivePage = tabMemoryAnalysis
+            ActivePage = tabPerformanceAnalysis
             Align = alClient
             TabOrder = 0
             object tabPerformanceAnalysis: TTabSheet
@@ -520,13 +520,6 @@ object frmMain: TfrmMain
       Hint = 'Delete profile'
       ImageIndex = 14
       OnExecute = actDelUndelProfileExecute
-    end
-    object actRescanChanged: TAction
-      Category = 'Project'
-      Caption = 'actRescanChanged'
-      Enabled = False
-      ImageIndex = 26
-      OnExecute = actRescanChangedExecute
     end
     object actChangeLayout: TAction
       Category = 'Layout'

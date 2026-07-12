@@ -50,7 +50,7 @@ begin
   if not LFileFound then
   begin
     // check .bdsproj format (2006 and earlier)
-    LFn := ChangeFileExt(fFilename,TUIStrings.Delphi7OptionsExt);
+    LFn := ChangeFileExt(fFilename,TUIStrings.DelphiBdsProjExt);
     LFileFound := FileExists(LFn);
     if LFileFound then
       fBdsProjReader := TBdsProjReader.Create(LFn);

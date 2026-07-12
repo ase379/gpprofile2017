@@ -26,9 +26,9 @@ type
   public
     constructor Create(const aProjectName: string;const aSelectedDelphiVersion : string);
     destructor Destroy; override;
-    procedure Parse(aExclUnits: String;const aConditionals: String; aNotify: TNotifyProc;
+    procedure Parse(const aExclUnits: String;const aConditionals: String; aNotify: TNotifyProc;
       aCommentType: TCommentType; aParseAsm: boolean;const anErrorList : TStrings);
-    procedure Rescan(aExclUnits: String;const aConditionals: string;
+    procedure Rescan(const aExclUnits: String;const aConditionals: string;
       aCommentType: TCommentType; aParseAsm: boolean);
 
     function GetUnit(const aUnitName: string;const aProjectDirOnly: boolean): TUnit;
@@ -78,7 +78,7 @@ begin
   inherited;
 end;
 
-procedure TProject.Parse(aExclUnits: String;
+procedure TProject.Parse(const aExclUnits: String;
   const aConditionals: string; aNotify: TNotifyProc;
   aCommentType: TCommentType; aParseAsm: boolean; const anErrorList : TStrings);
 
@@ -90,7 +90,7 @@ procedure TProject.Parse(aExclUnits: String;
 
   procedure DetermineNextUnitToBeParsed(var un: TUnit);
   var
-    LUnitEnumor: TRootNode<TUnit>.TEnumerator;
+    LUnitEnumor: TNodeList<TUnit>.TEnumerator;
     u1: TUnit;
   begin
     un := nil;
@@ -148,7 +148,7 @@ end;
 function TProject.GetUnit(const aUnitName: string;const aProjectDirOnly: boolean): TUnit;
 var
   un: TUnit;
-  LUnitEnumor: TRootNode<TUnit>.TEnumerator;
+  LUnitEnumor: TNodeList<TUnit>.TEnumerator;
 begin
   result := nil;
   with prUnits do
@@ -173,7 +173,7 @@ procedure TProject.GetUnitList(const aInfoList: TUnitInstrumentationInfoList;
   const aProjectDirOnly: boolean);
 var
   un: TUnit;
-  LUnitEnumor: TRootNode<TUnit>.TEnumerator;
+  LUnitEnumor: TNodeList<TUnit>.TEnumerator;
   lEntry : TUnitInstrumentationInfo;
 begin
   aInfoList.Clear;
@@ -218,7 +218,7 @@ procedure TProject.GetProcList(const aUnitName: string; const aProcInfoList : TP
 var
   un: TUnit;
   pr: TProc;
-  LProcEnumor: TRootNode<TProc>.TEnumerator;
+  LProcEnumor: TNodeList<TProc>.TEnumerator;
   lDotPosition : integer;
 begin
   un := prUnits.Locate(aUnitName);
@@ -258,7 +258,7 @@ end; { TProject.InstrumentTUnit }
 procedure TProject.InstrumentAll(Instrument, projectDirOnly: boolean);
 var
   un: TUnit;
-  LUnitEnumor: TRootNode<TUnit>.TEnumerator;
+  LUnitEnumor: TNodeList<TUnit>.TEnumerator;
 begin
   with prUnits do
   begin
@@ -330,7 +330,7 @@ var
   LIsAnyUnitInProjectInstrumented : Boolean;
   LIsAnyProcOfUnitInstrumented: boolean;
   LHasBeenReparsed : Boolean;
-  LUnitEnumor: TRootNode<TUnit>.TEnumerator;
+  LUnitEnumor: TNodeList<TUnit>.TEnumerator;
   LOldProcs : TProcList;
 begin
   PrepareComments(aCommentType);
@@ -462,12 +462,12 @@ begin
   aUnitSelections.ApplySelections(prUnits,aOnlyCheckUnitName);
 end;
 
-procedure TProject.Rescan(aExclUnits: String;
+procedure TProject.Rescan(const aExclUnits: String;
   const aConditionals: string;
   aCommentType: TCommentType; aParseAsm: boolean);
 var
   un: TUnit;
-  LUnitEnumor: TRootNode<TUnit>.TEnumerator;
+  LUnitEnumor: TNodeList<TUnit>.TEnumerator;
   vOldCurDir: string;
 begin
   PrepareComments(aCommentType);

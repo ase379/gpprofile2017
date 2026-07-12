@@ -16,7 +16,7 @@ type
     ppStartTime   : int64;
     ppTotalTime   : int64;
     ppChildTime   : int64;
-    ppTotalMem    : Cardinal;
+    ppTotalMem    : int64;
   public
     constructor Create(const aThreadID, aProcID: Cardinal);
     destructor  Destroy; override;
@@ -30,21 +30,20 @@ type
     property StartTime : int64 read ppStartTime;
     property TotalTime : int64 read ppTotalTime;
     property ChildTime : int64 read ppChildTime write ppChildTime;
-    property TotalMem : Cardinal read ppTotalMem;
+    property TotalMem  : int64 read ppTotalMem;
 
   end;
 
 
   TProcWithMemProxy = class(TProcProxy)
   private
-    ppStartMem    : Cardinal;
-    ppEndMem    : Cardinal;
-  protected
+    ppStartMem : int64;
+    ppEndMem   : int64;
   public
     procedure Start(const pkt: TResPacket; const memPkt: TResMemPacket);  override;
     procedure Stop(var pkt: TResPacket; const memPkt: TResMemPacket); override;
-    property StartMem : Cardinal read ppStartMem write ppStartMem;
-    property EndMem : Cardinal read ppEndMem write ppEndMem;
+    property StartMem : int64 read ppStartMem write ppStartMem;
+    property EndMem : int64 read ppEndMem write ppEndMem;
   end;
 
   TActiveProcList = class

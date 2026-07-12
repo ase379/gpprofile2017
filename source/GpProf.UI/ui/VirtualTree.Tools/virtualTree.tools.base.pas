@@ -3,14 +3,13 @@ unit virtualTree.tools.base;
 interface
 
 uses
-  System.Generics.Collections,
   VirtualTrees;
-
 
 type
   {$SCOPEDENUMS ON}
   TCheckedState = (unchecked, greyed, checked);
   {$SCOPEDENUMS OFF}
+
   TVirtualTreeBaseTools = class
   private
   protected
@@ -43,10 +42,8 @@ type
 
     function GetName(const anIndex: Cardinal;const column : integer = 0): string; overload;
     function GetName(const aNode : PVirtualNode;const column : integer = 0) : string; overload; virtual;
-    procedure setSelectedIndex(const anIndex : cardinal);
-    procedure setExpanded(const aNode : PVirtualNode; const aExpandedState : boolean);
 
-
+    procedure SetSelectedByIndex(const anIndex : cardinal);
     procedure SetVisible(const aNode: PVirtualNode;const aVisible : boolean);
 
     class function FormatTime(const ticks,frequency: int64): string; overload;
@@ -68,7 +65,6 @@ uses
   gpString,
   VirtualTrees.BaseTree,
   VirtualTrees.Types;
-
 
 constructor TVirtualTreeBaseTools.Create(const aList: TVirtualStringTree);
 begin
@@ -120,8 +116,7 @@ begin
   result := fTree.TotalCount;
 end;
 
-
-function TVirtualTreeBaseTools.GetName(const anIndex: Cardinal;const column : integer = 0): string;
+function TVirtualTreeBaseTools.GetName(const anIndex: Cardinal;const column : integer): string;
 var
   LNode : PVirtualNode;
 begin
@@ -129,29 +124,21 @@ begin
   result := GetName(LNode);
 end;
 
-function TVirtualTreeBaseTools.GetName(const aNode: PVirtualNode; const column : integer = 0): string;
+function TVirtualTreeBaseTools.GetName(const aNode: PVirtualNode; const column : integer): string;
 begin
   result := '';
   if Assigned(aNode) then
     fTree.OnGetText(fTree,aNode,column,TVSTTextType.ttNormal,Result);
 end;
 
-procedure TVirtualTreeBaseTools.setExpanded(const aNode: PVirtualNode; const aExpandedState : boolean);
+procedure TVirtualTreeBaseTools.SetSelectedByIndex(const anIndex: cardinal);
 begin
-  fTree.Expanded[aNode] := aExpandedState;
-end;
-
-procedure TVirtualTreeBaseTools.setSelectedIndex(const anIndex: cardinal);
-var
-  LEnumor : TVTVirtualNodeEnumerator;
-begin
-  LEnumor := fTree.Nodes().GetEnumerator();
-  while(LEnumor.MoveNext) do
+  for var LNode in fTree.Nodes do
   begin
-    fTree.Selected[LEnumor.Current] := LEnumor.Current.index = anIndex;
+    if LNode.Index = anIndex then
+      fTree.Selected[LNode] := True;
   end;
 end;
-
 
 procedure TVirtualTreeBaseTools.SetVisible(const aNode: PVirtualNode;const aVisible : boolean);
 begin
@@ -161,18 +148,14 @@ begin
 end;
 
 function TVirtualTreeBaseTools.GetNode(const anIndex: Cardinal): PVirtualNode;
-var
-  LEnumor : TVTVirtualNodeEnumerator;
 begin
   result := nil;
-  LEnumor := fTree.Nodes().GetEnumerator();
-  while(LEnumor.MoveNext) do
+  for var LNode in fTree.Nodes do
   begin
-    if LEnumor.Current.Index = anIndex then
-      Exit(LEnumor.Current);
+    if LNode.Index = anIndex then
+      Exit(LNode);
   end;
 end;
-
 
 function TVirtualTreeBaseTools.GetChildByName(const aParent: PVirtualNode; const aName: string): PVirtualNode;
 var
@@ -180,12 +163,12 @@ var
 begin
   result := nil;
   LChild := aParent.FirstChild;
-  while(Assigned(LChild)) do
+  while Assigned(LChild) do
   begin
-    if sametext(GetName(LChild), aName) then
+    if SameText(GetName(LChild), aName) then
       Exit(LChild);
     LChild := LChild.NextSibling;
-  end
+  end;
 end;
 
 function TVirtualTreeBaseTools.GetNodeByName(const aName: string): PVirtualNode;
@@ -200,8 +183,6 @@ begin
   end;
 end;
 
-
-
 /// Events
 
 procedure TVirtualTreeBaseTools.OnHeaderClick(Sender: TVTHeader;
@@ -211,29 +192,27 @@ begin
   fSortCols[Length(fSortCols)-1] := HitInfo.Column;
   fTree.SortTree(HitInfo.Column,Sender.SortDirection,True);
 
-  if Sender.SortDirection=sdAscending then
-    Sender.SortDirection:=sdDescending
+  if Sender.SortDirection = sdAscending then
+    Sender.SortDirection := sdDescending
   else
-    Sender.SortDirection:=sdAscending;
+    Sender.SortDirection := sdAscending;
+
   fTree.Header.SortDirection := Sender.SortDirection;
   fTree.Header.SortColumn := HitInfo.Column;
 end;
 
-
 procedure TVirtualTreeBaseTools.OnIncrementalSearch(Sender: TBaseVirtualTree; Node: PVirtualNode;
   const SearchText: string; var Result: Integer);
 begin
-  result := AnsiStrLIComp(pWidechar(GetName(node.Index)),PWideChar(SearchText), Length(SearchText));
+  result := AnsiStrLIComp(PWideChar(GetName(node.Index)),PWideChar(SearchText), Length(SearchText));
 end;
 
 /// static helpers
-///
 
 class function TVirtualTreeBaseTools.FormatTime(const ticks, frequency: int64): string;
 begin
-  Result := FormatTime( ticks / frequency);
+  Result := FormatTime(ticks / frequency);
 end;
-
 
 class function TVirtualTreeBaseTools.FormatTime(const value: double): string;
 begin
@@ -242,9 +221,9 @@ end;
 
 class function TVirtualTreeBaseTools.FormatMem(const value: double): string;
 begin
-  Result := Format('%.6n',[value]);
+  Result := Format('%.0n', [value]);
+  if value > 0 then Result := '+' + Result;
 end;
-
 
 class function TVirtualTreeBaseTools.FormatCnt(const cnt: integer): string;
 begin
@@ -255,8 +234,6 @@ class function TVirtualTreeBaseTools.FormatPerc(const per: real): string;
 begin
   Result := Format('%2.2f %%',[per*100]);
 end;
-
-
 
 end.
 

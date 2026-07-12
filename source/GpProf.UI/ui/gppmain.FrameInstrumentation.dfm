@@ -31,7 +31,6 @@ object frmMainInstrumentation: TfrmMainInstrumentation
       Align = alLeft
       Caption = 'Show Directory Structure'
       TabOrder = 0
-      OnClick = chkShowDirStructureClick
     end
     object chkShowAll: TCheckBox
       AlignWithMargins = True
@@ -86,7 +85,7 @@ object frmMainInstrumentation: TfrmMainInstrumentation
       TabOrder = 1
       TreeOptions.AutoOptions = [toAutoDropExpand, toAutoExpand, toAutoScrollOnExpand, toAutoSort, toAutoTristateTracking, toAutoDeleteMovedNodes, toAutoChangeScale]
       TreeOptions.MiscOptions = [toAcceptOLEDrop, toCheckSupport, toFullRepaintOnResize, toInitOnSave, toToggleOnDblClick, toWheelPanning]
-      TreeOptions.PaintOptions = [toShowButtons, toShowDropmark, toThemeAware, toUseBlendedImages]
+      TreeOptions.PaintOptions = [toShowButtons, toShowDropmark, toShowTreeLines, toThemeAware, toUseBlendedImages, toUseExplorerTheme]
       OnAddToSelection = vstSelectUnitsAddToSelection
       OnChecked = vstSelectUnitsChecked
       Touch.InteractiveGestures = [igPan, igPressAndTap]

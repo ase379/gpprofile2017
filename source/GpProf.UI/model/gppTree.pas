@@ -28,7 +28,6 @@ type
 
   TRootNode<T: class> = class(TNode<T>)
   public type
-    TEnumerator = TList<INode<T>>.TEnumerator;
     TCompareFunc = function (const aNodeA, aNodeB : INode<T>) : integer;
   private
     fCompareFunc : TCompareFunc;
@@ -44,7 +43,7 @@ type
     constructor Create();
     destructor Destroy; override;
 
-    function GetEnumerator(): TEnumerator;
+    function GetEnumerator(): TNodeList<T>.TEnumerator;
     function GetList(): TNodeList<T>;
     function FindNode(const aSearchNode : INode<T>; out aResultNode: INode<T>) : boolean; overload;
 
@@ -137,7 +136,7 @@ begin
   result := fSortedList.Count;
 end;
 
-function TRootNode<T>.GetEnumerator: TEnumerator;
+function TRootNode<T>.GetEnumerator: TNodeList<T>.TEnumerator;
 begin
   result := fSortedList.GetEnumerator();
 end;

@@ -70,7 +70,6 @@ type
     tabPerformanceAnalysis: TTabSheet;
     pnlSourcePreview: TPanel;
     splitSourcePreview: TSplitter;
-    actRescanChanged: TAction;
     actChangeLayout: TAction;
     actAddLayout: TAction;
     actDelLayout: TAction;
@@ -155,7 +154,6 @@ type
     procedure actMakeCopyProfileExecute(Sender: TObject);
     procedure actDelUndelProfileExecute(Sender: TObject);
     procedure actRenameMoveProfileExecute(Sender: TObject);
-    procedure actRescanChangedExecute(Sender: TObject);
     procedure AppShortcut(var Msg: TWMKey; var Handled: boolean);
     procedure actChangeLayoutExecute(Sender: TObject);
     procedure actLayoutManagerExecute(Sender: TObject);
@@ -176,7 +174,7 @@ type
     procedure lvLayoutsSelectItem(Sender: TObject; Item: TListItem;
       Selected: Boolean);
     procedure actHelpContentsExecute(Sender: TObject);
-    procedure CMDialogKey( Var msg: TCMDialogKey ); message CM_DIALOGKEY;
+    procedure CMDialogKey(var msg: TCMDialogKey ); message CM_DIALOGKEY;
     procedure actHelpQuickStartExecute(Sender: TObject);
     procedure actShowHideSourcePreviewExecute(Sender: TObject);
     procedure actShowHideCallersExecute(Sender: TObject);
@@ -214,13 +212,13 @@ type
 
 	// MRU creation and events
     procedure CreateMRU;
-    procedure MRUClick(Sender: TObject; LatestFile: String);
-    procedure MRUPrfClick(Sender: TObject; LatestFile: String);
-    procedure MRUGisClick(Sender: TObject; LatestFile: string);
+    procedure MRUClick(Sender: TObject; const LatestFile: String);
+    procedure MRUPrfClick(Sender: TObject; const LatestFile: String);
+    procedure MRUGisClick(Sender: TObject; const LatestFile: string);
 
     procedure ExecuteAsync(const aProc: TAsyncExecuteProc;const aOnFinishedProc: TAsyncFinishedProc;const aActionName : string);
     procedure ParseProject(const aProject: string; const aJustRescan: boolean);
-    procedure LoadProject(fileName: string; defaultDelphi: string = '');
+    procedure LoadProject(const fileName: string; defaultDelphi: string = '');
     procedure NotifyParse(const aUnitName: string);
     procedure NotifyInstrument(const aFullName, aUnitName: string; aParse: Boolean);
 
@@ -231,10 +229,10 @@ type
     procedure EnablePC;
     procedure DisablePC2;
     procedure EnablePC2;
-    procedure LoadProfile(fileName: string);
+    procedure LoadProfile(const fileName: string);
     procedure SetCaption;
     procedure SetSource;
-    procedure ParseProfile(profile: string);
+    procedure ParseProfile(const profile: string);
     function  ParseProfileCallback(percent: integer): boolean;
     procedure ParseProfileDone;
     procedure FillDelphiVer;
@@ -249,9 +247,8 @@ type
     procedure NoProfile;
     procedure ResetProfile();
     procedure DoInstrument;
-    procedure RescanProject;
-    procedure LoadMetrics(layoutName: string);
-    procedure SaveMetrics(layoutName: string);
+    procedure LoadMetrics(const layoutName: string);
+    procedure SaveMetrics(const layoutName: string);
     procedure RebuildLayoutPopup(changeActive: boolean);
     function  IsLayout(layout: string): boolean;
     procedure SetChangeLayout(setRestore: boolean);
@@ -261,7 +258,7 @@ type
     procedure SlidersMoved;
     function  IsProjectConsole: boolean;
     procedure ResetSourcePreview(reposition: boolean);
-    procedure RestoreUIAfterParseProject(const aLastSelectionStream: TStream);
+    procedure RestoreUIAfterParseProject(const aLastSelectionStream: TStream; const aJustRescan: boolean);
     procedure WMDropFiles (var aMsg: TMessage); message WM_DROPFILES;
     procedure ResetCallees;
  end;
@@ -395,7 +392,7 @@ begin
   SetSource;
 end; { TfrmMain.EnablePC }
 
-procedure TFrmMain.RestoreUIAfterParseProject(const aLastSelectionStream: TStream);
+procedure TFrmMain.RestoreUIAfterParseProject(const aLastSelectionStream: TStream; const aJustRescan: boolean);
 begin
   TSessionData.ProjectOutputDir := openProject.OutputDir;
   StatusPanel0('Parsed', True);
@@ -403,15 +400,18 @@ begin
   Enabled := true;
 
   actRescanProject.Enabled         := true;
-  actRescanChanged.Enabled         := true;
   actInstrument.Enabled            := true;
   actRemoveInstrumentation.Enabled := true;
   actProjectOptions.Enabled        := true;
 
   actLoadInstrumentationSelection.Enabled := true;
   actSaveInstrumentationSelection.Enabled := true;
-  FInstrumentationFrame.openProject := openProject;
-  FInstrumentationFrame.FillUnitTree(not FInstrumentationFrame.chkShowAll.Checked, FInstrumentationFrame.chkShowDirStructure.Checked);
+
+  if not aJustRescan then
+  begin
+    FInstrumentationFrame.openProject := openProject;
+    FInstrumentationFrame.FillUnitTree(not FInstrumentationFrame.chkShowAll.Checked, FInstrumentationFrame.chkShowDirStructure.Checked);
+  end;
   if assigned(aLastSelectionStream) then
     openProject.LoadInstrumentalizationSelection(aLastSelectionStream);
 end;
@@ -425,19 +425,21 @@ begin
   Enabled := False;
   DisablePC;
   lLastSelectionStream := nil;
+  ClearSource;
   if assigned(openProject) then
   begin
     lLastSelectionStream := TMemoryStream.Create();
     openProject.SaveInstrumentalizationSelection(lLastSelectionStream);
     lLastSelectionStream.Position := 0;
   end;
+
   if not aJustRescan then
   begin
     FInstrumentationFrame.openProject := nil;
     FreeAndNil(openProject);
     InitProgressBar(self,self.ApplicationTaskbar, 'Parsing units...', true, false);
     SetProgressBarOverlayHint('Parsing units...');
-    FInstrumentationFrame.FillUnitTree(true, false); // clear all listboxes
+    FInstrumentationFrame.ClearAll; // clear all listboxes
     openProject := TProject.Create(aProject, TSessionData.selectedDelphi);
     TSessionData.CurrentProjectName := aProject;
     RebuildDefines;
@@ -465,7 +467,7 @@ begin
           end;
           HideProgressBar;
           vErrList.Free;
-          RestoreUIAfterParseProject(lLastSelectionStream);
+          RestoreUIAfterParseProject(lLastSelectionStream,false);
           lLastSelectionStream.Free;
           StatusPanel0('Parsing finished, it took '+fNeededSeconds.ToString+' seconds.',false);
         end);
@@ -492,7 +494,7 @@ begin
         TThread.Synchronize(nil, procedure
         begin
           HideProgressBar;
-          RestoreUIAfterParseProject(lLastSelectionStream);
+          RestoreUIAfterParseProject(lLastSelectionStream,true);
           lLastSelectionStream.Free;
           StatusPanel0('Rescanning finished, it took '+fNeededSeconds.ToString+' seconds.',false);
         end);
@@ -529,7 +531,7 @@ begin
   frmPreferences.RebuildDefines(TGlobalPreferences.GetProjectPref('UserDefines',TGlobalPreferences.UserDefines));
 end;
 
-procedure TfrmMain.LoadProject(fileName: string; defaultDelphi: string = '');
+procedure TfrmMain.LoadProject(const fileName: string; defaultDelphi: string);
 begin
   try
     if not FileExists(fileName) then
@@ -542,6 +544,7 @@ begin
     TSessionData.selectedDelphi := TGlobalPreferences.GetProjectPref('DelphiVersion',defaultDelphi);
     RebuildDelphiVer;
     FInstrumentationFrame.chkShowAll.Checked := TGlobalPreferences.GetProjectPref('ShowAllFolders',TGlobalPreferences.ShowAllFolders);
+    FInstrumentationFrame.chkShowDirStructure.Checked := TGlobalPreferences.GetProjectPref('ShowDirStructure',TGlobalPreferences.ShowDirStructure);
     PageControl1.ActivePage := tabInstrumentation;
     SetCaption;
     SetSource;
@@ -596,8 +599,8 @@ end; { TfrmMain.RebuildDelphiVer }
 
 procedure TfrmMain.DisablePC2;
 begin
-  tabPerformanceAnalysis.Font.Color             := clBtnShadow;
-  tabMemoryAnalysis.Font.Color             := clBtnShadow;
+  tabPerformanceAnalysis.Font.Color := clBtnShadow;
+  tabMemoryAnalysis.Font.Color := clBtnShadow;
   fPerformanceFrame.Disable();
   fMemoryFrame.Disable();
   if PageControl1.ActivePage = tabPerformanceAnalysis then
@@ -608,14 +611,11 @@ end; { TfrmMain.DisablePC2 }
 
 procedure TfrmMain.EnablePC2;
 begin
-  tabPerformanceAnalysis.Font.Color             := clWindowText;
-  tabMemoryAnalysis.Font.Color             := clWindowText;
+  tabPerformanceAnalysis.Font.Color := clWindowText;
+  tabMemoryAnalysis.Font.Color := clWindowText;
   StatusPanel0('',false);
   fPerformanceFrame.Enable();
-  if TGlobalPreferences.ProfilingMemSupport then
-    fMemoryFrame.Enable()
-  else
-    fMemoryFrame.Disable();
+  fMemoryFrame.Enable();
   if fPerformanceFrame.Enable then
   begin
     if PageControl1.ActivePage = tabPerformanceAnalysis then
@@ -626,8 +626,6 @@ begin
   end;
 end;
 
-
-
 { TfrmMain.EnablePC2 }
 
 function TfrmMain.ParseProfileCallback(percent: integer): boolean;
@@ -636,7 +634,7 @@ begin
   Result := true;
 end; { TfrmMain.ParseProfileCallback }
 
-procedure TfrmMain.ParseProfile(profile: string);
+procedure TfrmMain.ParseProfile(const profile: string);
 begin
   cancelLoading := false;
   Enabled := false;
@@ -688,7 +686,6 @@ begin
   else
   begin
     StatusPanel0('Loading of results finished, it took '+fNeededSeconds.ToString+' seconds.',true);
-
     LOpenResult := true;
   end;
   HideProgressBar;
@@ -710,15 +707,14 @@ begin
     SetCaption;
     SetSource;
     actHideNotExecuted.Checked := TGlobalPreferences.GetProfilePref('HideNotExecuted', TGlobalPreferences.HideNotExecuted);
+
     fPerformanceFrame.FillViews(1);
     fPerformanceFrame.ClearBreakdown;
-    fPerformanceFrame.mnuExportProfile.Enabled     := true;
-    if TGlobalPreferences.ProfilingMemSupport then
-    begin
-      fMemoryFrame.FillViews(1);
-      fMemoryFrame.ClearBreakdown;
-    end;
-    fMemoryFrame.mnuExportProfile.Enabled := TGlobalPreferences.ProfilingMemSupport;
+    fPerformanceFrame.mnuExportProfile.Enabled := true;
+
+    fMemoryFrame.FillViews(1);
+    fMemoryFrame.ClearBreakdown;
+    fMemoryFrame.mnuExportProfile.Enabled := true;
 
     actHideNotExecuted.Enabled   := true;
     actRescanProfile.Enabled     := true;
@@ -732,19 +728,20 @@ begin
   end;
 end;
 
-
-
-
-procedure TfrmMain.LoadProfile(fileName: string);
+procedure TfrmMain.LoadProfile(const fileName: string);
 begin
   try
     if not FileExists(fileName) then
       raise EFileNotFoundException.Create('File '+fileName+ ' not found.');
     MRUPrf.LatestFile := fileName;
     currentProfile := ExtractFileName(fileName);
-    PageControl1.ActivePage := tabPerformanceAnalysis;
     ClearSource;
     ParseProfile(fileName);
+    if PageControl1.ActivePage <> tabPerformanceResults then
+    begin
+      PageControl1.ActivePage := tabPerformanceResults;
+      PageControl1Change(self);
+    end;
   except on e:Exception do
     begin
       if Assigned(MRUPrf.FindItem(fileName)) then
@@ -917,9 +914,11 @@ begin
   FInstrumentationFrame := TfrmMainInstrumentation.Create(self);
   FInstrumentationFrame.Parent := tabInstrumentation;
   FInstrumentationFrame.Align := alClient;
-  FInstrumentationFrame.chkShowAll.OnClick := cbProfileChange;;
+  FInstrumentationFrame.chkShowAll.OnClick := cbProfileChange;
+  FInstrumentationFrame.chkShowDirStructure.OnClick := cbProfileChange;
   FInstrumentationFrame.OnReloadSource := LoadSource;
   FInstrumentationFrame.OnShowStatusBarMessage := StatusPanel0;
+
   fPerformanceFrame := TfrmMainProfiling.Create(self);
   fPerformanceFrame.Parent := tabPerformanceAnalysis;
   fPerformanceFrame.Align := alClient;
@@ -947,6 +946,7 @@ begin
   ClearSource;
   TGlobalPreferences.LoadPreferences;
   PageControl1.ActivePage := tabInstrumentation;
+  PageControl2.ActivePage := tabPerformanceAnalysis;
   DisablePC2;
   DisablePC;
   TSessionData.CurrentProjectName := '';
@@ -1004,7 +1004,7 @@ begin
   end;
 end;
 
-procedure TfrmMain.MRUClick(Sender: TObject; LatestFile: String);
+procedure TfrmMain.MRUClick(Sender: TObject; const LatestFile: String);
 begin
   if (openProject = nil) or (openProject.Name <> LatestFile) then
   begin
@@ -1012,7 +1012,7 @@ begin
   end;
 end;
 
-procedure TfrmMain.MRUGisClick(Sender: TObject; LatestFile: string);
+procedure TfrmMain.MRUGisClick(Sender: TObject; const LatestFile: string);
 begin
   try
     var lFileStream := TFileStream.Create(LatestFile, fmOpenRead);
@@ -1041,7 +1041,7 @@ begin
 
 end;
 
-procedure TfrmMain.SaveMetrics(layoutName: string);
+procedure TfrmMain.SaveMetrics(const layoutName: string);
 
   procedure PutHeader(reg: TGpRegistry; aVST: TVirtualStringTree; prefix: string);
   var
@@ -1146,8 +1146,15 @@ end;
 
 procedure TfrmMain.cbProfileChange(Sender: TObject);
 begin
-  FInstrumentationFrame.FillUnitTree(not FInstrumentationFrame.chkShowAll.Checked, FInstrumentationFrame.chkShowDirStructure.Checked);
-  TGlobalPreferences.SetProjectPref('ShowAllFolders',FInstrumentationFrame.chkShowAll.Checked);
+  if Sender = FInstrumentationFrame.chkShowDirStructure then
+  begin
+    FInstrumentationFrame.ProcessShowDirStructureClick(Sender);
+    TGlobalPreferences.SetProjectPref('ShowDirStructure',FInstrumentationFrame.chkShowDirStructure.Checked);
+  end else
+  begin
+    FInstrumentationFrame.FillUnitTree(not FInstrumentationFrame.chkShowAll.Checked, FInstrumentationFrame.chkShowDirStructure.Checked);
+    TGlobalPreferences.SetProjectPref('ShowAllFolders',FInstrumentationFrame.chkShowAll.Checked);
+  end;
 end;
 
 
@@ -1230,7 +1237,9 @@ begin
             WriteBool('Performance','ProfilingMemSupport',TGlobalPreferences.GetProjectPref('ProfilingMemSupport',TGlobalPreferences.ProfilingMemSupport));
             WriteBool('Performance','CompressTicks',TGlobalPreferences.GetProjectPref('SpeedSize',TGlobalPreferences.SpeedSize)>1);
             WriteBool('Performance','CompressThreads',TGlobalPreferences.GetProjectPref('SpeedSize',TGlobalPreferences.SpeedSize)>2);
-            WriteString('Output','PrfOutputFilename',ResolvePrfProjectPlaceholders(TGlobalPreferences.GetProjectPref('PrfFilenameMakro',TGlobalPreferences.PrfFilenameMakro)));
+            WriteBool('Performance','CompressMeasurePoints',TGlobalPreferences.GetProjectPref('SpeedSize',TGlobalPreferences.SpeedSize)>3);
+            WriteString('Output','PrfOutputFilename',ResolvePrfProjectPlaceholders(TGlobalPreferences.GetProjectPref('PrfFilenameMakro',TGlobalPreferences.PrfFilenameMacro)));
+            WriteInteger('Output','BufSizeKB',TGlobalPreferences.GetProjectPref('PrfBufSizeKB',TGlobalPreferences.PrfBufSizeKB));
           finally
             Free;
           end;
@@ -1289,8 +1298,6 @@ procedure TfrmMain.actRescanProjectExecute(Sender: TObject);
 begin
   ParseProject(openProject.Name, true);
 end;
-
-
 
 procedure TfrmMain.clbClassesKeyPress(Sender: TObject; var Key: Char);
 begin
@@ -1393,7 +1400,7 @@ begin
   end;
 end;
 
-procedure TfrmMain.MRUPrfClick(Sender: TObject; LatestFile: String);
+procedure TfrmMain.MRUPrfClick(Sender: TObject; const LatestFile: String);
 begin
   if not assigned(fCurrentProfile) or (fCurrentProfile.FileName <> LatestFile) then
     LoadProfile(LatestFile);
@@ -1409,7 +1416,7 @@ begin
   cancelLoading := true;
 end;
 
-procedure TfrmMain.LoadMetrics(layoutName: string);
+procedure TfrmMain.LoadMetrics(const layoutName: string);
 
   procedure GetHeaders(reg: TGpRegistry; aVST: TVirtualStringTree; prefix: string);
   var
@@ -1642,7 +1649,7 @@ procedure TfrmMain.actHideNotExecutedExecute(Sender: TObject);
 begin
   actHideNotExecuted.Checked := not actHideNotExecuted.Checked;
   fPerformanceFrame.FillViews;
-  fMemoryFrame.FillViews();
+  fMemoryFrame.FillViews;
   TGlobalPreferences.SetProfilePref('HideNotExecuted', actHideNotExecuted.Checked);
 end;
 
@@ -1650,9 +1657,10 @@ procedure TfrmMain.actProjectOptionsExecute(Sender: TObject);
 begin
   with frmPreferences do
   begin
-    if ExecuteProjectSettings(FInstrumentationFrame.chkShowAll.Checked) then
+    if ExecuteProjectSettings(FInstrumentationFrame.chkShowAll.Checked, FInstrumentationFrame.chkShowDirStructure.Checked) then
     begin
       FInstrumentationFrame.chkShowAll.Checked := cbShowAllFolders.Checked;
+      FInstrumentationFrame.chkShowDirStructure.Checked := cbShowDirStructure.Checked;
       RebuildDelphiVer;
       if DefinesChanged then
         actRescanProject.Execute;
@@ -1679,10 +1687,11 @@ begin
         loadedSource := fileName;
       end;
       if focusOn < 0 then focusOn := 0;
-      if focusOn >= sourceCodeEdit.Lines.Count then focusOn := sourceCodeEdit.Lines.Count-1;
+      if focusOn >= sourceCodeEdit.Lines.CountNative then focusOn := sourceCodeEdit.Lines.CountNative-1;
       sourceCodeEdit.TopLine := focusOn+1;
       StatusPanel0(fileName,false);
-    end;
+    end else
+      ClearSource;
   except
     sourceCodeEdit.Lines.Clear;
   end;
@@ -1692,7 +1701,7 @@ procedure TfrmMain.ClearSource;
 begin
   sourceCodeEdit.Lines.Clear;
   loadedSource := '';
-  StatusPanel0('',true);
+  StatusPanel0('',false);
 end; { TfrmMain.ClearSource }
 
 procedure TfrmMain.actExportProfileExecute(Sender: TObject);
@@ -1739,10 +1748,8 @@ end;
 
 procedure TfrmMain.StatusPanel0(const msg: string; const beep: boolean);
 begin
-  if (msg <> '') then begin
-    StatusBar.Panels[0].Text := msg;
-    if beep then MessageBeep($FFFFFFFF);
-  end;
+  StatusBar.Panels[0].Text := msg;
+  if beep then MessageBeep($FFFFFFFF);
 end;
 
 procedure TfrmMain.ShowError(const Msg : string);
@@ -1904,11 +1911,6 @@ begin
   DisablePC2;
 end;
 
-procedure TfrmMain.actRescanChangedExecute(Sender: TObject);
-begin
-  RescanProject;
-end;
-
 procedure TfrmMain.AppShortcut(var Msg: TWMKey; var Handled: boolean);
 begin
   if msg.CharCode = 112 then
@@ -1923,18 +1925,6 @@ begin
     else if PageControl1.ActivePage = tabInstrumentation then Application.HelpContext(_Instrumentation3)
     else Application.HelpContext(_Analysis3);
 end; { TfrmMain.AppShortcut }
-
-procedure TfrmMain.RescanProject;
-begin
-  if openProject = nil then
-    Exit;
-
-  if openProject.AnyChange(false) then
-  begin
-    FInstrumentationFrame.RescanProject(ParseProject);
-    SetSource;
-  end;
-end;
 
 procedure TfrmMain.actChangeLayoutExecute(Sender: TObject);
 begin

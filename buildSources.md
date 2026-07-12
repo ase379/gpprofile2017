@@ -1,6 +1,6 @@
 # Building the sources # 
 
-The Delphi 10.3.3 Community Edition or higher ise free for private use, you can register and download it here : https://www.embarcadero.com/products/delphi/starter?aldSet=en-GB.
+The Delphi 10.3.3 Community Edition or higher is free for private use, you can register and download it here : https://www.embarcadero.com/products/delphi/starter?aldSet=en-GB.
 
 The GPProf main program provides the UI for instrumentation and analysis of the collected data. The project file is 'sources\gpprof.dproj'. It uses: 
 

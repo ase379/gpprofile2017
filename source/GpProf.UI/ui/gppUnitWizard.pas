@@ -97,7 +97,7 @@ procedure TfmUnitWizard.SelectChildrenUntilLevel(const aParentNode, aFirstChildN
   procedure RegisterAndExpandNode(const aParentNode : PVirtualNode; const aCurrentLevel : integer);
   var
     LUnit : TUnit;
-    LUnitEnumor: TRootNode<TUnit>.TEnumerator;
+    LUnitEnumor: TNodeList<TUnit>.TEnumerator;
     lAllowed : boolean;
   begin
     if aCurrentLevel >= numberLevelsApplied.ValueInt then
@@ -216,7 +216,7 @@ procedure TfmUnitWizard.addChildNodes(const aParent: PVirtualNode; const aUnitNa
 var
   LUnit : TUnit;
   LDependentUnit: TUnit;
-  LUnitEnumor: TRootNode<TUnit>.TEnumerator;
+  LUnitEnumor: TNodeList<TUnit>.TEnumerator;
   LNewNode : PVirtualNode;
   LName : string;
   LRecursiveUnit : Boolean;

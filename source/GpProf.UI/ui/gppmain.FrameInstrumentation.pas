@@ -41,7 +41,6 @@ type
     procedure vstSelectClassesAddToSelection(Sender: TBaseVirtualTree; Node: PVirtualNode);
     procedure vstSelectClassesChecked(Sender: TBaseVirtualTree; Node: PVirtualNode);
     procedure vstSelectUnitsChecked(Sender: TBaseVirtualTree; Node: PVirtualNode);
-    procedure chkShowDirStructureClick(Sender: TObject);
     procedure vstSelectUnitsAddToSelection(Sender: TBaseVirtualTree; Node: PVirtualNode);
     procedure btnSelectAllClick(Sender: TObject);
     procedure sbUnitsInvokeSearch(Sender: TObject);
@@ -84,6 +83,7 @@ type
 
     procedure DisablePC();
     procedure EnablePC;
+    procedure ClearAll;
     procedure ReloadSource;
     procedure ChangeClassSelectionWithoutEvent(const anIndex : integer);
     function  GetSelectedUnitNode(): pVirtualNode;
@@ -94,8 +94,9 @@ type
     procedure clbClassesClick(Sender: TObject);
     procedure clbClassesClickCheck(Sender: TObject; const aNode: PVirtualNode);
 
+    procedure ProcessShowDirStructureClick(Sender: TObject);
+
     procedure FillUnitTree(const aOnlyUnitsOfDPR: boolean;const aShowDirectories: boolean);
-    procedure RescanProject(const aOnRescan : TOnParseProject);
     procedure RemoveInstrumentation(const aOnDoInstrument : TOnDoInstrument);
 
     procedure TriggerSelectionReload();
@@ -116,8 +117,6 @@ uses
 {$R *.dfm}
 
 { TfrmMainInstrumentation }
-
-
 
 constructor TfrmMainInstrumentation.Create(AOwner: TComponent);
 begin
@@ -174,8 +173,6 @@ begin
   vstSelectProcs.Enabled             := true;
 end;
 
-
-
 procedure TfrmMainInstrumentation.FillUnitTree(const aOnlyUnitsOfDPR, aShowDirectories: boolean);
 begin
   fVstSelectUnitTools.FillUnitTree(aOnlyUnitsOfDPR, aShowDirectories);
@@ -185,7 +182,6 @@ function TfrmMainInstrumentation.GetClassSelectionInfoForNode(const aNode: PVirt
 begin
   result := TSelectionInfo.Create(fVstSelectClassTools.GetName(aNode));
 end;
-
 
 function TfrmMainInstrumentation.GetClassSelectionInfoForSelectedNode: ISelectionInfo;
 begin
@@ -201,7 +197,6 @@ function  TfrmMainInstrumentation.GetSelectedUnitNode(): pVirtualNode;
 begin
   result := fVstSelectUnitTools.GetSelectedNode;
 end;
-
 
 procedure TfrmMainInstrumentation.btnUnitSelectionWizardClick(Sender: TObject);
 var
@@ -305,6 +300,13 @@ begin
     RecreateClasses(false, node);
     clbClassesClick(vstSelectClasses);
   end;
+end;
+
+procedure TfrmMainInstrumentation.ClearAll;
+begin
+  fVstSelectUnitTools.Clear;
+  fVstSelectClassTools.Clear;
+  fVstSelectProcTools.Clear;
 end;
 
 procedure TfrmMainInstrumentation.ClickProcs(index: integer; recreateCl: boolean);
@@ -469,7 +471,7 @@ begin
   end;
 end;
 
-procedure TfrmMainInstrumentation.chkShowDirStructureClick(Sender: TObject);
+procedure TfrmMainInstrumentation.ProcessShowDirStructureClick(Sender: TObject);
 begin
   fVstSelectUnitTools.FillUnitTree(not chkShowAll.Checked, chkShowDirStructure.Checked);
   btnUnitSelectionWizard.Enabled := false;
@@ -528,7 +530,7 @@ var
 begin
   LAddToSelectionEvent := vstSelectClasses.OnAddToSelection;
   vstSelectClasses.OnAddToSelection := nil;
-  fVstSelectClassTools.setSelectedIndex(anIndex);
+  fVstSelectClassTools.SetSelectedByIndex(anIndex);
   vstSelectClasses.OnAddToSelection := LAddToSelectionEvent;
 end;
 
@@ -573,7 +575,6 @@ begin
     fVstSelectProcTools.EndUpdate;
   end;
 end;
-
 
 procedure TfrmMainInstrumentation.clbUnitsClickCheck(const aNode: PVirtualNode);
 begin
@@ -705,33 +706,6 @@ begin
   end;
 end;
 
-procedure TfrmMainInstrumentation.RescanProject(const aOnRescan: TOnParseProject);
-var
-  iiu,iic,iip: integer;
-begin
-  iiu :=  fVstSelectUnitTools.GetSelectedNode.index;
-  iic := fVstSelectClassTools.GetSelectedIndex;
-  iip := fVstSelectProcTools.GetSelectedIndex;
-  aOnRescan(openProject.name, true);
-  if (iiu < fVstSelectUnitTools.GetCount) and
-    (fVstSelectUnitTools.GetCount > 0) then
-  begin
-    fVstSelectUnitTools.setSelectedIndex(iiu);
-    clbUnitsClick(fVstSelectUnitTools.GetSelectedNode);
-    if (iic < fVstSelectClassTools.GetCount) and (fVstSelectClassTools.GetCount > 0) then
-    begin
-      ChangeClassSelectionWithoutEvent(iic);
-      clbClassesClick(self);
-
-      if (iip < fVstSelectProcTools.GetCount()) and (fVstSelectProcTools.GetCount() > 0) then
-      begin
-        fVstSelectProcTools.setSelectedIndex(iip);
-        clbProcsClick(self);
-      end;
-    end;
-  end;
-end;
-
 procedure TfrmMainInstrumentation.InvokeSearch(const aSearchTerm: string; const aTreeTool: TCheckableListTools);
 var
   LEnumor : TVTVirtualNodeEnumerator;
@@ -781,7 +755,7 @@ end;
 
 procedure TfrmMainInstrumentation.SetSelectedUnitIndex(const anIndex: integer);
 begin
-  fVstSelectUnitTools.setSelectedIndex(anIndex);
+  fVstSelectUnitTools.SetSelectedByIndex(anIndex);
 end;
 
 procedure TfrmMainInstrumentation.TriggerSelectionReload;
